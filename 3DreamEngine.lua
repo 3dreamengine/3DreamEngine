@@ -59,7 +59,7 @@ lib.color_sun = {1.5, 1.5, 1.5}
 
 local lib = { }
 
-lib.cam = {x = 0, y = 0, z = 0, rot = 0, tilt = 0, normal = {0, 0, 0}}
+lib.cam = {x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, normal = {0, 0, 0}}
 lib.sun = {0.3, -0.6, -0.5}
 
 lib.color_ambient = {0.25, 0.25, 0.25}
@@ -508,20 +508,31 @@ function lib.prepare(self, c, noDepth)
 	
 	self.shader:send("camV", {cam.x, cam.y, cam.z})
 	
-	local rot = cam.tilt
-	rotX = matrix{
-		{1, 0, 0, 0},
-		{0, math.cos(rot), -math.sin(rot), 	0},
-		{0, math.sin(rot), math.cos(rot), 	0},
-		{0,	0, 0, 1},
+	local c = math.cos(cam.rz or 0)
+	local s = math.sin(cam.rz or 0)
+	local rotZ = matrix{
+		{c, s, 0, 0},
+		{-s, c, 0, 0},
+		{0, 0, 1, 0},
+		{0, 0, 0, 1},
 	}
 	
-	local rot = cam.rot
-	rotY = matrix{
-		{math.cos(rot),		0,	math.sin(rot),	0},
+	local c = math.cos(cam.ry or 0)
+	local s = math.sin(cam.ry or 0)
+	local rotY = matrix{
+		{c, 0, -s, 0},
 		{0, 1, 0, 0},
-		{-math.sin(rot),	0,	math.cos(rot),	0},
-		{0,	0, 0, 1},
+		{s, 0, c, 0},
+		{0, 0, 0, 1},
+	}
+	
+	local c = math.cos(cam.rx or 0)
+	local s = math.sin(cam.rx or 0)
+	local rotX = matrix{
+		{1, 0, 0, 0},
+		{0, c, -s, 0},
+		{0, s, c, 0},
+		{0, 0, 0, 1},
 	}
 	
 	local n = 1
@@ -543,7 +554,7 @@ function lib.prepare(self, c, noDepth)
 		{0, 0, 0, 1},
 	}
 	
-	local res = projection * rotX * rotY * translate
+	local res = projection * rotZ * rotX * rotY * translate
 	self.shader:send("cam", res)
 	
 	--camera normal
@@ -551,22 +562,31 @@ function lib.prepare(self, c, noDepth)
 	cam.normal = {normal[1][1], normal[2][1], -normal[3][1]}
 end
 
-function lib.draw(self, obj, x, y, z, sx, sy, sz, rot, tilt)
-	local c = math.cos(tilt or 0)
-	local s = math.sin(tilt or 0)
-	local rotY = matrix{
+function lib.draw(self, obj, x, y, z, sx, sy, sz, rx, ry, rz)
+	local c = math.cos(rz or 0)
+	local s = math.sin(rz or 0)
+	local rotZ = matrix{
 		{c, s, 0, 0},
 		{-s, c, 0, 0},
 		{0, 0, 1, 0},
 		{0, 0, 0, 1},
 	}
 	
-	local c = math.cos(rot or 0)
-	local s = math.sin(rot or 0)
-	local rotX = matrix{
+	local c = math.cos(ry or 0)
+	local s = math.sin(ry or 0)
+	local rotY = matrix{
 		{c, 0, -s, 0},
 		{0, 1, 0, 0},
 		{s, 0, c, 0},
+		{0, 0, 0, 1},
+	}
+	
+	local c = math.cos(rx or 0)
+	local s = math.sin(rx or 0)
+	local rotX = matrix{
+		{1, 0, 0, 0},
+		{0, c, -s, 0},
+		{0, s, c, 0},
 		{0, 0, 0, 1},
 	}
 	
@@ -578,24 +598,32 @@ function lib.draw(self, obj, x, y, z, sx, sy, sz, rot, tilt)
 	}
 	
 	--self.shader:send("rot", rotX)
-	self.shader:send("transform", rotY*rotX*translate)
+	self.shader:send("transform", rotZ*rotY*rotX*translate)
 	
-	local c = math.cos(tilt or 0)
-	local s = math.sin(tilt or 0)
-	local rotX3 = matrix{
+	local c = math.cos(rz or 0)
+	local s = math.sin(rz or 0)
+	local rotZ3 = matrix{
 		{c, s, 0},
 		{-s, c, 0},
 		{0, 0, 1},
 	}
 	
-	local c = math.cos(rot or 0)
-	local s = math.sin(rot or 0)
+	local c = math.cos(ry or 0)
+	local s = math.sin(ry or 0)
 	local rotY3 = matrix{
 		{c, 0, -s},
 		{0, 1, 0},
 		{s, 0, c},
 	}
-	self.shader:send("rotate", rotY3*rotX3)
+	
+	local c = math.cos(rx or 0)
+	local s = math.sin(rx or 0)
+	local rotX3 = matrix{
+		{1, 0, 0},
+		{0, c, -s},
+		{0, s, c},
+	}
+	self.shader:send("rotate", rotZ3*rotY3*rotX3)
 	
 	love.graphics.draw(obj.mesh)
 end
@@ -609,7 +637,7 @@ function lib.present(self)
 		love.graphics.setCanvas(self.canvas_blur_1)
 		love.graphics.clear()
 		love.graphics.setShader(lib.AO)
-		lib.AO:send("noiseOffset", {self.cam.rot, self.cam.tilt})
+		lib.AO:send("noiseOffset", {self.cam.ry, self.cam.rz})
 		love.graphics.draw(self.canvas_z, 0, 0, 0, self.AO_resolution)
 		love.graphics.setShader(self.blur)
 		self.blur:send("size", {1/self.canvas_blur_1:getWidth(), 1/self.canvas_blur_1:getHeight()})
