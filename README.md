@@ -7,6 +7,8 @@ The 3d engine is working (check out the examples) however the documentation is b
 # Examples
 We have examples in the examples folder to run them drag the files in the folder to the root of 3DreamEngine and open the folder in love.
 
+# Credits
+The LuaMatrix team at http://lua-users.org/wiki/LuaMatrix
 # License (MIT/EXPAT LICENSE)
 Copyright 2019 Luke100000
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
