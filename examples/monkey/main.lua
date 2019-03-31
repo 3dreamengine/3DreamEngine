@@ -1,10 +1,11 @@
 require("3DreamEngine")
 
 --load the matrix and the 3D lib
-matrix = require("matrix")
+matrix = require("3DreamEngine/matrix")
 l3d = require("3DreamEngine")
 
 --settings
+love.window.setTitle( "Monkey Example" )
 l3d.flat = true
 l3d.objectDir = ""
 l3d.pathToNoiseTex = "noise.png"
@@ -20,8 +21,8 @@ monkey = l3d:loadObject("object")
 
 function love.draw()
 	l3d:prepare()
-	
-	l3d:draw(monkey, 0, 0, -2, 1, 1, 1, love.timer.getTime(), 0)
-	
+
+	l3d:draw(monkey, 0, 0, -2, 1, 1, 1, 0, love.timer.getTime())
+
 	l3d:present()
 end
