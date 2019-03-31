@@ -1,1 +1,1 @@
-require("examples/sphere/main")
+require("examples/monkey/main")
