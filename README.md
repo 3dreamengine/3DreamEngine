@@ -25,8 +25,8 @@ The 3d engine is working (check out the examples) however the documentation is b
 We have examples in the examples folder. To run them, require the main.lua within the example. E.g. require("examples/monkey/main").
 
 # Credits
-The LuaMatrix team at http://lua-users.org/wiki/LuaMatrix
-The Lamborghini .obj and textures from https://www.turbosquid.com/FullPreview/Index.cfm/ID/1117798
+- The LuaMatrix team at http://lua-users.org/wiki/LuaMatrix
+- The Lamborghini .obj and textures from https://www.turbosquid.com/FullPreview/Index.cfm/ID/1117798
 
 # License (MIT/EXPAT LICENSE)
 Copyright 2019 Luke100000
