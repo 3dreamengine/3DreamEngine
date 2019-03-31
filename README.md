@@ -9,22 +9,24 @@ The 3d engine is working (check out the examples) however the documentation is b
 * very fast rendering with z-buffer and vertex shaders
 * inbuilt screen space ambient occlusion (ssao)
 * inbuilt distance fog
+* diffuse and specular map
+* point-source lightning (up to around 32 sources)
+* per pixel lighting for better results at close light sources
 * object merging to draw several objects at once
 * load and render custom vertex lists
 * load one big .obj as atlas and automatically split it up into sub objects
 
 # In progress
-* diffuse maps, specular maps, normal maps
 * particle systems
 * custom shaders (water waves, leaves, waving grass)
 * 3D polygons
-* point-source lightning
 
 # Examples
 We have examples in the examples folder. To run them, require the main.lua within the example. E.g. require("examples/monkey/main").
 
 # Credits
 The LuaMatrix team at http://lua-users.org/wiki/LuaMatrix
+The Lamborghini .obj and textures from https://www.turbosquid.com/FullPreview/Index.cfm/ID/1117798
 
 # License (MIT/EXPAT LICENSE)
 Copyright 2019 Luke100000

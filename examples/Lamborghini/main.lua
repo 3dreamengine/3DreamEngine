@@ -9,6 +9,7 @@ l3d.pixelPerfect = true
 l3d.objectDir = "examples/Lamborghini/"
 l3d.pathToNoiseTex = "noise.png"
 
+love.window.setTitle( "Lamborghini Example" )
 l3d.AO_enabled = true		--ambient occlusion?
 l3d.AO_strength = 0.75		--blend strength
 l3d.AO_quality = 24			--samples per pixel (8-32 recommended)
