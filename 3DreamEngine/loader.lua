@@ -23,7 +23,7 @@ function lib.loadObject(self, name, splitMargin)
 	--materials
 	local materials = { }
 	local mat
-	for l in love.filesystem.lines(self.objectDir .. name .. ".mtl") do
+	for l in (love.filesystem.getInfo(self.objectDir .. name .. ".mtl") and love.filesystem.lines(self.objectDir .. name .. ".mtl") or love.filesystem.lines(name .. ".mtl")) do
 		local v = self:split(l, " ")
 		if v[1] == "newmtl" then
 			materials[v[2]] = {
@@ -42,10 +42,26 @@ function lib.loadObject(self, name, splitMargin)
 		end
 	end
 	
+	--textures
+	if not self.flat then
+		for _, typ in ipairs({"diffuse", "spec"}) do
+			for _,path in ipairs({
+				self.objectDir .. name .. "_" .. typ .. ".png", self.objectDir .. name .. "_" .. typ .. ".jpeg", self.objectDir .. name .. "_" .. typ .. ".jpg", self.objectDir .. name .. "_" .. typ .. ".tga",
+				name .. "_" .. typ .. ".png", name .. "_" .. typ .. ".jpeg", name .. "_" .. typ .. ".jpg", name .. "_" .. typ .. ".tga",
+				self.root .. "/missing.png"
+			}) do
+				if love.filesystem.getInfo(path) then
+					obj["texture_" .. typ] = love.graphics.newImage(path)
+					break
+				end
+			end
+		end
+	end
+	
 	--load object
 	local material
 	local blocked = false
-	for l in love.filesystem.lines(self.objectDir .. name .. ".obj") do
+	for l in (love.filesystem.getInfo(self.objectDir .. name .. ".obj") and love.filesystem.lines(self.objectDir .. name .. ".obj") or love.filesystem.lines(name .. ".obj")) do
 		local v = self:split(l, " ")
 		if not blocked then
 			if v[1] == "v" then
@@ -53,7 +69,7 @@ function lib.loadObject(self, name, splitMargin)
 			elseif v[1] == "vn" then
 				normals[#normals+1] = {tonumber(v[2]), tonumber(v[3]), -tonumber(v[4])}
 			elseif v[1] == "vt" then
-				texVertices[#texVertices+1] = {tonumber(v[2]), tonumber(v[3])}
+				texVertices[#texVertices+1] = {tonumber(v[2]), 1-tonumber(v[3])}
 			elseif v[1] == "usemtl" then
 				material = v[2]
 			elseif v[1] == "f" then
@@ -147,7 +163,7 @@ function lib.createMesh(self, o, obj, faceMap)
 		atypes = {
 		  {"VertexPosition", "float", 3},	-- x, y, z
 		  {"VertexTexCoord", "float", 2},	-- UV
-		  {"VertexColor", "float", 3},		-- normal
+		  {"VertexColor", "float", 4},		-- normal, specular
 		}
 	end
 	
@@ -197,9 +213,17 @@ function lib.createMesh(self, o, obj, faceMap)
 				m.color[1], m.color[2], m.color[3], m.color[4]
 			)
 		else
-			--not working yet
-			--o.mesh:setVertex(d, p[1], p[2], p[3], t[1], t[2], n[1]*0.5+0.5, n[3]*0.5+0.5, -n[2]*0.5+0.5)
+			o.mesh:setVertex(d,
+				p[1], p[2], p[3],
+				t[1], t[2],
+				n[1]*0.5+0.5, n[2]*0.5+0.5, n[3]*0.5+0.5,
+				m.specular
+			)
 		end
+	end
+	
+	if o.texture_diffuse then
+		o.mesh:setTexture(o.texture_diffuse)
 	end
 	
 	--vertex map
