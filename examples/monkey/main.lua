@@ -11,7 +11,7 @@ l3d.objectDir = ""
 l3d.pathToNoiseTex = "noise.png"
 
 l3d.AO_enabled = true		--ambient occlusion?
-l3d.AO_quality = 24			--samples per pixel (8-32 recommended)
+l3d.AO_quality = 24		--samples per pixel (8-32 recommended)
 l3d.AO_quality_smooth = 1	--smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
 l3d.AO_resolution = 0.5		--resolution factor
 
