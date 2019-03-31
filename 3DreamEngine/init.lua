@@ -23,6 +23,8 @@ l3d = require("3DreamEngine")
 l3d.flat = true				--flat shading or textured? (not implemented yet)
 l3d.objectDir = "objects/"	--root directory of objects
 
+l3d.fov = 90				--field of view (10 < fov < 180)
+
 l3d.AO_enabled = true		--ambient occlusion?
 l3d.AO_strength = 0.5		--blend strength
 l3d.AO_quality = 24			--samples per pixel (8-32 recommended)
@@ -73,9 +75,14 @@ lib.sun = {0.3, -0.6, -0.5}
 lib.color_ambient = {0.25, 0.25, 0.25, 1.0}
 lib.color_sun = {1.5, 1.5, 1.5, 1.0}
 
---no textures, textures not fully working yet
+--no textures
 lib.flat = true
+
+--per pixel lighting
 lib.pixelPerfect = false
+
+--field of view
+lib.fov = 90
 
 --root directory of objects
 lib.objectDir = "objects/"
@@ -173,7 +180,7 @@ function lib.prepare(self, c, noDepth)
 	
 	local n = 1
 	local f = 10
-	local fov = 90
+	local fov = self.fov
 	local S = 1 / (math.tan(fov/2*math.pi/180))
 	
 	local projection = matrix{

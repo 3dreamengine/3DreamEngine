@@ -1,14 +1,10 @@
-require("3DreamEngine")
-
---load the matrix and the 3D lib
-matrix = require("3DreamEngine/matrix")
+--load the 3D lib
 l3d = require("3DreamEngine")
+love.window.setTitle("Monkey Example")
 
 --settings
-love.window.setTitle( "Monkey Example" )
 l3d.flat = true
-l3d.objectDir = ""
-l3d.pathToNoiseTex = "noise.png"
+l3d.objectDir = "examples/monkey/"
 
 l3d.AO_enabled = true		--ambient occlusion?
 l3d.AO_quality = 24		--samples per pixel (8-32 recommended)
