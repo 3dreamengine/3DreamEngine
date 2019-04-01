@@ -15,8 +15,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 
 #usage
---load the matrix and the 3D lib
-matrix = require("matrix")
+--loads the lib
 l3d = require("3DreamEngine")
 
 --settings
@@ -31,6 +30,9 @@ l3d.AO_quality = 24			--samples per pixel (8-32 recommended)
 l3d.AO_quality_smooth = 1	--smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
 l3d.AO_resolution = 0.5		--resolution factor
 
+l3d.lighting_enabled = false	--enable lighting
+l3d.lighting_max = 4		--max light sources
+
 --inits (applies settings)
 l3d:init()
 
@@ -39,24 +41,33 @@ yourObject = l3d:loadObject("objectName")
 
 --prepare for rendering
 --if cam is nil, it uses the default cam (l3d.cam)
---noDepth disables the depth buffer
+--noDepth disables the depth buffer, useful for gui elements
 l3d:prepare(cam, noDepth)
 
 --draw
-l3d:draw(model, x, y, z, sx, sy, sz, rot, tilt)
+l3d:draw(model, x, y, z, sx, sy, sz, rotX, rotY, rotZ)
 
 --finish render session, it is possible to render several times per frame
 l3d:present()
 
 --update camera postion
-lib.cam = {x = 0, y = 0, z = 0, rot = 0, tilt = 0}
+l3d.cam = {x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0}
 
---update sun position
-lib.sun = {0.3, -0.6, 0.5}
+--update sun vector
+l3d.sun = {0.3, -0.6, 0.5}
 
 --update sun color
-lib.color_ambient = {0.25, 0.25, 0.25}
-lib.color_sun = {1.5, 1.5, 1.5}
+l3d.color_ambient = {0.25, 0.25, 0.25}
+l3d.color_sun = {1.5, 1.5, 1.5}
+
+--update light sources
+--make sure to set all unused light sources to 0
+--3DreamEngine sorts the table, so indices might change
+l3d.lighting = { }
+for i = 1, l3d.lighting_max do
+	l3d.lighting[i] = {0, 0, 0, 0, 0, 0, 0}
+end
+l3d.lighting[1] = {posX, posY, posZ, red, green, blue, strength}
 --]]
 
 local lib = { }
@@ -94,7 +105,7 @@ lib.AO_quality = 24
 lib.AO_quality_smooth = 1
 lib.AO_resolution = 0.5
 
-lib.lighting_enabled = true
+lib.lighting_enabled = false
 lib.lighting_max = 4
 	
 lib.object_light = lib:loadObject(lib.root .. "/objects/light")
