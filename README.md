@@ -21,6 +21,33 @@ The 3d engine is working (check out the examples) however the documentation is b
 * custom shaders (water waves, leaves, waving grass)
 * 3D polygons
 
+# How to use?
+```lua
+--load 3DreamEngine
+l3d = require("3DreamEngine")
+
+--update settings if required
+l3d.fov = 90
+l3d.AO_enabled = false
+
+--inits (applies settings)
+l3d:init()
+
+--loads a object
+yourObject = l3d:loadObject("objectName")
+
+function love.draw()
+  --prepare for rendering
+  l3d:prepare()
+
+  --draw
+  l3d:draw(model, x, y, z, sx, sy, sz, rotX, rotY, rotZ)
+
+  --done
+  l3d:present()
+end
+```
+
 # Examples
 We have examples in the examples folder. To run them, require the main.lua within the example. E.g. require("examples/monkey/main").
 
