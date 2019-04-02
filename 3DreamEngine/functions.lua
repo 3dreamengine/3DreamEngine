@@ -14,6 +14,10 @@ function lib.resize(self, w, h)
 		self.canvas_z = love.graphics.newCanvas(w, h, {format = "r16f", readable = true, msaa = msaa})
 		self.canvas_blur_1 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
 		self.canvas_blur_2 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
+		
+		if lib.reflections_enabled then
+			self.canvas_normal = love.graphics.newCanvas(w, h, {format = "normal", readable = true, msaa = msaa})
+		end
 	end
 end
 

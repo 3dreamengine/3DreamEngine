@@ -1,1 +1,1 @@
-require("examples/monkey/main")
+require("examples/Lamborghini/main")

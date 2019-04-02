@@ -1,24 +1,23 @@
-require("3DreamEngine")
-
 --load the matrix and the 3D lib
 l3d = require("3DreamEngine")
+love.window.setTitle("Lamborghini Example")
 
 --settings
 l3d.flat = false
 l3d.pixelPerfect = true
 l3d.objectDir = "examples/Lamborghini/"
-l3d.pathToNoiseTex = "noise.png"
 
-love.window.setTitle( "Lamborghini Example" )
 l3d.AO_enabled = true		--ambient occlusion?
 l3d.AO_strength = 0.75		--blend strength
-l3d.AO_quality = 24			--samples per pixel (8-32 recommended)
-l3d.AO_quality_smooth = 1	--smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
+l3d.AO_quality = 32			--samples per pixel (8-32 recommended)
+l3d.AO_quality_smooth = 2	--smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
 l3d.AO_resolution = 0.75	--resolution factor
+
+l3d.lighting_enabled = true
 
 l3d:init()
 
-l3d.showLightSources = true
+l3d.showLightSources = false
 
 car = l3d:loadObject("Lamborghini Aventador")
 
@@ -29,7 +28,7 @@ function love.draw()
 	
 	--draw the car 
 	love.graphics.setColor(1, 1, 1)
-	l3d:draw(car, 2.5, -3.5, -10, 0.35, nil, nil, 0, 2.25, 0)
+	l3d:draw(car, 2.5, -3.5, -10, 0.35, nil, nil, 0, 2.25+(love.mouse.getX()/love.graphics.getWidth()-0.5), 0)
 	
 	l3d:present()
 	
@@ -69,11 +68,9 @@ function love.keypressed(key)
 		l3d:init()
 	elseif key == "4" then
 		l3d.lighting_enabled = not l3d.lighting_enabled
-		if not l3d.lighting_enabled then
-			l3d.pixelPerfect = false
-		end
 		l3d:init()
 	elseif key == "5" then
 		l3d.showLightSources = not l3d.showLightSources
 	end
+	l3d:init()
 end

@@ -95,6 +95,9 @@ lib.pixelPerfect = false
 --field of view
 lib.fov = 90
 
+--distance fog
+lib.fog = 0.0
+
 --root directory of objects
 lib.objectDir = "objects/"
 
@@ -107,11 +110,20 @@ lib.AO_resolution = 0.5
 
 lib.lighting_enabled = false
 lib.lighting_max = 4
+
+lib.reflections_enabled = false
 	
 lib.object_light = lib:loadObject(lib.root .. "/objects/light")
 lib.texture_missing = love.graphics.newImage(lib.root .. "/missing.png")
 
 function lib.init(self)
+	if self.reflections_enabled then
+		self.AO_enabled = true
+	end	
+	if not self.lighting_enabled then
+		self.pixelPerfect = false
+	end
+	
 	self:resize(love.graphics.getWidth(), love.graphics.getHeight())
 	self:loadShader()
 	
@@ -123,11 +135,15 @@ end
 
 function lib.prepare(self, c, noDepth)
 	if self.AO_enabled then
-		love.graphics.setCanvas({self.canvas, self.canvas_z, depthstencil = self.canvas_depth})
+		if self.reflections_enabled then
+			love.graphics.setCanvas({self.canvas, self.canvas_z, self.canvas_normal, depthstencil = self.canvas_depth})
+		else
+			love.graphics.setCanvas({self.canvas, self.canvas_z, depthstencil = self.canvas_depth})
+		end
 	else
 		love.graphics.setCanvas({self.canvas, depthstencil = self.canvas_depth})
 	end
-	love.graphics.clear()
+	love.graphics.clear({0, 0, 0, 0}, {255, 255, 255, 255}, {0, 0, 0, 0})
 	
 	love.graphics.setShader(self.shader)
 	if not noDepth then
@@ -210,6 +226,34 @@ function lib.prepare(self, c, noDepth)
 	
 	local res = projection * rotZ * rotX * rotY * translate
 	self.shader:send("cam", res)
+	
+	if self.reflections_enabled then
+		local c = math.cos(cam.rz or 0)
+		local s = math.sin(cam.rz or 0)
+		local rotZ = matrix{
+			{c, s, 0},
+			{-s, c, 0},
+			{0, 0, 1},
+		}
+		
+		local c = math.cos(cam.ry or 0)
+		local s = math.sin(cam.ry or 0)
+		local rotY = matrix{
+			{c, 0, -s},
+			{0, 1, 0},
+			{s, 0, c},
+		}
+		
+		local c = math.cos(cam.rx or 0)
+		local s = math.sin(cam.rx or 0)
+		local rotX = matrix{
+			{1, 0, 0},
+			{0, c, -s},
+			{0, s, c},
+		}
+		local res = rotZ * rotX * rotY
+		self.shader:send("cam3", res)
+	end
 	
 	--camera normal
 	local normal = rotY * rotX * (matrix{{0, 0, 1, 0}}^"T")
@@ -297,13 +341,13 @@ end
 function lib.present(self)
 	love.graphics.setDepthMode()
 	love.graphics.origin()
+	love.graphics.setColor(1, 1, 1)
 	
-	if self.AO_enabled and not love.keyboard.isDown("f9") then
+	if self.AO_enabled then
 		love.graphics.setBlendMode("replace", "premultiplied")
 		love.graphics.setCanvas(self.canvas_blur_1)
 		love.graphics.clear()
-		love.graphics.setShader(lib.AO)
-		lib.AO:send("noiseOffset", {self.cam.ry, self.cam.rz})
+		love.graphics.setShader(self.AO)
 		love.graphics.draw(self.canvas_z, 0, 0, 0, self.AO_resolution)
 		love.graphics.setShader(self.blur)
 		self.blur:send("size", {1/self.canvas_blur_1:getWidth(), 1/self.canvas_blur_1:getHeight()})
@@ -326,15 +370,19 @@ function lib.present(self)
 		love.graphics.setBlendMode("alpha")
 		love.graphics.setShader(self.post)
 		self.post:send("AO", self.canvas_blur_1)
-		self.post:send("strength", self.AO_strength)
+		self.post:send("strength", love.keyboard.isDown("f9") and 0.0 or self.AO_strength)
 		self.post:send("depth", self.canvas_z)
-		self.post:send("fog", 0.001)
+		self.post:send("fog", self.fog)
 		love.graphics.draw(self.canvas)
 		love.graphics.setShader()
 	else
 		love.graphics.setShader()
 		love.graphics.setCanvas()
 		love.graphics.draw(self.canvas)
+	end
+	
+	if love.keyboard.isDown("f8") then
+		love.graphics.draw(self.canvas_blur_1)
 	end
 end
 
