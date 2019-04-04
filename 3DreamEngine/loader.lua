@@ -6,61 +6,83 @@ loader.lua - loads .obj files, loads vertex lists
 
 local lib = _3DreamEngine
 
-function lib.loadObject(self, name, splitMargin)
-	local obj = {objects = splitMargin and { } or nil}
+function lib.loadTexture(self, name)
+	for _,path in ipairs({
+		self.objectDir .. name,
+		name,
+		self.root .. "/missing.png"
+	}) do
+		if love.filesystem.getInfo(path) then
+			return love.graphics.newImage(path)
+		end
+	end
+end
+
+--[[
+name            path to file, starting from root or the set object directory
+splitMaterials  to draw several textured (!) materials on one object, it has to be split up first. Keep false for untextured models!
+				objects will be renamed to objectName_materialName
+rasterMargin	several (untextured) models in one file, where the first one starts at 0|0|0, is sized 1|1|1 and gets the object obj.objects[1][1][1]
+				not compatible with splitMaterials! Therefore only one textured material per sub-model (but infinite color-only-materials)
+--]]
+function lib.loadObject(self, name, splitMaterials, rasterMargin)
+	if rasterMargin == true then rasterMargin = 2 end
+	
+	local obj = {
+		materials = {None = {color = {1.0, 1.0, 1.0, 1.0}, specular = 0.5, name = "None"}},
+		objects = {
+			default = {		
+				--store final vertices (vertex, normal and texCoord index)
+				final = { },
+				
+				--store final faces, 3 final indices
+				faces = { },
+			}
+		},
+		raster = rasterMargin and true,
+	}
+	
+	obj.objects.default.material = obj.materials.None
 	
 	--store vertices, normals and texture coordinates
 	local vertices = { }
 	local normals = { }
 	local texVertices = { }
 	
-	--store final vertices (vertex, normal and texCoord index)
-	obj.final = { }
-	
-	--store final faces, 3 final indices
-	obj.faces = { }
-	
 	--materials
-	local materials = { }
-	local mat
-	for l in (love.filesystem.getInfo(self.objectDir .. name .. ".mtl") and love.filesystem.lines(self.objectDir .. name .. ".mtl") or love.filesystem.lines(name .. ".mtl")) do
-		local v = self:split(l, " ")
-		if v[1] == "newmtl" then
-			materials[v[2]] = {
-				color = {1.0, 1.0, 1.0, 1.0},
-				specular = 0.5,
-			}
-			mat = materials[v[2]]
-		elseif v[1] == "Ks" then
-			mat.specular = tonumber(v[2])
-		elseif v[1] == "Kd" then
-			mat.color[1] = tonumber(v[2])
-			mat.color[2] = tonumber(v[3])
-			mat.color[3] = tonumber(v[4])
-		elseif v[1] == "d" then
-			mat.color[4] = tonumber(v[2])
-		end
-	end
-	
-	--textures
-	if not self.flat then
-		for _, typ in ipairs({"diffuse", "spec"}) do
-			for _,path in ipairs({
-				self.objectDir .. name .. "_" .. typ .. ".png", self.objectDir .. name .. "_" .. typ .. ".jpeg", self.objectDir .. name .. "_" .. typ .. ".jpg", self.objectDir .. name .. "_" .. typ .. ".tga",
-				name .. "_" .. typ .. ".png", name .. "_" .. typ .. ".jpeg", name .. "_" .. typ .. ".jpg", name .. "_" .. typ .. ".tga",
-				self.root .. "/missing.png"
-			}) do
-				if love.filesystem.getInfo(path) then
-					obj["texture_" .. typ] = love.graphics.newImage(path)
-					break
-				end
+	if love.filesystem.getInfo(self.objectDir .. name .. ".mtl") or love.filesystem.getInfo(name .. ".mtl") then
+		local material = obj.materials.None
+		for l in (love.filesystem.getInfo(self.objectDir .. name .. ".mtl") and love.filesystem.lines(self.objectDir .. name .. ".mtl") or love.filesystem.lines(name .. ".mtl")) do
+			local v = self:split(l, " ")
+			if v[1] == "newmtl" then
+				obj.materials[l:sub(8)] = {
+					color = {1.0, 1.0, 1.0, 1.0},
+					specular = 0.5,
+					name = l:sub(8),
+				}
+				material = obj.materials[l:sub(8)]
+			elseif v[1] == "Ks" then
+				material.specular = tonumber(v[2])
+			elseif v[1] == "Kd" then
+				material.color[1] = tonumber(v[2])
+				material.color[2] = tonumber(v[3])
+				material.color[3] = tonumber(v[4])
+			elseif v[1] == "d" then
+				material.color[4] = tonumber(v[2])
+			elseif v[1] == "map_Kd" then
+				material.tex_diffuse = self:loadTexture(l:sub(8))
+			elseif v[1] == "map_Ks" then
+				material.tex_spec = self:loadTexture(l:sub(8))
+			elseif v[1] == "map_Kn" then
+				material.tex_normal = self:loadTexture(l:sub(8))
 			end
 		end
 	end
 	
 	--load object
-	local material
+	local material = obj.materials.None
 	local blocked = false
+	local o = obj.objects.default
 	for l in (love.filesystem.getInfo(self.objectDir .. name .. ".obj") and love.filesystem.lines(self.objectDir .. name .. ".obj") or love.filesystem.lines(name .. ".obj")) do
 		local v = self:split(l, " ")
 		if not blocked then
@@ -71,33 +93,43 @@ function lib.loadObject(self, name, splitMargin)
 			elseif v[1] == "vt" then
 				texVertices[#texVertices+1] = {tonumber(v[2]), 1-tonumber(v[3])}
 			elseif v[1] == "usemtl" then
-				material = v[2]
+				material = obj.materials[l:sub(8)] or obj.materials.None
+				if splitMaterials and not rasterMargin then
+					local name = o.name .. "_" .. splitMaterials
+					obj.objects[name] = obj.objects[name] or {
+						faces = { },
+						final = { },
+						name = o.name,
+						material = material,
+					}
+					o = obj.objects[name]
+				end
 			elseif v[1] == "f" then
-				local o
-				if splitMargin then
+				if rasterMargin then
 					--split object, where 0|0|0 is the left-front-lower corner of the first object and every splitMargin is a new object with size 1.
 					--So each object must be within -margin to splitMargin-margin, a perfect cube will be 0|0|0 to 1|1|1
 					local objSize = 1
-					local margin = (splitMargin-objSize)/2
+					local margin = (rasterMargin-objSize)/2
 					local v2 = self:split(v[2], "/")
 					local x, y, z = vertices[tonumber(v2[1])][1], vertices[tonumber(v2[1])][2], vertices[tonumber(v2[1])][3]
-					local tx, ty, tz = math.floor((x+margin)/splitMargin)+1, math.floor((z+margin)/splitMargin)+1, math.floor((-y-margin)/splitMargin)+2
+					local tx, ty, tz = math.floor((x+margin)/rasterMargin)+1, math.floor((z+margin)/rasterMargin)+1, math.floor((-y-margin)/rasterMargin)+2
 					if not obj.objects[tx] then obj.objects[tx] = { } end
 					if not obj.objects[tx][ty] then obj.objects[tx][ty] = { } end
 					if not obj.objects[tx][ty][tz] then obj.objects[tx][ty][tz] = {faces = { }, final = { }} end
 					o = obj.objects[tx][ty][tz]
-					o.tx = math.floor((x+margin)/splitMargin)*splitMargin + objSize/2
-					o.ty = math.floor((y+margin)/splitMargin)*splitMargin + objSize/2
-					o.tz = math.floor((z+margin)/splitMargin)*splitMargin + objSize/2
+					o.tx = math.floor((x+margin)/rasterMargin)*rasterMargin + objSize/2
+					o.ty = math.floor((y+margin)/rasterMargin)*rasterMargin + objSize/2
+					o.tz = math.floor((z+margin)/rasterMargin)*rasterMargin + objSize/2
 					--print(tx, ty, tz, "|" .. x, y, z, "|" .. x - o.tx, y - o.ty, z - o.tz)
-				else
-					o = obj
 				end
+				
+				--link material to object, used as draw order identifier
+				o.material = material
 				
 				--combine vertex and data into one
 				for i = 1, #v-1 do
 					local v2 = self:split(v[i+1]:gsub("//", "/0/"), "/")
-					o.final[#o.final+1] = {vertices[tonumber(v2[1])], texVertices[tonumber(v2[2])] or {0, 0}, normals[tonumber(v2[3])], materials[material]}
+					o.final[#o.final+1] = {vertices[tonumber(v2[1])], texVertices[tonumber(v2[2])] or {0, 0}, normals[tonumber(v2[3])], material}
 				end
 				
 				if #v-1 == 3 then
@@ -110,10 +142,20 @@ function lib.loadObject(self, name, splitMargin)
 				else
 					error("only tris and quads supported (got " .. (#v-1) .. " vertices)")
 				end
+			elseif v[1] == "o" then
+				local name = l:sub(3) .. (splitMaterials and ("_" .. material.name) or "")
+				obj.objects[name] = obj.objects[name] or {
+					faces = { },
+					final = { },
+					name = l:sub(3),
+					material = material,
+				}
+				o = obj.objects[name]
 			end
 		end
 		
-		if v[1] == "o" then
+		--skip objects named as frame when splitMargin is enabled (frames are used as helper objects)
+		if v[1] == "o" and splitMargin then
 			if l:find("frame") then
 				blocked = true
 			else
@@ -122,8 +164,15 @@ function lib.loadObject(self, name, splitMargin)
 		end
 	end
 	
-	--fill mesh
-	if splitMargin then
+	--remove empty objects
+	for d,s in pairs(obj.objects) do
+		if #s.final == 0 then
+			obj.objects[d] = nil
+		end
+	end
+	
+	--fill mesh(es)
+	if rasterMargin then
 		for x, dx in pairs(obj.objects) do
 			for y, dy in pairs(dx) do
 				for z, dz in pairs(dy) do
@@ -144,7 +193,9 @@ function lib.loadObject(self, name, splitMargin)
 			end
 		end
 	else
-		self:createMesh(obj, obj)
+		for d,s in pairs(obj.objects) do
+			self:createMesh(s, obj)
+		end
 	end
 	
 	return obj
@@ -153,17 +204,17 @@ end
 --takes an final and face object and a base object and generates the mesh and vertexMap
 function lib.createMesh(self, o, obj, faceMap)
 	local atypes
-	if self.flat then
-		atypes = {
-		  {"VertexPosition", "float", 3},	-- x, y, z
-		  {"VertexTexCoord", "float", 4},	-- normal, specular
-		  {"VertexColor", "float", 4},		-- color
-		}
-	else
+	if o.material.tex_diffuse then
 		atypes = {
 		  {"VertexPosition", "float", 3},	-- x, y, z
 		  {"VertexTexCoord", "float", 2},	-- UV
 		  {"VertexColor", "float", 4},		-- normal, specular
+		}
+	else
+		atypes = {
+		  {"VertexPosition", "float", 3},	-- x, y, z
+		  {"VertexTexCoord", "float", 4},	-- normal, specular
+		  {"VertexColor", "float", 4},		-- color
 		}
 	end
 	
@@ -205,25 +256,26 @@ function lib.createMesh(self, o, obj, faceMap)
 		local t = s[2]
 		local n = s[3]
 		local m = s[4]
-		if self.flat then
-			o.mesh:setVertex(d,
-				p[1], p[2], p[3],
-				n[1]*0.5+0.5, n[2]*0.5+0.5, n[3]*0.5+0.5,
-				m.specular,
-				m.color[1], m.color[2], m.color[3], m.color[4]
-			)
-		else
+		if o.material.tex_diffuse then
 			o.mesh:setVertex(d,
 				p[1], p[2], p[3],
 				t[1], t[2],
 				n[1]*0.5+0.5, n[2]*0.5+0.5, n[3]*0.5+0.5,
 				m.specular
 			)
+		else
+			o.mesh:setVertex(d,
+				p[1], p[2], p[3],
+				n[1]*0.5+0.5, n[2]*0.5+0.5, n[3]*0.5+0.5,
+				m.specular,
+				m.color[1], m.color[2], m.color[3], m.color[4]
+			)
 		end
 	end
 	
-	if o.texture_diffuse then
-		o.mesh:setTexture(o.texture_diffuse)
+	--set diffuse texture
+	if o.material.tex_diffuse then
+		o.mesh:setTexture(o.material.tex_diffuse)
 	end
 	
 	--vertex map
@@ -231,6 +283,8 @@ function lib.createMesh(self, o, obj, faceMap)
 end
 
 --creates a triangle mesh based on position/color/specular (x, y, z, [r, g, b, spec]) points
+--[[
+#outdated, use with caution
 function lib.loadCustomObject(self, vertices)
 	local o = { }
 	
@@ -285,5 +339,6 @@ function lib.loadCustomObject(self, vertices)
 		)
 	end
 	
-	return o
+	return {objects.default = o}
 end
+--]]

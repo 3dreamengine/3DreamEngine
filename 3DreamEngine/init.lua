@@ -2,7 +2,7 @@
 #3DreamEngine - 3D library by Luke100000
 loads simple .obj files
 supports obj atlas (see usage)
-renders models using flat shading
+renders models using flat shading or textures
 supports ambient occlusion and fog
 
 
@@ -19,7 +19,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 l3d = require("3DreamEngine")
 
 --settings
-l3d.flat = true				--flat shading or textured? (not implemented yet)
 l3d.objectDir = "objects/"	--root directory of objects
 
 l3d.fov = 90				--field of view (10 < fov < 180)
@@ -45,7 +44,8 @@ yourObject = l3d:loadObject("objectName")
 l3d:prepare(cam, noDepth)
 
 --draw
-l3d:draw(model, x, y, z, sx, sy, sz, rotX, rotY, rotZ)
+--obj can be either the entire object, or an object inside the file (obj.objects.yourObject)
+l3d:draw(obj, x, y, z, sx, sy, sz, rotX, rotY, rotZ)
 
 --finish render session, it is possible to render several times per frame
 l3d:present()
@@ -85,9 +85,6 @@ lib.sun = {0.3, -0.6, -0.5}
 
 lib.color_ambient = {0.25, 0.25, 0.25, 1.0}
 lib.color_sun = {1.5, 1.5, 1.5, 1.0}
-
---no textures
-lib.flat = true
 
 --per pixel lighting
 lib.pixelPerfect = false
@@ -151,32 +148,25 @@ function lib.prepare(self, c, noDepth)
 	end
 	
 	--lighting
+	self.lighting_totalPower = 0
 	if self.lighting_enabled then
-		local light = { }
-		local pos = { }
 		table.sort(self.lighting, function(a, b) return a[7] > b[7] end)
-		for i = 1, self.lighting_max do
-			pos[i] = {self.lighting[i][1], self.lighting[i][2], self.lighting[i][3]}
-			light[i] = {self.lighting[i][4] * self.lighting[i][7], self.lighting[i][5] * self.lighting[i][7], self.lighting[i][6] * self.lighting[i][7], self.lighting[i][7]}
+		for d,s in ipairs(self.lighting) do
+			self.lighting_totalPower = self.lighting_totalPower + s[7]
 		end
-		self.shader:send("lightColor", unpack(light))
-		self.shader:send("lightPos", unpack(pos))
 	end
-	
-	self.shader:send("ambient", {self.color_ambient[1], self.color_ambient[2], self.color_ambient[3], 1.0})
-	self.shader:send("sunColor", {self.color_sun[1], self.color_sun[2], self.color_sun[3], 1.0})
 	
 	local cam = c == false and {x = 0, y = 0, z = 0, tilt = 0, rot = 0} or c or self.cam
 	
-	local sun = {math.cos(love.timer.getTime()), 0.3, math.sin(love.timer.getTime())}
 	local sun = {-self.sun[1], -self.sun[2], -self.sun[3]}
+	
 	local l = math.sqrt(sun[1]^2 + sun[2]^2 + sun[3]^2)
 	sun[1] = sun[1] / l
 	sun[2] = sun[2] / l
 	sun[3] = sun[3] / l
-	self.shader:send("sun", sun)
 	
-	self.shader:send("camV", {cam.x, cam.y, cam.z})
+	self.shaderVars_sun = sun
+	self.shaderVars_camV = {cam.x, cam.y, cam.z}
 	
 	local c = math.cos(cam.rz or 0)
 	local s = math.sin(cam.rz or 0)
@@ -225,7 +215,7 @@ function lib.prepare(self, c, noDepth)
 	}
 	
 	local res = projection * rotZ * rotX * rotY * translate
-	self.shader:send("cam", res)
+	self.shaderVars_cam = res
 	
 	if self.reflections_enabled then
 		local c = math.cos(cam.rz or 0)
@@ -252,12 +242,15 @@ function lib.prepare(self, c, noDepth)
 			{0, s, c},
 		}
 		local res = rotZ * rotX * rotY
-		self.shader:send("cam3", res)
+		self.shaderVars_cam3 = res
 	end
 	
 	--camera normal
 	local normal = rotY * rotX * (matrix{{0, 0, 1, 0}}^"T")
 	cam.normal = {normal[1][1], normal[2][1], -normal[3][1]}
+	
+	--clear draw table
+	lib.drawTable = { }
 	
 	--show light sources
 	if self.lighting_enabled and self.showLightSources then
@@ -269,6 +262,7 @@ function lib.prepare(self, c, noDepth)
 	end
 end
 
+lib.drawTable = { }
 function lib.draw(self, obj, x, y, z, sx, sy, sz, rx, ry, rz)
 	local c = math.cos(rz or 0)
 	local s = math.sin(rz or 0)
@@ -304,8 +298,6 @@ function lib.draw(self, obj, x, y, z, sx, sy, sz, rx, ry, rz)
 		{x, y, z, 1},
 	}
 	
-	self.shader:send("transform", rotZ*rotY*rotX*translate)
-	
 	local c = math.cos(rz or 0)
 	local s = math.sin(rz or 0)
 	local rotZ3 = matrix{
@@ -329,16 +321,107 @@ function lib.draw(self, obj, x, y, z, sx, sy, sz, rx, ry, rz)
 		{0, c, -s},
 		{0, s, c},
 	}
-	self.shader:send("rotate", rotZ3*rotY3*rotX3)
 	
-	if not self.flat and self.pixelPerfect then
-		self.shader:send("tex_spec", obj.texture_spec or self.texture_missing)
+	for d,s in pairs(obj.objects or {obj}) do
+		local shaderName_1 = (s.material.tex_diffuse and "textured" or "flat")
+		local shaderName_2 = self.lighting_totalPower > 0 and ((s.material.tex_diffuse and "textured" or "flat") .. "_light")
+		local shaderName_3 = self.pixelPerfect and self.lighting_totalPower > 0 and ((s.material.tex_diffuse and "textured" or "flat") .. "_light_pixel")
+		local shaderName
+		if self.shaders[shaderName_3] then
+			shaderName = shaderName_3
+		elseif self.shaders[shaderName_2] then
+			shaderName = shaderName_2
+		else
+			shaderName = shaderName_1
+		end
+		
+		--insert intro draw todo list
+		if not lib.drawTable[shaderName] then
+			lib.drawTable[shaderName] = { }
+		end
+		if not lib.drawTable[shaderName][s.material] then
+			lib.drawTable[shaderName][s.material] = { }
+		end
+		local r, g, b = love.graphics.getColor()
+		table.insert(lib.drawTable[shaderName][s.material], {
+			rotZ*rotY*rotX*translate,
+			rotZ3*rotY3*rotX3,
+			s.mesh,
+			r, g, b,
+		})
 	end
-	
-	love.graphics.draw(obj.mesh)
 end
 
+lib.stats = {
+	shadersInUse = 0,
+	draws = 0,
+	perShader = { },
+}
 function lib.present(self)
+	lib.stats.shadersInUse = 0
+	lib.stats.materialDraws = 0
+	lib.stats.draws = 0
+	lib.stats.perShader = { }
+	
+	--two steps, once for solid and once for transparent
+	for step = 1, 2 do
+		love.graphics.setDepthMode("less", step == 1)
+		for shaderName, s in pairs(self.drawTable) do
+			local shader = self.shaders[shaderName]
+			love.graphics.setShader(shader)
+			lib.stats.perShader[shaderName] = 0
+			
+			--lighting
+			if shaderName:find("light") then
+				local light = { }
+				local pos = { }
+				for i = 1, self.lighting_max do
+					pos[i] = {self.lighting[i][1], self.lighting[i][2], self.lighting[i][3]}
+					light[i] = {self.lighting[i][4] * self.lighting[i][7], self.lighting[i][5] * self.lighting[i][7], self.lighting[i][6] * self.lighting[i][7]}
+					light[i][4] = math.sqrt(light[i][1]^2 + light[i][2]^2 + light[i][3]^2)
+				end
+				shader:send("lightColor", unpack(light))
+				shader:send("lightPos", unpack(pos))
+			end
+			
+			shader:send("ambient", {self.color_ambient[1], self.color_ambient[2], self.color_ambient[3], 1.0})
+			shader:send("sunColor", {self.color_sun[1], self.color_sun[2], self.color_sun[3], 1.0})
+			shader:send("sun", self.shaderVars_sun)
+			
+			shader:send("camV", self.shaderVars_camV)
+			shader:send("cam", self.shaderVars_cam)
+			
+			if self.reflections_enabled then
+				shader:send("cam3", self.shaderVars_cam3)
+			end
+			
+			for material, tasks in pairs(s) do
+				if step == 1 and material.color[4] == 1 or step == 2 and material.color[4] ~= 1 then
+					--diffuse texture already bound to mesh!
+					--set spec textures
+					if shaderName == "textured_light_pixel_spec" then
+						shader:send("tex_spec", s.tex_spec)
+					end
+					
+					for i,v in pairs(tasks) do
+						love.graphics.setColor(v[4], v[5], v[6])
+						
+						shader:send("transform", v[1])
+						shader:send("rotate", v[2])
+						
+						--final draw
+						love.graphics.draw(v[3])
+						
+						lib.stats.draws = lib.stats.draws + 1
+						lib.stats.perShader[shaderName] = lib.stats.perShader[shaderName] + 1
+					end
+					lib.stats.materialDraws = lib.stats.materialDraws+ 1
+				end
+			end
+			lib.stats.shadersInUse = lib.stats.shadersInUse + 0.5
+		end
+	end
+	
 	love.graphics.setDepthMode()
 	love.graphics.origin()
 	love.graphics.setColor(1, 1, 1)
