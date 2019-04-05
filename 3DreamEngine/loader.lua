@@ -6,7 +6,6 @@ loader.lua - loads .obj files, loads vertex lists
 
 local lib = _3DreamEngine
 
-<<<<<<< HEAD
 function lib.loadTexture(self, name, path)
 	for _,path in ipairs({
 		self.objectDir .. name,
@@ -15,21 +14,10 @@ function lib.loadTexture(self, name, path)
 		name,
 		self.root .. "/missing.png"
 	}) do
-			print(path)
 		if love.filesystem.getInfo(path) then
 			local t = love.graphics.newImage(path, {mipmaps = true})
 			t:setWrap("repeat")
 			return t
-=======
-function lib.loadTexture(self, name)
-	for _,path in ipairs({
-		self.objectDir .. name,
-		name,
-		self.root .. "/missing.png"
-	}) do
-		if love.filesystem.getInfo(path) then
-			return love.graphics.newImage(path)
->>>>>>> 8ea8ffdf7e3b9ee62829e8e23870238e110e316b
 		end
 	end
 end
@@ -41,18 +29,12 @@ splitMaterials  to draw several textured (!) materials on one object, it has to 
 rasterMargin	several (untextured) models in one file, where the first one starts at 0|0|0, is sized 1|1|1 and gets the object obj.objects[1][1][1]
 				not compatible with splitMaterials! Therefore only one textured material per sub-model (but infinite color-only-materials)
 --]]
-<<<<<<< HEAD
 function lib.loadObject(self, name, splitMaterials, rasterMargin, forceTextured)
 	if rasterMargin == true then rasterMargin = 2 end
 	
 	local n = self:split(name, "/")
 	local path = #n > 1 and table.concat(n, "/", 1, #n-1) or "textures"
 	
-=======
-function lib.loadObject(self, name, splitMaterials, rasterMargin)
-	if rasterMargin == true then rasterMargin = 2 end
-	
->>>>>>> 8ea8ffdf7e3b9ee62829e8e23870238e110e316b
 	local obj = {
 		materials = {None = {color = {1.0, 1.0, 1.0, 1.0}, specular = 0.5, name = "None"}},
 		objects = {
@@ -95,19 +77,11 @@ function lib.loadObject(self, name, splitMaterials, rasterMargin)
 			elseif v[1] == "d" then
 				material.color[4] = tonumber(v[2])
 			elseif v[1] == "map_Kd" then
-<<<<<<< HEAD
 				material.tex_diffuse = self:loadTexture(l:sub(8), path)
 			elseif v[1] == "map_Ks" then
 				material.tex_spec = self:loadTexture(l:sub(8), path)
 			elseif v[1] == "map_Kn" then
 				material.tex_normal = self:loadTexture(l:sub(8), path)
-=======
-				material.tex_diffuse = self:loadTexture(l:sub(8))
-			elseif v[1] == "map_Ks" then
-				material.tex_spec = self:loadTexture(l:sub(8))
-			elseif v[1] == "map_Kn" then
-				material.tex_normal = self:loadTexture(l:sub(8))
->>>>>>> 8ea8ffdf7e3b9ee62829e8e23870238e110e316b
 			end
 		end
 	end
@@ -128,11 +102,7 @@ function lib.loadObject(self, name, splitMaterials, rasterMargin)
 			elseif v[1] == "usemtl" then
 				material = obj.materials[l:sub(8)] or obj.materials.None
 				if splitMaterials and not rasterMargin then
-<<<<<<< HEAD
 					local name = o.name .. "_" .. l:sub(8)
-=======
-					local name = o.name .. "_" .. splitMaterials
->>>>>>> 8ea8ffdf7e3b9ee62829e8e23870238e110e316b
 					obj.objects[name] = obj.objects[name] or {
 						faces = { },
 						final = { },
@@ -231,11 +201,7 @@ function lib.loadObject(self, name, splitMaterials, rasterMargin)
 		end
 	else
 		for d,s in pairs(obj.objects) do
-<<<<<<< HEAD
 			self:createMesh(s, obj, nil, forceTextured)
-=======
-			self:createMesh(s, obj)
->>>>>>> 8ea8ffdf7e3b9ee62829e8e23870238e110e316b
 		end
 	end
 	
@@ -245,11 +211,7 @@ end
 --takes an final and face object and a base object and generates the mesh and vertexMap
 function lib.createMesh(self, o, obj, faceMap, forceTextured)
 	local atypes
-<<<<<<< HEAD
 	if o.material.tex_diffuse or forceTextured then
-=======
-	if o.material.tex_diffuse then
->>>>>>> 8ea8ffdf7e3b9ee62829e8e23870238e110e316b
 		atypes = {
 		  {"VertexPosition", "float", 3},	-- x, y, z
 		  {"VertexTexCoord", "float", 2},	-- UV
@@ -301,11 +263,7 @@ function lib.createMesh(self, o, obj, faceMap, forceTextured)
 		local t = s[2]
 		local n = s[3]
 		local m = s[4]
-<<<<<<< HEAD
 		if o.material.tex_diffuse or forceTextured then
-=======
-		if o.material.tex_diffuse then
->>>>>>> 8ea8ffdf7e3b9ee62829e8e23870238e110e316b
 			o.mesh:setVertex(d,
 				p[1], p[2], p[3],
 				t[1], t[2],
