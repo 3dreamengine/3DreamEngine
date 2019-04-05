@@ -131,21 +131,7 @@ function lib.init(self)
 end
 
 function lib.prepare(self, c, noDepth)
-	if self.AO_enabled then
-		if self.reflections_enabled then
-			love.graphics.setCanvas({self.canvas, self.canvas_z, self.canvas_normal, depthstencil = self.canvas_depth})
-		else
-			love.graphics.setCanvas({self.canvas, self.canvas_z, depthstencil = self.canvas_depth})
-		end
-	else
-		love.graphics.setCanvas({self.canvas, depthstencil = self.canvas_depth})
-	end
-	love.graphics.clear({0, 0, 0, 0}, {255, 255, 255, 255}, {0, 0, 0, 0})
-	
-	love.graphics.setShader(self.shader)
-	if not noDepth then
-		love.graphics.setDepthMode("less", true)
-	end
+	self.noDepth = noDepth
 	
 	--lighting
 	self.lighting_totalPower = 0
@@ -363,9 +349,25 @@ function lib.present(self)
 	lib.stats.draws = 0
 	lib.stats.perShader = { }
 	
+	if self.AO_enabled then
+		if self.reflections_enabled then
+			love.graphics.setCanvas({self.canvas, self.canvas_z, self.canvas_normal, depthstencil = self.canvas_depth})
+		else
+			love.graphics.setCanvas({self.canvas, self.canvas_z, depthstencil = self.canvas_depth})
+		end
+	else
+		love.graphics.setCanvas({self.canvas, depthstencil = self.canvas_depth})
+	end
+	
+	love.graphics.clear({0, 0, 0, 0}, {255, 255, 255, 255}, {0, 0, 0, 0})
+	
 	--two steps, once for solid and once for transparent
 	for step = 1, 2 do
-		love.graphics.setDepthMode("less", step == 1)
+		if self.noDepth then
+			love.graphics.setDepthMode()
+		else
+			love.graphics.setDepthMode("less", step == 1)
+		end
 		for shaderName, s in pairs(self.drawTable) do
 			local shader = self.shaders[shaderName]
 			love.graphics.setShader(shader)
