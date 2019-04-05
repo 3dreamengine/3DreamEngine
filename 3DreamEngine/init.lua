@@ -94,8 +94,13 @@ _3DreamEngine = nil
 lib.cam = {x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, normal = {0, 0, 0}}
 lib.sun = {0.3, -0.6, -0.5}
 
+<<<<<<< HEAD
 lib.color_ambient = {1.0, 1.0, 1.0, 0.25}
 lib.color_sun = {1.0, 1.0, 1.0, 1.5}
+=======
+lib.color_ambient = {0.25, 0.25, 0.25, 1.0}
+lib.color_sun = {1.5, 1.5, 1.5, 1.0}
+>>>>>>> 8ea8ffdf7e3b9ee62829e8e23870238e110e316b
 
 --per pixel lighting
 lib.pixelPerfect = false
@@ -158,6 +163,7 @@ function lib.init(self)
 	for i = 1, self.lighting_max do
 		self.lighting[i] = {0, 0, 0, 0, 0, 0, 0}
 	end
+<<<<<<< HEAD
 	
 	if self.clouds then
 		self.clouds:setWrap("repeat")
@@ -172,6 +178,8 @@ function lib.init(self)
 			self.shaderSkyNight:send("night", self.night)
 		end
 	end
+=======
+>>>>>>> 8ea8ffdf7e3b9ee62829e8e23870238e110e316b
 end
 
 function lib.prepare(self, c, noDepth)
@@ -186,7 +194,11 @@ function lib.prepare(self, c, noDepth)
 		end
 	end
 	
+<<<<<<< HEAD
 	local cam = c == false and {x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, normal = {0, 0, 0}} or c or self.cam
+=======
+	local cam = c == false and {x = 0, y = 0, z = 0, tilt = 0, rot = 0} or c or self.cam
+>>>>>>> 8ea8ffdf7e3b9ee62829e8e23870238e110e316b
 	
 	local sun = {-self.sun[1], -self.sun[2], -self.sun[3]}
 	
@@ -430,8 +442,13 @@ function lib.present(self)
 				shader:send("lightPos", unpack(pos))
 			end
 			
+<<<<<<< HEAD
 			shader:send("ambient", {self.color_ambient[1] * self.color_ambient[4], self.color_ambient[2] * self.color_ambient[4], self.color_ambient[3] * self.color_ambient[4], 1.0})
 			shader:send("sunColor", {self.color_sun[1] * self.color_sun[4], self.color_sun[2] * self.color_sun[4], self.color_sun[3] * self.color_sun[4], 1.0})
+=======
+			shader:send("ambient", {self.color_ambient[1], self.color_ambient[2], self.color_ambient[3], 1.0})
+			shader:send("sunColor", {self.color_sun[1], self.color_sun[2], self.color_sun[3], 1.0})
+>>>>>>> 8ea8ffdf7e3b9ee62829e8e23870238e110e316b
 			shader:send("sun", self.shaderVars_sun)
 			
 			shader:send("camV", self.shaderVars_camV)
@@ -468,6 +485,7 @@ function lib.present(self)
 		end
 	end
 	
+<<<<<<< HEAD
 	--sky
 	if self.sky then
 		local transform = matrix{
@@ -519,6 +537,8 @@ function lib.present(self)
 		love.graphics.draw(self.object_clouds.objects.Cube.mesh)
 	end
 	
+=======
+>>>>>>> 8ea8ffdf7e3b9ee62829e8e23870238e110e316b
 	love.graphics.setDepthMode()
 	love.graphics.origin()
 	love.graphics.setColor(1, 1, 1)
