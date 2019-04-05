@@ -3,7 +3,6 @@ l3d = require("3DreamEngine")
 love.window.setTitle("Lamborghini Example")
 
 --settings
-l3d.flat = false
 l3d.pixelPerfect = true
 l3d.objectDir = "examples/Lamborghini/"
 
@@ -36,14 +35,23 @@ function love.draw()
 	love.graphics.setColor(0.1, 0.1, 0.1)
 	love.graphics.print("Lamborghini Aventador" ..
 		"\nFPS: " .. love.timer.getFPS() ..
-		"\n\n(1) toggle textured mode (" .. tostring(l3d.flat == false) .. ")" ..
-		"\n(2) toggle ambient occlusion (" .. tostring(l3d.AO_enabled == true) .. ")" ..
-		"\n(3) toggle per pixel shading (" .. tostring(l3d.pixelPerfect == true) .. ")" .. 
-		"\n(4) toggle lighting (" .. tostring(l3d.lighting_enabled == true) .. ")" ..
-		"\n(5) show light sources (" .. tostring(l3d.showLightSources == true) .. ")", 15, 5)
+		"\n(1) toggle ambient occlusion (" .. tostring(l3d.AO_enabled == true) .. ")" ..
+		"\n(2) toggle per pixel shading (" .. tostring(l3d.pixelPerfect == true) .. ")" .. 
+		"\n(3) toggle lighting (" .. tostring(l3d.lighting_enabled == true) .. ")" ..
+		"\n(4) show light sources (" .. tostring(l3d.showLightSources == true) .. ")", 15, 5)
+	
+	local shadersInUse = ""
+	for d,s in pairs(l3d.stats.perShader) do
+		shadersInUse = shadersInUse .. d .. ": " .. s .. "x  "
+	end
+	love.graphics.print("Stats" ..
+		"\ndifferent shaders: " .. l3d.stats.shadersInUse ..
+		"\ndifferent materials: " .. l3d.stats.materialDraws ..
+		"\ndraws: " .. l3d.stats.draws ..
+		"\nshaders: " .. shadersInUse, 15, 500)
 	
 	l3d.color_ambient = {0.1, 0.1, 0.1, 1}
-	l3d.color_sun = {0.5, 0.5, 0.5, 1}
+	l3d.color_sun = {1, 1, 1, l3d.lighting_enabled and 1.75 or 0.25}
 	
 	--clear unused lightning, bad will happen if not
 	for i = 1, l3d.lighting_max do
@@ -57,19 +65,15 @@ end
 
 function love.keypressed(key)
 	if key == "1" then
-		l3d.flat = not l3d.flat
-		car = l3d:loadObject("Lamborghini Aventador")
-		l3d:init()
-	elseif key == "2" then
 		l3d.AO_enabled = not l3d.AO_enabled
 		l3d:init()
-	elseif key == "3" then
+	elseif key == "2" then
 		l3d.pixelPerfect = not l3d.pixelPerfect
 		l3d:init()
-	elseif key == "4" then
+	elseif key == "3" then
 		l3d.lighting_enabled = not l3d.lighting_enabled
 		l3d:init()
-	elseif key == "5" then
+	elseif key == "4" then
 		l3d.showLightSources = not l3d.showLightSources
 	end
 	l3d:init()
