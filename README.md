@@ -1,25 +1,25 @@
 ![3DreamEngine](https://owo.whats-th.is/9ceoazf.png)
 <a href="https://discord.gg/hpmZxNQ"><img src="https://discordapp.com/api/guilds/561664262481641482/embed.png" alt="Discord server" /></a>
 
-# Note
-The 3d engine is working (check out the examples) however the documentation is being worked on be patient!
-
 # Features
-* loading and rendering .obj files
+* loading and rendering .obj files, supports materials and textures included in .mtl files
 * very fast rendering with z-buffer and vertex shaders
 * inbuilt screen space ambient occlusion (ssao)
 * inbuilt distance fog
+* inbuilt "volumetric" clouds
+* inbuilt sky sphere
+* particle emitter (grass, leaves, random rocks, smaller details)
 * diffuse and specular map
 * point-source lightning (up to around 32 sources)
 * per pixel lighting for better results at close light sources
 * object merging to draw several objects at once
-* load and render custom vertex lists
 * load one big .obj as atlas and automatically split it up into sub objects
 
 # In progress
-* particle systems
-* custom shaders (water waves, leaves, waving grass)
 * 3D polygons
+* screen space reflections
+* normal maps
+* simple 3d collision
 
 # How to use?
 ```lua
@@ -48,12 +48,15 @@ function love.draw()
 end
 ```
 
+documentation in 3DreamEngine/init.lua
+
 # Examples
 We have examples in the examples folder. To run them, require the main.lua within the example. E.g. require("examples/monkey/main").
 
 # Credits
 - The LuaMatrix team at http://lua-users.org/wiki/LuaMatrix
 - The Lamborghini .obj and textures from https://www.turbosquid.com/FullPreview/Index.cfm/ID/1117798
+- Textures.com at https://www.textures.com/
 
 # License (MIT/EXPAT LICENSE)
 Copyright 2019 Luke100000
