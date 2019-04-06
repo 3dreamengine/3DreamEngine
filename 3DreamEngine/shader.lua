@@ -67,387 +67,398 @@ function lib.loadShader(self)
 		VaryingColor = ConstantColor * vec4((ambient + sunColor * power), 1.0);
 	]]
 	
-	--flat per pixel shading, lighting
-	lib.shaders.flat_light_pixel = love.graphics.newShader([[
-		]] .. (self.AO_enabled and "varying float depth;" or "") .. [[
-		]] .. (self.reflections_enabled and "varying vec3 normalCam;" or "") .. [[
-		
-		varying vec4 colorRaw;
-		varying vec4 pos;
-		extern vec3 camV;
-		varying vec3 normal;
-		varying float specular;
-		
-		#ifdef PIXEL
-		extern vec3 lightPos[]].. self.lighting_max .. [[];
-		extern vec4 lightColor[]].. self.lighting_max .. [[];
-		int lightCount = ]] .. self.lighting_max .. [[;
-		
-		void effect() {
-			vec4 col = VaryingColor;
-			for (int i = 0; i < lightCount; i++) {
-				if (lightColor[i].a > 0.0) {
-					vec3 diff = lightPos[i]-pos.xyz;
-					float dotLightNormal = dot(normalize(diff), normal);
-					float angle = max(0, dotLightNormal);
-					float power = ((1.0 - specular) * angle + specular * angle*angle) / (pow(length(diff), 2)+1.0);
-					
-					col += vec4(colorRaw.rgb * lightColor[i].rgb * power, max(0, (angle-0.75)*4.0) * power);
-				} else {
-					break;
+	for _, variant in ipairs({"", "_wind"}) do
+		--flat per pixel shading, lighting
+		lib.shaders["flat_light_pixel" .. variant] = love.graphics.newShader([[
+			]] .. (self.AO_enabled and "varying float depth;" or "") .. [[
+			]] .. (self.reflections_enabled and "varying vec3 normalCam;" or "") .. [[
+			
+			varying vec4 colorRaw;
+			varying vec4 pos;
+			extern vec3 camV;
+			varying vec3 normal;
+			varying float specular;
+			
+			#ifdef PIXEL
+			extern vec3 lightPos[]].. self.lighting_max .. [[];
+			extern vec4 lightColor[]].. self.lighting_max .. [[];
+			int lightCount = ]] .. self.lighting_max .. [[;
+			
+			void effect() {
+				vec4 col = VaryingColor;
+				for (int i = 0; i < lightCount; i++) {
+					if (lightColor[i].a > 0.0) {
+						vec3 diff = lightPos[i]-pos.xyz;
+						float dotLightNormal = dot(normalize(diff), normal);
+						float angle = max(0, dotLightNormal);
+						float power = ((1.0 - specular) * angle + specular * angle*angle) / (pow(length(diff), 2)+1.0);
+						
+						col += vec4(colorRaw.rgb * lightColor[i].rgb * power, max(0, (angle-0.75)*4.0) * power);
+					} else {
+						break;
+					}
 				}
+				
+				love_Canvases[0] = col;
+				]] .. (self.AO_enabled and "love_Canvases[1] = vec4(depth, 0.0, 0.0, 1.0);" or "") .. [[
+				]] .. (self.reflections_enabled and "love_Canvases[2] = vec4(normalCam*0.5 + vec3(0.5), 1.0);" or "") .. [[
 			}
+			#endif
 			
-			love_Canvases[0] = col;
-			]] .. (self.AO_enabled and "love_Canvases[1] = vec4(depth, 0.0, 0.0, 1.0);" or "") .. [[
-			]] .. (self.reflections_enabled and "love_Canvases[2] = vec4(normalCam*0.5 + vec3(0.5), 1.0);" or "") .. [[
-		}
-		#endif
-		
-		#ifdef VERTEX
-		]] .. (self.reflections_enabled and "extern mat3 cam3;" or "") .. [[
-		extern mat4 cam;
-		extern mat4 transform;
-		extern vec3 sun;
-		extern vec3 sunColor;
-		extern vec3 ambient;
-		extern mat3 rotate;
-		
-		vec4 position(mat4 transform_projection, vec4 vertex_position) {
-			pos = (vertex_position * transform);
-			normal = (VertexTexCoord.rgb - vec3(0.5)) * 2.0 * rotate;
-			]] .. (self.reflections_enabled and "normalCam = normal * cam3;;" or "") .. [[
+			#ifdef VERTEX
+			]] .. (self.reflections_enabled and "extern mat3 cam3;" or "") .. [[
+			extern mat4 cam;
+			extern mat4 transform;
+			extern vec3 sun;
+			extern vec3 sunColor;
+			extern vec3 ambient;
+			extern mat3 rotate;
 			
-			]] .. (fragments.sun_flat) .. [[
-			
-			colorRaw = VertexColor;
-			specular = VertexTexCoord.a;
-			
-			vec4 vPos = cam * pos * vec4(1, -1, 1, 1);
-			]] .. (self.AO_enabled and "depth = vPos.z;" or "") .. [[
-			return vPos + vec4(0, 0, 0.75, 0);
-		}
-		#endif
-	]])
-	
-	--flat shading, lightning
-	lib.shaders.flat_light = love.graphics.newShader([[
-		]] .. (self.AO_enabled and "varying float depth;" or "") .. [[
-		]] .. (self.reflections_enabled and "varying vec3 normalCam;" or "") .. [[
+			vec4 position(mat4 transform_projection, vec4 vertex_position) {
+				pos = (vertex_position * transform);
+				normal = (VertexTexCoord.rgb - vec3(0.5)) * 2.0 * rotate;
+				]] .. (self.reflections_enabled and "normalCam = normal * cam3;;" or "") .. [[
+				
+				]] .. (fragments.sun_flat) .. [[
+				
+				colorRaw = VertexColor;
+				specular = VertexTexCoord.a;
+				
+				vec4 vPos = cam * pos * vec4(1, -1, 1, 1);
+				]] .. (self.AO_enabled and "depth = vPos.z;" or "") .. [[
+				return vPos + vec4(0, 0, 0.75, 0);
+			}
+			#endif
+		]])
 		
-		]] .. (self.AO_enabled and [[
-		#ifdef PIXEL
-		void effect() {
-			love_Canvases[0] = VaryingColor;
-			]] .. (self.AO_enabled and "love_Canvases[1] = vec4(depth, 0.0, 0.0, 1.0);" or "") .. [[
-			]] .. (self.reflections_enabled and "love_Canvases[2] = vec4(normalCam*0.5 + vec3(0.5), 1.0);" or "") .. [[
-		}
-		#endif
-		]] or "") .. [[
-		
-		#ifdef VERTEX
-		]] .. (self.reflections_enabled and "extern mat3 cam3;" or "") .. [[
-		extern mat4 cam;
-		extern vec3 camV;
-		extern mat4 transform;
-		extern vec3 sun;
-		extern vec3 sunColor;
-		extern vec3 ambient;
-		extern mat3 rotate;
-		
-		extern vec3 lightPos[]].. self.lighting_max .. [[];
-		extern vec4 lightColor[]].. self.lighting_max .. [[];
-		int lightCount = ]] .. self.lighting_max .. [[;
-		
-		vec4 position(mat4 transform_projection, vec4 vertex_position) {
-			vec4 pos = (vertex_position * transform);
-			vec3 normal = (VertexTexCoord.rgb - vec3(0.5)) * 2.0 * rotate;
-			]] .. (self.reflections_enabled and "normalCam = normal * cam3;;" or "") .. [[
+		--flat shading, lightning
+		lib.shaders["flat_light" .. variant] = love.graphics.newShader([[
+			]] .. (self.AO_enabled and "varying float depth;" or "") .. [[
+			]] .. (self.reflections_enabled and "varying vec3 normalCam;" or "") .. [[
 			
-			]] .. (fragments.sun_flat) .. [[
+			]] .. (self.AO_enabled and [[
+			#ifdef PIXEL
+			void effect() {
+				love_Canvases[0] = VaryingColor;
+				]] .. (self.AO_enabled and "love_Canvases[1] = vec4(depth, 0.0, 0.0, 1.0);" or "") .. [[
+				]] .. (self.reflections_enabled and "love_Canvases[2] = vec4(normalCam*0.5 + vec3(0.5), 1.0);" or "") .. [[
+			}
+			#endif
+			]] or "") .. [[
 			
-			for (int i = 0; i < lightCount; i++) {
-				if (lightColor[i].a > 0.0) {
-					float specular = VertexTexCoord.a;
-					vec3 diff = lightPos[i]-pos.xyz;
-					float dotLightNormal = dot(normalize(diff), normal);
-					float angle = max(0, dotLightNormal);
-					float power = ((1.0 - specular) * angle + specular * angle*angle) / (pow(length(diff), 2)+1.0);
-					
-					VaryingColor += vec4((VertexColor.rgb + vec3(power*0.2)) * lightColor[i].rgb * power, max(0, (angle-0.75)*4.0) * power);
-				} else {
-					break;
+			#ifdef VERTEX
+			]] .. (self.reflections_enabled and "extern mat3 cam3;" or "") .. [[
+			extern mat4 cam;
+			extern vec3 camV;
+			extern mat4 transform;
+			extern vec3 sun;
+			extern vec3 sunColor;
+			extern vec3 ambient;
+			extern mat3 rotate;
+			
+			extern vec3 lightPos[]].. self.lighting_max .. [[];
+			extern vec4 lightColor[]].. self.lighting_max .. [[];
+			int lightCount = ]] .. self.lighting_max .. [[;
+			
+			vec4 position(mat4 transform_projection, vec4 vertex_position) {
+				vec4 pos = (vertex_position * transform);
+				vec3 normal = (VertexTexCoord.rgb - vec3(0.5)) * 2.0 * rotate;
+				]] .. (self.reflections_enabled and "normalCam = normal * cam3;;" or "") .. [[
+				
+				]] .. (fragments.sun_flat) .. [[
+				
+				for (int i = 0; i < lightCount; i++) {
+					if (lightColor[i].a > 0.0) {
+						float specular = VertexTexCoord.a;
+						vec3 diff = lightPos[i]-pos.xyz;
+						float dotLightNormal = dot(normalize(diff), normal);
+						float angle = max(0, dotLightNormal);
+						float power = ((1.0 - specular) * angle + specular * angle*angle) / (pow(length(diff), 2)+1.0);
+						
+						VaryingColor += vec4((VertexColor.rgb + vec3(power*0.2)) * lightColor[i].rgb * power, max(0, (angle-0.75)*4.0) * power);
+					} else {
+						break;
+					}
 				}
+				
+				vec4 vPos = cam * pos * vec4(1, -1, 1, 1);
+				]] .. (self.AO_enabled and "depth = vPos.z;" or "") .. [[
+				return vPos + vec4(0, 0, 0.75, 0);
 			}
+			#endif
+		]])
+		
+		--flat shading
+		lib.shaders["flat" .. variant] = love.graphics.newShader([[
+			]] .. (self.AO_enabled and "varying float depth;" or "") .. [[
+			]] .. (self.reflections_enabled and "varying vec3 normalCam;" or "") .. [[
 			
-			vec4 vPos = cam * pos * vec4(1, -1, 1, 1);
-			]] .. (self.AO_enabled and "depth = vPos.z;" or "") .. [[
-			return vPos + vec4(0, 0, 0.75, 0);
-		}
-		#endif
-	]])
-	
-	--flat shading
-	lib.shaders.flat = love.graphics.newShader([[
-		]] .. (self.AO_enabled and "varying float depth;" or "") .. [[
-		]] .. (self.reflections_enabled and "varying vec3 normalCam;" or "") .. [[
-		
-		]] .. (self.AO_enabled and [[
-		#ifdef PIXEL
-		void effect() {
-			love_Canvases[0] = VaryingColor;
-			]] .. (self.AO_enabled and "love_Canvases[1] = vec4(depth, 0.0, 0.0, 1.0);" or "") .. [[
-			]] .. (self.reflections_enabled and "love_Canvases[2] = vec4(normalCam*0.5 + vec3(0.5), 1.0);" or "") .. [[
-		}
-		#endif
-		]] or "") .. [[
-		
-		#ifdef VERTEX
-		]] .. (self.reflections_enabled and "extern mat3 cam3;" or "") .. [[
-		extern mat4 cam;
-		extern vec3 camV;
-		extern mat4 transform;
-		extern vec3 sun;
-		extern vec3 sunColor;
-		extern vec3 ambient;
-		extern mat3 rotate;
-		
-		extern vec3 lightPos[]].. self.lighting_max .. [[];
-		extern vec4 lightColor[]].. self.lighting_max .. [[];
-		int lightCount = ]] .. self.lighting_max .. [[;
-		
-		vec4 position(mat4 transform_projection, vec4 vertex_position) {
-			vec4 pos = (vertex_position * transform);
-			vec3 normal = (VertexTexCoord.rgb - vec3(0.5)) * 2.0 * rotate;
-			]] .. (self.reflections_enabled and "normalCam = normal * cam3;;" or "") .. [[
+			]] .. (self.AO_enabled and [[
+			#ifdef PIXEL
+			void effect() {
+				love_Canvases[0] = VaryingColor;
+				]] .. (self.AO_enabled and "love_Canvases[1] = vec4(depth, 0.0, 0.0, 1.0);" or "") .. [[
+				]] .. (self.reflections_enabled and "love_Canvases[2] = vec4(normalCam*0.5 + vec3(0.5), 1.0);" or "") .. [[
+			}
+			#endif
+			]] or "") .. [[
 			
-			]] .. (fragments.sun_flat) .. [[
+			#ifdef VERTEX
+			]] .. (self.reflections_enabled and "extern mat3 cam3;" or "") .. [[
+			extern mat4 cam;
+			extern vec3 camV;
+			extern mat4 transform;
+			extern vec3 sun;
+			extern vec3 sunColor;
+			extern vec3 ambient;
+			extern mat3 rotate;
 			
-			vec4 vPos = cam * pos * vec4(1, -1, 1, 1);
-			]] .. (self.AO_enabled and "depth = vPos.z;" or "") .. [[
-			return vPos + vec4(0, 0, 0.75, 0);
-		}
-		#endif
-	]])
-	
-	--textured, per pixel lighting, specular map
-	lib.shaders.textured_light_pixel_spec = love.graphics.newShader([[
-		]] .. (self.AO_enabled and "varying float depth;" or "") .. [[
-		]] .. (self.reflections_enabled and "varying vec3 normalCam;" or "") .. [[
-		varying vec4 pos;
-		varying vec3 normal;
-		varying float reflectionAngle;
-		
-		#ifdef PIXEL
-		extern Image tex_spec;
-		uniform Image MainTex;
-		
-		extern vec3 lightPos[]].. self.lighting_max .. [[];
-		extern vec4 lightColor[]].. self.lighting_max .. [[];
-		int lightCount = ]] .. self.lighting_max .. [[;
-		
-		void effect() {
-			float specular = Texel(tex_spec, VaryingTexCoord.xy).r;
+			extern vec3 lightPos[]].. self.lighting_max .. [[];
+			extern vec4 lightColor[]].. self.lighting_max .. [[];
+			int lightCount = ]] .. self.lighting_max .. [[;
 			
-			vec4 col = VaryingColor;
-			for (int i = 0; i < lightCount; i++) {
-				if (lightColor[i].a > 0.0) {
-					vec3 diff = lightPos[i]-pos.xyz;
-					float dotLightNormal = dot(normalize(diff), normal);
-					float angle = max(0, dotLightNormal);
-					float power = ((1.0 - specular) * angle + specular * angle*angle) / (pow(length(diff), 2)+1.0);
-					
-					col += vec4(lightColor[i].rgb * power, max(0, (angle-0.75)*4.0) * power);
-				} else {
-					break;
+			]] .. (variant == "_wind" and [[
+			extern float wind;
+			]] or "") .. [[
+			
+			vec4 position(mat4 transform_projection, vec4 vertex_position) {
+				]] .. (variant == "_wind" and [[
+				vec4 pos = (vec4(vertex_position.xyz, 1.0) + vec4((cos(vertex_position.x*0.25+wind)+cos(vertex_position.z*4.0+vertex_position.y+wind*2.0)) * vertex_position.a * 0.2, 0.0, 0.0, 0.0)) * transform;
+				]] or [[
+				vec4 pos = vertex_position * transform;
+				]]) .. [[
+				
+				vec3 normal = (VertexTexCoord.rgb - vec3(0.5)) * 2.0 * rotate;
+				]] .. (self.reflections_enabled and "normalCam = normal * cam3;;" or "") .. [[
+				
+				]] .. (fragments.sun_flat) .. [[
+				
+				vec4 vPos = cam * pos * vec4(1, -1, 1, 1);
+				]] .. (self.AO_enabled and "depth = vPos.z;" or "") .. [[
+				return vPos + vec4(0, 0, 0.75, 0);
+			}
+			#endif
+		]])
+		
+		--textured, per pixel lighting, specular map
+		lib.shaders["textured_light_pixel_spec" .. variant] = love.graphics.newShader([[
+			]] .. (self.AO_enabled and "varying float depth;" or "") .. [[
+			]] .. (self.reflections_enabled and "varying vec3 normalCam;" or "") .. [[
+			varying vec4 pos;
+			varying vec3 normal;
+			varying float reflectionAngle;
+			
+			#ifdef PIXEL
+			extern Image tex_spec;
+			uniform Image MainTex;
+			
+			extern vec3 lightPos[]].. self.lighting_max .. [[];
+			extern vec4 lightColor[]].. self.lighting_max .. [[];
+			int lightCount = ]] .. self.lighting_max .. [[;
+			
+			void effect() {
+				float specular = Texel(tex_spec, VaryingTexCoord.xy).r;
+				
+				vec4 col = VaryingColor;
+				for (int i = 0; i < lightCount; i++) {
+					if (lightColor[i].a > 0.0) {
+						vec3 diff = lightPos[i]-pos.xyz;
+						float dotLightNormal = dot(normalize(diff), normal);
+						float angle = max(0, dotLightNormal);
+						float power = ((1.0 - specular) * angle + specular * angle*angle) / (pow(length(diff), 2)+1.0);
+						
+						col += vec4(lightColor[i].rgb * power, max(0, (angle-0.75)*4.0) * power);
+					} else {
+						break;
+					}
 				}
+				
+				love_Canvases[0] = col * Texel(MainTex, VaryingTexCoord.xy);
+				]] .. (self.AO_enabled and "love_Canvases[1] = vec4(depth, 0.0, 0.0, 1.0);" or "") .. [[
+				]] .. (self.reflections_enabled and "love_Canvases[2] = vec4(normalCam*0.5 + vec3(0.5), 1.0);" or "") .. [[
 			}
+			#endif
 			
-			love_Canvases[0] = col * Texel(MainTex, VaryingTexCoord.xy);
-			]] .. (self.AO_enabled and "love_Canvases[1] = vec4(depth, 0.0, 0.0, 1.0);" or "") .. [[
-			]] .. (self.reflections_enabled and "love_Canvases[2] = vec4(normalCam*0.5 + vec3(0.5), 1.0);" or "") .. [[
-		}
-		#endif
-		
-		#ifdef VERTEX
-		]] .. (self.reflections_enabled and "extern mat3 cam3;" or "") .. [[
-		extern mat4 cam;
-		extern vec3 camV;
-		extern mat4 transform;
-		extern vec3 sun;
-		extern vec3 sunColor;
-		extern vec3 ambient;
-		extern mat3 rotate;
-		
-		vec4 position(mat4 transform_projection, vec4 vertex_position) {
-			pos = (vertex_position * transform);
-			normal = (VertexColor.rgb - vec3(0.5)) * 2.0 * rotate;
-			]] .. (self.reflections_enabled and "normalCam = normal * cam3;;" or "") .. [[
+			#ifdef VERTEX
+			]] .. (self.reflections_enabled and "extern mat3 cam3;" or "") .. [[
+			extern mat4 cam;
+			extern vec3 camV;
+			extern mat4 transform;
+			extern vec3 sun;
+			extern vec3 sunColor;
+			extern vec3 ambient;
+			extern mat3 rotate;
 			
-			]] .. (fragments.sun) .. [[
+			vec4 position(mat4 transform_projection, vec4 vertex_position) {
+				pos = (vertex_position * transform);
+				normal = (VertexColor.rgb - vec3(0.5)) * 2.0 * rotate;
+				]] .. (self.reflections_enabled and "normalCam = normal * cam3;;" or "") .. [[
+				
+				]] .. (fragments.sun) .. [[
+				
+				vec4 vPos = cam * pos * vec4(1, -1, 1, 1);
+				]] .. (self.AO_enabled and "depth = vPos.z;" or "") .. [[
+				return vPos + vec4(0, 0, 0.75, 0);
+			}
+			#endif
+		]])
+		
+		--textured, per pixel lighting
+		lib.shaders["textured_light_pixel" .. variant] = love.graphics.newShader([[
+			]] .. (self.AO_enabled and "varying float depth;" or "") .. [[
+			]] .. (self.reflections_enabled and "varying vec3 normalCam;" or "") .. [[
+			varying vec4 pos;
+			varying vec3 normal;
+			varying float specular;
 			
-			vec4 vPos = cam * pos * vec4(1, -1, 1, 1);
-			]] .. (self.AO_enabled and "depth = vPos.z;" or "") .. [[
-			return vPos + vec4(0, 0, 0.75, 0);
-		}
-		#endif
-	]])
-	
-	--textured, per pixel lighting
-	lib.shaders.textured_light_pixel = love.graphics.newShader([[
-		]] .. (self.AO_enabled and "varying float depth;" or "") .. [[
-		]] .. (self.reflections_enabled and "varying vec3 normalCam;" or "") .. [[
-		varying vec4 pos;
-		varying vec3 normal;
-		varying float specular;
-		
-		#ifdef PIXEL
-		uniform Image MainTex;
-		
-		extern vec3 lightPos[]].. self.lighting_max .. [[];
-		extern vec4 lightColor[]].. self.lighting_max .. [[];
-		int lightCount = ]] .. self.lighting_max .. [[;
-		
-		void effect() {
-			vec4 col = VaryingColor;
-			for (int i = 0; i < lightCount; i++) {
-				if (lightColor[i].a > 0.0) {
-					vec3 diff = lightPos[i]-pos.xyz;
-					float dotLightNormal = dot(normalize(diff), normal);
-					float angle = max(0, dotLightNormal);
-					float power = ((1.0 - specular) * angle + specular * angle*angle) / (pow(length(diff), 2)+1.0);
-					
-					col += vec4(lightColor[i].rgb * power, max(0, (angle-0.75)*4.0) * power);
-				} else {
-					break;
+			#ifdef PIXEL
+			uniform Image MainTex;
+			
+			extern vec3 lightPos[]].. self.lighting_max .. [[];
+			extern vec4 lightColor[]].. self.lighting_max .. [[];
+			int lightCount = ]] .. self.lighting_max .. [[;
+			
+			void effect() {
+				vec4 col = VaryingColor;
+				for (int i = 0; i < lightCount; i++) {
+					if (lightColor[i].a > 0.0) {
+						vec3 diff = lightPos[i]-pos.xyz;
+						float dotLightNormal = dot(normalize(diff), normal);
+						float angle = max(0, dotLightNormal);
+						float power = ((1.0 - specular) * angle + specular * angle*angle) / (pow(length(diff), 2)+1.0);
+						
+						col += vec4(lightColor[i].rgb * power, max(0, (angle-0.75)*4.0) * power);
+					} else {
+						break;
+					}
 				}
+				
+				love_Canvases[0] = col * Texel(MainTex, VaryingTexCoord.xy);
+				]] .. (self.AO_enabled and "love_Canvases[1] = vec4(depth, 0.0, 0.0, 1.0);" or "") .. [[
+				]] .. (self.reflections_enabled and "love_Canvases[2] = vec4(normalCam*0.5 + vec3(0.5), 1.0);" or "") .. [[
 			}
+			#endif
 			
-			love_Canvases[0] = col * Texel(MainTex, VaryingTexCoord.xy);
-			]] .. (self.AO_enabled and "love_Canvases[1] = vec4(depth, 0.0, 0.0, 1.0);" or "") .. [[
-			]] .. (self.reflections_enabled and "love_Canvases[2] = vec4(normalCam*0.5 + vec3(0.5), 1.0);" or "") .. [[
-		}
-		#endif
-		
-		#ifdef VERTEX
-		]] .. (self.reflections_enabled and "extern mat3 cam3;" or "") .. [[
-		extern mat4 cam;
-		extern vec3 camV;
-		extern mat4 transform;
-		extern vec3 sun;
-		extern vec3 sunColor;
-		extern vec3 ambient;
-		extern mat3 rotate;
-		
-		vec4 position(mat4 transform_projection, vec4 vertex_position) {
-			pos = (vertex_position * transform);
-			normal = (VertexColor.rgb - vec3(0.5)) * 2.0 * rotate;
-			specular = VertexColor.a;
-			]] .. (self.reflections_enabled and "normalCam = normal * cam3;;" or "") .. [[
+			#ifdef VERTEX
+			]] .. (self.reflections_enabled and "extern mat3 cam3;" or "") .. [[
+			extern mat4 cam;
+			extern vec3 camV;
+			extern mat4 transform;
+			extern vec3 sun;
+			extern vec3 sunColor;
+			extern vec3 ambient;
+			extern mat3 rotate;
 			
-			]] .. (fragments.sun) .. [[
+			vec4 position(mat4 transform_projection, vec4 vertex_position) {
+				pos = (vertex_position * transform);
+				normal = (VertexColor.rgb - vec3(0.5)) * 2.0 * rotate;
+				specular = VertexColor.a;
+				]] .. (self.reflections_enabled and "normalCam = normal * cam3;;" or "") .. [[
+				
+				]] .. (fragments.sun) .. [[
+				
+				vec4 vPos = cam * pos * vec4(1, -1, 1, 1);
+				]] .. (self.AO_enabled and "depth = vPos.z;" or "") .. [[
+				return vPos + vec4(0, 0, 0.75, 0);
+			}
+			#endif
+		]])
+		
+		--textured, lighting
+		lib.shaders["textured_light" .. variant] = love.graphics.newShader([[
+			]] .. (self.AO_enabled and "varying float depth;" or "") .. [[
+			]] .. (self.reflections_enabled and "varying vec3 normalCam;" or "") .. [[
 			
-			vec4 vPos = cam * pos * vec4(1, -1, 1, 1);
-			]] .. (self.AO_enabled and "depth = vPos.z;" or "") .. [[
-			return vPos + vec4(0, 0, 0.75, 0);
-		}
-		#endif
-	]])
-	
-	--textured, lighting
-	lib.shaders.textured_light = love.graphics.newShader([[
-		]] .. (self.AO_enabled and "varying float depth;" or "") .. [[
-		]] .. (self.reflections_enabled and "varying vec3 normalCam;" or "") .. [[
-		
-		#ifdef PIXEL
-		uniform Image MainTex;
-		void effect() {
-			love_Canvases[0] = VaryingColor * Texel(MainTex, VaryingTexCoord.xy);
-			]] .. (self.AO_enabled and "love_Canvases[1] = vec4(depth, 0.0, 0.0, 1.0);" or "") .. [[
-			]] .. (self.reflections_enabled and "love_Canvases[2] = vec4(normalCam*0.5 + vec3(0.5), 1.0);" or "") .. [[
-		}
-		#endif
-		
-		#ifdef VERTEX
-		]] .. (self.reflections_enabled and "extern mat3 cam3;" or "") .. [[
-		extern mat4 cam;
-		extern vec3 camV;
-		extern mat4 transform;
-		extern vec3 sun;
-		extern vec3 sunColor;
-		extern vec3 ambient;
-		extern mat3 rotate;
-		
-		extern vec3 lightPos[]].. self.lighting_max .. [[];
-		extern vec4 lightColor[]].. self.lighting_max .. [[];
-		int lightCount = ]] .. self.lighting_max .. [[;
-		
-		vec4 position(mat4 transform_projection, vec4 vertex_position) {
-			vec4 pos = (vertex_position * transform);
-			vec3 normal = (VertexColor.rgb - vec3(0.5)) * 2.0 * rotate;
-			]] .. (self.reflections_enabled and "normalCam = normal * cam3;;" or "") .. [[
+			#ifdef PIXEL
+			uniform Image MainTex;
+			void effect() {
+				love_Canvases[0] = VaryingColor * Texel(MainTex, VaryingTexCoord.xy);
+				]] .. (self.AO_enabled and "love_Canvases[1] = vec4(depth, 0.0, 0.0, 1.0);" or "") .. [[
+				]] .. (self.reflections_enabled and "love_Canvases[2] = vec4(normalCam*0.5 + vec3(0.5), 1.0);" or "") .. [[
+			}
+			#endif
 			
-			]] .. (fragments.sun) .. [[
+			#ifdef VERTEX
+			]] .. (self.reflections_enabled and "extern mat3 cam3;" or "") .. [[
+			extern mat4 cam;
+			extern vec3 camV;
+			extern mat4 transform;
+			extern vec3 sun;
+			extern vec3 sunColor;
+			extern vec3 ambient;
+			extern mat3 rotate;
 			
-			for (int i = 0; i < lightCount; i++) {
-				if (lightColor[i].a > 0.0) {
-					float specular = VertexColor.a;
-					vec3 diff = lightPos[i]-pos.xyz;
-					float dotLightNormal = dot(normalize(diff), normal);
-					float angle = max(0, dotLightNormal);
-					float power = ((1.0 - specular) * angle + specular * angle*angle) / (pow(length(diff), 2)+1.0);
-					
-					VaryingColor += vec4(lightColor[i].rgb * power, max(0, (angle-0.75)*4.0) * power);
-				} else {
-					break;
+			extern vec3 lightPos[]].. self.lighting_max .. [[];
+			extern vec4 lightColor[]].. self.lighting_max .. [[];
+			int lightCount = ]] .. self.lighting_max .. [[;
+			
+			vec4 position(mat4 transform_projection, vec4 vertex_position) {
+				vec4 pos = (vertex_position * transform);
+				vec3 normal = (VertexColor.rgb - vec3(0.5)) * 2.0 * rotate;
+				]] .. (self.reflections_enabled and "normalCam = normal * cam3;;" or "") .. [[
+				
+				]] .. (fragments.sun) .. [[
+				
+				for (int i = 0; i < lightCount; i++) {
+					if (lightColor[i].a > 0.0) {
+						float specular = VertexColor.a;
+						vec3 diff = lightPos[i]-pos.xyz;
+						float dotLightNormal = dot(normalize(diff), normal);
+						float angle = max(0, dotLightNormal);
+						float power = ((1.0 - specular) * angle + specular * angle*angle) / (pow(length(diff), 2)+1.0);
+						
+						VaryingColor += vec4(lightColor[i].rgb * power, max(0, (angle-0.75)*4.0) * power);
+					} else {
+						break;
+					}
 				}
+				
+				vec4 vPos = cam * pos * vec4(1, -1, 1, 1);
+				]] .. (self.AO_enabled and "depth = vPos.z;" or "") .. [[
+				return vPos + vec4(0, 0, 0.75, 0);
 			}
-			
-			vec4 vPos = cam * pos * vec4(1, -1, 1, 1);
-			]] .. (self.AO_enabled and "depth = vPos.z;" or "") .. [[
-			return vPos + vec4(0, 0, 0.75, 0);
-		}
-		#endif
-	]])
-	
-	--textured
-	lib.shaders.textured = love.graphics.newShader([[
-		]] .. (self.AO_enabled and "varying float depth;" or "") .. [[
-		]] .. (self.reflections_enabled and "varying vec3 normalCam;" or "") .. [[
+			#endif
+		]])
 		
-		#ifdef PIXEL
-		uniform Image MainTex;
-		void effect() {
-			love_Canvases[0] = VaryingColor * Texel(MainTex, VaryingTexCoord.xy);
-			]] .. (self.AO_enabled and "love_Canvases[1] = vec4(depth, 0.0, 0.0, 1.0);" or "") .. [[
-			]] .. (self.reflections_enabled and "love_Canvases[2] = vec4(normalCam*0.5 + vec3(0.5), 1.0);" or "") .. [[
-		}
-		#endif
-		
-		#ifdef VERTEX
-		]] .. (self.reflections_enabled and "extern mat3 cam3;" or "") .. [[
-		extern mat4 cam;
-		extern vec3 camV;
-		extern mat4 transform;
-		extern vec3 sun;
-		extern vec3 sunColor;
-		extern vec3 ambient;
-		extern mat3 rotate;
-		
-		vec4 position(mat4 transform_projection, vec4 vertex_position) {
-			vec4 pos = (vertex_position * transform);
-			vec3 normal = (VertexColor.rgb - vec3(0.5)) * 2.0 * rotate;
-			]] .. (self.reflections_enabled and "normalCam = normal * cam3;;" or "") .. [[
+		--textured
+		lib.shaders["textured" .. variant] = love.graphics.newShader([[
+			]] .. (self.AO_enabled and "varying float depth;" or "") .. [[
+			]] .. (self.reflections_enabled and "varying vec3 normalCam;" or "") .. [[
 			
-			]] .. (fragments.sun) .. [[
+			#ifdef PIXEL
+			uniform Image MainTex;
+			void effect() {
+				love_Canvases[0] = VaryingColor * Texel(MainTex, VaryingTexCoord.xy);
+				]] .. (self.AO_enabled and "love_Canvases[1] = vec4(depth, 0.0, 0.0, 1.0);" or "") .. [[
+				]] .. (self.reflections_enabled and "love_Canvases[2] = vec4(normalCam*0.5 + vec3(0.5), 1.0);" or "") .. [[
+			}
+			#endif
 			
-			vec4 vPos = cam * pos * vec4(1, -1, 1, 1);
-			]] .. (self.AO_enabled and "depth = vPos.z;" or "") .. [[
-			return vPos + vec4(0, 0, 0.75, 0);
-		}
-		#endif
-	]])
-	
+			#ifdef VERTEX
+			]] .. (self.reflections_enabled and "extern mat3 cam3;" or "") .. [[
+			extern mat4 cam;
+			extern vec3 camV;
+			extern mat4 transform;
+			extern vec3 sun;
+			extern vec3 sunColor;
+			extern vec3 ambient;
+			extern mat3 rotate;
+			
+			vec4 position(mat4 transform_projection, vec4 vertex_position) {
+				vec4 pos = (vertex_position * transform);
+				vec3 normal = (VertexColor.rgb - vec3(0.5)) * 2.0 * rotate;
+				]] .. (self.reflections_enabled and "normalCam = normal * cam3;;" or "") .. [[
+				
+				]] .. (fragments.sun) .. [[
+				
+				vec4 vPos = cam * pos * vec4(1, -1, 1, 1);
+				]] .. (self.AO_enabled and "depth = vPos.z;" or "") .. [[
+				return vPos + vec4(0, 0, 0.75, 0);
+			}
+			#endif
+		]])
+	end
+
 	lib.AO = love.graphics.newShader([[		extern vec2 size;
 		extern vec3 samples[]] .. self.AO_quality .. [[];
 		int sampleCount = ]] .. self.AO_quality .. [[;
@@ -471,7 +482,7 @@ function lib.loadShader(self)
 			return vec4(sum, sum, sum, 1.0);
 		}
 	]])
-
+	
 	local f = { }
 	for i = 1, lib.AO_quality do
 		local r = i/lib.AO_quality * math.pi * 2
@@ -512,7 +523,7 @@ function lib.loadShader(self)
 		extern Image night;
 		extern vec4 color;
 		vec4 effect(vec4 c, Image day, vec2 tc, vec2 sc) {
-			return (Texel(day, tc) * time + Texel(night, tc) * (1.0-time)) * color;
+			return mix(Texel(day, tc), Texel(night, tc), time) * color;
 		}
 		#endif
 		

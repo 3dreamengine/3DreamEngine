@@ -72,7 +72,7 @@ function lib.loadCollObject(self, name)
 	for d,s in ipairs(objects) do
 		local origin = s[1]
 		for _,v in ipairs(s) do
-			if v[1] < origin[1] then
+			if v[1]+v[2]+v[3] < origin[1]+origin[2]+origin[3] then
 				origin = v
 			end
 		end
@@ -102,18 +102,34 @@ function lib.loadCollObject(self, name)
 		end
 		
 		if #axis == 3 then
-			local ax, ay, az = 0, 0, 0
-			for i = 1, 3 do
-				if math.abs(ax) < math.abs((axis[i][1] - origin[1]) / axisR[axis[i]]) then ax = (axis[i][1] - origin[1]) / axisR[axis[i]] end
-				if math.abs(ay) < math.abs((axis[i][2] - origin[2]) / axisR[axis[i]]) then ay = (axis[i][2] - origin[2]) / axisR[axis[i]] end
-				if math.abs(az) < math.abs((axis[i][3] - origin[3]) / axisR[axis[i]]) then az = (axis[i][3] - origin[3]) / axisR[axis[i]] end
+			--dimensions
+			print(axisR[axis[1]])
+			print(axisR[axis[2]])
+			print(axisR[axis[3]])
+			print()
+			
+			--choose the axis with the highest X value as the normal vector, (1, 0, 0) therefore means no rotation
+			local n = {0, 0, 0}
+			for s = 1, 3 do
+				local v = (axis[1][s] - origin[s]) / axisR[axis[1]]
+				n[s] = v
 			end
+			print("n", n[1], n[2], n[3])
 			
-			print(ax, ay, az)
+			local rotX = math.acos(n[3] / math.sqrt(n[3]^2 + n[2]^2))
+			n[2] = self:rotatePoint(n[2], math.sqrt(1-n[2]^2), -rotX)
+			n[3] = self:rotatePoint(n[3], math.sqrt(1-n[3]^2), -rotX)
+			print("n", n[1], n[2], n[3])
 			
-			local rotX = math.acos(az)
-			local rotZ = math.acos(ay)
-			local rotY = math.acos(ax)
+			local rotY = math.acos(n[1] / math.sqrt(n[1]^2 + n[3]^2))
+			n[1] = self:rotatePoint(n[1], math.sqrt(1-n[1]^2), -rotY)
+			n[3] = self:rotatePoint(n[3], math.sqrt(1-n[3]^2), -rotY)
+			print("n", n[1], n[2], n[3])
+			
+			local rotZ = math.acos(n[2] / math.sqrt(n[2]^2 + n[2]^2))
+			n[1] = self:rotatePoint(n[1], math.sqrt(1-n[1]^2), -rotZ)
+			n[2] = self:rotatePoint(n[2], math.sqrt(1-n[2]^2), -rotZ)
+			print("n", n[1], n[2], n[3])
 			
 			print(rotX, rotY, rotZ)
 		else

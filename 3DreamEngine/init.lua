@@ -126,8 +126,6 @@ lib.object_clouds = lib:loadObject(lib.root .. "/objects/clouds_high", false, fa
 lib.object_sky = lib:loadObject(lib.root .. "/objects/sky", false, false, true)
 lib.texture_missing = love.graphics.newImage(lib.root .. "/missing.png")
 
-love.graphics.setMeshCullMode("back")
-
 --set lib clouds to an cloud texture (noise, tilable) to enable clouds
 lib.clouds = false
 lib.cloudDensity = 0.5
@@ -353,9 +351,9 @@ function lib.draw(self, obj, x, y, z, sx, sy, sz, rx, ry, rz)
 	}
 	
 	for d,s in pairs(obj.objects or {obj}) do
-		local shaderName_1 = (s.material.tex_diffuse and "textured" or "flat")
-		local shaderName_2 = self.lighting_totalPower > 0 and ((s.material.tex_diffuse and "textured" or "flat") .. "_light")
-		local shaderName_3 = self.pixelPerfect and self.lighting_totalPower > 0 and ((s.material.tex_diffuse and "textured" or "flat") .. "_light_pixel")
+		local shaderName_1 = (s.material.tex_diffuse and "textured" or "flat") .. (s.shader == "wind" and "_wind" or "")
+		local shaderName_2 = self.lighting_totalPower > 0 and ((s.material.tex_diffuse and "textured" or "flat") .. "_light") .. (s.shader == "wind" and "_wind" or "")
+		local shaderName_3 = self.pixelPerfect and self.lighting_totalPower > 0 and ((s.material.tex_diffuse and "textured" or "flat") .. "_light_pixel") .. (s.shader == "wind" and "_wind" or "")
 		local shaderName
 		if self.shaders[shaderName_3] then
 			shaderName = shaderName_3
@@ -376,7 +374,7 @@ function lib.draw(self, obj, x, y, z, sx, sy, sz, rx, ry, rz)
 		table.insert(lib.drawTable[shaderName][s.material], {
 			rotZ*rotY*rotX*translate,
 			rotZ3*rotY3*rotX3,
-			s.mesh,
+			s,
 			r, g, b,
 		})
 	end
@@ -430,6 +428,11 @@ function lib.present(self)
 				shader:send("lightPos", unpack(pos))
 			end
 			
+			--wind
+			if shaderName:find("wind") then
+				shader:send("wind", love.timer.getTime())
+			end
+			
 			shader:send("ambient", {self.color_ambient[1] * self.color_ambient[4], self.color_ambient[2] * self.color_ambient[4], self.color_ambient[3] * self.color_ambient[4], 1.0})
 			shader:send("sunColor", {self.color_sun[1] * self.color_sun[4], self.color_sun[2] * self.color_sun[4], self.color_sun[3] * self.color_sun[4], 1.0})
 			
@@ -451,13 +454,15 @@ function lib.present(self)
 					end
 					
 					for i,v in pairs(tasks) do
+						love.graphics.setMeshCullMode(v[3].noBackFaceCulling and "none" or "back")
+						
 						love.graphics.setColor(v[4], v[5], v[6])
 						
 						shader:send("transform", v[1])
 						shader:send("rotate", v[2])
 						
 						--final draw
-						love.graphics.draw(v[3])
+						love.graphics.draw(v[3].mesh)
 						
 						lib.stats.draws = lib.stats.draws + 1
 						lib.stats.perShader[shaderName] = lib.stats.perShader[shaderName] + 1

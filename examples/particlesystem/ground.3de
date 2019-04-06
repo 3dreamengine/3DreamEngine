@@ -1,0 +1,30 @@
+# 3DreamEngine material properties file
+
+mat Grass
+new particleSystem
+add grass 1000
+randomSize 0.5 1.0
+randomRotation true
+normal 0.9
+shader wind
+shaderInfo grass
+
+new particleSystem
+add rock 50
+randomSize 0.5 1.0
+randomRotation true
+
+mat Branch
+new particleSystem
+add leave 100
+randomSize 0.25 0.35
+randomRotation true
+shader wind
+shaderInfo 0.15
+
+new particleSystem
+add leave 100
+randomSize 0.2 0.3
+randomRotation true
+shader wind
+shaderInfo 0.25
