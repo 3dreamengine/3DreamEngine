@@ -24,27 +24,27 @@
 # How to use?
 ```lua
 --load 3DreamEngine
-l3d = require("3DreamEngine")
+dream = require("3DreamEngine")
 
 --update settings if required
-l3d.fov = 90
-l3d.AO_enabled = false
+dream.fov = 90
+dream.AO_enabled = false
 
 --inits (applies settings)
-l3d:init()
+dream:init()
 
 --loads a object
-yourObject = l3d:loadObject("objectName")
+yourObject = dream:loadObject("objectName")
 
 function love.draw()
   --prepare for rendering
-  l3d:prepare()
+  dream:prepare()
 
   --draw
-  l3d:draw(model, x, y, z, sx, sy, sz, rotX, rotY, rotZ)
+  dream:draw(yourObject, x, y, z, sx, sy, sz, rotX, rotY, rotZ)
 
   --done
-  l3d:present()
+  dream:present()
 end
 ```
 
