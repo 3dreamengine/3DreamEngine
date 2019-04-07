@@ -175,7 +175,7 @@ function lib.loadObject(self, name, splitMaterials, rasterMargin, forceTextured,
 					local tx, ty, tz = math.floor((x+margin)/rasterMargin)+1, math.floor((z+margin)/rasterMargin)+1, math.floor((-y-margin)/rasterMargin)+2
 					if not obj.objects[tx] then obj.objects[tx] = { } end
 					if not obj.objects[tx][ty] then obj.objects[tx][ty] = { } end
-					if not obj.objects[tx][ty][tz] then obj.objects[tx][ty][tz] = {faces = { }, final = { }} end
+					if not obj.objects[tx][ty][tz] then obj.objects[tx][ty][tz] = {faces = { }, final = { }, material = material} end
 					o = obj.objects[tx][ty][tz]
 					o.tx = math.floor((x+margin)/rasterMargin)*rasterMargin + objSize/2
 					o.ty = math.floor((y+margin)/rasterMargin)*rasterMargin + objSize/2
@@ -226,7 +226,7 @@ function lib.loadObject(self, name, splitMaterials, rasterMargin, forceTextured,
 	
 	--remove empty objects
 	for d,s in pairs(obj.objects) do
-		if #s.final == 0 then
+		if s.final and #s.final == 0 then
 			obj.objects[d] = nil
 		end
 	end
@@ -410,6 +410,9 @@ end
 
 --takes an final and face object and a base object and generates the mesh and vertexMap
 function lib.createMesh(self, o, obj, faceMap, forceTextured)
+	if not o.material then
+		o.material = {color = {1.0, 1.0, 1.0, 1.0}, specular = 0.5, name = "None"}
+	end
 	local atypes
 	if o.material.tex_diffuse or forceTextured then
 		atypes = {
