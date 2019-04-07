@@ -10,7 +10,7 @@ Ke 0.0 0.0 0.0
 Ni 1.450000
 d 1.000000
 illum 1
-map_Kd bark_diffuse.jpg
+map_Kd objects\\bark_diffuse.jpg
 
 newmtl Branch
 Ns 225.000000
@@ -21,7 +21,7 @@ Ke 0.0 0.0 0.0
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd bark_diffuse.jpg
+map_Kd objects\\bark_diffuse.jpg
 
 newmtl Chalk
 Ns 225.000000
@@ -32,7 +32,7 @@ Ke 0.0 0.0 0.0
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd chalk_diffuse.jpg
+map_Kd objects\\chalk_diffuse.jpg
 
 newmtl Cobbe
 Ns 225.000000
@@ -43,7 +43,7 @@ Ke 0.0 0.0 0.0
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd cobble_diffuse.jpg
+map_Kd objects\\cobble_diffuse.jpg
 
 newmtl Grass
 Ns 225.000000
@@ -54,7 +54,7 @@ Ke 0.0 0.0 0.0
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd grass_diffuse.jpg
+map_Kd objects\\grass_diffuse.jpg
 
 newmtl Planks
 Ns 225.000000
@@ -65,7 +65,7 @@ Ke 0.0 0.0 0.0
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd planks_diffuse.jpg
+map_Kd objects\\planks_diffuse.jpg
 
 newmtl Rock
 Ns 225.000000
@@ -76,4 +76,4 @@ Ke 0.0 0.0 0.0
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd rock_diffuse.jpg
+map_Kd objects\\rock_diffuse.jpg

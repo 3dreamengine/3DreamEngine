@@ -79,12 +79,43 @@ function lib.getDayLight(self, time, strength)
 	local c2 = self.dayLightColors[((math.floor(time*#self.dayLightColors)+1) % #self.dayLightColors)+1]
 	local f = (time*#self.dayLightColors) % 1
 	
-	local direct = {c1[1] * (1-f) + c2[1] * f, c1[2] * (1-f) + c2[2] * f, c1[3] * (1-f) + c2[3] * f, math.min(1, c1[4] * (1-f) + c2[4] * f)}
+	local direct = {c1[1] * (1-f) + c2[1] * f, c1[2] * (1-f) + c2[2] * f, c1[3] * (1-f) + c2[3] * f, 1.25 * math.min(1, c1[4] * (1-f) + c2[4] * f)}
 	direct[1] = 1.0 * (1-strength) + direct[1] * strength
 	direct[2] = 1.0 * (1-strength) + direct[2] * strength
 	direct[3] = 1.0 * (1-strength) + direct[3] * strength
 	
-	local ambient = {direct[1], direct[2], direct[3], 0.25}
+	local ambient = {direct[1], direct[2], direct[3], 0.15 + direct[4]*0.15}
 	
 	return direct, ambient
+end
+
+function lib.generateMipMaps(self, path)
+	local dir, filename, filetyp = string.match(path, "(.-)([^\\/]-%.?([^%.\\/]*))$")
+	filename = filename:sub(1, #filename-#filetyp - (#filetyp > 0 and 1 or 0))
+	
+	love.filesystem.createDirectory(dir)
+	
+	love.graphics.push()
+	love.graphics.reset()
+	
+	local img = love.graphics.newImage(path)
+	local x, y = img:getWidth(), img:getHeight()
+	local i = 0
+	while x > 1 or y > 1 do
+		x = math.max(1, math.floor(x/2))
+		y = math.max(1, math.floor(y/2))
+		i = i + 1
+		
+		local canv = love.graphics.newCanvas(x, y)
+		love.graphics.setCanvas(canv)
+		img:setFilter("nearest")
+		love.graphics.draw(img, 0, 0, 0, 0.5 ^ i)
+		img:setFilter("linear")
+		love.graphics.draw(img, 0, 0, 0, 0.5 ^ i)
+		love.graphics.setCanvas()
+		
+		canv:newImageData():encode("png", dir .. filename .. "_" .. i .. ".png")
+	end
+	
+	love.graphics.pop()
 end

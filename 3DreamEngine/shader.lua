@@ -114,8 +114,15 @@ function lib.loadShader(self)
 			extern vec3 ambient;
 			extern mat3 rotate;
 			
+			]] .. (variant == "_wind" and "extern float wind;" or "") .. [[
+			
 			vec4 position(mat4 transform_projection, vec4 vertex_position) {
-				pos = (vertex_position * transform);
+				]] .. (variant == "_wind" and [[
+				pos = (vec4(vertex_position.xyz, 1.0) + vec4((cos(vertex_position.x*0.25+wind)+cos(vertex_position.z*4.0+vertex_position.y+wind*2.0)) * vertex_position.a * 0.2, 0.0, 0.0, 0.0)) * transform;
+				]] or [[
+				pos = vertex_position * transform;
+				]]) .. [[
+				
 				normal = (VertexTexCoord.rgb - vec3(0.5)) * 2.0 * rotate;
 				]] .. (self.reflections_enabled and "normalCam = normal * cam3;;" or "") .. [[
 				
@@ -156,12 +163,19 @@ function lib.loadShader(self)
 			extern vec3 ambient;
 			extern mat3 rotate;
 			
+			]] .. (variant == "_wind" and "extern float wind;" or "") .. [[
+			
 			extern vec3 lightPos[]].. self.lighting_max .. [[];
 			extern vec4 lightColor[]].. self.lighting_max .. [[];
 			int lightCount = ]] .. self.lighting_max .. [[;
 			
 			vec4 position(mat4 transform_projection, vec4 vertex_position) {
-				vec4 pos = (vertex_position * transform);
+				]] .. (variant == "_wind" and [[
+				vec4 pos = (vec4(vertex_position.xyz, 1.0) + vec4((cos(vertex_position.x*0.25+wind)+cos(vertex_position.z*4.0+vertex_position.y+wind*2.0)) * vertex_position.a * 0.2, 0.0, 0.0, 0.0)) * transform;
+				]] or [[
+				vec4 pos = vertex_position * transform;
+				]]) .. [[
+				
 				vec3 normal = (VertexTexCoord.rgb - vec3(0.5)) * 2.0 * rotate;
 				]] .. (self.reflections_enabled and "normalCam = normal * cam3;;" or "") .. [[
 				
@@ -213,13 +227,11 @@ function lib.loadShader(self)
 			extern vec3 ambient;
 			extern mat3 rotate;
 			
+			]] .. (variant == "_wind" and "extern float wind;" or "") .. [[
+			
 			extern vec3 lightPos[]].. self.lighting_max .. [[];
 			extern vec4 lightColor[]].. self.lighting_max .. [[];
 			int lightCount = ]] .. self.lighting_max .. [[;
-			
-			]] .. (variant == "_wind" and [[
-			extern float wind;
-			]] or "") .. [[
 			
 			vec4 position(mat4 transform_projection, vec4 vertex_position) {
 				]] .. (variant == "_wind" and [[
@@ -289,8 +301,15 @@ function lib.loadShader(self)
 			extern vec3 ambient;
 			extern mat3 rotate;
 			
+			]] .. (variant == "_wind" and "extern float wind;" or "") .. [[
+			
 			vec4 position(mat4 transform_projection, vec4 vertex_position) {
-				pos = (vertex_position * transform);
+				]] .. (variant == "_wind" and [[
+				pos = (vec4(vertex_position.xyz, 1.0) + vec4((cos(vertex_position.x*0.25+wind)+cos(vertex_position.z*4.0+vertex_position.y+wind*2.0)) * vertex_position.a * 0.2, 0.0, 0.0, 0.0)) * transform;
+				]] or [[
+				pos = vertex_position * transform;
+				]]) .. [[
+				
 				normal = (VertexColor.rgb - vec3(0.5)) * 2.0 * rotate;
 				]] .. (self.reflections_enabled and "normalCam = normal * cam3;;" or "") .. [[
 				
@@ -349,8 +368,15 @@ function lib.loadShader(self)
 			extern vec3 ambient;
 			extern mat3 rotate;
 			
+			]] .. (variant == "_wind" and "extern float wind;" or "") .. [[
+			
 			vec4 position(mat4 transform_projection, vec4 vertex_position) {
-				pos = (vertex_position * transform);
+				]] .. (variant == "_wind" and [[
+				pos = (vec4(vertex_position.xyz, 1.0) + vec4((cos(vertex_position.x*0.25+wind)+cos(vertex_position.z*4.0+vertex_position.y+wind*2.0)) * vertex_position.a * 0.2, 0.0, 0.0, 0.0)) * transform;
+				]] or [[
+				pos = vertex_position * transform;
+				]]) .. [[
+				
 				normal = (VertexColor.rgb - vec3(0.5)) * 2.0 * rotate;
 				specular = VertexColor.a;
 				]] .. (self.reflections_enabled and "normalCam = normal * cam3;;" or "") .. [[
@@ -388,12 +414,19 @@ function lib.loadShader(self)
 			extern vec3 ambient;
 			extern mat3 rotate;
 			
+			]] .. (variant == "_wind" and "extern float wind;" or "") .. [[
+			
 			extern vec3 lightPos[]].. self.lighting_max .. [[];
 			extern vec4 lightColor[]].. self.lighting_max .. [[];
 			int lightCount = ]] .. self.lighting_max .. [[;
 			
 			vec4 position(mat4 transform_projection, vec4 vertex_position) {
-				vec4 pos = (vertex_position * transform);
+				]] .. (variant == "_wind" and [[
+				vec4 pos = (vec4(vertex_position.xyz, 1.0) + vec4((cos(vertex_position.x*0.25+wind)+cos(vertex_position.z*4.0+vertex_position.y+wind*2.0)) * vertex_position.a * 0.2, 0.0, 0.0, 0.0)) * transform;
+				]] or [[
+				vec4 pos = vertex_position * transform;
+				]]) .. [[
+				
 				vec3 normal = (VertexColor.rgb - vec3(0.5)) * 2.0 * rotate;
 				]] .. (self.reflections_enabled and "normalCam = normal * cam3;;" or "") .. [[
 				
@@ -428,7 +461,11 @@ function lib.loadShader(self)
 			#ifdef PIXEL
 			uniform Image MainTex;
 			void effect() {
-				love_Canvases[0] = VaryingColor * Texel(MainTex, VaryingTexCoord.xy);
+				vec4 o = Texel(MainTex, VaryingTexCoord.xy);
+				if (o.a < 1.0) {
+					discard;
+				}
+				love_Canvases[0] = VaryingColor * o;
 				]] .. (self.AO_enabled and "love_Canvases[1] = vec4(depth, 0.0, 0.0, 1.0);" or "") .. [[
 				]] .. (self.reflections_enabled and "love_Canvases[2] = vec4(normalCam*0.5 + vec3(0.5), 1.0);" or "") .. [[
 			}
@@ -444,8 +481,15 @@ function lib.loadShader(self)
 			extern vec3 ambient;
 			extern mat3 rotate;
 			
+			]] .. (variant == "_wind" and "extern float wind;" or "") .. [[
+			
 			vec4 position(mat4 transform_projection, vec4 vertex_position) {
-				vec4 pos = (vertex_position * transform);
+				]] .. (variant == "_wind" and [[
+				vec4 pos = (vec4(vertex_position.xyz, 1.0) + vec4((cos(vertex_position.x*0.25+wind)+cos(vertex_position.z*4.0+vertex_position.y+wind*2.0)) * vertex_position.a * 0.2, 0.0, 0.0, 0.0)) * transform;
+				]] or [[
+				vec4 pos = vertex_position * transform;
+				]]) .. [[
+				
 				vec3 normal = (VertexColor.rgb - vec3(0.5)) * 2.0 * rotate;
 				]] .. (self.reflections_enabled and "normalCam = normal * cam3;;" or "") .. [[
 				

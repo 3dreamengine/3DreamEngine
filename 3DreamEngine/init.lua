@@ -230,7 +230,7 @@ function lib.prepare(self, c, noDepth)
 	
 	local projection = matrix{
 		{S,	0,	0,	0},
-		{0,	S/600*800,	0,	0},
+		{0,	S/love.graphics.getHeight()*love.graphics.getWidth(),	0,	0},
 		{0,	0,	-(f/(f-n)),	-1},
 		{0,	0,	-(f*n)/(f-n),	0},
 	}
@@ -354,6 +354,7 @@ function lib.draw(self, obj, x, y, z, sx, sy, sz, rx, ry, rz)
 		local shaderName_1 = (s.material.tex_diffuse and "textured" or "flat") .. (s.shader == "wind" and "_wind" or "")
 		local shaderName_2 = self.lighting_totalPower > 0 and ((s.material.tex_diffuse and "textured" or "flat") .. "_light") .. (s.shader == "wind" and "_wind" or "")
 		local shaderName_3 = self.pixelPerfect and self.lighting_totalPower > 0 and ((s.material.tex_diffuse and "textured" or "flat") .. "_light_pixel") .. (s.shader == "wind" and "_wind" or "")
+		
 		local shaderName
 		if self.shaders[shaderName_3] then
 			shaderName = shaderName_3
@@ -413,7 +414,7 @@ function lib.present(self)
 		for shaderName, s in pairs(self.drawTable) do
 			local shader = self.shaders[shaderName]
 			love.graphics.setShader(shader)
-			lib.stats.perShader[shaderName] = 0
+			if step == 1 then lib.stats.perShader[shaderName] = 0 end
 			
 			--lighting
 			if shaderName:find("light") then
@@ -472,57 +473,59 @@ function lib.present(self)
 			end
 			lib.stats.shadersInUse = lib.stats.shadersInUse + 0.5
 		end
-	end
-	
-	--sky
-	if self.sky then
-		local transform = matrix{
-			{50, 0, 0, 0},
-			{0, 50, 0, 0},
-			{0, 0, 50, 0},
-			{0, 0, 0, 1},
-		}
 		
-		love.graphics.setDepthMode("less", false)
-		love.graphics.setCanvas({self.canvas, depthstencil = self.canvas_depth})
-		
-		local timeFac = math.cos(self.dayTime*math.pi*2)*0.5+0.5
-		local color = self:getDayLight(self.dayTime, 0.2)
-		color[4] = 1.0
-		
-		if self.night then
-			love.graphics.setShader(self.shaderSkyNight)
-			self.shaderSkyNight:send("cam", self.shaderVars_cam * transform)
-			self.shaderSkyNight:send("color", color)
-			self.shaderSkyNight:send("time", timeFac)
-			love.graphics.draw(self.object_sky.objects.Cube.mesh)
-		else
-			love.graphics.setShader(self.shaderSky)
-			self.shaderSky:send("cam", self.shaderVars_cam * transform)
-			self.shaderSky:send("color", color)
-			love.graphics.draw(self.object_sky.objects.Cube.mesh)
+		if step == 1 then
+			--sky
+			if self.sky then
+				local transform = matrix{
+					{50, 0, 0, 0},
+					{0, 50, 0, 0},
+					{0, 0, 50, 0},
+					{0, 0, 0, 1},
+				}
+				
+				love.graphics.setDepthMode("less", false)
+				love.graphics.setCanvas({self.canvas, depthstencil = self.canvas_depth})
+				
+				local timeFac = 1.0 - (math.cos(self.dayTime*math.pi*2)*0.5+0.5)
+				local color = self:getDayLight(self.dayTime, 0.25)
+				color[4] = 1.0
+				
+				if self.night then
+					love.graphics.setShader(self.shaderSkyNight)
+					self.shaderSkyNight:send("cam", self.shaderVars_cam * transform)
+					self.shaderSkyNight:send("color", color)
+					self.shaderSkyNight:send("time", timeFac)
+					love.graphics.draw(self.object_sky.objects.Cube.mesh)
+				else
+					love.graphics.setShader(self.shaderSky)
+					self.shaderSky:send("cam", self.shaderVars_cam * transform)
+					self.shaderSky:send("color", color)
+					love.graphics.draw(self.object_sky.objects.Cube.mesh)
+				end
+			end
+			
+			--clouds
+			if self.clouds then
+				local transform = matrix{
+					{100, 0, 0, 0},
+					{0, 100, 0, 0},
+					{0, 0, 100, 0},
+					{0, 100, 0, 1},
+				}
+				
+				love.graphics.setDepthMode("less", false)
+				love.graphics.setCanvas({self.canvas, depthstencil = self.canvas_depth})
+				love.graphics.setShader(self.shaderCloud)
+				
+				self.shaderCloud:send("density", self.cloudDensity)
+				self.shaderCloud:send("time", love.timer.getTime() / 1000)
+				self.shaderCloud:send("transform", transform)
+				self.shaderCloud:send("cam", self.shaderVars_cam)
+				
+				love.graphics.draw(self.object_clouds.objects.Cube.mesh)
+			end
 		end
-	end
-	
-	--clouds
-	if self.clouds then
-		local transform = matrix{
-			{100, 0, 0, 0},
-			{0, 100, 0, 0},
-			{0, 0, 100, 0},
-			{0, 100, 0, 1},
-		}
-		
-		love.graphics.setDepthMode("less", false)
-		love.graphics.setCanvas({self.canvas, depthstencil = self.canvas_depth})
-		love.graphics.setShader(self.shaderCloud)
-		
-		self.shaderCloud:send("density", self.cloudDensity)
-		self.shaderCloud:send("time", love.timer.getTime() / 1000)
-		self.shaderCloud:send("transform", transform)
-		self.shaderCloud:send("cam", self.shaderVars_cam)
-		
-		love.graphics.draw(self.object_clouds.objects.Cube.mesh)
 	end
 	
 	love.graphics.setDepthMode()

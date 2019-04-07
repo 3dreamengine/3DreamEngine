@@ -15,7 +15,24 @@ function lib.loadTexture(self, name, path)
 		self.root .. "/missing.png"
 	}) do
 		if love.filesystem.getInfo(path) then
-			local t = love.graphics.newImage(path, {mipmaps = true})
+			local t
+			local mipMap = path:sub(1, #path-4) .. "_1" .. path:sub(#path-3)
+			if love.filesystem.getInfo(mipMap) then
+				local maps = {path}
+				for i = 1, 16 do
+					local mipMap = path:sub(1, #path-4) .. "_" .. i .. path:sub(#path-3)
+					if love.filesystem.getInfo(mipMap) then
+						maps[#maps+1] = mipMap
+					else
+						break
+					end
+				end
+				t = love.graphics.newImage(maps, {mipmaps = maps})
+				t:setMipmapFilter("nearest")
+				t:setFilter("nearest")
+			else
+				t = love.graphics.newImage(path, {mipmaps = true})
+			end
 			t:setWrap("repeat")
 			return t
 		end
@@ -103,10 +120,8 @@ function lib.loadObject(self, name, splitMaterials, rasterMargin, forceTextured,
 				elseif v[1] == "add" then
 					local o = self:loadObject(path .. "/" .. v[2], false, false, false, true)
 					for d,s in pairs(o.objects) do
-						o = s
-						break
+						table.insert(mat.particleSystems[#mat.particleSystems].objects, {object = s, amount = tonumber(v[3]) or 10})
 					end
-					table.insert(mat.particleSystems[#mat.particleSystems].objects, {object = o, amount = tonumber(v[3]) or 10})
 				elseif v[1] == "shader" then
 					mat.particleSystems[#mat.particleSystems].shader = v[2]
 				elseif v[1] == "shaderInfo" then
@@ -115,6 +130,8 @@ function lib.loadObject(self, name, splitMaterials, rasterMargin, forceTextured,
 					mat.particleSystems[#mat.particleSystems].randomSize = {tonumber(v[2]), tonumber(v[3])}
 				elseif v[1] == "randomRotation" then
 					mat.particleSystems[#mat.particleSystems].randomRotation = v[2] == "true"
+				elseif v[1] == "randomDistance" then
+					mat.particleSystems[#mat.particleSystems].randomDistance = tonumber(v[2]) or 0.0
 				elseif v[1] == "normal" then
 					mat.particleSystems[#mat.particleSystems].normal = tonumber(v[2])
 				end
@@ -224,16 +241,18 @@ function lib.loadObject(self, name, splitMaterials, rasterMargin, forceTextured,
 					name = s.name .. "_particleSystem_" .. i,
 					particleSystem = true,
 					noBackFaceCulling = true,
-					material = v.objects[1].material or obj.materials.None,
+					material = v.objects[1].object.material or obj.materials.None,
 					shader = v.shader,
 				}
+				
 				local po = obj.objects[s.name .. "_particleSystem_" .. i]
 				
 				for _,o in ipairs(v.objects) do
+					local amount = o.amount / #v.objects
 					for _,ob in pairs(obj.objects) do
 						if not ob.particleSystem then
 							for _,f in ipairs(ob.faces) do
-								if ob.final[f[1]][4] == s then
+								if ob.final[f[1]][4] == s and (amount >= 1 or math.random() < amount) then
 									local v1 = ob.final[f[1]][1]
 									local v2 = ob.final[f[2]][1]
 									local v3 = ob.final[f[3]][1]
@@ -260,8 +279,27 @@ function lib.loadObject(self, name, splitMaterials, rasterMargin, forceTextured,
 									local s = (a+b+c)/2
 									local area = math.sqrt(s*(s-a)*(s-b)*(s-c))
 									
+									local rotZ = math.asin(n[1] / math.sqrt(n[1]^2+n[2]^2))
+									local rotX = math.asin(n[3] / math.sqrt(n[2]^2+n[3]^2))
+									
+									local c = math.cos(rotZ)
+									local s = math.sin(rotZ)
+									rotZ = matrix{
+										{c, s, 0},
+										{-s, c, 0},
+										{0, 0, 1},
+									}
+									
+									local c = math.cos(rotX)
+									local s = math.sin(rotX)
+									rotX = matrix{
+										{1, 0, 0},
+										{0, c, -s},
+										{0, s, c},
+									}
+									
 									--add object to particle system object
-									for i = 1, math.floor(area*o.amount+math.random()) do
+									for i = 1, math.floor(area*math.max(1, amount)+math.random()) do
 										--location on the plane
 										local f1 = math.random()
 										local f2 = math.random()
@@ -276,17 +314,7 @@ function lib.loadObject(self, name, splitMaterials, rasterMargin, forceTextured,
 										local z = v1[3]*f1 + v2[3]*f2 + v3[3]*f3
 										
 										--rotation matrix
-										local rotZ = math.asin(n[1] / math.sqrt(n[1]^2+n[2]^2))
-										local rotX = math.asin(n[3] / math.sqrt(n[2]^2+n[3]^2))
 										local rotY = v.randomRotation and math.random()*math.pi*2 or 0
-										
-										local c = math.cos(rotZ)
-										local s = math.sin(rotZ)
-										rotZ = matrix{
-											{c, s, 0},
-											{-s, c, 0},
-											{0, 0, 1},
-										}
 										
 										local c = math.cos(rotY)
 										local s = math.sin(rotY)
@@ -294,14 +322,6 @@ function lib.loadObject(self, name, splitMaterials, rasterMargin, forceTextured,
 											{c, 0, -s},
 											{0, 1, 0},
 											{s, 0, c},
-										}
-										
-										local c = math.cos(rotX)
-										local s = math.sin(rotX)
-										rotX = matrix{
-											{1, 0, 0},
-											{0, c, -s},
-											{0, s, c},
 										}
 										
 										local sc = math.random() * (v.randomSize[2] - v.randomSize[1]) + v.randomSize[1]
@@ -312,6 +332,14 @@ function lib.loadObject(self, name, splitMaterials, rasterMargin, forceTextured,
 										}
 										
 										local res = rotX * rotY * rotZ * scale
+										
+										if v.randomDistance then
+											local vn = res * (matrix{{0, 1, 0}}^"T")
+											local l = math.sqrt(vn[1][1]^2 + vn[2][1]^2 + vn[3][1]^2)
+											x = x + vn[1][1] * v.randomDistance * math.random() / l
+											y = y + vn[2][1] * v.randomDistance * math.random() / l
+											z = z + vn[3][1] * v.randomDistance * math.random() / l
+										end
 										
 										--insert finals and faces
 										local lastIndex = #po.final
@@ -342,6 +370,8 @@ function lib.loadObject(self, name, splitMaterials, rasterMargin, forceTextured,
 						end
 					end
 				end
+				
+				print(s.name .. ": " .. #po.faces .. " particle-faces") io.flush()
 			end
 		end
 	end

@@ -1,27 +1,31 @@
 --load the 3D lib
-l3d = require("3DreamEngine")
+dream = require("3DreamEngine")
 love.window.setTitle("Castle")
 
 --settings
-l3d.pixelPerfect = true
-l3d.objectDir = "examples/first person game/"
+dream.pixelPerfect = true
+dream.objectDir = "examples/first person game/"
 
-l3d.AO_enabled = true		--ambient occlusion?
-l3d.AO_strength = 0.75		--blend strength
-l3d.AO_quality = 24		--samples per pixel (8-32 recommended)
-l3d.AO_quality_smooth = 2	--smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
-l3d.AO_resolution = 0.5		--resolution factor
+dream.AO_enabled = true		--ambient occlusion?
+dream.AO_strength = 0.75		--blend strength
+dream.AO_quality = 24		--samples per pixel (8-32 recommended)
+dream.AO_quality_smooth = 2	--smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
+dream.AO_resolution = 0.5		--resolution factor
 
-l3d.lighting_enabled = false
+dream.lighting_enabled = false
 
-l3d.cloudDensity = 0.6
-l3d.clouds = love.graphics.newImage(l3d.objectDir .. "clouds.jpg")
-l3d.sky = love.graphics.newImage(l3d.objectDir .. "sky.jpg")
-l3d.night = love.graphics.newImage(l3d.objectDir .. "night.jpg")
+dream.cloudDensity = 0.6
+dream.clouds = love.graphics.newImage(dream.objectDir .. "clouds.jpg")
+dream.sky = love.graphics.newImage(dream.objectDir .. "sky.jpg")
+dream.night = love.graphics.newImage(dream.objectDir .. "night.jpg")
 
-l3d:init()
+dream:init()
 
-castle = l3d:loadObject("objects/scene", true)
+--generate mipmaps from the leaves texture
+--dream:generateMipMaps(dream.objectDir .. "objects/leaves.png")
+--dream:generateMipMaps(dream.objectDir .. "objects/grass.png")
+
+castle = dream:loadObject("objects/scene", true)
 love.graphics.setBackgroundColor(128/255, 218/255, 235/255)
 
 math.randomseed(os.time())
@@ -42,24 +46,24 @@ player = {
 }
 
 function love.draw()
-	l3d.color_sun, l3d.color_ambient = l3d:getDayLight()
-	l3d.dayTime = love.timer.getTime() * 0.05
+	dream.color_sun, dream.color_ambient = dream:getDayLight()
+	dream.dayTime = love.timer.getTime() * 0.05
 	
-	l3d:prepare()
+	dream:prepare()
 
-	l3d:draw(castle, 0, 0, 0)
+	dream:draw(castle, 0, 0, 0)
 
-	l3d:present()
+	dream:present()
 	
 	if love.keyboard.isDown(".") then
 		local shadersInUse = ""
-		for d,s in pairs(l3d.stats.perShader) do
+		for d,s in pairs(dream.stats.perShader) do
 			shadersInUse = shadersInUse .. d .. ": " .. s .. "x  "
 		end
 		love.graphics.print("Stats" ..
-			"\ndifferent shaders: " .. l3d.stats.shadersInUse ..
-			"\ndifferent materials: " .. l3d.stats.materialDraws ..
-			"\ndraws: " .. l3d.stats.draws ..
+			"\ndifferent shaders: " .. dream.stats.shadersInUse ..
+			"\ndifferent materials: " .. dream.stats.materialDraws ..
+			"\ndraws: " .. dream.stats.draws ..
 			"\nshaders: " .. shadersInUse, 15, 500)
 		end
 end
@@ -67,8 +71,8 @@ end
 function love.mousemoved(_, _, x, y)
 	local speedH = 0.005
 	local speedV = 0.005
-	l3d.cam.ry = l3d.cam.ry - x * speedH
-	l3d.cam.rx = math.max(-math.pi/2, math.min(math.pi/2, l3d.cam.rx + y * speedV))
+	dream.cam.ry = dream.cam.ry - x * speedH
+	dream.cam.rx = math.max(-math.pi/2, math.min(math.pi/2, dream.cam.rx + y * speedV))
 end
 
 --collision not implemented yet
@@ -118,20 +122,20 @@ function love.update(dt)
 	end
 	
 	if d("w") then
-		player.ax = player.ax + math.cos(-l3d.cam.ry-math.pi/2) * speed
-		player.az = player.az + math.sin(-l3d.cam.ry-math.pi/2) * speed
+		player.ax = player.ax + math.cos(-dream.cam.ry-math.pi/2) * speed
+		player.az = player.az + math.sin(-dream.cam.ry-math.pi/2) * speed
 	end
 	if d("s") then
-		player.ax = player.ax + math.cos(-l3d.cam.ry+math.pi-math.pi/2) * speed
-		player.az = player.az + math.sin(-l3d.cam.ry+math.pi-math.pi/2) * speed
+		player.ax = player.ax + math.cos(-dream.cam.ry+math.pi-math.pi/2) * speed
+		player.az = player.az + math.sin(-dream.cam.ry+math.pi-math.pi/2) * speed
 	end
 	if d("a") then
-		player.ax = player.ax + math.cos(-l3d.cam.ry-math.pi/2-math.pi/2) * speed
-		player.az = player.az + math.sin(-l3d.cam.ry-math.pi/2-math.pi/2) * speed
+		player.ax = player.ax + math.cos(-dream.cam.ry-math.pi/2-math.pi/2) * speed
+		player.az = player.az + math.sin(-dream.cam.ry-math.pi/2-math.pi/2) * speed
 	end
 	if d("d") then
-		player.ax = player.ax + math.cos(-l3d.cam.ry+math.pi/2-math.pi/2) * speed
-		player.az = player.az + math.sin(-l3d.cam.ry+math.pi/2-math.pi/2) * speed
+		player.ax = player.ax + math.cos(-dream.cam.ry+math.pi/2-math.pi/2) * speed
+		player.az = player.az + math.sin(-dream.cam.ry+math.pi/2-math.pi/2) * speed
 	end
 	if d("space") then
 		player.ay = player.ay + speed
@@ -146,9 +150,9 @@ function love.update(dt)
 	player.az = player.az * (1 - dt*3)
 	
 	--mount cam
-	l3d.cam.x = player.x
-	l3d.cam.y = player.y+0.3
-	l3d.cam.z = player.z
+	dream.cam.x = player.x
+	dream.cam.y = player.y+0.3
+	dream.cam.z = player.z
 end
 
 function love.keypressed(key)
@@ -179,5 +183,5 @@ function love.keypressed(key)
 end
 
 function love.resize()
-	l3d:init()
+	dream:init()
 end
