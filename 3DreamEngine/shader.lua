@@ -131,7 +131,7 @@ function lib.loadShader(self)
 				colorRaw = VertexColor;
 				specular = VertexTexCoord.a;
 				
-				vec4 vPos = cam * pos * vec4(1, -1, 1, 1);
+				vec4 vPos = cam * pos;
 				]] .. (self.AO_enabled and "depth = vPos.z;" or "") .. [[
 				return vPos + vec4(0, 0, 0.75, 0);
 			}
@@ -195,7 +195,7 @@ function lib.loadShader(self)
 					}
 				}
 				
-				vec4 vPos = cam * pos * vec4(1, -1, 1, 1);
+				vec4 vPos = cam * pos;
 				]] .. (self.AO_enabled and "depth = vPos.z;" or "") .. [[
 				return vPos + vec4(0, 0, 0.75, 0);
 			}
@@ -245,7 +245,7 @@ function lib.loadShader(self)
 				
 				]] .. (fragments.sun_flat) .. [[
 				
-				vec4 vPos = cam * pos * vec4(1, -1, 1, 1);
+				vec4 vPos = cam * pos;
 				]] .. (self.AO_enabled and "depth = vPos.z;" or "") .. [[
 				return vPos + vec4(0, 0, 0.75, 0);
 			}
@@ -315,7 +315,7 @@ function lib.loadShader(self)
 				
 				]] .. (fragments.sun) .. [[
 				
-				vec4 vPos = cam * pos * vec4(1, -1, 1, 1);
+				vec4 vPos = cam * pos;
 				]] .. (self.AO_enabled and "depth = vPos.z;" or "") .. [[
 				return vPos + vec4(0, 0, 0.75, 0);
 			}
@@ -383,7 +383,7 @@ function lib.loadShader(self)
 				
 				]] .. (fragments.sun) .. [[
 				
-				vec4 vPos = cam * pos * vec4(1, -1, 1, 1);
+				vec4 vPos = cam * pos;
 				]] .. (self.AO_enabled and "depth = vPos.z;" or "") .. [[
 				return vPos + vec4(0, 0, 0.75, 0);
 			}
@@ -446,7 +446,7 @@ function lib.loadShader(self)
 					}
 				}
 				
-				vec4 vPos = cam * pos * vec4(1, -1, 1, 1);
+				vec4 vPos = cam * pos;
 				]] .. (self.AO_enabled and "depth = vPos.z;" or "") .. [[
 				return vPos + vec4(0, 0, 0.75, 0);
 			}
@@ -495,7 +495,7 @@ function lib.loadShader(self)
 				
 				]] .. (fragments.sun) .. [[
 				
-				vec4 vPos = cam * pos * vec4(1, -1, 1, 1);
+				vec4 vPos = cam * pos;
 				]] .. (self.AO_enabled and "depth = vPos.z;" or "") .. [[
 				return vPos + vec4(0, 0, 0.75, 0);
 			}
@@ -556,7 +556,7 @@ function lib.loadShader(self)
 		
 		vec4 position(mat4 transform_projection, vec4 vertex_position) {
 			dist = vertex_position.y;
-			return cam * (vertex_position * transform) * vec4(1, -1, 1, 1);
+			return cam * (vertex_position * transform);
 		}
 		#endif
 	]])
@@ -574,7 +574,7 @@ function lib.loadShader(self)
 		#ifdef VERTEX
 		extern mat4 cam;
 		vec4 position(mat4 transform_projection, vec4 vertex_position) {
-			return cam * vertex_position * vec4(1, -1, 1, 1);
+			return cam * vertex_position;
 		}
 		#endif
 	]])
@@ -590,7 +590,7 @@ function lib.loadShader(self)
 		#ifdef VERTEX
 		extern mat4 cam;
 		vec4 position(mat4 transform_projection, vec4 vertex_position) {
-			return cam * vertex_position * vec4(1, -1, 1, 1);
+			return cam * vertex_position;
 		}
 		#endif
 	]])
