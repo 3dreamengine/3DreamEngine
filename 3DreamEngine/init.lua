@@ -89,6 +89,13 @@ require((...) .. "/shader")
 require((...) .. "/loader")
 require((...) .. "/present")
 require((...) .. "/collision")
+
+--loader
+lib.loader = { }
+for d,s in pairs(love.filesystem.getDirectoryItems((...) .. "/loader")) do
+	require((...) .. "/loader/" .. s:sub(1, #s-4))
+end
+
 matrix = require((...) .. "/matrix")
 _3DreamEngine = nil
 
@@ -122,6 +129,7 @@ lib.lighting_max = 4
 
 lib.reflections_enabled = false
 	
+lib.object_bone = lib:loadObject(lib.root .. "/objects/bone")
 lib.object_light = lib:loadObject(lib.root .. "/objects/light")
 lib.object_clouds = lib:loadObject(lib.root .. "/objects/clouds_high", false, false, true)
 lib.object_sky = lib:loadObject(lib.root .. "/objects/sky", false, false, true)

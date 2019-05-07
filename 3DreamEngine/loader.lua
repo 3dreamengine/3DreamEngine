@@ -63,164 +63,23 @@ function lib.loadObject(self, name, splitMaterials, rasterMargin, forceTextured,
 				faces = { },
 			}
 		},
-		raster = rasterMargin and true,
+		splitMaterials = splitMaterials,
+		rasterMargin = rasterMargin
 	}
 	
 	obj.objects.default.material = obj.materials.None
 	
-	--store vertices, normals and texture coordinates
-	local vertices = { }
-	local normals = { }
-	local texVertices = { }
-	
-	--materials
-	if love.filesystem.getInfo(self.objectDir .. name .. ".mtl") or love.filesystem.getInfo(name .. ".mtl") then
-		local material = obj.materials.None
-		for l in (love.filesystem.getInfo(self.objectDir .. name .. ".mtl") and love.filesystem.lines(self.objectDir .. name .. ".mtl") or love.filesystem.lines(name .. ".mtl")) do
-			local v = self:split(l, " ")
-			if v[1] == "newmtl" then
-				obj.materials[l:sub(8)] = {
-					color = {1.0, 1.0, 1.0, 1.0},
-					specular = 0.5,
-					name = l:sub(8),
-				}
-				material = obj.materials[l:sub(8)]
-			elseif v[1] == "Ks" then
-				material.specular = tonumber(v[2])
-			elseif v[1] == "Kd" then
-				material.color[1] = tonumber(v[2])
-				material.color[2] = tonumber(v[3])
-				material.color[3] = tonumber(v[4])
-			elseif v[1] == "d" then
-				material.color[4] = tonumber(v[2])
-			elseif v[1] == "map_Kd" then
-				material.tex_diffuse = self:loadTexture(l:sub(8), path)
-			elseif v[1] == "map_Ks" then
-				material.tex_spec = self:loadTexture(l:sub(8), path)
-			elseif v[1] == "map_Kn" then
-				material.tex_normal = self:loadTexture(l:sub(8), path)
-			end
-		end
-	end
-	
-	--properties
-	if love.filesystem.getInfo(self.objectDir .. name .. ".3de") or love.filesystem.getInfo(name .. ".3de") then
-		local mat
-		for l in (love.filesystem.getInfo(self.objectDir .. name .. ".3de") and love.filesystem.lines(self.objectDir .. name .. ".3de") or love.filesystem.lines(name .. ".3de")) do
-			if l:sub(1, 1) ~= "#" then
-				local v = self:split(l, " ")
-				if v[1] == "mat" then
-					mat = obj.materials[l:sub(5)]
-					assert(mat, name .. ".3de, no material named " .. l:sub(5))
-				elseif v[1] == "new" then
-					if v[2] == "particleSystem" then
-						mat.particleSystems = mat.particleSystems or { }
-						mat.particleSystems[#mat.particleSystems+1] = {objects = { }, randomSize = {0.75, 1.25}, randomRotation = true, normal = 1.0}
-					end
-				elseif v[1] == "add" then
-					local o = self:loadObject(path .. "/" .. v[2], false, false, false, true)
-					for d,s in pairs(o.objects) do
-						table.insert(mat.particleSystems[#mat.particleSystems].objects, {object = s, amount = tonumber(v[3]) or 10})
-					end
-				elseif v[1] == "shader" then
-					mat.particleSystems[#mat.particleSystems].shader = v[2]
-				elseif v[1] == "shaderInfo" then
-					mat.particleSystems[#mat.particleSystems].shaderInfo = v[2]
-				elseif v[1] == "randomSize" then
-					mat.particleSystems[#mat.particleSystems].randomSize = {tonumber(v[2]), tonumber(v[3])}
-				elseif v[1] == "randomRotation" then
-					mat.particleSystems[#mat.particleSystems].randomRotation = v[2] == "true"
-				elseif v[1] == "randomDistance" then
-					mat.particleSystems[#mat.particleSystems].randomDistance = tonumber(v[2]) or 0.0
-				elseif v[1] == "normal" then
-					mat.particleSystems[#mat.particleSystems].normal = tonumber(v[2])
-				end
-			end
-		end
-	end
-	
-	--load object
-	local material = obj.materials.None
-	local blocked = false
-	local o = obj.objects.default
-	for l in (love.filesystem.getInfo(self.objectDir .. name .. ".obj") and love.filesystem.lines(self.objectDir .. name .. ".obj") or love.filesystem.lines(name .. ".obj")) do
-		local v = self:split(l, " ")
-		if not blocked then
-			if v[1] == "v" then
-				vertices[#vertices+1] = {tonumber(v[2]), tonumber(v[3]), -tonumber(v[4])}
-			elseif v[1] == "vn" then
-				normals[#normals+1] = {tonumber(v[2]), tonumber(v[3]), -tonumber(v[4])}
-			elseif v[1] == "vt" then
-				texVertices[#texVertices+1] = {tonumber(v[2]), 1-tonumber(v[3])}
-			elseif v[1] == "usemtl" then
-				material = obj.materials[l:sub(8)] or obj.materials.None
-				if splitMaterials and not rasterMargin then
-					local name = o.name .. "_" .. l:sub(8)
-					obj.objects[name] = obj.objects[name] or {
-						faces = { },
-						final = { },
-						name = o.name,
-						material = material,
-					}
-					o = obj.objects[name]
-				end
-			elseif v[1] == "f" then
-				if rasterMargin then
-					--split object, where 0|0|0 is the left-front-lower corner of the first object and every splitMargin is a new object with size 1.
-					--So each object must be within -margin to splitMargin-margin, a perfect cube will be 0|0|0 to 1|1|1
-					local objSize = 1
-					local margin = (rasterMargin-objSize)/2
-					local v2 = self:split(v[2], "/")
-					local x, y, z = vertices[tonumber(v2[1])][1], vertices[tonumber(v2[1])][2], vertices[tonumber(v2[1])][3]
-					local tx, ty, tz = math.floor((x+margin)/rasterMargin)+1, math.floor((z+margin)/rasterMargin)+1, math.floor((-y-margin)/rasterMargin)+2
-					if not obj.objects[tx] then obj.objects[tx] = { } end
-					if not obj.objects[tx][ty] then obj.objects[tx][ty] = { } end
-					if not obj.objects[tx][ty][tz] then obj.objects[tx][ty][tz] = {faces = { }, final = { }, material = material} end
-					o = obj.objects[tx][ty][tz]
-					o.tx = math.floor((x+margin)/rasterMargin)*rasterMargin + objSize/2
-					o.ty = math.floor((y+margin)/rasterMargin)*rasterMargin + objSize/2
-					o.tz = math.floor((z+margin)/rasterMargin)*rasterMargin + objSize/2
-					--print(tx, ty, tz, "|" .. x, y, z, "|" .. x - o.tx, y - o.ty, z - o.tz)
-				end
-				
-				--link material to object, used as draw order identifier
-				o.material = material
-				
-				--combine vertex and data into one
-				for i = 1, #v-1 do
-					local v2 = self:split(v[i+1]:gsub("//", "/0/"), "/")
-					o.final[#o.final+1] = {vertices[tonumber(v2[1])], texVertices[tonumber(v2[2])] or {0, 0}, normals[tonumber(v2[3])], material}
-				end
-				
-				if #v-1 == 3 then
-					--tris
-					o.faces[#o.faces+1] = {#o.final-0, #o.final-1, #o.final-2}
-				elseif #v-1 == 4 then
-					--quad
-					o.faces[#o.faces+1] = {#o.final-1, #o.final-2, #o.final-3}
-					o.faces[#o.faces+1] = {#o.final-0, #o.final-1, #o.final-3}
-				else
-					error("only tris and quads supported (got " .. (#v-1) .. " vertices)")
-				end
-			elseif v[1] == "o" then
-				local name = l:sub(3) .. (splitMaterials and ("_" .. material.name) or "")
-				obj.objects[name] = obj.objects[name] or {
-					faces = { },
-					final = { },
-					name = l:sub(3),
-					material = material,
-				}
-				o = obj.objects[name]
-			end
-		end
-		
-		--skip objects named as frame when splitMargin is enabled (frames are used as helper objects)
-		if v[1] == "o" and splitMargin then
-			if l:find("frame") then
-				blocked = true
-			else
-				blocked = false
-			end
+	--load files
+	--if two object files are available (.obj and .vox) it might crash, since it loads all
+	for _,typ in ipairs({
+		"mtl",
+		"obj",
+		"vox",
+		"3de",
+		"3db",
+	}) do
+		if love.filesystem.getInfo(self.objectDir .. name .. "." .. typ) or love.filesystem.getInfo(name .. "." .. typ) then
+			self.loader[typ](self, obj, name, path)
 		end
 	end
 	

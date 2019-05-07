@@ -17,7 +17,7 @@ function lib.present(self)
 	lib.stats.draws = 0
 	lib.stats.perShader = { }
 	
-	--sset canvas
+	--clear canvas
 	if self.AO_enabled then
 		if self.reflections_enabled then
 			love.graphics.setCanvas({self.canvas, self.canvas_z, self.canvas_normal, depthstencil = self.canvas_depth})
@@ -80,6 +80,17 @@ function lib.present(self)
 		self.shaderCloud:send("cam", self.shaderVars_cam)
 		
 		love.graphics.draw(self.object_clouds.objects.Cube.mesh)
+	end
+	
+	--set canvas
+	if self.AO_enabled then
+		if self.reflections_enabled then
+			love.graphics.setCanvas({self.canvas, self.canvas_z, self.canvas_normal, depthstencil = self.canvas_depth})
+		else
+			love.graphics.setCanvas({self.canvas, self.canvas_z, depthstencil = self.canvas_depth})
+		end
+	else
+		love.graphics.setCanvas({self.canvas, depthstencil = self.canvas_depth})
 	end
 	
 	--two steps, once for solid and once for transparent objects

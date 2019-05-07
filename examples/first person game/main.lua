@@ -6,18 +6,18 @@ love.window.setTitle("Castle")
 dream.pixelPerfect = true
 dream.objectDir = "examples/first person game/"
 
-dream.AO_enabled = true		--ambient occlusion?
-dream.AO_strength = 0.75		--blend strength
-dream.AO_quality = 24		--samples per pixel (8-32 recommended)
-dream.AO_quality_smooth = 2	--smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
-dream.AO_resolution = 0.5		--resolution factor
+dream.AO_enabled = true       --ambient occlusion?
+dream.AO_strength = 0.75      --blend strength
+dream.AO_quality = 24         --samples per pixel (8-32 recommended)
+dream.AO_quality_smooth = 0   --smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
+dream.AO_resolution = 1.0     --resolution factor
 
 dream.lighting_enabled = false
 
-dream.cloudDensity = 0.6
-dream.clouds = love.graphics.newImage(dream.objectDir .. "clouds.jpg")
-dream.sky = love.graphics.newImage(dream.objectDir .. "sky.jpg")
-dream.night = love.graphics.newImage(dream.objectDir .. "night.jpg")
+--dream.cloudDensity = 0.6
+--dream.clouds = love.graphics.newImage(dream.objectDir .. "clouds.jpg")
+--dream.sky = love.graphics.newImage(dream.objectDir .. "sky.jpg")
+--dream.night = love.graphics.newImage(dream.objectDir .. "night.jpg")
 
 dream:init()
 

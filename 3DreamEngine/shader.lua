@@ -466,7 +466,7 @@ function lib.loadShader(self)
 					discard;
 				}
 				love_Canvases[0] = VaryingColor * o;
-				]] .. (self.AO_enabled and "love_Canvases[1] = vec4(depth, 0.0, 0.0, 1.0);" or "") .. [[
+				]] .. (self.AO_enabled and "love_Canvases[1] = vec4(depth, 0.0, 0.0, " .. (variant == "_wind" and "0.0" or "1.0") .. ");" or "") .. [[
 				]] .. (self.reflections_enabled and "love_Canvases[2] = vec4(normalCam*0.5 + vec3(0.5), 1.0);" or "") .. [[
 			}
 			#endif
@@ -511,7 +511,7 @@ function lib.loadShader(self)
 			float sum = 0.0;
 			
 			float z = Texel(texture, tc).r;
-			if (z >= 255.0) {
+			if (z >= 250.0) {
 				return vec4(1.0);
 			}
 			
@@ -519,10 +519,12 @@ function lib.loadShader(self)
 				float r = Texel(texture, tc + samples[i].xy / (0.3+z*0.05)).r;
 				
 				//samples differences (but clamps it)
-				sum += clamp(z-r, -0.5, 0.5) * samples[i].z;
+				if (r < 250.0) {
+					sum += clamp((z-r), -0.25, 0.5) * samples[i].z;
+				}
 			}
 			
-			sum = pow(1.0 - sum / float(sampleCount) * 8.0, 2);
+			sum = pow(1.0 - sum / float(sampleCount) * (1.0/sqrt(z+1)) * 16.0, 2);
 			return vec4(sum, sum, sum, 1.0);
 		}
 	]])

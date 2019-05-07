@@ -3,7 +3,6 @@ dream = require("3DreamEngine")
 love.window.setTitle("Monkey Example")
 
 --settings
-dream.flat = true
 dream.objectDir = "examples/monkey/"
 
 dream.AO_enabled = true		--ambient occlusion?
