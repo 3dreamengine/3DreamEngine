@@ -12,10 +12,10 @@ dream.AO_quality = 24         --samples per pixel (8-32 recommended)
 dream.AO_quality_smooth = 2   --smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
 dream.AO_resolution = 0.75    --resolution factor
 
---dream.cloudDensity = 0.6
---dream.clouds = love.graphics.newImage(dream.objectDir .. "clouds.jpg")
---dream.sky = love.graphics.newImage(dream.objectDir .. "sky.jpg")
---dream.night = love.graphics.newImage(dream.objectDir .. "night.jpg")
+dream.cloudDensity = 0.6
+dream.clouds = love.graphics.newImage(dream.objectDir .. "clouds.jpg")
+dream.sky = love.graphics.newImage(dream.objectDir .. "sky.jpg")
+dream.night = love.graphics.newImage(dream.objectDir .. "night.jpg")
 
 dream:init()
 

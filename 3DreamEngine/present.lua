@@ -49,13 +49,13 @@ function lib.present(self)
 		
 		if self.night then
 			love.graphics.setShader(self.shaderSkyNight)
-			self.shaderSkyNight:send("cam", self.shaderVars_cam * transform)
+			self.shaderSkyNight:send("cam", self.shaderVars_transformProj * transform)
 			self.shaderSkyNight:send("color", color)
 			self.shaderSkyNight:send("time", timeFac)
 			love.graphics.draw(self.object_sky.objects.Cube.mesh)
 		else
 			love.graphics.setShader(self.shaderSky)
-			self.shaderSky:send("cam", self.shaderVars_cam * transform)
+			self.shaderSky:send("cam", self.shaderVars_transformProj * transform)
 			self.shaderSky:send("color", color)
 			love.graphics.draw(self.object_sky.objects.Cube.mesh)
 		end
@@ -77,7 +77,7 @@ function lib.present(self)
 		self.shaderCloud:send("density", self.cloudDensity)
 		self.shaderCloud:send("time", love.timer.getTime() / 1000)
 		self.shaderCloud:send("transform", transform)
-		self.shaderCloud:send("cam", self.shaderVars_cam)
+		self.shaderCloud:send("cam", self.shaderVars_transformProj)
 		
 		love.graphics.draw(self.object_clouds.objects.Cube.mesh)
 	end
