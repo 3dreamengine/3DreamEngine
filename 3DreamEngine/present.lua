@@ -100,86 +100,88 @@ function lib.present(self)
 		else
 			love.graphics.setDepthMode("less", step == 1)
 		end
-		for shaderName, s in pairs(self.drawTable) do
-			local shader = self.shaders[shaderName]
-			love.graphics.setShader(shader)
-			
+		for shaderInfo, s in pairs(self.drawTable) do
 			--lighting
-			if shaderName:find("light") then
-				local light = { }
-				local pos = { }
-				for i = 1, self.lighting_max do
-					pos[i] = {self.lighting[i][1], self.lighting[i][2], self.lighting[i][3]}
-					light[i] = {self.lighting[i][4] * self.lighting[i][7], self.lighting[i][5] * self.lighting[i][7], self.lighting[i][6] * self.lighting[i][7]}
-					light[i][4] = math.sqrt(light[i][1]^2 + light[i][2]^2 + light[i][3]^2)
+			local light = { }
+			local pos = { }
+			local count = 0
+			for d,s in ipairs(self.lighting) do
+				s.used = false
+			end
+			for i = 1, self.lighting_max do
+				local best
+				local bestV = 0
+				for d,s in ipairs(self.lighting) do
+					if not s.used then
+						local v = 1000 / (10+math.sqrt((s.x-self.currentCam.x)^2 + (s.y-self.currentCam.y)^2 + (s.z-self.currentCam.z)^2)) * s.importance * math.sqrt(s.r^2+s.g^2+s.b^2)
+						if v > bestV then
+							bestV = v
+							best = s
+						end
+					end
 				end
-				shader:send("lightColor", unpack(light))
-				shader:send("lightPos", unpack(pos))
+				if best then
+					best.used = true
+					light[#light+1] = {best.r, best.g, best.b, best.meter}
+					pos[#pos+1] = {best.x, best.y, best.z}
+					count = count + 1
+				else
+					break
+				end
+			end
+			
+			local shader = self:getShader(shaderInfo.typ, shaderInfo.variant, shaderInfo.normal, shaderInfo.specular, count)
+			love.graphics.setShader(shader.shader)
+			
+			if count > 0 then
+				shader.shader:send("lightColor", unpack(light))
+				shader.shader:send("lightPos", unpack(pos))
 			end
 			
 			--wind
-			if shaderName:find("wind") then
-				shader:send("wind", love.timer.getTime())
+			if shader.variant == "wind" then
+				shader.shader:send("wind", love.timer.getTime())
 			end
 			
-			--sun color and direction
-			shader:send("ambient", {self.color_ambient[1] * self.color_ambient[4], self.color_ambient[2] * self.color_ambient[4], self.color_ambient[3] * self.color_ambient[4], 1.0})
-			shader:send("sunColor", {self.color_sun[1] * self.color_sun[4], self.color_sun[2] * self.color_sun[4], self.color_sun[3] * self.color_sun[4], 1.0})
-			shader:send("sun", self.shaderVars_sun)
+			--ambient lighting
+			shader.shader:send("ambient", {self.color_ambient[1] * self.color_ambient[4], self.color_ambient[2] * self.color_ambient[4], self.color_ambient[3] * self.color_ambient[4], 1.0})
 			
 			--camera
-			shader:send("camV", self.shaderVars_camV)
-			shader:send("cam", self.shaderVars_cam)
-			if self.reflections_enabled then
-				shader:send("cam3", self.shaderVars_cam3)
+			if count > 0 then
+				shader.shader:send("viewPos", self.shaderVars_viewPos)
 			end
+			shader.shader:send("transformProj", self.shaderVars_transformProj)
 			
 			--for each material
 			for material, tasks in pairs(s) do
 				if step == 1 and material.color[4] == 1 or step == 2 and material.color[4] ~= 1 then
 					--diffuse texture already bound to mesh!
-					--set spec textures
-					if shaderName == "textured_light_pixel_spec" then
-						shader:send("tex_spec", s.tex_spec)
+					if shader.specular and count > 0 then
+						shader.shader:send("tex_specular", material.tex_specular or self.texture_missing)
 					end
+					if shader.normal and count > 0 then
+						shader.shader:send("tex_normal", material.tex_normal or self.texture_missing)
+					end
+					
+					shader.shader:send("alphaThreshold", material.alphaThreshold or 0.0)
 					
 					--draw objects
 					for i,v in pairs(tasks) do
-						love.graphics.setMeshCullMode(v[3].noBackFaceCulling and "none" or "back")
-						love.graphics.setColor(v[4], v[5], v[6])
+						love.graphics.setMeshCullMode(v[2].noBackFaceCulling and "none" or "back")
+						love.graphics.setColor(v[3], v[4], v[5])
 						
-						shader:send("transform", v[1])
-						shader:send("rotate", v[2])
+						shader.shader:send("transform", v[1])
 						
 						--final draw
-						love.graphics.draw(v[3].mesh)
+						love.graphics.draw(v[2].mesh)
 						
 						lib.stats.draws = lib.stats.draws + 1
-						lib.stats.perShader[shaderName] = (lib.stats.perShader[shaderName] or 0) + 1
+						lib.stats.perShader[shader] = (lib.stats.perShader[shader] or 0) + 1
 					end
 					lib.stats.materialDraws = lib.stats.materialDraws+ 1
 				end
 			end
 			lib.stats.shadersInUse = lib.stats.shadersInUse + 0.5
-		end
-	end
-	
-	--lines
-	if self.lineTable[1] then
-		love.graphics.setShader()
-		love.graphics.setDepthMode()
-		for d,s in ipairs(self.lineTable) do
-			love.graphics.setLineWidth(8)
-			love.graphics.setColor(s[3], s[4], s[5])
-			
-			local p1 = self.shaderVars_cam * matrix({s[1]})^"T"
-			local p2 = self.shaderVars_cam * matrix({s[2]})^"T"
-			
-			p1 = (p1^"T")[1]
-			p2 = (p2^"T")[1]
-			
-			love.graphics.line((p1[1]+1)*love.graphics.getWidth()/2, (p1[2]+1)*love.graphics.getHeight()/2,
-				(p2[1]+1)*love.graphics.getWidth()/2, (p2[2]+1)*love.graphics.getHeight()/2)
 		end
 	end
 	

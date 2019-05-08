@@ -9,10 +9,8 @@ dream.objectDir = "examples/first person game/"
 dream.AO_enabled = true       --ambient occlusion?
 dream.AO_strength = 0.75      --blend strength
 dream.AO_quality = 24         --samples per pixel (8-32 recommended)
-dream.AO_quality_smooth = 0   --smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
-dream.AO_resolution = 1.0     --resolution factor
-
-dream.lighting_enabled = false
+dream.AO_quality_smooth = 2   --smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
+dream.AO_resolution = 0.75    --resolution factor
 
 --dream.cloudDensity = 0.6
 --dream.clouds = love.graphics.newImage(dream.objectDir .. "clouds.jpg")
@@ -49,6 +47,9 @@ function love.draw()
 	dream.color_sun, dream.color_ambient = dream:getDayLight()
 	dream.dayTime = love.timer.getTime() * 0.05
 	
+	dream:resetLight()
+	dream:addLight(player.x, player.y, player.z, 1.0, 0.75, 0.1, 1.0 + love.math.noise(love.timer.getTime(), 1.0))
+	
 	dream:prepare()
 
 	dream:draw(castle, 0, 0, 0)
@@ -58,7 +59,7 @@ function love.draw()
 	if love.keyboard.isDown(".") then
 		local shadersInUse = ""
 		for d,s in pairs(dream.stats.perShader) do
-			shadersInUse = shadersInUse .. d .. ": " .. s .. "x  "
+			shadersInUse = shadersInUse .. d.name .. ": " .. s .. "x  "
 		end
 		love.graphics.print("Stats" ..
 			"\ndifferent shaders: " .. dream.stats.shadersInUse ..

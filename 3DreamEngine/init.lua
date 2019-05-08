@@ -14,70 +14,66 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #usage
 --loads the lib
-l3d = require("3DreamEngine")
+dream = require("3DreamEngine")
 
 --settings
-l3d.objectDir = "objects/"	--root directory of objects
+dream.objectDir = "objects/"     --root directory of objects
 
-l3d.fov = 90				--field of view (10 < fov < 180)
+dream.fov = 90                   --field of view (10 < fov < 180)
 
-l3d.AO_enabled = true		--ambient occlusion?
-l3d.AO_strength = 0.5		--blend strength
-l3d.AO_quality = 24			--samples per pixel (8-32 recommended)
-l3d.AO_quality_smooth = 1	--smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
-l3d.AO_resolution = 0.5		--resolution factor
+dream.AO_enabled = true          --ambient occlusion?
+dream.AO_strength = 0.5          --blend strength
+dream.AO_quality = 24            --samples per pixel (8-32 recommended)
+dream.AO_quality_smooth = 1      --smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
+dream.AO_resolution = 0.5        --resolution factor
 
-l3d.lighting_enabled = false	--enable lighting
-l3d.lighting_max = 4		--max light sources
+dream.lighting_max = 16          --max light sources, depends on GPU, has no performance impact if sources are unused
 
 --inits (applies settings)
-l3d:init()
+dream:init()
 
 --loads a object
-yourObject = l3d:loadObject("objectName")
+yourObject = dream:loadObject("objectName")
+
+--update camera postion
+dream.cam = {x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0}
+
+--update sun position/vector
+dream.sun = {-0.3, 0.6, -0.5}
+
+--update sun color
+dream.color_ambient = {0.25, 0.25, 0.25}
+dream.color_sun = {1.5, 1.5, 1.5}
+
+--or use the inbuilt sky sphere and clouds
+dream.cloudDensity = 0.6
+dream.clouds = love.graphics.newImage("clouds.jpg")
+dream.sky = love.graphics.newImage("sky.jpg")
+dream.night = love.graphics.newImage("night.jpg")
+
+--add this line somewhere in the draw or update loop to automatically set lighting based on dayTime
+dream.color_sun, dream.color_ambient = dream:getDayLight()
+
+--dayTime = 0 -> midnight, dayTime 0.5 -> noon, loops
+dream.dayTime = love.timer.getTime() * 0.05
+
+--resets light sources (noDayLight to true if the sun should not be added automatically)
+dream:resetLight(noDayLight)
+
+--add light, note that in case of exceeding the max light sources it only uses the most relevant sources, based on distance and brightness
+dream:addLight(posX, posY, posZ, red, green, blue, brightness)
 
 --prepare for rendering
---if cam is nil, it uses the default cam (l3d.cam)
+--if cam is nil, it uses the default cam (dream.cam)
 --noDepth disables the depth buffer, useful for gui elements
-l3d:prepare(cam, noDepth)
+dream:prepare(cam, noDepth)
 
 --draw
 --obj can be either the entire object, or an object inside the file (obj.objects.yourObject)
-l3d:draw(obj, x, y, z, sx, sy, sz, rotX, rotY, rotZ)
+dream:draw(obj, x, y, z, sx, sy, sz, rotX, rotY, rotZ)
 
 --finish render session, it is possible to render several times per frame
-l3d:present()
-
---update camera postion
-l3d.cam = {x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0}
-
---update sun vector
-l3d.sun = {0.3, -0.6, 0.5}
-
---update sun color
-l3d.color_ambient = {0.25, 0.25, 0.25}
-l3d.color_sun = {1.5, 1.5, 1.5}
-
---or use the inbuilt sky sphere and clouds
-l3d.cloudDensity = 0.6
-l3d.clouds = love.graphics.newImage("clouds.jpg")
-l3d.sky = love.graphics.newImage("sky.jpg")
-l3d.night = love.graphics.newImage("night.jpg")
-
---add this line somewhere in the draw or update loop to automatically set lighting based on dayTime
-l3d.color_sun, l3d.color_ambient = l3d:getDayLight()
-
---dayTime = 0 -> midnight, dayTime 0.5 -> noon, loops
-l3d.dayTime = love.timer.getTime() * 0.05
-
---update light sources
---make sure to set all unused light sources to 0
---3DreamEngine sorts the table, so indices might change
-l3d.lighting = { }
-for i = 1, l3d.lighting_max do
-	l3d.lighting[i] = {0, 0, 0, 0, 0, 0, 0}
-end
-l3d.lighting[1] = {posX, posY, posZ, red, green, blue, strength}
+dream:present()
 --]]
 
 local lib = { }
@@ -100,13 +96,12 @@ matrix = require((...) .. "/matrix")
 _3DreamEngine = nil
 
 lib.cam = {x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, normal = {0, 0, 0}}
-lib.sun = {0.3, -0.6, -0.5}
+lib.currentCam = lib.cam
 
+--sun
+lib.sun = {-0.3, 0.6, 0.5}
 lib.color_ambient = {1.0, 1.0, 1.0, 0.25}
 lib.color_sun = {1.0, 1.0, 1.0, 1.5}
-
---per pixel lighting
-lib.pixelPerfect = false
 
 --field of view
 lib.fov = 90
@@ -124,12 +119,11 @@ lib.AO_quality = 24
 lib.AO_quality_smooth = 1
 lib.AO_resolution = 0.5
 
-lib.lighting_enabled = false
-lib.lighting_max = 4
+lib.lighting_max = 16
 
+--not implemented yet
 lib.reflections_enabled = false
-	
-lib.object_bone = lib:loadObject(lib.root .. "/objects/bone")
+
 lib.object_light = lib:loadObject(lib.root .. "/objects/light")
 lib.object_clouds = lib:loadObject(lib.root .. "/objects/clouds_high", false, false, true)
 lib.object_sky = lib:loadObject(lib.root .. "/objects/sky", false, false, true)
@@ -154,17 +148,11 @@ function lib.init(self)
 	if self.reflections_enabled then
 		self.AO_enabled = true
 	end	
-	if not self.lighting_enabled then
-		self.pixelPerfect = false
-	end
 	
 	self:resize(love.graphics.getWidth(), love.graphics.getHeight())
 	self:loadShader()
 	
 	self.lighting = { }
-	for i = 1, self.lighting_max do
-		self.lighting[i] = {0, 0, 0, 0, 0, 0, 0}
-	end
 	
 	if self.clouds then
 		self.clouds:setWrap("repeat")
@@ -184,26 +172,16 @@ end
 function lib.prepare(self, c, noDepth)
 	self.noDepth = noDepth
 	
-	--lighting
-	self.lighting_totalPower = 0
-	if self.lighting_enabled then
-		table.sort(self.lighting, function(a, b) return a[7] > b[7] end)
-		for d,s in ipairs(self.lighting) do
-			self.lighting_totalPower = self.lighting_totalPower + s[7]
-		end
-	end
-	
 	local cam = c == false and {x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, normal = {0, 0, 0}} or c or self.cam
+	self.currentCam = cam
 	
-	local sun = {-self.sun[1], -self.sun[2], -self.sun[3]}
-	
-	local l = math.sqrt(sun[1]^2 + sun[2]^2 + sun[3]^2)
-	sun[1] = sun[1] / l
-	sun[2] = sun[2] / l
-	sun[3] = sun[3] / l
+	local sun = {self.sun[1], self.sun[2], self.sun[3]}
+	sun[1] = sun[1] * 1000
+	sun[2] = sun[2] * 1000
+	sun[3] = sun[3] * 1000
 	
 	self.shaderVars_sun = sun
-	self.shaderVars_camV = {cam.x, cam.y, cam.z}
+	self.shaderVars_viewPos = {cam.x, cam.y, cam.z}
 	
 	local c = math.cos(cam.rz or 0)
 	local s = math.sin(cam.rz or 0)
@@ -251,36 +229,8 @@ function lib.prepare(self, c, noDepth)
 		{0, 0, 0, 1},
 	}
 	
-	local res = projection * rotZ * rotX * rotY * translate
-	self.shaderVars_cam = res
-	
-	if self.reflections_enabled then
-		local c = math.cos(cam.rz or 0)
-		local s = math.sin(cam.rz or 0)
-		local rotZ = matrix{
-			{c, s, 0},
-			{-s, c, 0},
-			{0, 0, 1},
-		}
-		
-		local c = math.cos(cam.ry or 0)
-		local s = math.sin(cam.ry or 0)
-		local rotY = matrix{
-			{c, 0, -s},
-			{0, 1, 0},
-			{s, 0, c},
-		}
-		
-		local c = math.cos(cam.rx or 0)
-		local s = math.sin(cam.rx or 0)
-		local rotX = matrix{
-			{1, 0, 0},
-			{0, c, -s},
-			{0, s, c},
-		}
-		local res = rotZ * rotX * rotY
-		self.shaderVars_cam3 = res
-	end
+	--camera transformation
+	self.shaderVars_transformProj = projection * rotZ * rotX * rotY * translate
 	
 	--camera normal
 	local normal = rotY * rotX * (matrix{{0, 0, 1, 0}}^"T")
@@ -288,13 +238,12 @@ function lib.prepare(self, c, noDepth)
 	
 	--clear draw table
 	lib.drawTable = { }
-	lib.lineTable = { }
 	
 	--show light sources
 	if self.lighting_enabled and self.showLightSources then
 		for d,s in ipairs(self.lighting) do
-			love.graphics.setColor(s[4], s[5], s[6])
-			self:draw(self.object_light, s[1], s[2], s[3], s[7]*0.1, nil, nil)
+			love.graphics.setColor(s.r, s.g, s.b)
+			self:draw(self.object_light, s.x, s.y, s.z, 0.2, nil, nil)
 		end
 		love.graphics.setColor(1, 1, 1, 1)
 	end
@@ -336,70 +285,54 @@ function lib.draw(self, obj, x, y, z, sx, sy, sz, rx, ry, rz)
 		{x, y, z, 1},
 	}
 	
-	local c = math.cos(rz or 0)
-	local s = math.sin(rz or 0)
-	local rotZ3 = matrix{
-		{c, s, 0},
-		{-s, c, 0},
-		{0, 0, 1},
-	}
-	
-	local c = math.cos(ry or 0)
-	local s = math.sin(ry or 0)
-	local rotY3 = matrix{
-		{c, 0, -s},
-		{0, 1, 0},
-		{s, 0, c},
-	}
-	
-	local c = math.cos(rx or 0)
-	local s = math.sin(rx or 0)
-	local rotX3 = matrix{
-		{1, 0, 0},
-		{0, c, -s},
-		{0, s, c},
-	}
-	
 	for d,s in pairs(obj.objects or {obj}) do
-		local shaderName_1 = (s.material.tex_diffuse and "textured" or "flat") .. (s.shader == "wind" and "_wind" or "")
-		local shaderName_2 = self.lighting_totalPower > 0 and ((s.material.tex_diffuse and "textured" or "flat") .. "_light") .. (s.shader == "wind" and "_wind" or "")
-		local shaderName_3 = self.pixelPerfect and self.lighting_totalPower > 0 and ((s.material.tex_diffuse and "textured" or "flat") .. "_light_pixel") .. (s.shader == "wind" and "_wind" or "")
-		
-		local shaderName
-		if self.shaders[shaderName_3] then
-			shaderName = shaderName_3
-		elseif self.shaders[shaderName_2] then
-			shaderName = shaderName_2
-		else
-			shaderName = shaderName_1
-		end
-		
 		--insert intro draw todo list
-		if not lib.drawTable[shaderName] then
-			lib.drawTable[shaderName] = { }
+		local shaderInfo = self:getShaderInfo(s.material.tex_diffuse and "textured" or "flat", s.shader, s.material.tex_normal, s.material.tex_specular)
+		if not lib.drawTable[shaderInfo] then
+			lib.drawTable[shaderInfo] = { }
 		end
-		if not lib.drawTable[shaderName][s.material] then
-			lib.drawTable[shaderName][s.material] = { }
+		if not lib.drawTable[shaderInfo][s.material] then
+			lib.drawTable[shaderInfo][s.material] = { }
 		end
 		local r, g, b = love.graphics.getColor()
-		table.insert(lib.drawTable[shaderName][s.material], {
+		table.insert(lib.drawTable[shaderInfo][s.material], {
 			rotZ*rotY*rotX*translate,
-			rotZ3*rotY3*rotX3,
 			s,
 			r, g, b,
 		})
 	end
 end
 
---lines not working yet
-function lib.line(self, x1, y1, z1, x2, y2, z2)
-	--insert intro draw todo list
-	local r, g, b = love.graphics.getColor()
-	table.insert(lib.lineTable, {
-		{x1, y1, -z1, 1},
-		{x2, y2, -z2, 1},
-		r, g, b,
-	})
+function lib.resetLight(self, noDayLight)
+	if noDayLight then
+		self.lighting = { }
+	else
+		self.lighting = {
+			{
+				x = self.sun[1] * 1000,
+				y = self.sun[2] * 1000,
+				z = self.sun[3] * 1000,
+				r = self.color_sun[1] / math.sqrt(self.color_sun[1]^2 + self.color_sun[2]^2 + self.color_sun[3]^2) * self.color_sun[4] * 0.02,
+				g = self.color_sun[2] / math.sqrt(self.color_sun[1]^2 + self.color_sun[2]^2 + self.color_sun[3]^2) * self.color_sun[4] * 0.02,
+				b = self.color_sun[3] / math.sqrt(self.color_sun[1]^2 + self.color_sun[2]^2 + self.color_sun[3]^2) * self.color_sun[4] * 0.02,
+				meter = 1/100000,
+				importance = math.huge,
+			},
+		}
+	end
+end
+
+function lib.addLight(self, posX, posY, posZ, red, green, blue, brightness, meter, importance)
+	self.lighting[#self.lighting+1] = {
+		x = posX,
+		y = posY,
+		z = posZ,
+		r = red / math.sqrt(red^2+green^2+blue^2) * (brightness or 10.0),
+		g = green / math.sqrt(red^2+green^2+blue^2) * (brightness or 10.0),
+		b = blue / math.sqrt(red^2+green^2+blue^2) * (brightness or 10.0),
+		meter = 1.0 / (meter or 1.0),
+		importance = importance or 1.0,
+	}
 end
 
 return lib

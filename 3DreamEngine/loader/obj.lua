@@ -58,7 +58,13 @@ _3DreamEngine.loader["obj"] = function(self, obj, name, path)
 				--combine vertex and data into one
 				for i = 1, #v-1 do
 					local v2 = self:split(v[i+1]:gsub("//", "/0/"), "/")
-					o.final[#o.final+1] = {vertices[tonumber(v2[1])], texVertices[tonumber(v2[2])] or {0, 0}, normals[tonumber(v2[3])], material}
+					o.final[#o.final+1] = {
+						vertices[tonumber(v2[1])],                --position
+						texVertices[tonumber(v2[2])] or {0, 0},   --UV
+						normals[tonumber(v2[3])],                 --normal
+						material,                                 --material
+						false                                     --color
+					}
 				end
 				
 				if #v-1 == 3 then

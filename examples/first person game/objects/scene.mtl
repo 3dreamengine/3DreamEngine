@@ -44,6 +44,8 @@ Ni 1.450000
 d 1.000000
 illum 2
 map_Kd cobble_diffuse.jpg
+map_Kn cobble_normal.jpg
+map_Ks cobble_spec.jpg
 
 newmtl Grass
 Ns 225.000000
@@ -66,6 +68,8 @@ Ni 1.450000
 d 1.000000
 illum 2
 map_Kd planks_diffuse.jpg
+map_Kn planks_normal.jpg
+map_Ks planks_spec.jpg
 
 newmtl Rock
 Ns 225.000000
@@ -77,3 +81,5 @@ Ni 1.450000
 d 1.000000
 illum 2
 map_Kd rock_diffuse.jpg
+map_Kn rock_normal.jpg
+map_Ks rock_spec.jpg

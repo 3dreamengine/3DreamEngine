@@ -212,13 +212,19 @@ function lib.loadObject(self, name, splitMaterials, rasterMargin, forceTextured,
 											local extra
 											if v.shader == "wind" then
 												if v.shaderInfo == "grass" then
-													extra = math.min(1.0, math.max(0.0, s[1][2]))
+													extra = math.min(1.0, math.max(0.0, s[1][2] * 0.25))
 												else
 													extra = tonumber(v.shaderInfo) or 0.15
 												end
 											end
 											
-											po.final[#po.final+1] = {{vp[1]+x, vp[2]+y, vp[3]+z, extra}, s[2], {vn[1], vn[2], vn[3]}, s[4], s[5]}
+											po.final[#po.final+1] = {
+												{vp[1]+x, vp[2]+y, vp[3]+z, extra}, --position and optional extra value
+												s[2],                               --UV
+												{vn[1], vn[2], vn[3]},              --normal
+												s[4],                               --material
+												s[5]                                --optional color
+											}
 										end
 										for d,s in ipairs(o.object.faces) do
 											po.faces[#po.faces+1] = {s[1]+lastIndex, s[2]+lastIndex, s[3]+lastIndex}
@@ -277,7 +283,9 @@ function lib.createMesh(self, o, obj, faceMap, forceTextured)
 		atypes = {
 		  {"VertexPosition", "float", 4},	-- x, y, z
 		  {"VertexTexCoord", "float", 2},	-- UV
-		  {"VertexColor", "byte", 4},		-- normal, specular
+		  {"VertexNormal", "float", 3},		-- normal
+		  {"VertexTangent", "float", 3},	-- normal tangent
+		  {"VertexBitangent", "float", 3},	-- normal bitangent
 		}
 	else
 		atypes = {
@@ -289,37 +297,105 @@ function lib.createMesh(self, o, obj, faceMap, forceTextured)
 	
 	--compress finals (not all used)
 	local vertexMap = { }
-	local final = { }
-	local finalIDs = { }
+	local finals = { }
+	local finalsIDs = { }
 	if faceMap then
 		for d,f in ipairs(faceMap) do
-			finalIDs = { }
+			finalsIDs = { }
 			for i = 1, 3 do
-				if not finalIDs[f[1][i]] then
+				if not finalsIDs[f[1][i]] then
 					local fc = f[2][f[1][i]]
 					local x, z = self:rotatePoint(fc[1][1], fc[1][3], -f[6])
 					local nx, nz = self:rotatePoint(fc[3][1], fc[3][3], -f[6])
-					final[#final+1] = {{x + f[3], fc[1][2] + f[4], z + f[5]}, fc[2], {nx, fc[3][2], nz}, fc[4]}
-					finalIDs[f[1][i]] = #final
+					finals[#finals+1] = {{x + f[3], fc[1][2] + f[4], z + f[5]}, fc[2], {nx, fc[3][2], nz}, fc[4]}
+					finalsIDs[f[1][i]] = #finals
 				end
-				vertexMap[#vertexMap+1] = finalIDs[f[1][i]]
+				vertexMap[#vertexMap+1] = finalsIDs[f[1][i]]
 			end
 		end
 	else
 		for d,f in ipairs(o.faces) do
 			for i = 1, 3 do
-				if not finalIDs[f[i]] then
-					final[#final+1] = o.final[f[i]]
-					finalIDs[f[i]] = #final
+				if not finalsIDs[f[i]] then
+					finals[#finals+1] = o.final[f[i]]
+					finalsIDs[f[i]] = #finals
 				end
-				vertexMap[#vertexMap+1] = finalIDs[f[i]]
+				vertexMap[#vertexMap+1] = finalsIDs[f[i]]
 			end
 		end
 	end
 	
+	--calculate vertex normals and uv normals
+	for f = 1, #vertexMap, 3 do
+		local P1 = finals[vertexMap[f+0]][1]
+		local P2 = finals[vertexMap[f+1]][1]
+		local P3 = finals[vertexMap[f+2]][1]
+		local N1 = finals[vertexMap[f+0]][2]
+		local N2 = finals[vertexMap[f+1]][2]
+		local N3 = finals[vertexMap[f+2]][2]
+		
+		local tangent = { }
+		local bitangent = { }
+		
+		local edge1 = {P2[1] - P1[1], P2[2] - P1[2], P2[3] - P1[3]}
+		local edge2 = {P3[1] - P1[1], P3[2] - P1[2], P3[3] - P1[3]}
+		local edge1uv = {N2[1] - N1[1], N2[2] - N1[2]}
+		local edge2uv = {N3[1] - N1[1], N3[2] - N1[2]}
+		
+		local cp = edge1uv[2] * edge2uv[1] - edge1uv[1] * edge2uv[2]
+		
+		if cp ~= 0.0 then
+			for i = 1, 3 do
+				tangent[i] = (edge1[i] * (-edge2uv[2]) + edge2[i] * edge1uv[2]) / cp
+				bitangent[i] = (edge1[i] * (-edge2uv[1]) + edge2[i] * edge1uv[1]) / cp
+			end
+			
+			local l = math.sqrt(tangent[1]^2+tangent[2]^2+tangent[3]^2)
+			tangent[1] = tangent[1] / l
+			tangent[2] = tangent[2] / l
+			tangent[3] = tangent[3] / l
+			
+			local l = math.sqrt(bitangent[1]^2+bitangent[2]^2+bitangent[3]^2)
+			bitangent[1] = bitangent[1] / l
+			bitangent[2] = bitangent[2] / l
+			bitangent[3] = bitangent[3] / l
+			
+			for i = 1, 3 do
+				if not finals[vertexMap[f+i-1]][6] then
+					finals[vertexMap[f+i-1]][6] = {0, 0, 0}
+					finals[vertexMap[f+i-1]][7] = {0, 0, 0}
+					finals[vertexMap[f+i-1]][8] = {0, 0, 0}
+				end
+				for c = 1, 3 do
+					finals[vertexMap[f+i-1]][6][c] = finals[vertexMap[f+i-1]][6][c] + tangent[c]
+					finals[vertexMap[f+i-1]][7][c] = finals[vertexMap[f+i-1]][7][c] + bitangent[c]
+				end
+			end
+		end
+	end
+	
+	--complete smoothing step
+	for d,f in ipairs(finals) do
+		if f[6] then
+			local l = math.sqrt(f[6][1]^2+f[6][2]^2+f[6][3]^2)
+			f[6][1] = f[6][1] / l
+			f[6][2] = f[6][2] / l
+			f[6][3] = f[6][3] / l
+			
+			local l = math.sqrt(f[7][1]^2+f[7][2]^2+f[7][3]^2)
+			f[7][1] = f[7][1] / l
+			f[7][2] = f[7][2] / l
+			f[7][3] = f[7][3] / l
+			
+--			f[8][1] = f[6][2]*f[7][3] - f[6][3]*f[7][2]
+--			f[8][2] = f[6][3]*f[7][1] - f[6][1]*f[7][3]
+--			f[8][3] = f[6][1]*f[7][2] - f[6][2]*f[7][1]
+		end
+	end
+	
 	--create mesh
-	o.mesh = love.graphics.newMesh(atypes, #final, "triangles", "static")
-	for d,s in ipairs(final) do
+	o.mesh = love.graphics.newMesh(atypes, #finals, "triangles", "static")
+	for d,s in ipairs(finals) do
 		vertexMap[#vertexMap+1] = s[i]
 		local p = s[1]
 		local t = s[2]
@@ -330,13 +406,14 @@ function lib.createMesh(self, o, obj, faceMap, forceTextured)
 			o.mesh:setVertex(d,
 				p[1], p[2], p[3], p[4] or 1.0,
 				t[1], t[2],
-				n[1]*0.5+0.5, n[2]*0.5+0.5, n[3]*0.5+0.5,
-				m.specular
+				s[3][1], s[3][2], s[3][3],
+				s[6][1], s[6][2], s[6][3],
+				s[7][1], s[7][2], s[7][3]
 			)
 		else
 			o.mesh:setVertex(d,
 				p[1], p[2], p[3], p[4] or 1.0,
-				n[1]*0.5+0.5, n[2]*0.5+0.5, n[3]*0.5+0.5,
+				s[3][1], s[3][2], s[3][3],
 				m.specular,
 				c[1], c[2], c[3], c[4]
 			)
@@ -351,64 +428,3 @@ function lib.createMesh(self, o, obj, faceMap, forceTextured)
 	--vertex map
 	o.mesh:setVertexMap(vertexMap)
 end
-
---creates a triangle mesh based on position/color/specular (x, y, z, [r, g, b, spec]) points
---[[
-#outdated, use with caution
-function lib.loadCustomObject(self, vertices)
-	local o = { }
-	
-	o.vertices = vertices
-	for i = 1, #vertices/3 do
-		local v1 = vertices[(i-1)*3 + 1]
-		local v2 = vertices[(i-1)*3 + 2]
-		local v3 = vertices[(i-1)*3 + 3]
-		
-		local a = {v1[1] - v2[1], v1[2] - v2[2], v1[3] - v2[3]}
-		local b = {v1[1] - v3[1], v1[2] - v3[2], v1[3] - v3[3]}
-		
-		local n = {
-			(a[2]*b[3] - a[3]*b[2]),
-			(a[3]*b[1] - a[1]*b[3]),
-			(a[1]*b[2] - a[2]*b[1]),
-		}
-		
-		local l = math.sqrt(n[1]^2+n[2]^2+n[3]^2)
-		n[1] = n[1] / l
-		n[2] = n[2] / l
-		n[3] = n[3] / l
-		
-		v1[8] = n[1]
-		v1[9] = n[2]
-		v1[10] = n[3]
-		
-		v2[8] = n[1]
-		v2[9] = n[2]
-		v2[10] = n[3]
-		
-		v3[8] = n[1]
-		v3[9] = n[2]
-		v3[10] = n[3]
-	end
-	
-	local atypes = {
-		{"VertexPosition", "float", 3},	-- x, y, z
-		{"VertexTexCoord", "float", 4},	-- normal, specular
-		{"VertexColor", "float", 4},	-- color
-	}
-	
-	--fill mesh
-	local lastMaterial
-	o.mesh = love.graphics.newMesh(atypes, #vertices, "triangles", "static")
-	for d,s in ipairs(vertices) do
-		o.mesh:setVertex(d,
-			s[1], s[2], s[3],
-			s[8]*0.5+0.5, s[9]*0.5+0.5, s[10]*0.5+0.5,
-			s[7] or 0.5,
-			s[4], s[5], s[6], 1.0
-		)
-	end
-	
-	return {objects.default = o}
-end
---]]

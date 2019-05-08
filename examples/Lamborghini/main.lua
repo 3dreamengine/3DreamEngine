@@ -12,8 +12,6 @@ dream.AO_quality = 32			--samples per pixel (8-32 recommended)
 dream.AO_quality_smooth = 2	--smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
 dream.AO_resolution = 0.75	--resolution factor
 
-dream.lighting_enabled = true
-
 dream:init()
 
 dream.showLightSources = false
@@ -23,6 +21,15 @@ car = dream:loadObject("Lamborghini Aventador")
 love.graphics.setBackgroundColor(0.8, 0.8, 0.8)
 
 function love.draw()
+	dream.color_ambient = {0.1, 0.1, 0.1, 1}
+	dream.color_sun = {1, 1, 1, 2.0}
+	
+	dream:resetLight()
+	if dream.lighting_enabled then
+		dream:addLight(-1, math.cos(love.timer.getTime()) + 0.5, -5, 1.0, 1.0, 1.0, 10.0)
+		dream:addLight(math.cos(love.timer.getTime())+4, -1, math.cos(love.timer.getTime())-5, 1.0, 1.0, 1.0, 10.0)
+	end
+	
 	dream:prepare()
 	
 	--draw the car 
@@ -42,25 +49,13 @@ function love.draw()
 	
 	local shadersInUse = ""
 	for d,s in pairs(dream.stats.perShader) do
-		shadersInUse = shadersInUse .. d .. ": " .. s .. "x  "
+		shadersInUse = shadersInUse .. d.name .. ": " .. s .. "x  "
 	end
 	love.graphics.print("Stats" ..
 		"\ndifferent shaders: " .. dream.stats.shadersInUse ..
 		"\ndifferent materials: " .. dream.stats.materialDraws ..
 		"\ndraws: " .. dream.stats.draws ..
 		"\nshaders: " .. shadersInUse, 15, 500)
-	
-	dream.color_ambient = {0.1, 0.1, 0.1, 1}
-	dream.color_sun = {1, 1, 1, dream.lighting_enabled and 1.75 or 0.25}
-	
-	--clear unused lightning, bad will happen if not
-	for i = 1, dream.lighting_max do
-		dream.lighting[1] = {0, 0, 0, 0, 0, 0, 0}
-	end
-	
-	--set lights
-	dream.lighting[1] = {-1, math.cos(love.timer.getTime()), -5, 1.0, 1.0, 1.0, 5.0}
-	dream.lighting[2] = {math.cos(love.timer.getTime())+4, -1, math.cos(love.timer.getTime())-5, 1.0, 1.0, 1.0, 5.0}
 end
 
 function love.keypressed(key)

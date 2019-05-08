@@ -22,10 +22,12 @@ _3DreamEngine.loader["mtl"] = function(self, obj, name, path)
 			material.color[3] = tonumber(v[4])
 		elseif v[1] == "d" then
 			material.color[4] = tonumber(v[2])
+		elseif v[1] == "alphaThreshold" then
+			material.alphaThreshold = tonumber(v[2])
 		elseif v[1] == "map_Kd" then
 			material.tex_diffuse = self:loadTexture(l:sub(8), path)
 		elseif v[1] == "map_Ks" then
-			material.tex_spec = self:loadTexture(l:sub(8), path)
+			material.tex_specular = self:loadTexture(l:sub(8), path)
 		elseif v[1] == "map_Kn" then
 			material.tex_normal = self:loadTexture(l:sub(8), path)
 		end
