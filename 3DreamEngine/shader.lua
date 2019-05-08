@@ -91,7 +91,7 @@ lib.shaderCloud = love.graphics.newShader([[
 	vec4 effect(vec4 color, Image texture, vec2 tc, vec2 sc) {
 		float v = (Texel(texture, VaryingTexCoord.xy * 0.5 + vec2(time + dist*0.01, dist*0.01)).r + Texel(texture, VaryingTexCoord.xy * 0.5 + vec2(dist*0.01, time + dist*0.01)).r) * 0.5;
 		float threshold = 1.0 - (density - abs(dist)*density);
-		return vec4(1.0, 1.0, 1.0, min(1.0, 1.0 * max(0, v - threshold) / threshold));
+		return vec4(1.0, 1.0, 1.0, min(1.0, 1.0 * max(0.0, v - threshold) / threshold));
 	}
 	#endif
 	
@@ -158,6 +158,7 @@ function lib.getShaderInfo(self, typ, variant, normal, specular, lightings)
 	return self["info_" .. name]
 end
 
+lib.render = love.graphics.getRendererInfo( )
 function lib.getShader(self, typ, variant, normal, specular, lightings)
 	local info = self:getShaderInfo(typ, variant, normal, specular, lightings)
 	
@@ -178,8 +179,25 @@ function lib.getShader(self, typ, variant, normal, specular, lightings)
 			(self.reflections_enabled and "#define REFLECTIONS_ENABLED\n" or "") ..
 			(variant == "wind" and "#define VARIANT_WIND\n" or "") ..
 			(lightings > 0 and "#define LIGHTING\n" or "") ..
+			(self.render == "OpenGL ES" and "#define OPENGL_ES\n" or "") ..
 			
 			[[
+
+#ifdef OPENGL_ES
+mat3 transpose(mat3 inMatrix) {
+	vec3 i0 = inMatrix[0];
+	vec3 i1 = inMatrix[1];
+	vec3 i2 = inMatrix[2];
+	
+    mat3 outMatrix = mat3(
+		vec3(i0.x, i1.x, i2.x),
+		vec3(i0.y, i1.y, i2.y),
+		vec3(i0.z, i1.z, i2.z)
+	);
+	
+	return outMatrix;
+}
+#endif
 
 //required for secondary depth buffer and AO
 #ifdef AO_ENABLED
@@ -343,7 +361,7 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 #endif]]
 		
 		--debug
-		--love.filesystem.write(info.name .. ".glsl", code)
+		love.filesystem.write(info.name .. ".glsl", code)
 		
 		self[info.name].shader = love.graphics.newShader(code)
 	end

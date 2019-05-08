@@ -51,7 +51,7 @@ function love.draw()
 	dream:addLight(player.x, player.y, player.z, 1.0, 0.75, 0.1, 1.0 + love.math.noise(love.timer.getTime(), 1.0))
 	
 	dream:prepare()
-
+	
 	dream:draw(castle, 0, 0, 0)
 
 	dream:present()
