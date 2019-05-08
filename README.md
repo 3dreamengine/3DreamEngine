@@ -9,17 +9,18 @@
 * inbuilt "volumetric" clouds
 * inbuilt sky sphere
 * particle emitter (grass, leaves, random rocks, smaller details)
-* diffuse and specular map
-* point-source lightning (up to around 32 sources)
+* diffuse texture
+* specular map
+* normal map
+* point-source lightning
 * per pixel lighting for better results at close light sources
 * object merging to draw several objects at once
 * load one big .obj as atlas and automatically split it up into sub objects
 
 # In progress
-* 3D polygons
 * screen space reflections
-* normal maps
 * simple 3d collision
+* threaded loading
 
 # How to use?
 ```lua
