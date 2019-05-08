@@ -45,7 +45,8 @@ lib.shaders = { }
 function lib.loadShader(self)
 	local fragments = { }
 
-	lib.AO = love.graphics.newShader([[		extern vec2 size;
+	lib.AO = love.graphics.newShader([[
+		extern vec2 size;
 		extern vec3 samples[]] .. self.AO_quality .. [[];
 		int sampleCount = ]] .. self.AO_quality .. [[;
 		
@@ -66,7 +67,7 @@ function lib.loadShader(self)
 				}
 			}
 			
-			sum = pow(1.0 - sum / float(sampleCount) * (1.0/sqrt(z+1)) * 16.0, 2);
+			sum = pow(1.0 - sum / float(sampleCount) * (1.0/sqrt(z+1.0)) * 16.0, 2.0);
 			return vec4(sum, sum, sum, 1.0);
 		}
 	]])
@@ -361,7 +362,7 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 #endif]]
 		
 		--debug
-		love.filesystem.write(info.name .. ".glsl", code)
+		--love.filesystem.write(info.name .. ".glsl", code)
 		
 		self[info.name].shader = love.graphics.newShader(code)
 	end
