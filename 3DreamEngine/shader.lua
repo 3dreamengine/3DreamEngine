@@ -185,7 +185,7 @@ function lib.getShader(self, typ, variant, normal, specular, lightings)
 			[[
 
 #ifdef OPENGL_ES
-mat3 transpose(mat3 inMatrix) {
+mat3 transpose_optional(mat3 inMatrix) {
 	vec3 i0 = inMatrix[0];
 	vec3 i1 = inMatrix[1];
 	vec3 i2 = inMatrix[2];
@@ -275,7 +275,7 @@ void effect() {
 		NdotL = clamp(dot(normal, lightVec[i]), 0.0, 1.0);
 		NdotH = clamp(dot(normal, lightVecHalf[i]), 0.0, 1.0);
 		
-		NdotH = pow(max(0.0, (NdotH - specular) / (1.0 - specular)), 2) * specular * 2.0;
+		NdotH = pow(max(0.0, (NdotH - specular) / (1.0 - specular)), 2.0) * specular * 2.0;
 		lighting += (NdotH + NdotL) * lightColor[i].rgb / (0.01 + lightColor[i].a * length(lightPos[i] - posV));
 	}
 	#endif
@@ -329,10 +329,18 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	#endif
 	
 	//transform into tangential space
-	#ifdef FLAT_SHADING
-	mat3 objToTangentSpace = transpose(mat3(transform));
+	#ifdef OPENGL_ES
+		#ifdef FLAT_SHADING
+		mat3 objToTangentSpace = transpose_optional(mat3(transform));
+		#else
+		mat3 objToTangentSpace = transpose_optional(mat3(transform)) * mat3(VertexTangent, VertexBitangent, VertexNormal);
+		#endif
 	#else
-	mat3 objToTangentSpace = transpose(mat3(transform)) * mat3(VertexTangent, VertexBitangent, VertexNormal);
+		#ifdef FLAT_SHADING
+		mat3 objToTangentSpace = transpose(mat3(transform));
+		#else
+		mat3 objToTangentSpace = transpose(mat3(transform)) * mat3(VertexTangent, VertexBitangent, VertexNormal);
+		#endif
 	#endif
 	
 	//view vector

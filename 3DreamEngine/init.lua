@@ -285,21 +285,28 @@ function lib.draw(self, obj, x, y, z, sx, sy, sz, rx, ry, rz)
 		{x, y, z, 1},
 	}
 	
-	for d,s in pairs(obj.objects or {obj}) do
-		--insert intro draw todo list
-		local shaderInfo = self:getShaderInfo(s.material.tex_diffuse and "textured" or "flat", s.shader, s.material.tex_normal, s.material.tex_specular)
-		if not lib.drawTable[shaderInfo] then
-			lib.drawTable[shaderInfo] = { }
+	local t = obj.objects or {obj}
+	for d,s in pairs(t) do
+		if not s.simple then
+			if t[d .. "_simple_" .. 1] then
+				s = t[d .. "_simple_" .. 1]
+			end
+			
+			--insert intro draw todo list
+			local shaderInfo = self:getShaderInfo(s.material.tex_diffuse and "textured" or "flat", s.shader, s.material.tex_normal, s.material.tex_specular)
+			if not lib.drawTable[shaderInfo] then
+				lib.drawTable[shaderInfo] = { }
+			end
+			if not lib.drawTable[shaderInfo][s.material] then
+				lib.drawTable[shaderInfo][s.material] = { }
+			end
+			local r, g, b = love.graphics.getColor()
+			table.insert(lib.drawTable[shaderInfo][s.material], {
+				rotZ*rotY*rotX*translate,
+				s,
+				r, g, b,
+			})
 		end
-		if not lib.drawTable[shaderInfo][s.material] then
-			lib.drawTable[shaderInfo][s.material] = { }
-		end
-		local r, g, b = love.graphics.getColor()
-		table.insert(lib.drawTable[shaderInfo][s.material], {
-			rotZ*rotY*rotX*translate,
-			s,
-			r, g, b,
-		})
 	end
 end
 
