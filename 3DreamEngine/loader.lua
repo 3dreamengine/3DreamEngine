@@ -118,7 +118,7 @@ function lib.loadObjectLazy(self, name, args)
 		if not self.loaded then
 			local ok, err = coroutine.resume(self.co, self.self, self)
 			if not ok and err ~= "cannot resume dead coroutine" then
-				error("loader coroutine crashed:\n" .. debug.traceback(self.co))
+				error("loader coroutine crashed:\n" .. err .. "\n" .. debug.traceback(self.co))
 			end
 			return ok
 		end

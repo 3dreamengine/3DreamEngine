@@ -47,6 +47,7 @@ _3DreamEngine.loader["vox"] = function(self, obj, name, path)
 	
 	local palette = { }
 	local materials = { }
+	local materialsID = { }
 	local default = {
 		0x00000000, 0xffffffff, 0xffccffff, 0xff99ffff, 0xff66ffff, 0xff33ffff, 0xff00ffff, 0xffffccff, 0xffccccff, 0xff99ccff, 0xff66ccff, 0xff33ccff, 0xff00ccff, 0xffff99ff, 0xffcc99ff, 0xff9999ff,
 		0xff6699ff, 0xff3399ff, 0xff0099ff, 0xffff66ff, 0xffcc66ff, 0xff9966ff, 0xff6666ff, 0xff3366ff, 0xff0066ff, 0xffff33ff, 0xffcc33ff, 0xff9933ff, 0xff6633ff, 0xff3333ff, 0xff0033ff, 0xffff00ff,
@@ -73,6 +74,9 @@ _3DreamEngine.loader["vox"] = function(self, obj, name, path)
 			math.floor(default[i] / 256^3) % 256,
 		}
 	end
+	
+	obj.materials = materials
+	obj.materialsID = materialsID
 	
 	local nodes = { }
 	local groups = { }
@@ -184,7 +188,9 @@ _3DreamEngine.loader["vox"] = function(self, obj, name, path)
 				color = palette[id],
 				specular = mat._rough,
 				name = tostring(id),
+				ID = #materialsID+1,
 			}
+			materialsID[#materialsID+1] = materials[id]
 		else
 			print("unknown chunk " .. chunk)
 		end
@@ -213,64 +219,64 @@ _3DreamEngine.loader["vox"] = function(self, obj, name, path)
 						local oy = t[3] + z
 						local oz = t[2] + y
 						
-						local mat = materials[b]
+						local mat = materials[b].ID
 						
 						--top
 						if z == 0 or m.blocks[x][y][z-1] == 0 then
-							o.final[#o.final+1] = {{ox+0, oy+0, oz+1}, {0, 0}, {0, -1, 0}, mat}
-							o.final[#o.final+1] = {{ox+1, oy+0, oz+1}, {0, 0}, {0, -1, 0}, mat}
-							o.final[#o.final+1] = {{ox+1, oy+0, oz+0}, {0, 0}, {0, -1, 0}, mat}
-							o.final[#o.final+1] = {{ox+0, oy+0, oz+0}, {0, 0}, {0, -1, 0}, mat}
+							o.final[#o.final+1] = {ox+0, oy+0, oz+1, 1.0, 0, -1, 0, mat}
+							o.final[#o.final+1] = {ox+1, oy+0, oz+1, 1.0, 0, -1, 0, mat}
+							o.final[#o.final+1] = {ox+1, oy+0, oz+0, 1.0, 0, -1, 0, mat}
+							o.final[#o.final+1] = {ox+0, oy+0, oz+0, 1.0, 0, -1, 0, mat}
 							o.faces[#o.faces+1] = {#o.final-0, #o.final-1, #o.final-2}
 							o.faces[#o.faces+1] = {#o.final-0, #o.final-2, #o.final-3}
 						end
 						
 						--bottom
 						if z == m.z-1 or m.blocks[x][y][z+1] == 0 then
-							o.final[#o.final+1] = {{ox+0, oy+1, oz+0}, {0, 0}, {0, 1, 0}, mat}
-							o.final[#o.final+1] = {{ox+1, oy+1, oz+0}, {0, 0}, {0, 1, 0}, mat}
-							o.final[#o.final+1] = {{ox+1, oy+1, oz+1}, {0, 0}, {0, 1, 0}, mat}
-							o.final[#o.final+1] = {{ox+0, oy+1, oz+1}, {0, 0}, {0, 1, 0}, mat}
+							o.final[#o.final+1] = {ox+0, oy+1, oz+0, 1.0, 0, 1, 0, mat}
+							o.final[#o.final+1] = {ox+1, oy+1, oz+0, 1.0, 0, 1, 0, mat}
+							o.final[#o.final+1] = {ox+1, oy+1, oz+1, 1.0, 0, 1, 0, mat}
+							o.final[#o.final+1] = {ox+0, oy+1, oz+1, 1.0, 0, 1, 0, mat}
 							o.faces[#o.faces+1] = {#o.final-0, #o.final-1, #o.final-2}
 							o.faces[#o.faces+1] = {#o.final-0, #o.final-2, #o.final-3}
 						end
 						
 						--right
 						if x == 0 or m.blocks[x-1][y][z] == 0 then
-							o.final[#o.final+1] = {{ox+0, oy+1, oz+0}, {0, 0}, {1, 0, 0}, mat}
-							o.final[#o.final+1] = {{ox+0, oy+1, oz+1}, {0, 0}, {1, 0, 0}, mat}
-							o.final[#o.final+1] = {{ox+0, oy+0, oz+1}, {0, 0}, {1, 0, 0}, mat}
-							o.final[#o.final+1] = {{ox+0, oy+0, oz+0}, {0, 0}, {1, 0, 0}, mat}
+							o.final[#o.final+1] = {ox+0, oy+1, oz+0, 1.0, 1, 0, 0, mat}
+							o.final[#o.final+1] = {ox+0, oy+1, oz+1, 1.0, 1, 0, 0, mat}
+							o.final[#o.final+1] = {ox+0, oy+0, oz+1, 1.0, 1, 0, 0, mat}
+							o.final[#o.final+1] = {ox+0, oy+0, oz+0, 1.0, 1, 0, 0, mat}
 							o.faces[#o.faces+1] = {#o.final-0, #o.final-1, #o.final-2}
 							o.faces[#o.faces+1] = {#o.final-0, #o.final-2, #o.final-3}
 						end
 						
 						--left
 						if x == m.x-1 or m.blocks[x+1][y][z] == 0 then
-							o.final[#o.final+1] = {{ox+1, oy+0, oz+0}, {0, 0}, {-1, 0, 0}, mat}
-							o.final[#o.final+1] = {{ox+1, oy+0, oz+1}, {0, 0}, {-1, 0, 0}, mat}
-							o.final[#o.final+1] = {{ox+1, oy+1, oz+1}, {0, 0}, {-1, 0, 0}, mat}
-							o.final[#o.final+1] = {{ox+1, oy+1, oz+0}, {0, 0}, {-1, 0, 0}, mat}
+							o.final[#o.final+1] = {ox+1, oy+0, oz+0, 1.0, -1, 0, 0, mat}
+							o.final[#o.final+1] = {ox+1, oy+0, oz+1, 1.0, -1, 0, 0, mat}
+							o.final[#o.final+1] = {ox+1, oy+1, oz+1, 1.0, -1, 0, 0, mat}
+							o.final[#o.final+1] = {ox+1, oy+1, oz+0, 1.0, -1, 0, 0, mat}
 							o.faces[#o.faces+1] = {#o.final-0, #o.final-1, #o.final-2}
 							o.faces[#o.faces+1] = {#o.final-0, #o.final-2, #o.final-3}
 						end
 						
 						--front
 						if y == 0 or m.blocks[x][y-1][z] == 0 then
-							o.final[#o.final+1] = {{ox+0, oy+0, oz+0}, {0, 0}, {0, 0, 1}, mat}
-							o.final[#o.final+1] = {{ox+1, oy+0, oz+0}, {0, 0}, {0, 0, 1}, mat}
-							o.final[#o.final+1] = {{ox+1, oy+1, oz+0}, {0, 0}, {0, 0, 1}, mat}
-							o.final[#o.final+1] = {{ox+0, oy+1, oz+0}, {0, 0}, {0, 0, 1}, mat}
+							o.final[#o.final+1] = {ox+0, oy+0, oz+0, 1.0, 0, 0, 1, mat}
+							o.final[#o.final+1] = {ox+1, oy+0, oz+0, 1.0, 0, 0, 1, mat}
+							o.final[#o.final+1] = {ox+1, oy+1, oz+0, 1.0, 0, 0, 1, mat}
+							o.final[#o.final+1] = {ox+0, oy+1, oz+0, 1.0, 0, 0, 1, mat}
 							o.faces[#o.faces+1] = {#o.final-0, #o.final-1, #o.final-2}
 							o.faces[#o.faces+1] = {#o.final-0, #o.final-2, #o.final-3}
 						end
 						
 						--front
 						if y == m.y-1 or m.blocks[x][y+1][z] == 0 then
-							o.final[#o.final+1] = {{ox+0, oy+1, oz+1}, {0, 0}, {0, 0, 1}, mat}
-							o.final[#o.final+1] = {{ox+1, oy+1, oz+1}, {0, 0}, {0, 0, 1}, mat}
-							o.final[#o.final+1] = {{ox+1, oy+0, oz+1}, {0, 0}, {0, 0, 1}, mat}
-							o.final[#o.final+1] = {{ox+0, oy+0, oz+1}, {0, 0}, {0, 0, 1}, mat}
+							o.final[#o.final+1] = {ox+0, oy+1, oz+1, 1.0, 0, 0, 1, mat}
+							o.final[#o.final+1] = {ox+1, oy+1, oz+1, 1.0, 0, 0, 1, mat}
+							o.final[#o.final+1] = {ox+1, oy+0, oz+1, 1.0, 0, 0, 1, mat}
+							o.final[#o.final+1] = {ox+0, oy+0, oz+1, 1.0, 0, 0, 1, mat}
 							o.faces[#o.faces+1] = {#o.final-0, #o.final-1, #o.final-2}
 							o.faces[#o.faces+1] = {#o.final-0, #o.final-2, #o.final-3}
 						end
@@ -299,5 +305,7 @@ _3DreamEngine.loader["vox"] = function(self, obj, name, path)
 			generate(models[m+1], name or tostring(m), t)
 		end
 	end
+	
+	--hard coded offset
 	group(nodes[0], {-16, -24, -32})
 end

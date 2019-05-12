@@ -1,1 +1,1 @@
-require("examples/first person game/main")
+require("examples/knight/main")
