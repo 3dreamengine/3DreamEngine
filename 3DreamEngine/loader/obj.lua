@@ -2,7 +2,7 @@
 #obj - Wavefront OBJ file
 --]]
 
-_3DreamEngine.loader["obj"] = function(self, obj, name, path)
+_3DreamEngine.loader["obj"] = function(self, obj, name, path, simple)
 	--store vertices, normals and texture coordinates
 	local vertices = { }
 	local normals = { }
@@ -12,7 +12,19 @@ _3DreamEngine.loader["obj"] = function(self, obj, name, path)
 	local material = obj.materials.None
 	local blocked = false
 	local o = obj.objects.default
+	
+	local yield = 0
+	local t = love.timer.getTime()
 	for l in (love.filesystem.getInfo(self.objectDir .. name .. ".obj") and love.filesystem.lines(self.objectDir .. name .. ".obj") or love.filesystem.lines(name .. ".obj")) do
+		yield = yield + 1
+		if yield > self.performance_parser then
+			yield = yield - self.performance_parser
+			local diff = (love.timer.getTime() - t) * 1000
+			self.performance_parser = self.performance_parser + (diff < self.performance and 4 or -4)
+			coroutine.yield()
+			t = love.timer.getTime()
+		end
+		
 		local v = self:split(l, " ")
 		if not blocked then
 			if v[1] == "v" then
@@ -24,14 +36,21 @@ _3DreamEngine.loader["obj"] = function(self, obj, name, path)
 			elseif v[1] == "usemtl" then
 				material = obj.materials[l:sub(8)] or obj.materials.None
 				if obj.splitMaterials and not obj.rasterMargin then
-					local name = o.name .. "_" .. l:sub(8)
+					local nameRaw = o.name .. "_" .. l:sub(8)
+					local name = nameRaw .. (simple and ("_simple_" .. simple) or "")
 					obj.objects[name] = obj.objects[name] or {
 						faces = { },
 						final = { },
-						name = o.name,
 						material = material,
+						
+						name = nameRaw,
+						simple = simple,
+						super = simple and (simple == 1 and nameRaw or (nameRaw .. "_simple_" .. (simple-1))) or nil,
+						simpler = simple and (nameRaw .. "_simple_" .. (simple+1)) or nil
 					}
 					o = obj.objects[name]
+				else
+					o.material = material
 				end
 			elseif v[1] == "f" then
 				if obj.rasterMargin then
@@ -52,18 +71,20 @@ _3DreamEngine.loader["obj"] = function(self, obj, name, path)
 					--print(tx, ty, tz, "|" .. x, y, z, "|" .. x - o.tx, y - o.ty, z - o.tz)
 				end
 				
-				--link material to object, used as draw order identifier
-				o.material = material
-				
 				--combine vertex and data into one
 				for i = 1, #v-1 do
 					local v2 = self:split(v[i+1]:gsub("//", "/0/"), "/")
+					
+					local dv = vertices[tonumber(v2[1])]
+					local dn = normals[tonumber(v2[3])]
+					local uv = texVertices[tonumber(v2[2])] or {0, 0}
+					
 					o.final[#o.final+1] = {
-						vertices[tonumber(v2[1])],                --position
-						texVertices[tonumber(v2[2])] or {0, 0},   --UV
-						normals[tonumber(v2[3])],                 --normal
-						material,                                 --material
-						false                                     --color
+						dv[1], dv[2], dv[3],    --position
+						1.0,                    --extra float for animations
+						dn[1], dn[2], dn[3],    --normal
+						material.ID,            --material
+						uv[1], uv[2],           --UV
 					}
 				end
 				
@@ -78,12 +99,16 @@ _3DreamEngine.loader["obj"] = function(self, obj, name, path)
 					error("only tris and quads supported (got " .. (#v-1) .. " vertices)")
 				end
 			elseif v[1] == "o" then
-				local name = l:sub(3)
+				local name = l:sub(3) .. (simple and ("_simple_" .. simple) or "")
 				obj.objects[name] = obj.objects[name] or {
 					faces = { },
 					final = { },
-					name = l:sub(3),
 					material = material,
+					
+					name = l:sub(3),
+					simple = simple,
+					super = simple and (simple == 1 and l:sub(3) or (l:sub(3) .. "_simple_" .. (simple-1))) or nil,
+					simpler = simple and (l:sub(3) .. "_simple_" .. (simple+1)) or nil
 				}
 				o = obj.objects[name]
 			end

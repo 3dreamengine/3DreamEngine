@@ -33,7 +33,26 @@ dream.lighting_max = 16          --max light sources, depends on GPU, has no per
 dream:init()
 
 --loads a object
-yourObject = dream:loadObject("objectName")
+yourObject = dream:loadObject("objectName", args)
+
+--where args is a table with additional settings
+--	splitMaterials =(boolean, false by default, has to be true if your object contains several (diffuse) textures)
+--	rasterMargin = (boolean or integer, default to true (equals to 2), enables object splitting
+--	forceTextured = uses textured mode (which includes normal tangent values, ...),
+--	noMesh = load eberything, but skip mesh loading
+--	cleanup = (boolean, default true) clean up memory by deleting faces and vertex data
+
+--loads a lazy object
+yourObject = dream:loadObjectLazy("objectName", args)
+
+--and load it step by step
+yourObject:resume()
+
+--or add it to the master loader, priority is an int between 1 and inf, default is 3
+dream.resourceLoader:add(yourObject[, priority])
+
+--and update the loader in love.update(), maxTime if the time available in ms, default 1 ms. Peaks may occur. Average total time per call is maxTime + 3ms (since worst case time can exceed maxTime)
+dream.resourceLoader:update(maxTime)
 
 --update camera postion
 dream.cam = {x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0}
@@ -85,6 +104,8 @@ require((...) .. "/shader")
 require((...) .. "/loader")
 require((...) .. "/present")
 require((...) .. "/collision")
+require((...) .. "/particlesystem")
+
 
 --loader
 lib.loader = { }
@@ -121,12 +142,9 @@ lib.AO_resolution = 0.5
 
 lib.lighting_max = 16
 
---not implemented yet
-lib.reflections_enabled = false
-
 lib.object_light = lib:loadObject(lib.root .. "/objects/light")
-lib.object_clouds = lib:loadObject(lib.root .. "/objects/clouds_high", false, false, true)
-lib.object_sky = lib:loadObject(lib.root .. "/objects/sky", false, false, true)
+lib.object_clouds = lib:loadObject(lib.root .. "/objects/clouds_high", {forceTextured = true})
+lib.object_sky = lib:loadObject(lib.root .. "/objects/sky", {forceTextured = true})
 lib.texture_missing = love.graphics.newImage(lib.root .. "/missing.png")
 
 --set lib clouds to an cloud texture (noise, tilable) to enable clouds
@@ -145,10 +163,6 @@ lib.color = true
 lib.dayTime = 0
 
 function lib.init(self)
-	if self.reflections_enabled then
-		self.AO_enabled = true
-	end	
-	
 	self:resize(love.graphics.getWidth(), love.graphics.getHeight())
 	self:loadShader()
 	
@@ -285,11 +299,13 @@ function lib.draw(self, obj, x, y, z, sx, sy, sz, rx, ry, rz)
 		{x, y, z, 1},
 	}
 	
+	local levelOfAbstraction = math.floor(math.sqrt((self.cam.x-x)^2 + (self.cam.y-y)^2 + (self.cam.z-z)^2) / 20) - 1
+	
 	local t = obj.objects or {obj}
 	for d,s in pairs(t) do
-		if not s.simple then
-			if t[d .. "_simple_" .. 1] then
-				s = t[d .. "_simple_" .. 1]
+		if (not s.simple or not t[s.super] or not t[s.super].meshLoaded) and s.mesh and (not s.particleSystem or levelOfAbstraction <= 2) then
+			for i = 1, levelOfAbstraction do
+				s = t[s.simpler] or s
 			end
 			
 			--insert intro draw todo list

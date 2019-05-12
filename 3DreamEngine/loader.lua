@@ -6,6 +6,41 @@ loader.lua - loads .obj files, loads vertex lists
 
 local lib = _3DreamEngine
 
+--master resource loader
+lib.performance = 3
+lib.performance_vertex = 1024
+lib.performance_particlesystem = 64
+lib.performance_parser = 512
+lib.resourceLoader = {jobs = { }, self = lib, progress = 1, subProgress = 1}
+function lib.resourceLoader.add(self, object, priority)
+	self.jobs[#self.jobs+1] = {object = object, priority = priority or 3}
+end
+function lib.resourceLoader.update(self, time)
+	time = (time or 1) / 1000
+	while time > 0 do
+		if #self.jobs > 0 then
+			if not self.jobs[self.progress] then
+				self.progress = 1
+			end
+			
+			local t = love.timer.getTime()
+			self.jobs[self.progress].object:resume()
+			time = time - (love.timer.getTime() - t)
+			
+			if self.jobs[self.progress].loaded then
+				self.subProgress = 1
+				table.remove(self.jobs, self.progress)
+			else
+				self.subProgress = self.subProgress + 1
+				if self.subProgress > self.jobs[self.progress].priority then
+					self.subProgress = 1
+					self.progress = self.progress + 1
+				end
+			end
+		end
+	end
+end
+
 function lib.loadTexture(self, name, path)
 	for _,path in ipairs({
 		self.objectDir .. name,
@@ -39,24 +74,26 @@ function lib.loadTexture(self, name, path)
 	end
 end
 
---[[
-name            path to file, starting from root or the set object directory
-splitMaterials  to draw several textured (!) materials on one object, it has to be split up first. Keep false for untextured models!
-				objects will be renamed to objectName_materialName
-rasterMargin	several (untextured) models in one file, where the first one starts at 0|0|0, is sized 1|1|1 and gets the object obj.objects[1][1][1]
-				not compatible with splitMaterials! Therefore only one textured material per sub-model (but infinite color-only-materials)
---]]
-function lib.loadObject(self, name, splitMaterials, rasterMargin, forceTextured, noMesh)
+function lib.loadObject(self, ...)
+	local obj = self:loadObjectLazy(...)
+	while obj:resume() do end
+	obj.loaded = true
+	return obj
+end
+
+function lib.loadObjectLazy(self, name, args)
+	if args and type(args) ~= "table" then
+		error("arguments are now packed in a table, check init.lua for example")
+	end
+	args = args or { }
+	
 	if rasterMargin == true then rasterMargin = 2 end
-	
-	local n = self:split(name, "/")
-	local path = #n > 1 and table.concat(n, "/", 1, #n-1) or ""
-	
 	local obj = {
-		materials = {None = {color = {1.0, 1.0, 1.0, 1.0}, specular = 0.5, name = "None"}},
+		materials = {None = {color = {1.0, 1.0, 1.0, 1.0}, specular = 0.5, name = "None", ID = 1}},
+		materialsID = {"None"},
 		objects = {
 			default = {		
-				--store final vertices (vertex, normal and texCoord index)
+				--store final vertices (vertex position + extra float used for anim, normal, material index, UV [pos] will be removed if not needed before sync, [tangent, bitangent] if not flat shading)
 				final = { },
 				
 				--store final faces, 3 final indices
@@ -65,10 +102,41 @@ function lib.loadObject(self, name, splitMaterials, rasterMargin, forceTextured,
 				name = "default",
 			}
 		},
-		splitMaterials = splitMaterials,
-		rasterMargin = rasterMargin
+		name = name,
+		splitMaterials = args.splitMaterials,
+		rasterMargin = args.rasterMargin,
+		forceTextured = args.forceTextured,
+		noMesh = args.noMesh,
+		cleanup = (args.cleanup == nil or args.cleanup),
+		self = self,
 	}
 	
+	obj.co = coroutine.create(self.loadObjectC)
+	
+	obj.loaded = false
+	obj.resume = function(self)
+		if not self.loaded then
+			local ok, err = coroutine.resume(self.co, self.self, self)
+			if not ok and err ~= "cannot resume dead coroutine" then
+				error("loader coroutine crashed:\n" .. debug.traceback(self.co))
+			end
+			return ok
+		end
+	end
+	
+	return obj
+end
+
+--[[
+name            path to file, starting from root or the set object directory
+splitMaterials  to draw several textured (!) materials on one object, it has to be split up first. Keep false for untextured models!
+				objects will be renamed to objectName_materialName
+rasterMargin	several (untextured) models in one file, where the first one starts at 0|0|0, is sized 1|1|1 and gets the object obj.objects[1][1][1]
+				not compatible with splitMaterials! Therefore only one textured material per sub-model (but infinite color-only-materials)
+--]]
+function lib.loadObjectC(self, obj)
+	local n = self:split(obj.name, "/")
+	local path = #n > 1 and table.concat(n, "/", 1, #n-1) or ""
 	obj.objects.default.material = obj.materials.None
 	
 	--load files
@@ -80,200 +148,57 @@ function lib.loadObject(self, name, splitMaterials, rasterMargin, forceTextured,
 		"3db",
 		"obj",
 	}) do
-		if love.filesystem.getInfo(self.objectDir .. name .. "." .. typ) or love.filesystem.getInfo(name .. "." .. typ) then
+		if love.filesystem.getInfo(self.objectDir .. obj.name .. "." .. typ) or love.filesystem.getInfo(obj.name .. "." .. typ) then
 			--load the simplified objects if existing
-			for i = 1, 16 do
-				if love.filesystem.getInfo(self.objectDir .. name .. "_simple_" .. i .. "." .. typ) or love.filesystem.getInfo(name .. "_simple_" .. i .. "." .. typ) then
-					local old = obj.objects
-					obj.objects = {
-						default = {		
-							--store final vertices (vertex, normal and texCoord index)
-							final = { },
-							
-							--store final faces, 3 final indices
-							faces = { },
-							
-							name = "default",
-						}
-					}
-					self.loader[typ](self, obj, name .. "_simple_" .. i, path)
-					for d,s in pairs(obj.objects) do
-						old[d .. "_simple_" .. i] = s
-						s.name = s.name  .. "_simple_" .. i
-						s.simple = i
-					end
-					obj.objects = old
-				else
-					break
+			for i = 8, 1, -1 do
+				if love.filesystem.getInfo(self.objectDir .. obj.name .. "_simple_" .. i .. "." .. typ) or love.filesystem.getInfo(obj.name .. "_simple_" .. i .. "." .. typ) then
+					--load object and insert it to current
+					self.loader[typ](self, obj, obj.name .. "_simple_" .. i, path, i)
+					
+					coroutine.yield()
+					
+					--sync
+					self:syncObj(obj)
+					coroutine.yield()
 				end
 			end
 			
-			self.loader[typ](self, obj, name, path)
-		end
-	end
-	
-	--add particle system objects
-	--for every material with particle systems attached, for every object which is not a particle system itself and contains the material with the attached particle system and is not a simplified version, for every object used as particle system create a new object
-	for d,material in pairs(obj.materials) do
-		if material.particleSystems then
-			for particleSystemID, particleSystem in ipairs(material.particleSystems) do
-				for _,o in pairs(obj.objects) do
-					if not o.particleSystem and not o.simple then
-						local contains = false
-						for _,f in ipairs(o.faces) do
-							if o.final[f[1]][4] == material then
-								contains = true
-							end
-						end
-						if contains then
-							local pname = o.name .. "_particleSystem_" .. material.name .. "_" .. particleSystemID
-							print(pname)
-							obj.objects[pname] = {
-								faces = { },
-								final = { },
-								name = pname,
-								particleSystem = true,
-								noBackFaceCulling = true,
-								material = particleSystem.objects[1].object.material or obj.materials.None,
-								shader = particleSystem.shader,
-							}
-							local po = obj.objects[pname]
-							
-							for _,particle in ipairs(particleSystem.objects) do
-								local amount = particle.amount / #particleSystem.objects
-								
-								for _,f in ipairs(o.faces) do
-									if o.final[f[1]][4] == material and (amount >= 1 or math.random() < amount) then
-										local v1 = o.final[f[1]][1]
-										local v2 = o.final[f[2]][1]
-										local v3 = o.final[f[3]][1]
-										
-										--normal vector
-										local va = {v1[1] - v2[1], v1[2] - v2[2], v1[3] - v2[3]}
-										local vb = {v1[1] - v3[1], v1[2] - v3[2], v1[3] - v3[3]}
-										local n = {
-											va[2]*vb[3] - va[3]*vb[2],
-											va[3]*vb[1] - va[1]*vb[3],
-											va[1]*vb[2] - va[2]*vb[1],
-										}
-										local ln = math.sqrt(n[1]^2+n[2]^2+n[3]^2)
-										
-										--some particles like grass points towards the sky
-										n[1] = n[1] / ln * particleSystem.normal
-										n[2] = n[2] / ln * particleSystem.normal + (1-particleSystem.normal)
-										n[3] = n[3] / ln * particleSystem.normal
-										
-										--area of the plane
-										local a = math.sqrt((v1[1]-v2[1])^2 + (v1[2]-v2[2])^2 + (v1[3]-v2[3])^2)
-										local b = math.sqrt((v2[1]-v3[1])^2 + (v2[2]-v3[2])^2 + (v2[3]-v3[3])^2)
-										local c = math.sqrt((v3[1]-v1[1])^2 + (v3[2]-v1[2])^2 + (v3[3]-v1[3])^2)
-										local s = (a+b+c)/2
-										local area = math.sqrt(s*(s-a)*(s-b)*(s-c))
-										
-										local rotZ = math.asin(n[1] / math.sqrt(n[1]^2+n[2]^2))
-										local rotX = math.asin(n[3] / math.sqrt(n[2]^2+n[3]^2))
-										
-										local c = math.cos(rotZ)
-										local s = math.sin(rotZ)
-										rotZ = matrix{
-											{c, s, 0},
-											{-s, c, 0},
-											{0, 0, 1},
-										}
-										
-										local c = math.cos(rotX)
-										local s = math.sin(rotX)
-										rotX = matrix{
-											{1, 0, 0},
-											{0, c, -s},
-											{0, s, c},
-										}
-										
-										--add object to particle system object
-										for i = 1, math.floor(area*math.max(1, amount)+math.random()) do
-											--location on the plane
-											local f1 = math.random()
-											local f2 = math.random()
-											local f3 = math.random()
-											local f = f1+f2+f3
-											f1 = f1 / f
-											f2 = f2 / f
-											f3 = f3 / f
-											
-											local x = v1[1]*f1 + v2[1]*f2 + v3[1]*f3
-											local y = v1[2]*f1 + v2[2]*f2 + v3[2]*f3
-											local z = v1[3]*f1 + v2[3]*f2 + v3[3]*f3
-											
-											--rotation matrix
-											local rotY = particleSystem.randomRotation and math.random()*math.pi*2 or 0
-											
-											local c = math.cos(rotY)
-											local s = math.sin(rotY)
-											rotY = matrix{
-												{c, 0, -s},
-												{0, 1, 0},
-												{s, 0, c},
-											}
-											
-											local sc = math.random() * (particleSystem.randomSize[2] - particleSystem.randomSize[1]) + particleSystem.randomSize[1]
-											local scale = matrix{
-												{sc, 0, 0},
-												{0, sc, 0},
-												{0, 0, sc},
-											}
-											
-											local res = rotX * rotY * rotZ * scale
-											
-											if particleSystem.randomDistance then
-												local vn = res * (matrix{{0, 1, 0}}^"T")
-												local l = math.sqrt(vn[1][1]^2 + vn[2][1]^2 + vn[3][1]^2)
-												x = x + vn[1][1] * particleSystem.randomDistance * math.random() / l
-												y = y + vn[2][1] * particleSystem.randomDistance * math.random() / l
-												z = z + vn[3][1] * particleSystem.randomDistance * math.random() / l
-											end
-											
-											--insert finals and faces
-											local lastIndex = #po.final
-											for d,s in ipairs(particle.object.final) do
-												local vp = res * (matrix{s[1]}^"T")
-												vp = {vp[1][1], vp[2][1], vp[3][1]}
-												
-												local vn = res * (matrix{s[3]}^"T")
-												vn = {vn[1][1], vn[2][1], vn[3][1]}
-												
-												local extra
-												if particleSystem.shader == "wind" then
-													if particleSystem.shaderInfo == "grass" then
-														extra = math.min(1.0, math.max(0.0, s[1][2] * 0.25))
-													else
-														extra = tonumber(particleSystem.shaderInfo) or 0.15
-													end
-												end
-												
-												po.final[#po.final+1] = {
-													{vp[1]+x, vp[2]+y, vp[3]+z, extra}, --position and optional extra value
-													s[2],                               --UV
-													{vn[1], vn[2], vn[3]},              --normal
-													s[4],                               --material
-													s[5]                                --optional color
-												}
-											end
-											for d,s in ipairs(particle.object.faces) do
-												po.faces[#po.faces+1] = {s[1]+lastIndex, s[2]+lastIndex, s[3]+lastIndex}
-											end
-										end
-									end
-								end
-							end
-							
-							print(material.name .. ": " .. #po.faces .. " particle-faces") io.flush()
-						end
-					end
+			self.loader[typ](self, obj, obj.name, path)
+			for d,s in pairs(obj.objects) do
+				if not s.simpler and obj.objects[d .. "_simple_1"] then
+					s.simpler = d .. "_simple_1"
 				end
 			end
+			coroutine.yield()
 		end
 	end
 	
+	--load objects first
+	self:syncObj(obj)
+	coroutine.yield()
+	
+	--create particle systems
+	self:addParticlesystems(obj)
+	coroutine.yield()
+	
+	--and their meshes
+	self:syncObj(obj)
+	coroutine.yield()
+	
+	--cleaning up
+	if obj.cleanup and false then
+		for d,s in pairs(obj.objects) do
+			s.faces = nil
+			s.final = nil
+		end
+		collectgarbage()
+	end
+	coroutine.yield()
+	
+	obj.loaded = true
+end
+
+function lib.syncObj(self, obj)
 	--remove empty objects
 	for d,s in pairs(obj.objects) do
 		if s.final and #s.final == 0 then
@@ -282,35 +207,43 @@ function lib.loadObject(self, name, splitMaterials, rasterMargin, forceTextured,
 	end
 	
 	--fill mesh(es)
-	if not noMesh then
-		if rasterMargin then
+	if not obj.noMesh then
+		if obj.rasterMargin then
 			for x, dx in pairs(obj.objects) do
 				for y, dy in pairs(dx) do
 					for z, dz in pairs(dy) do
-						--move sub objects
-						for i,v in ipairs(dz.final) do
-							if not v[1][4] then
-								v[1][1] = v[1][1] - (dz.tx or 0)
-								v[1][2] = v[1][2] - (dz.ty or 0)
-								v[1][3] = v[1][3] - (dz.tz or 0)
-								v[1][4] = true
+						if not dz.finished then
+							dz.finished = true
+							
+							--move sub objects
+							local used = { }
+							for i,v in ipairs(dz.final) do
+								if used[v] then
+									v[1] = v[1] - (dz.tx or 0)
+									v[2] = v[2] - (dz.ty or 0)
+									v[3] = v[3] - (dz.tz or 0)
+									used[v] = true
+								end
 							end
+							used = nil
+							
+							--create drawable mesh
+							self:createMesh(dz, obj)
+							coroutine.yield()
 						end
-						for i,v in ipairs(dz.final) do
-							v[1][4] = nil
-						end
-						self:createMesh(dz, obj)
 					end
 				end
 			end
 		else
 			for d,s in pairs(obj.objects) do
-				self:createMesh(s, obj, nil, forceTextured)
+				if not s.finished then
+					s.finished = true
+					self:createMesh(s, obj, nil, obj.forceTextured)
+					coroutine.yield()
+				end
 			end
 		end
 	end
-	
-	return obj
 end
 
 --takes an final and face object and a base object and generates the mesh and vertexMap
@@ -364,107 +297,134 @@ function lib.createMesh(self, o, obj, faceMap, forceTextured)
 			end
 		end
 	end
+	coroutine.yield()
 	
 	--calculate vertex normals and uv normals
-	for f = 1, #vertexMap, 3 do
-		local P1 = finals[vertexMap[f+0]][1]
-		local P2 = finals[vertexMap[f+1]][1]
-		local P3 = finals[vertexMap[f+2]][1]
-		local N1 = finals[vertexMap[f+0]][2]
-		local N2 = finals[vertexMap[f+1]][2]
-		local N3 = finals[vertexMap[f+2]][2]
-		
-		local tangent = { }
-		local bitangent = { }
-		
-		local edge1 = {P2[1] - P1[1], P2[2] - P1[2], P2[3] - P1[3]}
-		local edge2 = {P3[1] - P1[1], P3[2] - P1[2], P3[3] - P1[3]}
-		local edge1uv = {N2[1] - N1[1], N2[2] - N1[2]}
-		local edge2uv = {N3[1] - N1[1], N3[2] - N1[2]}
-		
-		local cp = edge1uv[2] * edge2uv[1] - edge1uv[1] * edge2uv[2]
-		
-		if cp ~= 0.0 then
-			for i = 1, 3 do
-				tangent[i] = (edge1[i] * (-edge2uv[2]) + edge2[i] * edge1uv[2]) / cp
-				bitangent[i] = (edge1[i] * (-edge2uv[1]) + edge2[i] * edge1uv[1]) / cp
+	if o.material.tex_diffuse or forceTextured then
+		for f = 1, #vertexMap, 3 do
+			local P1 = finals[vertexMap[f+0]]
+			local P2 = finals[vertexMap[f+1]]
+			local P3 = finals[vertexMap[f+2]]
+			local N1 = finals[vertexMap[f+0]]
+			local N2 = finals[vertexMap[f+1]]
+			local N3 = finals[vertexMap[f+2]]
+			
+			local tangent = { }
+			local bitangent = { }
+			
+			local edge1 = {P2[1] - P1[1], P2[2] - P1[2], P2[3] - P1[3]}
+			local edge2 = {P3[1] - P1[1], P3[2] - P1[2], P3[3] - P1[3]}
+			local edge1uv = {N2[9] - N1[9], N2[10] - N1[10]}
+			local edge2uv = {N3[9] - N1[9], N3[10] - N1[10]}
+			
+			local cp = edge1uv[2] * edge2uv[1] - edge1uv[1] * edge2uv[2]
+			
+			if cp ~= 0.0 then
+				for i = 1, 3 do
+					tangent[i] = (edge1[i] * edge2uv[2] - edge2[i] * edge1uv[2]) / cp
+					bitangent[i] = (edge2[i] * edge1uv[1] - edge1[i] * edge2uv[1]) / cp
+				end
+				
+				local l = math.sqrt(tangent[1]^2+tangent[2]^2+tangent[3]^2)
+				tangent[1] = tangent[1] / l
+				tangent[2] = tangent[2] / l
+				tangent[3] = tangent[3] / l
+				
+				local l = math.sqrt(bitangent[1]^2+bitangent[2]^2+bitangent[3]^2)
+				bitangent[1] = bitangent[1] / l
+				bitangent[2] = bitangent[2] / l
+				bitangent[3] = bitangent[3] / l
+				
+				for i = 1, 3 do
+					finals[vertexMap[f+i-1]][11] = (finals[vertexMap[f+i-1]][11] or 0) + tangent[1]
+					finals[vertexMap[f+i-1]][12] = (finals[vertexMap[f+i-1]][12] or 0) + tangent[2]
+					finals[vertexMap[f+i-1]][13] = (finals[vertexMap[f+i-1]][13] or 0) + tangent[3]
+					
+					finals[vertexMap[f+i-1]][14] = (finals[vertexMap[f+i-1]][14] or 0) + bitangent[1]
+					finals[vertexMap[f+i-1]][15] = (finals[vertexMap[f+i-1]][15] or 0) + bitangent[2]
+					finals[vertexMap[f+i-1]][16] = (finals[vertexMap[f+i-1]][16] or 0) + bitangent[3]
+				end
 			end
 			
-			local l = math.sqrt(tangent[1]^2+tangent[2]^2+tangent[3]^2)
-			tangent[1] = tangent[1] / l
-			tangent[2] = tangent[2] / l
-			tangent[3] = tangent[3] / l
-			
-			local l = math.sqrt(bitangent[1]^2+bitangent[2]^2+bitangent[3]^2)
-			bitangent[1] = bitangent[1] / l
-			bitangent[2] = bitangent[2] / l
-			bitangent[3] = bitangent[3] / l
-			
-			for i = 1, 3 do
-				if not finals[vertexMap[f+i-1]][6] then
-					finals[vertexMap[f+i-1]][6] = {0, 0, 0}
-					finals[vertexMap[f+i-1]][7] = {0, 0, 0}
-					finals[vertexMap[f+i-1]][8] = {0, 0, 0}
-				end
-				for c = 1, 3 do
-					finals[vertexMap[f+i-1]][6][c] = finals[vertexMap[f+i-1]][6][c] + tangent[c]
-					finals[vertexMap[f+i-1]][7][c] = finals[vertexMap[f+i-1]][7][c] + bitangent[c]
-				end
+			if f % 1024*3 == 0 then
+				coroutine.yield()
+			end
+		end
+		
+		coroutine.yield()
+		
+		--complete smoothing step
+		for d,f in ipairs(finals) do
+			if f[11] then
+				local l = math.sqrt(f[11]^2+f[12]^2+f[13]^2)
+				f[11] = -f[11] / l
+				f[12] = -f[12] / l
+				f[13] = -f[13] / l
+				
+				local l = math.sqrt(f[14]^2+f[15]^2+f[16]^2)
+				f[14] = f[14] / l
+				f[15] = f[15] / l
+				f[16] = f[16] / l
+				
+	--			f[8][1] = f[6][2]*f[7][3] - f[6][3]*f[7][2]
+	--			f[8][2] = f[6][3]*f[7][1] - f[6][1]*f[7][3]
+	--			f[8][3] = f[6][1]*f[7][2] - f[6][2]*f[7][1]
 			end
 		end
 	end
-	
-	--complete smoothing step
-	for d,f in ipairs(finals) do
-		if f[6] then
-			local l = math.sqrt(f[6][1]^2+f[6][2]^2+f[6][3]^2)
-			f[6][1] = f[6][1] / l
-			f[6][2] = f[6][2] / l
-			f[6][3] = f[6][3] / l
-			
-			local l = math.sqrt(f[7][1]^2+f[7][2]^2+f[7][3]^2)
-			f[7][1] = f[7][1] / l
-			f[7][2] = f[7][2] / l
-			f[7][3] = f[7][3] / l
-			
---			f[8][1] = f[6][2]*f[7][3] - f[6][3]*f[7][2]
---			f[8][2] = f[6][3]*f[7][1] - f[6][1]*f[7][3]
---			f[8][3] = f[6][1]*f[7][2] - f[6][2]*f[7][1]
-		end
-	end
+	coroutine.yield()
 	
 	--create mesh
 	o.mesh = love.graphics.newMesh(atypes, #finals, "triangles", "static")
-	for d,s in ipairs(finals) do
-		vertexMap[#vertexMap+1] = s[i]
-		local p = s[1]
-		local t = s[2]
-		local n = s[3]
-		local m = s[4]
-		local c = s[5] or m.color
-		if o.material.tex_diffuse or forceTextured then
-			o.mesh:setVertex(d,
-				p[1], p[2], p[3], p[4] or 1.0,
-				t[1], t[2],
-				s[3][1], s[3][2], s[3][3],
-				s[6][1], s[6][2], s[6][3],
-				s[7][1], s[7][2], s[7][3]
-			)
-		else
-			o.mesh:setVertex(d,
-				p[1], p[2], p[3], p[4] or 1.0,
-				s[3][1], s[3][2], s[3][3],
-				m.specular,
-				c[1], c[2], c[3], c[4]
-			)
-		end
-	end
 	
 	--set diffuse texture
 	if o.material.tex_diffuse then
 		o.mesh:setTexture(o.material.tex_diffuse)
 	end
+	coroutine.yield()
 	
 	--vertex map
 	o.mesh:setVertexMap(vertexMap)
+	coroutine.yield()
+	
+	local t = love.timer.getTime()
+	local yield = 0
+	for d,s in ipairs(finals) do
+		vertexMap[#vertexMap+1] = s[i]
+		local m = o.materialsID and o.materialsID[s[8]] or  obj.materialsID[s[8]]
+		local c = m.color
+		if o.material.tex_diffuse or forceTextured then
+			o.mesh:setVertex(d,
+				s[1], s[2], s[3], s[4],
+				s[9], s[10],
+				s[5], s[6], s[7],
+				s[11], s[12], s[13],
+				s[14], s[15], s[16]
+			)
+		else
+			o.mesh:setVertex(d,
+				s[1], s[2], s[3], s[4],
+				s[5], s[6], s[7],
+				m.specular,
+				c[1], c[2], c[3], c[4]
+			)
+		end
+		
+		yield = yield + 1
+		if yield > self.performance_vertex then
+			yield = 0
+			local diff = (love.timer.getTime() - t) * 1000
+			self.performance_vertex = self.performance_vertex + (diff < self.performance and 32 or -32)
+			coroutine.yield()
+			t = love.timer.getTime()
+		end
+	end
+	
+	o.mesh:flush()
+	o.meshLoaded = true
+	coroutine.yield()
 end
+
+--rocks not rendered (no textued rendering)
+--particle system heavy lags
+--mesh building too slow -> learning and auto adapting to ~ 3ms

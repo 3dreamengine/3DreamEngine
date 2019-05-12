@@ -17,9 +17,13 @@ _3DreamEngine.loader["3de"] = function(self, obj, name, path)
 					mat.particleSystems[#mat.particleSystems+1] = {objects = { }, randomSize = {0.75, 1.25}, randomRotation = true, normal = 1.0}
 				end
 			elseif v[1] == "add" then
-				local o = self:loadObject(path .. "/" .. v[2], false, false, false, true)
+				local o = self:loadObjectLazy(path .. "/" .. v[2], {cleanup = false, noMesh = true})
+				while not o.loaded do
+					o:resume()
+					coroutine.yield()
+				end
 				for d,s in pairs(o.objects) do
-					table.insert(mat.particleSystems[#mat.particleSystems].objects, {object = s, amount = tonumber(v[3]) or 10})
+					table.insert(mat.particleSystems[#mat.particleSystems].objects, {object = s, materials = o.materials, materialsID = o.materialsID, amount = tonumber(v[3]) or 10})
 				end
 			elseif v[1] == "shader" then
 				mat.particleSystems[#mat.particleSystems].shader = v[2]

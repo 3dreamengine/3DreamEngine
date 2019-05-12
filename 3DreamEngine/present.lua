@@ -19,11 +19,7 @@ function lib.present(self)
 	
 	--clear canvas
 	if self.AO_enabled then
-		if self.reflections_enabled then
-			love.graphics.setCanvas({self.canvas, self.canvas_z, self.canvas_normal, depthstencil = self.canvas_depth})
-		else
-			love.graphics.setCanvas({self.canvas, self.canvas_z, depthstencil = self.canvas_depth})
-		end
+		love.graphics.setCanvas({self.canvas, self.canvas_z, depthstencil = self.canvas_depth})
 	else
 		love.graphics.setCanvas({self.canvas, depthstencil = self.canvas_depth})
 	end
@@ -84,11 +80,7 @@ function lib.present(self)
 	
 	--set canvas
 	if self.AO_enabled then
-		if self.reflections_enabled then
-			love.graphics.setCanvas({self.canvas, self.canvas_z, self.canvas_normal, depthstencil = self.canvas_depth})
-		else
-			love.graphics.setCanvas({self.canvas, self.canvas_z, depthstencil = self.canvas_depth})
-		end
+		love.graphics.setCanvas({self.canvas, self.canvas_z, depthstencil = self.canvas_depth})
 	else
 		love.graphics.setCanvas({self.canvas, depthstencil = self.canvas_depth})
 	end
@@ -215,11 +207,12 @@ function lib.present(self)
 		
 		love.graphics.setCanvas()
 		love.graphics.setBlendMode("alpha")
-		love.graphics.setShader(self.post)
-		self.post:send("AO", self.canvas_blur_1)
-		self.post:send("strength", love.keyboard.isDown("f9") and 0.0 or self.AO_strength)
-		self.post:send("depth", self.canvas_z)
-		self.post:send("fog", self.fog)
+		local shader = self.post
+		love.graphics.setShader(shader)
+		shader:send("AO", self.canvas_blur_1)
+		shader:send("strength", love.keyboard.isDown("f9") and 0.0 or self.AO_strength)
+		shader:send("depth", self.canvas_z)
+		shader:send("fog", self.fog)
 		love.graphics.draw(self.canvas)
 		love.graphics.setShader()
 	else

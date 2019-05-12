@@ -12,7 +12,9 @@ _3DreamEngine.loader["mtl"] = function(self, obj, name, path)
 				color = {1.0, 1.0, 1.0, 1.0},
 				specular = 0.5,
 				name = l:sub(8),
+				ID = #obj.materialsID+1,
 			}
+			obj.materialsID[#obj.materialsID+1] = obj.materials[l:sub(8)]
 			material = obj.materials[l:sub(8)]
 		elseif v[1] == "Ks" then
 			material.specular = tonumber(v[2])

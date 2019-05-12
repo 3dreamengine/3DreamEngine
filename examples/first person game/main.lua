@@ -23,7 +23,9 @@ dream:init()
 --dream:generateMipMaps(dream.objectDir .. "objects/leaves.png")
 --dream:generateMipMaps(dream.objectDir .. "objects/grass.png")
 
-castle = dream:loadObject("objects/scene", true)
+castle = dream:loadObjectLazy("objects/scene", {splitMaterials = true})
+dream.resourceLoader:add(castle)
+
 love.graphics.setBackgroundColor(128/255, 218/255, 235/255)
 
 math.randomseed(os.time())
@@ -48,7 +50,7 @@ function love.draw()
 	dream.dayTime = love.timer.getTime() * 0.05
 	
 	dream:resetLight()
-	dream:addLight(player.x, player.y, player.z, 1.0, 0.75, 0.1, 1.0 + love.math.noise(love.timer.getTime(), 1.0))
+	dream:addLight(player.x, player.y, player.z, 1.0, 0.75, 0.1, 1.0 + love.math.noise(love.timer.getTime()*2, 1.0), 2.0)
 	
 	dream:prepare()
 	
@@ -65,7 +67,12 @@ function love.draw()
 			"\ndifferent shaders: " .. dream.stats.shadersInUse ..
 			"\ndifferent materials: " .. dream.stats.materialDraws ..
 			"\ndraws: " .. dream.stats.draws ..
-			"\nshaders: " .. shadersInUse, 15, 500)
+			"\nshaders: " .. shadersInUse ..
+			"\nperformance:" ..
+			"\n  vertex: " .. dream.performance_vertex ..
+			"\n  particle: " .. dream.performance_particlesystem ..
+			"\n  parser: " .. dream.performance_parser,
+			15, 400)
 		end
 end
 
@@ -154,6 +161,8 @@ function love.update(dt)
 	dream.cam.x = player.x
 	dream.cam.y = player.y+0.3
 	dream.cam.z = player.z
+	
+	dream.resourceLoader:update()
 end
 
 function love.keypressed(key)

@@ -18,6 +18,8 @@ monkey = dream:loadObject("object")
 love.graphics.setBackgroundColor(128/255, 218/255, 235/255)
 
 function love.draw()
+	dream:resetLight()
+	
 	dream:prepare()
 
 	dream:draw(monkey, 0, 0, -2, 1, 1, 1, 0, love.timer.getTime())

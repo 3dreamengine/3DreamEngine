@@ -143,7 +143,7 @@ lib.shaderSky = love.graphics.newShader([[
 
 function lib.getShaderInfo(self, typ, variant, normal, specular, lightings)
 	variant = variant or "default"
-	local name = "shader_" .. typ .. (self.AO_enabled and "_AO" or "") .. (self.reflections_enabled and "_reflections" or "") .. "_" .. variant .. (normal and "_normal" or "") .. (specular and "_specular" or "") .. "_" .. (lightings or 0)
+	local name = "shader_" .. typ .. (self.AO_enabled and "_AO" or "") .. "_" .. variant .. (normal and "_normal" or "") .. (specular and "_specular" or "") .. "_" .. (lightings or 0)
 	
 	if not self["info_" .. name] then
 		self["info_" .. name] = {
@@ -177,7 +177,6 @@ function lib.getShader(self, typ, variant, normal, specular, lightings)
 			(normal and "#define TEX_NORMAL\n" or "") ..
 			(specular and "#define TEX_SPECULAR\n" or "") ..
 			(self.AO_enabled and "#define AO_ENABLED\n" or "") ..
-			(self.reflections_enabled and "#define REFLECTIONS_ENABLED\n" or "") ..
 			(variant == "wind" and "#define VARIANT_WIND\n" or "") ..
 			(lightings > 0 and "#define LIGHTING\n" or "") ..
 			(self.render == "OpenGL ES" and "#define OPENGL_ES\n" or "") ..
@@ -212,8 +211,6 @@ const int lightCount = ]] .. lightings .. [[;
 //light pos and color (r, g, b and distance meter)
 extern vec3 lightPos[lightCount];
 extern vec4 lightColor[lightCount];
-varying vec3 lightVec[lightCount];
-varying vec3 lightVecHalf[lightCount];
 #endif
 
 //transformations
@@ -225,8 +222,9 @@ extern vec3 ambient;     //ambient sun color
 
 //viewer
 extern vec3 viewPos;     //position of viewer in world space
-varying vec3 viewVec;    //vector from viewer to vertex
 varying vec3 posV;       //vertex position for pixel shader
+
+varying mat3 objToTangentSpace;
 
 #ifdef PIXEL
 
@@ -268,12 +266,16 @@ void effect() {
 	vec3 lighting = ambient;
 	
 	#ifdef LIGHTING
+	vec3 viewVec = normalize(viewPos - posV) * objToTangentSpace;
+	
 	//lighting
 	float NdotL;
 	float NdotH;
 	for (int i = 0; i < lightCount; i++) {
-		NdotL = clamp(dot(normal, lightVec[i]), 0.0, 1.0);
-		NdotH = clamp(dot(normal, lightVecHalf[i]), 0.0, 1.0);
+		vec3 lightVec = normalize(lightPos[i] - posV) * objToTangentSpace;
+		
+		NdotL = clamp(dot(normal, lightVec), 0.0, 1.0);
+		NdotH = clamp(dot(normal, normalize(viewVec + lightVec)), 0.0, 1.0);
 		
 		NdotH = pow(max(0.0, (NdotH - specular) / (1.0 - specular)), 2.0) * specular * 2.0;
 		lighting += (NdotH + NdotL) * lightColor[i].rgb / (0.01 + lightColor[i].a * length(lightPos[i] - posV));
@@ -295,11 +297,11 @@ void effect() {
 	love_Canvases[0] = col;
 	
 	#ifdef AO_ENABLED
-	love_Canvases[1] = vec4(depth, 0.0, 0.0, 1.0);
-	#endif
-	
-	#ifdef REFLECTIONS_ENABLED
-	love_Canvases[2] = vec4(normalCam*0.5 + vec3(0.5), 1.0);
+	if (alphaThreshold < 1.0) {
+		love_Canvases[1] = vec4(depth, 0.0, 0.0, 1.0);
+	} else {
+		love_Canvases[1] = vec4(255.0, 0.0, 0.0, 1.0);
+	}
 	#endif
 }
 #endif
@@ -329,31 +331,20 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	#endif
 	
 	//transform into tangential space
-	#ifdef OPENGL_ES
-		#ifdef FLAT_SHADING
-		mat3 objToTangentSpace = transpose_optional(mat3(transform));
-		#else
-		mat3 objToTangentSpace = transpose_optional(mat3(transform)) * mat3(VertexTangent, VertexBitangent, VertexNormal);
-		#endif
-	#else
-		#ifdef FLAT_SHADING
-		mat3 objToTangentSpace = transpose(mat3(transform));
-		#else
-		mat3 objToTangentSpace = transpose(mat3(transform)) * mat3(VertexTangent, VertexBitangent, VertexNormal);
-		#endif
-	#endif
-	
-	//view vector
-	viewVec = normalize(viewPos - pos.xyz) * objToTangentSpace;
-	
 	#ifdef LIGHTING
-		//lighting
-		for (int i = 0; i < lightCount; i++) {
-			lightVec[i] = normalize(lightPos[i] - pos.xyz) * objToTangentSpace;
-			
-			//light-view vector
-			lightVecHalf[i] = normalize(viewVec + lightVec[i]);
-		}
+		#ifdef OPENGL_ES
+			#ifdef FLAT_SHADING
+			objToTangentSpace = transpose_optional(mat3(transform));
+			#else
+			objToTangentSpace = transpose_optional(mat3(transform)) * mat3(VertexTangent, VertexBitangent, VertexNormal);
+			#endif
+		#else
+			#ifdef FLAT_SHADING
+			objToTangentSpace = transpose(mat3(transform));
+			#else
+			objToTangentSpace = transpose(mat3(transform)) * mat3(VertexTangent, VertexBitangent, VertexNormal);
+			#endif
+		#endif
 	#endif
 	
 	posV = pos.xyz;
