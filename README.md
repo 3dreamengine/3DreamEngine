@@ -3,7 +3,7 @@
 
 # Features
 * loading and rendering .obj files, supports materials and textures included in .mtl files
-* very fast rendering with z-buffer and vertex shaders
+* fast rendering with z-buffer and vertex shaders
 * inbuilt screen space ambient occlusion (ssao)
 * inbuilt distance fog
 * inbuilt "volumetric" clouds
@@ -13,14 +13,12 @@
 * specular map
 * normal map
 * point-source lightning
+* lazy object loading, loading while rendering
 * per pixel lighting for better results at close light sources
 * object merging to draw several objects at once
-* load one big .obj as atlas and automatically split it up into sub objects
 
 # In progress
-* screen space reflections
 * simple 3d collision
-* threaded loading
 
 # How to use?
 ```lua
@@ -38,6 +36,9 @@ dream:init()
 yourObject = dream:loadObject("objectName")
 
 function love.draw()
+  --reset lighting
+  dream:resetLight()
+  
   --prepare for rendering
   dream:prepare()
 
