@@ -274,13 +274,13 @@ void effect() {
 	#endif
 	
 	#ifdef TEX_NORMAL
-	vec3 normal = (Texel(tex_normal, VaryingTexCoord.xy).rgb * 2.0 - 1.0);
+		vec3 normal = (Texel(tex_normal, VaryingTexCoord.xy).rgb * 2.0 - 1.0);
 	#else
-	#ifdef FLAT_SHADING
-	vec3 normal = VaryingTexCoord.xyz;
-	#else
-	vec3 normal = vec3(0, 0, 1.0);
-	#endif
+		#ifdef FLAT_SHADING
+			vec3 normal = VaryingTexCoord.xyz;
+		#else
+			vec3 normal = vec3(0, 0, 1.0);
+		#endif
 	#endif
 	
 	vec3 lighting = ambient;

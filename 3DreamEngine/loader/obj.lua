@@ -39,7 +39,7 @@ _3DreamEngine.loader["obj"] = function(self, obj, name, path, simple)
 			texVertices[#texVertices+1] = {tonumber(v[2]), 1-tonumber(v[3])}
 		elseif v[1] == "usemtl" and not blocked then
 			material = obj.materials[l:sub(8)] or obj.materials.None
-			if obj.splitMaterials and not obj.rasterMargin and not o.name:find("LAMP") then
+			if obj.splitMaterials and not o.name:find("LAMP") then
 				local nameRaw = o.name .. "_" .. l:sub(8)
 				local name = nameRaw .. (simple and ("_simple_" .. simple) or "")
 				obj.objects[name] = obj.objects[name] or {
@@ -57,24 +57,6 @@ _3DreamEngine.loader["obj"] = function(self, obj, name, path, simple)
 				o.material = material
 			end
 		elseif v[1] == "f" and not blocked then
-			if obj.rasterMargin then
-				--split object, where 0|0|0 is the left-front-lower corner of the first object and every splitMargin is a new object with size 1.
-				--So each object must be within -margin to splitMargin-margin, a perfect cube will be 0|0|0 to 1|1|1
-				local objSize = 1
-				local margin = (obj.rasterMargin-objSize)/2
-				local v2 = self:split(v[2], "/")
-				local x, y, z = vertices[tonumber(v2[1])][1], vertices[tonumber(v2[1])][2], vertices[tonumber(v2[1])][3]
-				local tx, ty, tz = math.floor((x+margin)/obj.rasterMargin)+1, math.floor((z+margin)/obj.rasterMargin)+1, math.floor((-y-margin)/obj.rasterMargin)+2
-				if not obj.objects[tx] then obj.objects[tx] = { } end
-				if not obj.objects[tx][ty] then obj.objects[tx][ty] = { } end
-				if not obj.objects[tx][ty][tz] then obj.objects[tx][ty][tz] = {faces = { }, final = { }, material = material} end
-				o = obj.objects[tx][ty][tz]
-				o.tx = math.floor((x+margin)/obj.rasterMargin)*obj.rasterMargin + objSize/2
-				o.ty = math.floor((y+margin)/obj.rasterMargin)*obj.rasterMargin + objSize/2
-				o.tz = math.floor((z+margin)/obj.rasterMargin)*obj.rasterMargin + objSize/2
-				--print(tx, ty, tz, "|" .. x, y, z, "|" .. x - o.tx, y - o.ty, z - o.tz)
-			end
-			
 			--combine vertex and data into one
 			for i = 1, #v-1 do
 				local v2 = self:split(v[i+1]:gsub("//", "/0/"), "/")

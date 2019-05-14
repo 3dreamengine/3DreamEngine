@@ -39,7 +39,7 @@ yourObject = dream:loadObject("objectName", args)
 
 --where args is a table with additional settings
 --	splitMaterials =(boolean, false by default, has to be true if your object contains several (diffuse) textures)
---	rasterMargin = (boolean or integer, default to true (equals to 2), enables object splitting
+--	raster = (boolean or integer, default to true (equals to 2), enables object splitting
 --	forceTextured = uses textured mode (which includes normal tangent values, ...),
 --	noMesh = load eberything, but skip mesh loading
 --	cleanup = (boolean, default true) clean up memory by deleting faces and vertex data
@@ -93,15 +93,16 @@ dream:addLight(posX, posY, posZ, red, green, blue, brightness)
 
 --prepare for rendering
 --if cam is nil, it uses the default cam (dream.cam)
---noDepth disables the depth buffer, useful for gui elements
-dream:prepare(cam, noDepth)
+dream:prepare(cam)
 
 --draw
 --obj can be either the entire object, or an object inside the file (obj.objects.yourObject)
 dream:draw(obj, x, y, z, sx, sy, sz, rotX, rotY, rotZ)
 
 --finish render session, it is possible to render several times per frame
-dream:present()
+--noDepth disables the depth buffer, useful for gui elements
+--if noDepth is enabled, noSky will be true too by default
+dream:present(noDepth, noSky)
 
 #extend .obj
 The .mtl file usually exported with .obj will be loaded automatically.

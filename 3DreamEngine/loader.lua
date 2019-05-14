@@ -116,7 +116,7 @@ function lib.loadObjectLazy(self, name, args)
 		lights = { },
 		name = name,
 		splitMaterials = args.splitMaterials,
-		rasterMargin = args.rasterMargin,
+		raster = args.raster,
 		forceTextured = args.forceTextured,
 		noMesh = args.noMesh,
 		cleanup = (args.cleanup == nil or args.cleanup),
@@ -139,13 +139,6 @@ function lib.loadObjectLazy(self, name, args)
 	return obj
 end
 
---[[
-name            path to file, starting from root or the set object directory
-splitMaterials  to draw several textured (!) materials on one object, it has to be split up first. Keep false for untextured models!
-				objects will be renamed to objectName_materialName
-rasterMargin	several (untextured) models in one file, where the first one starts at 0|0|0, is sized 1|1|1 and gets the object obj.objects[1][1][1]
-				not compatible with splitMaterials! Therefore only one textured material per sub-model (but infinite color-only-materials)
---]]
 function lib.loadObjectC(self, obj)
 	local n = self:split(obj.name, "/")
 	local path = #n > 1 and table.concat(n, "/", 1, #n-1) or ""
@@ -205,6 +198,28 @@ function lib.loadObjectC(self, obj)
 		end
 	end
 	
+	--if raster is enabled, calculate their position in the grid
+	if obj.raster then
+		for d,o in pairs(obj.objects) do
+			--move objects to their center
+			local x, y, z = 0, 0, 0
+			for i,v in ipairs(o.final) do
+				x = x + v[1]
+				y = y + v[2]
+				z = z + v[3]
+			end
+			o.x = math.ceil(x / #o.final)
+			o.y = math.ceil(y / #o.final)
+			o.z = math.ceil(z / #o.final)
+			
+			for i,v in ipairs(o.final) do
+				v[1] = v[1] - o.x
+				v[2] = v[2] - o.y
+				v[3] = v[3] - o.z
+			end
+		end
+	end
+	
 	--load objects first
 	self:syncObj(obj)
 	coroutine.yield()
@@ -227,12 +242,26 @@ function lib.loadObjectC(self, obj)
 	end
 	coroutine.yield()
 	
+	--if raster is enabled, rename the objects to a 3 dim array based on the position calculated before
+	if obj.raster then
+		local objects = obj.objects
+		obj.objects = { }
+		for d,o in pairs(objects) do
+			obj.objects[o.x] = obj.objects[o.x] or { }
+			obj.objects[o.x][o.y] = obj.objects[o.x][o.y] or { }
+			if obj.objects[o.x][o.y][o.z] then
+				print("object atlas intersection at " .. o.x .. "*" .. o.y .. "*" .. o.z .. ": " .. d)
+			end
+			obj.objects[o.x][o.y][o.z] = o
+		end
+	end
+	
 	obj.loaded = true
 	return true
 end
 
 function lib.syncObj(self, obj)
-	--remove emptyand add light sources
+	--add light sources
 	for d,s in pairs(obj.objects) do
 		pos = s.name:find("LAMP")
 		if pos then
@@ -264,45 +293,18 @@ function lib.syncObj(self, obj)
 	
 	--fill mesh(es)
 	if not obj.noMesh then
-		if obj.rasterMargin then
-			for x, dx in pairs(obj.objects) do
-				for y, dy in pairs(dx) do
-					for z, dz in pairs(dy) do
-						if not dz.finished then
-							dz.finished = true
-							
-							--move sub objects
-							local used = { }
-							for i,v in ipairs(dz.final) do
-								if used[v] then
-									v[1] = v[1] - (dz.tx or 0)
-									v[2] = v[2] - (dz.ty or 0)
-									v[3] = v[3] - (dz.tz or 0)
-									used[v] = true
-								end
-							end
-							used = nil
-							
-							--create drawable mesh
-							self:createMesh(dz, obj)
-							coroutine.yield()
-						end
-					end
-				end
-			end
-		else
-			for d,s in pairs(obj.objects) do
-				if not s.finished then
-					s.finished = true
-					self:createMesh(s, obj, nil, obj.forceTextured)
-					coroutine.yield()
-				end
+		for d,s in pairs(obj.objects) do
+			if not s.finished then
+				s.finished = true
+				self:createMesh(s, obj, nil, obj.forceTextured)
+				coroutine.yield()
 			end
 		end
 	end
 end
 
---takes an final and face object and a base object and generates the mesh and vertexMap
+--takes an final and face table (inside obj) and generates the mesh and vertexMap
+--if a faceMap is provided, it will generate the mesh by adding the face faceMap[1] linked to the final vertex data faceMap[2] with translation faceMap[3-5] and Y-rotation faceMap[6]
 function lib.createMesh(self, o, obj, faceMap, forceTextured)
 	if not o.material then
 		o.material = {color = {1.0, 1.0, 1.0, 1.0}, specular = 0.5, name = "None"}
@@ -334,9 +336,9 @@ function lib.createMesh(self, o, obj, faceMap, forceTextured)
 			for i = 1, 3 do
 				if not finalsIDs[f[1][i]] then
 					local fc = f[2][f[1][i]]
-					local x, z = self:rotatePoint(fc[1][1], fc[1][3], -f[6])
-					local nx, nz = self:rotatePoint(fc[3][1], fc[3][3], -f[6])
-					finals[#finals+1] = {{x + f[3], fc[1][2] + f[4], z + f[5]}, fc[2], {nx, fc[3][2], nz}, fc[4]}
+					local x, z = self:rotatePoint(fc[1], fc[3], -f[6])
+					local nx, nz = self:rotatePoint(fc[5], fc[7], -f[6])
+					finals[#finals+1] = {x + f[3], fc[2] + f[4], z + f[5], 1.0, nx, fc[6], nz, fc[8], fc[9], fc[10]}
 					finalsIDs[f[1][i]] = #finals
 				end
 				vertexMap[#vertexMap+1] = finalsIDs[f[1][i]]
@@ -412,6 +414,12 @@ function lib.createMesh(self, o, obj, faceMap, forceTextured)
 		--complete smoothing step
 		for d,f in ipairs(finals) do
 			if f[11] then
+				--Gram-Schmidt orthogonalization
+				local dot = (f[11] * f[5] + f[12] * f[6] + f[13] * f[7])
+				f[11] = f[11] - f[5] * dot
+				f[12] = f[12] - f[6] * dot
+				f[13] = f[13] - f[7] * dot
+				
 				local l = math.sqrt(f[11]^2+f[12]^2+f[13]^2)
 				f[11] = -f[11] / l
 				f[12] = -f[12] / l
@@ -421,10 +429,6 @@ function lib.createMesh(self, o, obj, faceMap, forceTextured)
 				f[14] = f[14] / l
 				f[15] = f[15] / l
 				f[16] = f[16] / l
-				
-	--			f[8][1] = f[6][2]*f[7][3] - f[6][3]*f[7][2]
-	--			f[8][2] = f[6][3]*f[7][1] - f[6][1]*f[7][3]
-	--			f[8][3] = f[6][1]*f[7][2] - f[6][2]*f[7][1]
 			end
 		end
 	end
