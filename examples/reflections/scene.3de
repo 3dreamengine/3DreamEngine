@@ -1,0 +1,13 @@
+--3DreamEngine material properties file
+return {
+	Ivy = {
+		shader = "wind",
+		shaderInfo = 0.02,
+	},
+	Iron = {
+		reflections = true,
+	},
+	Wood = {
+		reflections = true,
+	},
+}

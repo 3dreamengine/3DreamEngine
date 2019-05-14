@@ -44,7 +44,7 @@ yourObject = dream:loadObject("objectName", args)
 --	noMesh = load eberything, but skip mesh loading
 --	cleanup = (boolean, default true) clean up memory by deleting faces and vertex data
 
---the name of the object (set by "o" inside .obj, in blender its the name of the vertex data inside an object) can contain information:
+--the name of the object (set by "o" inside .obj, in blender it is the name of the vertex data inside an object) can contain information:
 --  if it contains REMOVE, it will not be used. Their use can be frames, particle emitters, helper objects, ...)
 --  if it contains LAMP_name where name is a custom ID, it will not be loaded, but instead an entry in object.lights will be made (name, x, y, z), can be used to set static lights more easy.
 --prefixed, for example Icosphere_LAMP_myName are valid and will be ignored.
@@ -53,7 +53,9 @@ yourObject = dream:loadObject("objectName", args)
 yourObject = dream:loadObjectLazy("objectName", args)
 
 --and load it step by step
-yourObject:resume()
+while not yourObject.loaded do
+	yourObject:resume()
+end
 
 --or add it to the master loader, priority is an int between 1 and inf, default is 3
 dream.resourceLoader:add(yourObject[, priority])
@@ -71,11 +73,11 @@ dream.sun = {-0.3, 0.6, -0.5}
 dream.color_ambient = {0.25, 0.25, 0.25}
 dream.color_sun = {1.5, 1.5, 1.5}
 
---or use the inbuilt sky sphere and clouds
+--use the inbuilt sky sphere and clouds
 dream.cloudDensity = 0.6
 dream.clouds = love.graphics.newImage("clouds.jpg")
 dream.sky = love.graphics.newImage("sky.jpg")
-dream.night = love.graphics.newImage("night.jpg")
+dream.night = love.graphics.newImage("night.jpg") --can be nil to only have daytime
 
 --add this line somewhere in the draw or update loop to automatically set lighting based on dayTime
 dream.color_sun, dream.color_ambient = dream:getDayLight()
@@ -100,6 +102,35 @@ dream:draw(obj, x, y, z, sx, sy, sz, rotX, rotY, rotZ)
 
 --finish render session, it is possible to render several times per frame
 dream:present()
+
+#extend .obj
+The .mtl file usually exported with .obj will be loaded automatically.
+To use more 3DreamEngine specific features (disable automatic texture loading, particle system, wind animation ...) a .3de file is required.
+
+example file:
+--3DreamEngine material properties file
+return {
+	Grass = { --extend material Grass
+		loadTextures = true, --automatically load textures named as "yourpath" .. "diffuse", tga, jpeg, jpg, png supported. True uses the material name and an underscore (e.g. Grass_, and will therefore look for Grass_diffuse)
+		--loadTextures = "textures/yourTextures", --custom paths can contain sub directories
+		reflections = true, --metalic reflections (using specular value)
+		shader = "wind", --shader affecting the entire object
+		shaderInfo = 1.0,
+		particleSystems = { --add particleSystems
+			{ --first system
+				objects = { --add objects, they have to be in the same directory as the scene (sub directories like particles/grass work too)
+					["grass"] = 20,
+				},
+				randomSize = {0.75, 1.25}, --randomize the particle size
+				randomRotation = true, --randomize the rotation
+				normal = 0.9, --align to 90% with its emitters surface normal
+				shader = "wind", --use the wind shader
+				shaderInfo = "grass", --tell the wind shader to behave like grass, the amount of waving depends on its Y-value
+				--shaderInfo = 0.2, --or use a constant float
+			},
+		}
+	},
+}
 --]]
 
 local lib = { }

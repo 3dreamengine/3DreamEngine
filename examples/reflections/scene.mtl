@@ -10,7 +10,6 @@ Ke 0.0 0.0 0.0
 Ni 1.450000
 d 1.000000
 illum 2
-reflections true
 map_Kd iron_diffuse.jpg
 map_Kn iron_normal.jpg
 map_Ks iron_specular.jpg
@@ -26,8 +25,6 @@ d 1.000000
 illum 2
 map_Kd ivy_diffuse.jpg
 map_Kn ivy_normal.jpg
-shader wind
-shaderInfo 0.02
 
 newmtl Material
 Ns 225.000000
@@ -59,7 +56,6 @@ Ke 0.0 0.0 0.0
 Ni 1.450000
 d 1.000000
 illum 2
-reflections true
 map_Kd wood_diffuse.jpg
 map_Kn wood_normal.jpg
 map_Ks wood_specular.jpg

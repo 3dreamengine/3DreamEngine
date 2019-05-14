@@ -43,14 +43,21 @@ function lib.resourceLoader.update(self, time)
 	end
 end
 
+lib.loadedTextures = { }
 function lib.loadTexture(self, name, path)
-	for _,path in ipairs({
+	for _,path in ipairs(path and {
 		self.objectDir .. name,
 		self.objectDir .. path .. "/" .. name,
 		path .. "/" .. name,
 		name,
 		self.root .. "/missing.png"
+	} or {
+		self.objectDir .. name,
+		name
 	}) do
+		if self.loadedTextures[path] then
+			return self.loadedTextures[path]
+		end
 		if love.filesystem.getInfo(path) then
 			local t
 			local mipMap = path:sub(1, #path-4) .. "_1" .. path:sub(#path-3)
@@ -71,6 +78,7 @@ function lib.loadTexture(self, name, path)
 				t = love.graphics.newImage(path, {mipmaps = true})
 			end
 			t:setWrap("repeat")
+			self.loadedTextures[path] = t
 			return t
 		end
 	end
@@ -150,7 +158,6 @@ function lib.loadObjectC(self, obj)
 		"mtl",
 		"vox",
 		"3de",
-		"3db",
 		"obj",
 	}) do
 		if love.filesystem.getInfo(self.objectDir .. obj.name .. "." .. typ) or love.filesystem.getInfo(obj.name .. "." .. typ) then
@@ -180,6 +187,22 @@ function lib.loadObjectC(self, obj)
 	end
 	if not found then
 		error("object " .. obj.name .. " not found")
+	end
+	
+	--link textures
+	for d,s in pairs(obj.materials) do
+		if s.loadTextures then
+			local p = path .. "/" .. (s.loadTextures == true and (d .. "_") or s.loadTextures)
+			for _,t in ipairs({"diffuse", "normal", "specular"}) do
+				for _,f in ipairs({"jpg", "jpeg", "png", "tga", "JPG", "JPEG", "PNG", "TGA"}) do
+					local tex = self:loadTexture(p .. t .. "." .. f)
+					if tex then
+						s["tex_" .. t] = tex
+						break
+					end
+				end
+			end
+		end
 	end
 	
 	--load objects first
