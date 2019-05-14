@@ -27,6 +27,8 @@ dream.AO_quality = 24            --samples per pixel (8-32 recommended)
 dream.AO_quality_smooth = 1      --smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
 dream.AO_resolution = 0.5        --resolution factor
 
+dream.enable_reflections = false --uses the sky sphere to simulate reflections, the materials .reflections value has to be true (in case of .obj objects add "reflections true" to the .mtl material), if enabled, it uses the specular value (constant material value on flat shading or specular texture, default 0.5) for reflection value
+
 dream.lighting_max = 16          --max light sources, depends on GPU, has no performance impact if sources are unused
 
 --inits (applies settings)
@@ -41,6 +43,11 @@ yourObject = dream:loadObject("objectName", args)
 --	forceTextured = uses textured mode (which includes normal tangent values, ...),
 --	noMesh = load eberything, but skip mesh loading
 --	cleanup = (boolean, default true) clean up memory by deleting faces and vertex data
+
+--the name of the object (set by "o" inside .obj, in blender its the name of the vertex data inside an object) can contain information:
+--  if it contains REMOVE, it will not be used. Their use can be frames, particle emitters, helper objects, ...)
+--  if it contains LAMP_name where name is a custom ID, it will not be loaded, but instead an entry in object.lights will be made (name, x, y, z), can be used to set static lights more easy.
+--prefixed, for example Icosphere_LAMP_myName are valid and will be ignored.
 
 --loads a lazy object
 yourObject = dream:loadObjectLazy("objectName", args)
@@ -139,6 +146,8 @@ lib.AO_strength = 0.5
 lib.AO_quality = 24
 lib.AO_quality_smooth = 1
 lib.AO_resolution = 0.5
+
+lib.reflections_enabled = false
 
 lib.lighting_max = 16
 
@@ -300,7 +309,6 @@ function lib.draw(self, obj, x, y, z, sx, sy, sz, rx, ry, rz)
 	}
 	
 	local levelOfAbstraction = math.floor(math.sqrt((self.cam.x-x)^2 + (self.cam.y-y)^2 + (self.cam.z-z)^2) / 20) - 1
-	
 	local t = obj.objects or {obj}
 	for d,s in pairs(t) do
 		if (not s.simple or not t[s.super] or not t[s.super].meshLoaded) and s.mesh and (not s.particleSystem or levelOfAbstraction <= 2) then
@@ -309,7 +317,7 @@ function lib.draw(self, obj, x, y, z, sx, sy, sz, rx, ry, rz)
 			end
 			
 			--insert intro draw todo list
-			local shaderInfo = self:getShaderInfo(s.material.tex_diffuse and "textured" or "flat", s.shader, s.material.tex_normal, s.material.tex_specular)
+			local shaderInfo = self:getShaderInfo(s.material.tex_diffuse and "textured" or "flat", s.material.shader or s.shader, s.material.tex_normal, s.material.tex_specular, s.material.reflections)
 			if not lib.drawTable[shaderInfo] then
 				lib.drawTable[shaderInfo] = { }
 			end

@@ -27,7 +27,7 @@ function lib.resourceLoader.update(self, time)
 			self.jobs[self.progress].object:resume()
 			time = time - (love.timer.getTime() - t)
 			
-			if self.jobs[self.progress].loaded then
+			if self.jobs[self.progress].object.loaded then
 				self.subProgress = 1
 				table.remove(self.jobs, self.progress)
 			else
@@ -37,6 +37,8 @@ function lib.resourceLoader.update(self, time)
 					self.progress = self.progress + 1
 				end
 			end
+		else
+			break
 		end
 	end
 end
@@ -78,6 +80,7 @@ function lib.loadObject(self, ...)
 	local obj = self:loadObjectLazy(...)
 	while obj:resume() do end
 	obj.loaded = true
+	
 	return obj
 end
 
@@ -102,6 +105,7 @@ function lib.loadObjectLazy(self, name, args)
 				name = "default",
 			}
 		},
+		lights = { },
 		name = name,
 		splitMaterials = args.splitMaterials,
 		rasterMargin = args.rasterMargin,
@@ -141,6 +145,7 @@ function lib.loadObjectC(self, obj)
 	
 	--load files
 	--if two object files are available (.obj and .vox) it might crash, since it loads all
+	local found = false
 	for _,typ in ipairs({
 		"mtl",
 		"vox",
@@ -149,6 +154,7 @@ function lib.loadObjectC(self, obj)
 		"obj",
 	}) do
 		if love.filesystem.getInfo(self.objectDir .. obj.name .. "." .. typ) or love.filesystem.getInfo(obj.name .. "." .. typ) then
+			found = true
 			--load the simplified objects if existing
 			for i = 8, 1, -1 do
 				if love.filesystem.getInfo(self.objectDir .. obj.name .. "_simple_" .. i .. "." .. typ) or love.filesystem.getInfo(obj.name .. "_simple_" .. i .. "." .. typ) then
@@ -172,6 +178,9 @@ function lib.loadObjectC(self, obj)
 			coroutine.yield()
 		end
 	end
+	if not found then
+		error("object " .. obj.name .. " not found")
+	end
 	
 	--load objects first
 	self:syncObj(obj)
@@ -186,7 +195,7 @@ function lib.loadObjectC(self, obj)
 	coroutine.yield()
 	
 	--cleaning up
-	if obj.cleanup and false then
+	if obj.cleanup then
 		for d,s in pairs(obj.objects) do
 			s.faces = nil
 			s.final = nil
@@ -196,9 +205,33 @@ function lib.loadObjectC(self, obj)
 	coroutine.yield()
 	
 	obj.loaded = true
+	return true
 end
 
 function lib.syncObj(self, obj)
+	--remove emptyand add light sources
+	for d,s in pairs(obj.objects) do
+		pos = s.name:find("LAMP")
+		if pos then
+			local x, y, z = 0, 0, 0
+			for i,v in ipairs(s.final) do
+				x = x + v[1]
+				y = y + v[2]
+				z = z + v[3]
+			end
+			x = x / #s.final
+			y = y / #s.final
+			z = z / #s.final
+			obj.lights[#obj.lights+1] = {
+				name = s.name:sub(pos+5),
+				x = x,
+				y = y,
+				z = z,
+			}
+			obj.objects[d] = nil
+		end
+	end
+	
 	--remove empty objects
 	for d,s in pairs(obj.objects) do
 		if s.final and #s.final == 0 then
@@ -361,7 +394,7 @@ function lib.createMesh(self, o, obj, faceMap, forceTextured)
 				f[12] = -f[12] / l
 				f[13] = -f[13] / l
 				
-				local l = math.sqrt(f[14]^2+f[15]^2+f[16]^2)
+				l = math.sqrt(f[14]^2+f[15]^2+f[16]^2)
 				f[14] = f[14] / l
 				f[15] = f[15] / l
 				f[16] = f[16] / l
@@ -424,7 +457,3 @@ function lib.createMesh(self, o, obj, faceMap, forceTextured)
 	o.meshLoaded = true
 	coroutine.yield()
 end
-
---rocks not rendered (no textued rendering)
---particle system heavy lags
---mesh building too slow -> learning and auto adapting to ~ 3ms

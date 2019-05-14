@@ -121,9 +121,23 @@ function lib.present(self)
 					break
 				end
 			end
-			
-			local shader = self:getShader(shaderInfo.typ, shaderInfo.variant, shaderInfo.normal, shaderInfo.specular, count)
+
+			local shader = self:getShader(shaderInfo.typ, shaderInfo.variant, shaderInfo.normal, shaderInfo.specular, shaderInfo.reflections, count)
 			love.graphics.setShader(shader.shader)
+			
+			if shader.reflections_enabled then
+				local timeFac = 1.0 - (math.cos(self.dayTime*math.pi*2)*0.5+0.5)
+				local color = self:getDayLight(self.dayTime, 0.25)
+				
+				shader.shader:send("background_day", self.sky)
+				
+				if shader.reflections_enabled_night then
+					shader.shader:send("background_color", color)
+					shader.shader:send("background_time", timeFac)
+					
+					shader.shader:send("background_night", self.night or self.sky)
+				end
+			end			
 			
 			if count > 0 then
 				shader.shader:send("lightColor", unpack(light))

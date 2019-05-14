@@ -1,9 +1,9 @@
 --load the 3D lib
 dream = require("3DreamEngine")
-love.window.setTitle("Castle")
+love.window.setTitle("Blacksmith")
 
 --settings
-dream.objectDir = "examples/first person game/"
+dream.objectDir = "examples/reflections/"
 
 dream.AO_enabled = true       --ambient occlusion?
 dream.AO_strength = 0.75      --blend strength
@@ -11,19 +11,14 @@ dream.AO_quality = 24         --samples per pixel (8-32 recommended)
 dream.AO_quality_smooth = 2   --smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
 dream.AO_resolution = 0.75    --resolution factor
 
-dream.cloudDensity = 0.6
-dream.clouds = love.graphics.newImage(dream.objectDir .. "clouds.jpg")
-dream.sky = love.graphics.newImage(dream.objectDir .. "sky.jpg")
-dream.night = love.graphics.newImage(dream.objectDir .. "night.jpg")
+dream.sky = love.graphics.newImage(dream.objectDir .. "background.jpg")
+
+dream.reflections_enabled = true
 
 dream:init()
 
---generate mipmaps from the leaves texture
---dream:generateMipMaps(dream.objectDir .. "objects/leaves.png")
---dream:generateMipMaps(dream.objectDir .. "objects/grass.png")
-
-castle = dream:loadObjectLazy("objects/scene", {splitMaterials = true})
-dream.resourceLoader:add(castle)
+scene = dream:loadObjectLazy("scene", {splitMaterials = true})
+dream.resourceLoader:add(scene)
 
 love.graphics.setBackgroundColor(128/255, 218/255, 235/255)
 
@@ -33,27 +28,26 @@ io.stdout:setvbuf("no")
 love.mouse.setRelativeMode(true)
 
 player = {
-	x = 3,
-	y = 5,
+	x = 0,
+	y = 0,
 	z = 0,
 	ax = 0,
 	ay = 0,
 	az = 0,
-	w = 0.4,
-	h = 0.4,
-	d = 0.6,
 }
 
 function love.draw()
-	dream.color_sun, dream.color_ambient = dream:getDayLight()
-	dream.dayTime = love.timer.getTime() * 0.05
+	dream:resetLight(true) --true disables the sun
 	
-	dream:resetLight()
-	dream:addLight(player.x, player.y, player.z, 1.0, 0.75, 0.1, 1.0 + love.math.noise(love.timer.getTime()*2, 1.0)*0.5, 2.0)
+	for d,s in ipairs(scene.lights) do
+		if s.name == "torch" then
+			dream:addLight(s.x, s.y, s.z, 1.0, 0.75, 0.1, 1.0 + 0.5 * love.math.noise(love.timer.getTime()*2, 1.0))
+		end
+	end
 	
 	dream:prepare()
 	
-	dream:draw(castle, 0, 0, 0)
+	dream:draw(scene, 0, 0, 0)
 
 	dream:present()
 	
@@ -91,42 +85,10 @@ function love.update(dt)
 	local d = love.keyboard.isDown
 	local speed = 10*dt
 	
-	--gravity
-	--player.ay = player.ay - dt * 15
-	
 	--collision
-	local oldX = player.x
 	player.x = player.x + player.ax * dt
-	local b = collide(player.x-player.w/2, player.y-player.h/2, player.z-player.d/2, player.w, player.h, player.d)
-	if b then
-		player.x = oldX
-		player.ax = 0
-	end
-	
-	local oldY = player.y
 	player.y = player.y + player.ay * dt
-	local b = collide(player.x-player.w/2, player.y-player.h/2, player.z-player.d/2, player.w, player.h, player.d)
-	if b then
-		player.y = oldY
-		
-		if love.keyboard.isDown("space") and player.ay < 0 then
-			player.ay = 8
-		else
-			speed = 40*dt
-			player.ay = 0
-		end
-		
-		player.ax = player.ax * (1 - dt*10)
-		player.az = player.az * (1 - dt*10)
-	end
-	
-	local oldZ = player.z
 	player.z = player.z + player.az * dt
-	local b = collide(player.x-player.w/2, player.y-player.h/2, player.z-player.d/2, player.w, player.h, player.d)
-	if b then
-		player.z = oldZ
-		player.az = 0
-	end
 	
 	if d("w") then
 		player.ax = player.ax + math.cos(-dream.cam.ry-math.pi/2) * speed

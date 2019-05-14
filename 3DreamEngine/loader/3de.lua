@@ -1,6 +1,6 @@
 --[[
 #3de - object property file (3DreamEngine specific)
-extends the material (in case of .obj the material defined in the .mtl file)
+extends the material (in case of .obj the material defined in the .mtl file) with particle systems
 --]]
 
 _3DreamEngine.loader["3de"] = function(self, obj, name, path)

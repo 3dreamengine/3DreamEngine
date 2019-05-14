@@ -3,14 +3,13 @@ dream = require("3DreamEngine")
 love.window.setTitle("Lamborghini Example")
 
 --settings
-dream.pixelPerfect = true
 dream.objectDir = "examples/Lamborghini/"
 
-dream.AO_enabled = true		--ambient occlusion?
-dream.AO_strength = 0.75		--blend strength
-dream.AO_quality = 32			--samples per pixel (8-32 recommended)
-dream.AO_quality_smooth = 2	--smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
-dream.AO_resolution = 0.75	--resolution factor
+dream.AO_enabled = true      --ambient occlusion?
+dream.AO_strength = 0.75     --blend strength
+dream.AO_quality = 32        --samples per pixel (8-32 recommended)
+dream.AO_quality_smooth = 2  --smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
+dream.AO_resolution = 0.75   --resolution factor
 
 dream:init()
 

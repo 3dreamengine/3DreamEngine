@@ -141,9 +141,11 @@ lib.shaderSky = love.graphics.newShader([[
 	#endif
 ]])
 
-function lib.getShaderInfo(self, typ, variant, normal, specular, lightings)
+function lib.getShaderInfo(self, typ, variant, normal, specular, reflections, lightings)
+	reflections = (reflections and self.reflections_enabled and dream.sky)
 	variant = variant or "default"
-	local name = "shader_" .. typ .. (self.AO_enabled and "_AO" or "") .. "_" .. variant .. (normal and "_normal" or "") .. (specular and "_specular" or "") .. "_" .. (lightings or 0)
+	
+	local name = "shader_" .. typ .. (self.AO_enabled and "_AO" or "") .. (reflections and "_reflections" or "") .. "_" .. variant .. (normal and "_normal" or "") .. (specular and "_specular" or "") .. "_" .. (lightings or 0)
 	
 	if not self["info_" .. name] then
 		self["info_" .. name] = {
@@ -153,6 +155,9 @@ function lib.getShaderInfo(self, typ, variant, normal, specular, lightings)
 			normal = normal,
 			specular = specular,
 			lighting_max = lightings,
+			reflections = reflections,
+			reflections_enabled = reflections,
+			reflections_enabled_night = reflections and dream.night
 		}
 	end
 	
@@ -160,8 +165,8 @@ function lib.getShaderInfo(self, typ, variant, normal, specular, lightings)
 end
 
 lib.render = love.graphics.getRendererInfo( )
-function lib.getShader(self, typ, variant, normal, specular, lightings)
-	local info = self:getShaderInfo(typ, variant, normal, specular, lightings)
+function lib.getShader(self, typ, variant, normal, specular, reflections, lightings)
+	local info = self:getShaderInfo(typ, variant, normal, specular, reflections, lightings)
 	
 	--flat shading does not have textures
 	if typ == "flat" then
@@ -177,6 +182,8 @@ function lib.getShader(self, typ, variant, normal, specular, lightings)
 			(normal and "#define TEX_NORMAL\n" or "") ..
 			(specular and "#define TEX_SPECULAR\n" or "") ..
 			(self.AO_enabled and "#define AO_ENABLED\n" or "") ..
+			(info.reflections_enabled and "#define REFLECTIONS_ENABLED\n" or "") ..
+			(info.reflections_enabled_night and "#define REFLECTIONS_ENABLED_NIGHT\n" or "") ..
 			(variant == "wind" and "#define VARIANT_WIND\n" or "") ..
 			(lightings > 0 and "#define LIGHTING\n" or "") ..
 			(self.render == "OpenGL ES" and "#define OPENGL_ES\n" or "") ..
@@ -202,6 +209,10 @@ mat3 transpose_optional(mat3 inMatrix) {
 //required for secondary depth buffer and AO
 #ifdef AO_ENABLED
 varying float depth;
+#endif
+
+#ifdef REFLECTIONS_ENABLED
+varying vec3 normalV;
 #endif
 
 //lighting
@@ -236,6 +247,15 @@ extern Image tex_specular;  //specular texture
 extern Image tex_normal;    //normal texture
 #endif
 
+#ifdef REFLECTIONS_ENABLED
+extern Image background_day;    //background day texture
+#ifdef REFLECTIONS_ENABLED_NIGHT
+extern Image background_night;  //background night texture
+extern vec4 background_color;   //background color
+extern float background_time;   //background day/night factor
+#endif
+#endif
+
 #ifndef FLAT_SHADING
 uniform Image MainTex;      //diffuse texture
 #endif
@@ -244,7 +264,7 @@ extern float alphaThreshold;
 
 void effect() {
 	#ifdef TEX_SPECULAR
-	float specular = Texel(tex_specular, VaryingTexCoord.xy).r * 0.9;
+	float specular = Texel(tex_specular, VaryingTexCoord.xy).r;
 	#else
 		#ifdef FLAT_SHADING
 		float specular = VaryingTexCoord.a;
@@ -277,7 +297,8 @@ void effect() {
 		NdotL = clamp(dot(normal, lightVec), 0.0, 1.0);
 		NdotH = clamp(dot(normal, normalize(viewVec + lightVec)), 0.0, 1.0);
 		
-		NdotH = pow(max(0.0, (NdotH - specular) / (1.0 - specular)), 2.0) * specular * 2.0;
+		float spec = specular * 0.95;
+		NdotH = pow(max(0.0, (NdotH - spec) / (1.0 - spec)), 2.0) * spec * 2.0;
 		lighting += (NdotH + NdotL) * lightColor[i].rgb / (0.01 + lightColor[i].a * length(lightPos[i] - posV));
 	}
 	#endif
@@ -288,6 +309,22 @@ void effect() {
 	#else
 	vec4 diffuse = Texel(MainTex, VaryingTexCoord.xy);
 	vec4 col = vec4(diffuse.rgb * lighting, diffuse.a);
+	#endif
+	
+	//reflections
+	#ifdef REFLECTIONS_ENABLED
+	vec3 n = normalize(normalV + normal*transpose(objToTangentSpace)*0.25 - (posV-viewPos)).xyz;
+	float u = atan(n.x, n.z) * 0.1591549430919 + 0.5;
+	float v = n.y * 0.5 + 0.5;
+	vec2 uv = vec2(u, v);
+	
+	#ifdef REFLECTIONS_ENABLED_NIGHT
+		vec4 dayNight = mix(Texel(background_day, uv), Texel(background_night, uv), background_time) * background_color;
+	#else
+		vec4 dayNight = Texel(background_day, uv);
+	#endif
+	dayNight.a = col.a;
+	col = mix(col, dayNight, specular);
 	#endif
 	
 	if (col.a < alphaThreshold) {
@@ -324,7 +361,7 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	//where vertex_position.a is used for the waving strength
 	vec4 pos = (
 			vec4(vertex_position.xyz, 1.0)
-			+ vec4((cos(vertex_position.x*0.25+wind) + cos(vertex_position.z*4.0+vertex_position.y+wind*2.0)) * vertex_position.a, 0.0, 0.0, 0.0)
+			+ vec4((cos(vertex_position.x*0.25+VertexNormal.x+wind) + cos(vertex_position.z*4.0+vertex_position.y+VertexNormal.y+wind*2.0)) * vertex_position.a, 0.0, 0.0, 0.0)
 		) * transform;
 	#else
 	vec4 pos = vertex_position * transform;
@@ -351,6 +388,10 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	
 	//projective transform and depth extracting
 	vec4 vPos = transformProj * pos + vec4(0.0, 0.0, 0.75, 0.0);
+	
+	#ifdef REFLECTIONS_ENABLED
+	normalV = VertexNormal;
+	#endif
 	
 	#ifdef AO_ENABLED
 	depth = vPos.z;

@@ -12,3 +12,5 @@ d 1.0
 alphaThreshold 0.75
 illum 2
 map_Kd leaves.png
+shader wind
+shaderInfo = 0.25

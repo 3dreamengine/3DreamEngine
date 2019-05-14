@@ -24,6 +24,12 @@ _3DreamEngine.loader["mtl"] = function(self, obj, name, path)
 			material.color[3] = tonumber(v[4])
 		elseif v[1] == "d" then
 			material.color[4] = tonumber(v[2])
+		elseif v[1] == "reflections" then
+			material.reflections = v[2] ~= "false"
+		elseif v[1] == "shaderInfo" then
+			material.shaderInfo = v[2]
+		elseif v[1] == "shader" then
+			material.shader = v[2]
 		elseif v[1] == "alphaThreshold" then
 			material.alphaThreshold = tonumber(v[2])
 		elseif v[1] == "map_Kd" then
