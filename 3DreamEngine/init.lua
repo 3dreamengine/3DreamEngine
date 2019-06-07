@@ -31,6 +31,8 @@ dream.enable_reflections = false --uses the sky sphere to simulate reflections, 
 
 dream.lighting_max = 16          --max light sources, depends on GPU, has no performance impact if sources are unused
 
+dream.nameEncoder = "blender"    --blender/none automatically renames objects, blender exports them as ObjectName_meshType.ID, but only ObjectName is relevant
+
 --inits (applies settings)
 dream:init()
 
@@ -52,7 +54,7 @@ yourObject = dream:loadObject("objectName", args)
 --loads a lazy object
 yourObject = dream:loadObjectLazy("objectName", args)
 
---and load it step by step
+--and load it step by step, for example slowly in the background
 while not yourObject.loaded do
 	yourObject:resume()
 end
@@ -63,8 +65,21 @@ dream.resourceLoader:add(yourObject[, priority])
 --and update the loader in love.update(), maxTime if the time available in ms, default 1 ms. Peaks may occur. Average total time per call is maxTime + 3ms (since worst case time can exceed maxTime)
 dream.resourceLoader:update(maxTime)
 
---update camera postion
-dream.cam = {x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0}
+--transform the object
+yourObject:reset()
+yourObject:translate(x, y, z)
+yourObject:scale(x, y, z)
+yourObject:rotateX(angle)
+yourObject:rotateY(angle)
+yourObject:rotateZ(angle)
+
+--update camera postion (transformations as yourObject)
+dream.cam:reset()
+dream.cam:translate(x, y, z)
+
+--if you want an own camera use
+yourCam = dream:newCam()
+--and pass it to dream:prepare
 
 --update sun position/vector
 dream.sun = {-0.3, 0.6, -0.5}
@@ -97,7 +112,7 @@ dream:prepare(cam)
 
 --draw
 --obj can be either the entire object, or an object inside the file (obj.objects.yourObject)
-dream:draw(obj, x, y, z, sx, sy, sz, rotX, rotY, rotZ)
+dream:draw(obj, x, y, z, sx, sy, sz)
 
 --finish render session, it is possible to render several times per frame
 --noDepth disables the depth buffer, useful for gui elements
@@ -144,6 +159,7 @@ require((...) .. "/loader")
 require((...) .. "/present")
 require((...) .. "/collision")
 require((...) .. "/particlesystem")
+require((...) .. "/boneManager")
 
 
 --loader
@@ -155,9 +171,6 @@ end
 matrix = require((...) .. "/matrix")
 _3DreamEngine = nil
 
-lib.cam = {x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, normal = {0, 0, 0}}
-lib.currentCam = lib.cam
-
 --sun
 lib.sun = {-0.3, 0.6, 0.5}
 lib.color_ambient = {1.0, 1.0, 1.0, 0.25}
@@ -168,6 +181,8 @@ lib.fov = 90
 
 --distance fog
 lib.fog = 0.0
+lib.near = 0.1
+lib.far = 500
 
 --root directory of objects
 lib.objectDir = "objects/"
@@ -182,6 +197,8 @@ lib.AO_resolution = 0.5
 lib.reflections_enabled = false
 
 lib.lighting_max = 16
+
+lib.nameEncoder = "blender"
 
 lib.object_light = lib:loadObject(lib.root .. "/objects/light")
 lib.object_clouds = lib:loadObject(lib.root .. "/objects/clouds_high", {forceTextured = true})
@@ -227,7 +244,7 @@ end
 function lib.prepare(self, c, noDepth)
 	self.noDepth = noDepth
 	
-	local cam = c == false and {x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, normal = {0, 0, 0}} or c or self.cam
+	local cam = c == false and self:newCam() or c or self.cam
 	self.currentCam = cam
 	
 	local sun = {self.sun[1], self.sun[2], self.sun[3]}
@@ -236,60 +253,28 @@ function lib.prepare(self, c, noDepth)
 	sun[3] = sun[3] * 1000
 	
 	self.shaderVars_sun = sun
-	self.shaderVars_viewPos = {cam.x, cam.y, cam.z}
+	self.shaderVars_viewPos = -self.currentCam.transform^"T" * (matrix{{self.currentCam.transform[1][4], self.currentCam.transform[2][4], self.currentCam.transform[3][4], self.currentCam.transform[4][4]}}^"T")
+	self.shaderVars_viewPos = {self.shaderVars_viewPos[1][1], self.shaderVars_viewPos[2][1], self.shaderVars_viewPos[3][1]}
 	
-	local c = math.cos(cam.rz or 0)
-	local s = math.sin(cam.rz or 0)
-	local rotZ = matrix{
-		{c, s, 0, 0},
-		{-s, c, 0, 0},
-		{0, 0, 1, 0},
-		{0, 0, 0, 1},
-	}
-	
-	local c = math.cos(cam.ry or 0)
-	local s = math.sin(cam.ry or 0)
-	local rotY = matrix{
-		{c, 0, -s, 0},
-		{0, 1, 0, 0},
-		{s, 0, c, 0},
-		{0, 0, 0, 1},
-	}
-	
-	local c = math.cos(cam.rx or 0)
-	local s = math.sin(cam.rx or 0)
-	local rotX = matrix{
-		{1, 0, 0, 0},
-		{0, c, -s, 0},
-		{0, s, c, 0},
-		{0, 0, 0, 1},
-	}
-	
-	local n = 1
-	local f = 10
+	local n = lib.near
+	local f = lib.far
 	local fov = self.fov
 	local S = 1 / (math.tan(fov/2*math.pi/180))
 	
 	local projection = matrix{
 		{S,	0,	0,	0},
 		{0,	-S/love.graphics.getHeight()*love.graphics.getWidth(),	0,	0},
-		{0,	0,	-f/(f-n),	-1},
-		{0,	0,	-(f*n)/(f-n),	0},
-	}
-	
-	local translate = matrix{
-		{1, 0, 0, -cam.x},
-		{0, 1, 0, -cam.y},
-		{0, 0, 1, -cam.z},
-		{0, 0, 0, 1},
+		{0,	0,	-f/(f-n),	-(f*n)/(f-n)},
+		{0,	0,	-1,	0},
 	}
 	
 	--camera transformation
-	self.shaderVars_transformProj = projection * rotZ * rotX * rotY * translate
+	self.shaderVars_transformProj = projection * self.currentCam.transform
 	
 	--camera normal
-	local normal = rotY * rotX * (matrix{{0, 0, 1, 0}}^"T")
-	cam.normal = {normal[1][1], normal[2][1], -normal[3][1]}
+	local normal = self.currentCam.transform^"T" * (matrix{{0, 0, 1, 0}}^"T")
+	--print(normal[1][1], normal[2][1], -normal[3][1]) io.flush()
+	cam.normal = {normal[1][1], normal[2][1], normal[3][1]}
 	
 	--clear draw table
 	lib.drawTable = { }
@@ -304,26 +289,36 @@ function lib.prepare(self, c, noDepth)
 	end
 end
 
-lib.drawTable = { }
-function lib.draw(self, obj, x, y, z, sx, sy, sz, rx, ry, rz)
-	local c = math.cos(rz or 0)
-	local s = math.sin(rz or 0)
-	local rotZ = matrix{
-		{c, s, 0, 0},
-		{-s, c, 0, 0},
+function lib.reset(obj)
+	obj.transform = matrix{
+		{1, 0, 0, 0},
+		{0, 1, 0, 0},
 		{0, 0, 1, 0},
 		{0, 0, 0, 1},
 	}
-	
-	local c = math.cos(ry or 0)
-	local s = math.sin(ry or 0)
-	local rotY = matrix{
-		{c, 0, -s, 0},
-		{0, 1, 0, 0},
-		{s, 0, c, 0},
+end
+
+function lib.translate(obj, x, y, z)
+	local translate = matrix{
+		{1, 0, 0, x},
+		{0, 1, 0, y},
+		{0, 0, 1, z},
 		{0, 0, 0, 1},
 	}
-	
+	obj.transform = translate * obj.transform
+end
+
+function lib.scale(obj, x, y, z)
+	local scale = matrix{
+		{x, 0, 0, 0},
+		{0, y or x, 0, 0},
+		{0, 0, z or x, 0},
+		{0, 0, 0, 1},
+	}
+	obj.transform = scale * obj.transform
+end
+
+function lib.rotateX(obj, rx)
 	local c = math.cos(rx or 0)
 	local s = math.sin(rx or 0)
 	local rotX = matrix{
@@ -332,15 +327,71 @@ function lib.draw(self, obj, x, y, z, sx, sy, sz, rx, ry, rz)
 		{0, s, c, 0},
 		{0, 0, 0, 1},
 	}
-	
-	local translate = matrix{
-		{sx or 1, 0, 0, 0},
-		{0, sy or sx or 1, 0, 0},
-		{0, 0, sz or sx or 1, 0},
-		{x, y, z, 1},
+	obj.transform = rotX * obj.transform
+end
+
+function lib.rotateY(obj, ry)
+	local c = math.cos(ry or 0)
+	local s = math.sin(ry or 0)
+	local rotY = matrix{
+		{c, 0, -s, 0},
+		{0, 1, 0, 0},
+		{s, 0, c, 0},
+		{0, 0, 0, 1},
+	}
+	obj.transform = rotY * obj.transform
+end
+
+function lib.rotateZ(obj, rz)
+	local c = math.cos(rz or 0)
+	local s = math.sin(rz or 0)
+	local rotZ = matrix{
+		{c, s, 0, 0},
+		{-s, c, 0, 0},
+		{0, 0, 1, 0},
+		{0, 0, 0, 1},
+	}
+	obj.transform = rotZ * obj.transform
+end
+
+function lib.newCam(self)
+	return {
+		transform = matrix{
+			{1, 0, 0, 0},
+			{0, 1, 0, 0},
+			{0, 0, 1, 0},
+			{0, 0, 0, 1},
+		},
+		normal = {0, 0, 0},
+		x = 0,
+		y = 0,
+		z = 0,
+		
+		reset = self.reset,
+		translate = self.translate,
+		scale = self.scale,
+		rotateX = self.rotateX,
+		rotateY = self.rotateY,
+		rotateZ = self.rotateZ,
+	}
+end
+
+lib.cam = lib:newCam()
+lib.currentCam = lib.cam
+
+lib.drawTable = { }
+function lib.draw(self, obj, x, y, z, sx, sy, sz)
+	x = x or 0
+	y = y or 0
+	z = z or 0
+	local transform = matrix{
+		{sx or 1, 0, 0, x},
+		{0, sy or sx or 1, 0, y},
+		{0, 0, sz or sx or 1, z},
+		{0, 0, 0, 1},
 	}
 	
-	local levelOfAbstraction = math.floor(math.sqrt((self.cam.x-x)^2 + (self.cam.y-y)^2 + (self.cam.z-z)^2) / 20) - 1
+	local levelOfAbstraction = math.floor(math.sqrt((self.currentCam.x-x)^2 + (self.currentCam.y-y)^2 + (self.currentCam.z-z)^2) / 20) - 1
 	local t = obj.objects or {obj}
 	for d,s in pairs(t) do
 		if (not s.simple or not t[s.super] or not t[s.super].meshLoaded) and s.mesh and (not s.particleSystem or levelOfAbstraction <= 2) then
@@ -358,7 +409,7 @@ function lib.draw(self, obj, x, y, z, sx, sy, sz, rx, ry, rz)
 			end
 			local r, g, b = love.graphics.getColor()
 			table.insert(lib.drawTable[shaderInfo][s.material], {
-				rotZ*rotY*rotX*translate,
+				(obj.transform and (transform * obj.transform) or transform)^"T",
 				s,
 				r, g, b,
 			})

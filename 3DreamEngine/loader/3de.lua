@@ -6,6 +6,11 @@ extends the material (in case of .obj the material defined in the .mtl file) wit
 _3DreamEngine.loader["3de"] = function(self, obj, name, path)
 	local extended = love.filesystem.getInfo(self.objectDir .. name .. ".3de") and dofile(self.objectDir .. name .. ".3de") or dofile(name .. ".3de")
 	
+	obj.boneData = extended.boneData
+	obj.boneDataAutoPivot = extended.boneDataAutoPivot
+	extended.boneData = nil
+	extended.boneDataAutoPivot = nil
+	
 	for d,s in pairs(extended) do
 		local mat = obj.materials[d]
 		if mat then

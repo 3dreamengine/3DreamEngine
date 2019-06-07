@@ -40,9 +40,10 @@ _3DreamEngine.loader["obj"] = function(self, obj, name, path, simple)
 		elseif v[1] == "usemtl" and not blocked then
 			material = obj.materials[l:sub(8)] or obj.materials.None
 			if obj.splitMaterials and not o.name:find("LAMP") then
-				local nameRaw = o.name .. "_" .. l:sub(8)
+				local nameRaw = (o.baseName or o.name) .. "_" .. l:sub(8)
 				local name = nameRaw .. (simple and ("_simple_" .. simple) or "")
 				obj.objects[name] = obj.objects[name] or {
+					baseName = o.name, --raw name of object, without material
 					faces = { },
 					final = { },
 					material = material,
@@ -50,7 +51,7 @@ _3DreamEngine.loader["obj"] = function(self, obj, name, path, simple)
 					name = nameRaw,
 					simple = simple,
 					super = simple and (simple == 1 and nameRaw or (nameRaw .. "_simple_" .. (simple-1))) or nil,
-					simpler = simple and (nameRaw .. "_simple_" .. (simple+1)) or nil
+					simpler = simple and (nameRaw .. "_simple_" .. (simple+1)) or nil,
 				}
 				o = obj.objects[name]
 			else
@@ -88,16 +89,27 @@ _3DreamEngine.loader["obj"] = function(self, obj, name, path, simple)
 			if l:sub(3):find("REMOVE") then
 				blocked = true
 			else
-				local name = l:sub(3) .. (simple and ("_simple_" .. simple) or "")
+				local nameRaw
+				if self.nameEncoder == "blender" then
+					local last, f = 0, false
+					while last and string.find(l, "_", last+1) do
+						f, last = string.find(l, "_", last+1)
+					end
+					nameRaw = l:sub(3, f and (f-1) or #l)
+				else
+					nameRaw = l:sub(3)
+				end
+				local name = nameRaw .. (simple and ("_simple_" .. simple) or "")
+				
 				obj.objects[name] = obj.objects[name] or {
 					faces = { },
 					final = { },
 					material = material,
 					
-					name = l:sub(3),
+					name = nameRaw,
 					simple = simple,
-					super = simple and (simple == 1 and l:sub(3) or (l:sub(3) .. "_simple_" .. (simple-1))) or nil,
-					simpler = simple and (l:sub(3) .. "_simple_" .. (simple+1)) or nil
+					super = simple and (simple == 1 and nameRaw or (nameRaw .. "_simple_" .. (simple-1))) or nil,
+					simpler = simple and (nameRaw .. "_simple_" .. (simple+1)) or nil
 				}
 				o = obj.objects[name]
 			end

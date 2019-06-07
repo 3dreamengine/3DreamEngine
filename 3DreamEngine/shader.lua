@@ -97,12 +97,11 @@ lib.shaderCloud = love.graphics.newShader([[
 	#endif
 	
 	#ifdef VERTEX
-	extern mat4 transform;
 	extern mat4 cam;
 	
 	vec4 position(mat4 transform_projection, vec4 vertex_position) {
 		dist = vertex_position.y;
-		return cam * (vertex_position * transform);
+		return cam * vertex_position;
 	}
 	#endif
 ]])
@@ -387,7 +386,7 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	posV = pos.xyz;
 	
 	//projective transform and depth extracting
-	vec4 vPos = transformProj * pos + vec4(0.0, 0.0, 0.75, 0.0);
+	vec4 vPos = transformProj * pos;
 	
 	#ifdef REFLECTIONS_ENABLED
 	normalV = VertexNormal;

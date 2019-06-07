@@ -33,9 +33,9 @@ function lib.present(self, noDepth, noSky)
 	if not noSky then
 		if self.sky then
 			local transform = matrix{
-				{50, 0, 0, 0},
-				{0, 50, 0, 0},
-				{0, 0, 50, 0},
+				{1, 0, 0, self.shaderVars_viewPos[1]},
+				{0, 1, 0, self.shaderVars_viewPos[2]},
+				{0, 0, 1, self.shaderVars_viewPos[3]},
 				{0, 0, 0, 1},
 			}
 			
@@ -63,10 +63,10 @@ function lib.present(self, noDepth, noSky)
 		--clouds
 		if self.clouds then
 			local transform = matrix{
-				{100, 0, 0, 0},
-				{0, 100, 0, 0},
-				{0, 0, 100, 0},
-				{0, 100, 0, 1},
+				{100, 0, 0, self.shaderVars_viewPos[1]},
+				{0, 100, 0, self.shaderVars_viewPos[2] + 100},
+				{0, 0, 100, self.shaderVars_viewPos[3]},
+				{0, 0, 0, 1},
 			}
 			
 			love.graphics.setDepthMode("less", false)
@@ -75,8 +75,7 @@ function lib.present(self, noDepth, noSky)
 			
 			self.shaderCloud:send("density", self.cloudDensity)
 			self.shaderCloud:send("time", love.timer.getTime() / 1000)
-			self.shaderCloud:send("transform", transform)
-			self.shaderCloud:send("cam", self.shaderVars_transformProj)
+			self.shaderCloud:send("cam", self.shaderVars_transformProj * transform)
 			
 			love.graphics.draw(self.object_clouds.objects.Cube.mesh)
 		end
@@ -125,7 +124,7 @@ function lib.present(self, noDepth, noSky)
 					break
 				end
 			end
-
+			
 			local shader = self:getShader(shaderInfo.typ, shaderInfo.variant, shaderInfo.normal, shaderInfo.specular, shaderInfo.reflections, count)
 			love.graphics.setShader(shader.shader)
 			

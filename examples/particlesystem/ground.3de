@@ -32,7 +32,7 @@ return {
 				randomRotation = true,
 				normal = 0.9,
 				shader = "wind",
-				shaderInfo = 0.15,
+				shaderInfo = 0.1,
 			},
 			{
 				objects = {
@@ -42,7 +42,7 @@ return {
 				randomRotation = true,
 				normal = 0.9,
 				shader = "wind",
-				shaderInfo = -0.1,
+				shaderInfo = -0.075,
 			},
 		}
 	},

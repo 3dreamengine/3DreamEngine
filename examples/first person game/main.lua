@@ -44,16 +44,28 @@ player = {
 	d = 0.6,
 }
 
+--because it is easier to work with two rotations
+dream.cam.rx = 0
+dream.cam.ry = 0
+
 function love.draw()
 	dream.color_sun, dream.color_ambient = dream:getDayLight()
 	dream.dayTime = love.timer.getTime() * 0.05
 	
+	--update camera
+	dream.cam:reset()
+	dream.cam:translate(-dream.cam.x, -dream.cam.y, -dream.cam.z) --note that x, y, z are usually extracted from the camera matrix in prepare(), but we use it that way.
+	dream.cam:rotateY(dream.cam.ry)
+	dream.cam:rotateX(dream.cam.rx)
+	
+	--update light
 	dream:resetLight()
 	dream:addLight(player.x, player.y, player.z, 1.0, 0.75, 0.1, 1.0 + love.math.noise(love.timer.getTime()*2, 1.0)*0.5, 2.0)
 	
 	dream:prepare()
 	
-	dream:draw(castle, 0, 0, 0)
+	castle:reset()
+	dream:draw(castle)
 
 	dream:present()
 	

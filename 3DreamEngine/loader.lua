@@ -113,13 +113,30 @@ function lib.loadObjectLazy(self, name, args)
 				name = "default",
 			}
 		},
+		
 		lights = { },
+		
 		name = name,
 		splitMaterials = args.splitMaterials,
 		raster = args.raster,
 		forceTextured = args.forceTextured,
 		noMesh = args.noMesh,
 		cleanup = (args.cleanup == nil or args.cleanup),
+		
+		transform = matrix{
+			{1, 0, 0, 0},
+			{0, 1, 0, 0},
+			{0, 0, 1, 0},
+			{0, 0, 0, 1},
+		},
+		
+		reset = self.reset,
+		translate = self.translate,
+		scale = self.scale,
+		rotateX = self.rotateX,
+		rotateY = self.rotateY,
+		rotateZ = self.rotateZ,
+		
 		self = self,
 	}
 	

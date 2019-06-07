@@ -18,6 +18,7 @@ dream.lighting_enabled = false
 dream:init()
 
 ground = dream:loadObjectLazy("ground")
+dream.resourceLoader:add(ground)
 
 love.graphics.setBackgroundColor(0.8, 0.8, 0.8)
 
@@ -27,24 +28,20 @@ function love.draw()
 	dream:prepare()
 	
 	love.graphics.setColor(1, 1, 1)
-	dream:draw(ground, 0, 0, 0)
+	dream:draw(ground)
 	
 	dream:present()
 end
 
 function love.update(dt)
-	if not ground.loaded then
-		ground:resume()
-	end
+	dream.resourceLoader:update(10)
 	
 	local time = love.timer.getTime() * 0.5
 	
 	if not love.keyboard.isDown("space") then
-		dream.cam.x = math.cos(time) * 1.5
-		dream.cam.z = math.sin(time) * 1.5
-		dream.cam.y = 0.5
-		
-		dream.cam.ry = math.pi/2-time
+		dream.cam:reset()
+		dream.cam:translate(math.cos(time) * 1.5, -0.5, math.sin(time) * 1.5)
+		dream.cam:rotateY(-math.pi/2-time)
 	end
 end
 

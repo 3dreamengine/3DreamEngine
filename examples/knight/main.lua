@@ -22,7 +22,9 @@ function love.draw()
 	
 	dream:prepare()
 
-	dream:draw(knight, 0, 0, -5, 1/4, nil, nil, math.cos(love.timer.getTime()), love.timer.getTime(), 0)
+	knight:reset()
+	knight:rotateY(love.timer.getTime())
+	dream:draw(knight, 0, 0, -8, 0.25)
 
 	dream:present()
 end

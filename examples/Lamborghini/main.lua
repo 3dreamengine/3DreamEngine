@@ -11,6 +11,10 @@ dream.AO_quality = 32        --samples per pixel (8-32 recommended)
 dream.AO_quality_smooth = 2  --smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
 dream.AO_resolution = 0.75   --resolution factor
 
+dream.near = 1.0
+dream.far = 100
+dream.nameEncoder = "none"
+
 dream:init()
 
 dream.showLightSources = false
@@ -33,7 +37,9 @@ function love.draw()
 	
 	--draw the car 
 	love.graphics.setColor(1, 1, 1)
-	dream:draw(car, 2.5, -3.5, -10, 0.35, nil, nil, 0, 2.25+(love.mouse.getX()/love.graphics.getWidth()-0.5), 0)
+	car:reset()
+	car:rotateY(-2.25-(love.mouse.getX()/love.graphics.getWidth()-0.5)*4.0)
+	dream:draw(car, 0, -10, -35)
 	
 	dream:present()
 	

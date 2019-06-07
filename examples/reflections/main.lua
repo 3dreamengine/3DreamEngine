@@ -18,6 +18,7 @@ dream.reflections_enabled = true
 dream:init()
 
 scene = dream:loadObjectLazy("scene", {splitMaterials = true})
+
 dream.resourceLoader:add(scene)
 
 love.graphics.setBackgroundColor(128/255, 218/255, 235/255)
@@ -36,9 +37,19 @@ player = {
 	az = 0,
 }
 
+--because it is easier to work with two rotations
+dream.cam.rx = 0
+dream.cam.ry = 0
+
 function love.draw()
-	dream:resetLight(true) --true disables the sun
+	--update camera
+	dream.cam:reset()
+	dream.cam:translate(-dream.cam.x, -dream.cam.y, -dream.cam.z) --note that x, y, z are usually extracted from the camera matrix in prepare(), but we use it that way.
+	dream.cam:rotateY(dream.cam.ry)
+	dream.cam:rotateX(dream.cam.rx)
 	
+	--update lights
+	dream:resetLight(true) --true disables the sun
 	for d,s in ipairs(scene.lights) do
 		if s.name == "torch" then
 			dream:addLight(s.x, s.y, s.z, 1.0, 0.75, 0.1, 1.0 + 0.5 * love.math.noise(love.timer.getTime()*2, 1.0))
@@ -46,7 +57,6 @@ function love.draw()
 	end
 	
 	dream:prepare()
-	
 	dream:draw(scene, 0, 0, 0)
 
 	dream:present()
