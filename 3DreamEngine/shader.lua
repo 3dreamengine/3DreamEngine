@@ -371,7 +371,7 @@ attribute mediump vec3 VertexNormal;
 attribute mediump vec3 VertexTangent;
 attribute mediump vec3 VertexBitangent;
 
-mediump vec4 position(mat4 transform_projection, vec4 vertex_position) {
+vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	//calculate vertex position
 	#ifdef VARIANT_WIND
 	//where vertex_position.a is used for the waving strength
