@@ -11,9 +11,16 @@ function lib.resize(self, w, h)
 	self.canvas = love.graphics.newCanvas(w, h, {format = "normal", readable = true, msaa = msaa})
 	self.canvas_depth = love.graphics.newCanvas(w, h, {format = "depth16", readable = false, msaa = msaa})
 	if self.AO_enabled then
-		self.canvas_z = love.graphics.newCanvas(w, h, {format = "r16f", readable = true, msaa = msaa})
-		self.canvas_blur_1 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
-		self.canvas_blur_2 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
+		local ok = pcall(function()
+			self.canvas_z = love.graphics.newCanvas(w, h, {format = "r16f", readable = true, msaa = msaa})
+		end)
+		if ok then
+			self.canvas_blur_1 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
+			self.canvas_blur_2 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
+		else
+			self.AO_enabled = false
+			print("r16f canvas creation failed")
+		end
 	end
 end
 

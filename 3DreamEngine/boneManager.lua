@@ -452,7 +452,6 @@ function lib.boneManager.draw()
 										local x = self.animationPlay / s2[1]
 										v = s1[2] + (s2[2]-s1[2]) * x^2 * (3 - 2*x)
 									end
-									print(i)
 									
 									self.object.bones[d][axis == 1 and "rotationX" or axis == 2 and "rotationY" or "rotationZ"] = v
 									break
@@ -587,7 +586,7 @@ function lib.boneManager.keypressed(key)
 		if love.keyboard.isDown("lctrl", "rctrl") and key == "s" then
 			love.filesystem.createDirectory(self.object.path:match("(.*[/\\])"))
 			love.filesystem.write(self.object.path .. ".bones", table.save(self.object.bones, nil, true))
-			print(love.filesystem.write(self.object.path .. ".anim", table.save(self.object.animations, nil, true)))
+			love.filesystem.write(self.object.path .. ".anim", table.save(self.object.animations, nil, true))
 		end
 		if self.selectedAnimation and self.selected then
 			if love.keyboard.isDown("lctrl", "rctrl") then

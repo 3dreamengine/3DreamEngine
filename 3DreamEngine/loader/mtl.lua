@@ -5,7 +5,7 @@
 _3DreamEngine.loader["mtl"] = function(self, obj, name, path)
 	--materials
 	local material = obj.materials.None
-	for l in (love.filesystem.getInfo(self.objectDir .. name .. ".mtl") and love.filesystem.lines(self.objectDir .. name .. ".mtl") or love.filesystem.lines(name .. ".mtl")) do
+	for l in love.filesystem.lines(path .. ".mtl") do
 		local v = self:split(l, " ")
 		if v[1] == "newmtl" then
 			obj.materials[l:sub(8)] = {
@@ -33,14 +33,13 @@ _3DreamEngine.loader["mtl"] = function(self, obj, name, path)
 		elseif v[1] == "alphaThreshold" then
 			material.alphaThreshold = tonumber(v[2])
 		elseif v[1] == "map_Kd" then
-			material.tex_path = l:sub(8):sub(-3)
-			material.tex_diffuse = self:loadTexture(l:sub(8), path)
+			material.tex_diffuse = obj.dir .. "/" .. (l:sub(8):match("(.+)%..+") or l:sub(8))
 			coroutine.yield()
 		elseif v[1] == "map_Ks" then
-			material.tex_specular = self:loadTexture(l:sub(8), path)
+			material.tex_specular = obj.dir .. "/" .. (l:sub(8):match("(.+)%..+") or l:sub(8))
 			coroutine.yield()
 		elseif v[1] == "map_Kn" then
-			material.tex_normal = self:loadTexture(l:sub(8), path)
+			material.tex_normal = obj.dir .. "/" .. (l:sub(8):match("(.+)%..+") or l:sub(8))
 			coroutine.yield()
 		end
 	end

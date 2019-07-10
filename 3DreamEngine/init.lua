@@ -40,7 +40,7 @@ dream:init()
 yourObject = dream:loadObject("objectName", args)
 
 --where args is a table with additional settings
---	splitMaterials =(boolean, false by default, has to be true if your object contains several (diffuse) textures)
+--	splitMaterials = (boolean, false by default, has to be true if your object contains several (diffuse) textures)
 --	raster = (boolean or integer, default to true (equals to 2), enables object splitting
 --	forceTextured = uses textured mode (which includes normal tangent values, ...),
 --	noMesh = load eberything, but skip mesh loading
@@ -127,8 +127,6 @@ example file:
 --3DreamEngine material properties file
 return {
 	Grass = { --extend material Grass
-		loadTextures = true, --automatically load textures named as "yourpath" .. "diffuse", tga, jpeg, jpg, png supported. True uses the material name and an underscore (e.g. Grass_, and will therefore look for Grass_diffuse)
-		--loadTextures = "textures/yourTextures", --custom paths can contain sub directories
 		reflections = true, --metalic reflections (using specular value)
 		shader = "wind", --shader affecting the entire object
 		shaderInfo = 1.0,
@@ -161,6 +159,8 @@ require((...) .. "/collision")
 require((...) .. "/particlesystem")
 require((...) .. "/boneManager")
 require((...) .. "/saveTable")
+
+lib.textures = require((...) .. "/textures")
 
 
 --loader

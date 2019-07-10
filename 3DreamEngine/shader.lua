@@ -6,9 +6,26 @@ shader.lua - contains the shaders
 
 local lib = _3DreamEngine
 
+if love.filesystem.read("debugEnabled") == "true" then
+	love.graphics.newShader_old = love.graphics.newShader
+	function love.graphics.newShader(pixel, vertex)
+		local status, err = love.graphics.validateShader(true, pixel, vertex)
+		if not status then
+			print()
+			print("-----------------")
+			print("SHADER ERROR")
+			print(err)
+			print(debug.traceback())
+			print("-----------------")
+			print()
+		end
+		return love.graphics.newShader_old(pixel, vertex)
+	end
+end
+
 --blur, 7-Kernel, only red channel
 lib.blur = love.graphics.newShader([[
-	extern vec2 size;
+	extern mediump vec2 size;
 	extern float hstep;
 	extern float vstep;
 
@@ -46,8 +63,8 @@ function lib.loadShader(self)
 	local fragments = { }
 
 	lib.AO = love.graphics.newShader([[
-		extern vec2 size;
-		extern vec3 samples[]] .. self.AO_quality .. [[];
+		extern mediump vec2 size;
+		extern mediump vec3 samples[]] .. self.AO_quality .. [[];
 		int sampleCount = ]] .. self.AO_quality .. [[;
 		
 		vec4 effect(vec4 color, Image texture, vec2 tc, vec2 sc) {
@@ -164,6 +181,7 @@ function lib.getShaderInfo(self, typ, variant, normal, specular, reflections, li
 end
 
 lib.render = love.graphics.getRendererInfo( )
+print("render engine set to OpenGL ES")
 function lib.getShader(self, typ, variant, normal, specular, reflections, lightings)
 	local info = self:getShaderInfo(typ, variant, normal, specular, reflections, lightings)
 	
@@ -186,16 +204,15 @@ function lib.getShader(self, typ, variant, normal, specular, reflections, lighti
 			(variant == "wind" and "#define VARIANT_WIND\n" or "") ..
 			(lightings > 0 and "#define LIGHTING\n" or "") ..
 			(self.render == "OpenGL ES" and "#define OPENGL_ES\n" or "") ..
-			
 			[[
 
 #ifdef OPENGL_ES
-mat3 transpose_optional(mat3 inMatrix) {
+mediump mat3 transpose_optional(mat3 inMatrix) {
 	vec3 i0 = inMatrix[0];
 	vec3 i1 = inMatrix[1];
 	vec3 i2 = inMatrix[2];
 	
-    mat3 outMatrix = mat3(
+    mediump mat3 outMatrix = mat3(
 		vec3(i0.x, i1.x, i2.x),
 		vec3(i0.y, i1.y, i2.y),
 		vec3(i0.z, i1.z, i2.z)
@@ -219,22 +236,22 @@ varying vec3 normalV;
 const int lightCount = ]] .. lightings .. [[;
 
 //light pos and color (r, g, b and distance meter)
-extern vec3 lightPos[lightCount];
-extern vec4 lightColor[lightCount];
+extern mediump vec3 lightPos[lightCount];
+extern mediump vec4 lightColor[lightCount];
 #endif
 
 //transformations
-extern mat4 transformProj;   //projective transformation
-extern mat4 transform;       //model transformation
+extern mediump mat4 transformProj;   //projective transformation
+extern mediump mat4 transform;       //model transformation
 
 //ambient
-extern vec3 ambient;     //ambient sun color
+extern mediump vec3 ambient;     //ambient sun color
 
 //viewer
-extern vec3 viewPos;     //position of viewer in world space
-varying vec3 posV;       //vertex position for pixel shader
+extern mediump vec3 viewPos;     //position of viewer in world space
+varying mediump vec3 posV;       //vertex position for pixel shader
 
-varying mat3 objToTangentSpace;
+varying mediump mat3 objToTangentSpace;
 
 #ifdef PIXEL
 
@@ -250,7 +267,7 @@ extern Image tex_normal;    //normal texture
 extern Image background_day;    //background day texture
 #ifdef REFLECTIONS_ENABLED_NIGHT
 extern Image background_night;  //background night texture
-extern vec4 background_color;   //background color
+extern mediump vec4 background_color;   //background color
 extern float background_time;   //background day/night factor
 #endif
 #endif
@@ -282,16 +299,16 @@ void effect() {
 		#endif
 	#endif
 	
-	vec3 lighting = ambient;
+	mediump vec3 lighting = ambient;
 	
 	#ifdef LIGHTING
-	vec3 viewVec = normalize(viewPos - posV) * objToTangentSpace;
+	mediump vec3 viewVec = normalize(viewPos - posV) * objToTangentSpace;
 	
 	//lighting
 	float NdotL;
 	float NdotH;
 	for (int i = 0; i < lightCount; i++) {
-		vec3 lightVec = normalize(lightPos[i] - posV) * objToTangentSpace;
+		mediump vec3 lightVec = normalize(lightPos[i] - posV) * objToTangentSpace;
 		
 		NdotL = clamp(dot(normal, lightVec), 0.0, 1.0);
 		NdotH = clamp(dot(normal, normalize(viewVec + lightVec)), 0.0, 1.0);
@@ -304,23 +321,23 @@ void effect() {
 	
 	//final color
 	#ifdef FLAT_SHADING
-	vec4 col = vec4(VaryingColor.rgb * lighting, VaryingColor.a);
+	mediump vec4 col = vec4(VaryingColor.rgb * lighting, VaryingColor.a);
 	#else
-	vec4 diffuse = Texel(MainTex, VaryingTexCoord.xy);
-	vec4 col = vec4(diffuse.rgb * lighting, diffuse.a);
+	mediump vec4 diffuse = Texel(MainTex, VaryingTexCoord.xy);
+	mediump vec4 col = vec4(diffuse.rgb * lighting, diffuse.a);
 	#endif
 	
 	//reflections
 	#ifdef REFLECTIONS_ENABLED
-	vec3 n = normalize(normalV + normal*transpose(objToTangentSpace)*0.25 - (posV-viewPos)).xyz;
+	mediump vec3 n = normalize(normalV + normal*transpose(objToTangentSpace)*0.25 - (posV-viewPos)).xyz;
 	float u = atan(n.x, n.z) * 0.1591549430919 + 0.5;
 	float v = n.y * 0.5 + 0.5;
-	vec2 uv = vec2(u, v);
+	mediump vec2 uv = vec2(u, v);
 	
 	#ifdef REFLECTIONS_ENABLED_NIGHT
-		vec4 dayNight = mix(Texel(background_day, uv), Texel(background_night, uv), background_time) * background_color;
+		mediump vec4 dayNight = mix(Texel(background_day, uv), Texel(background_night, uv), background_time) * background_color;
 	#else
-		vec4 dayNight = Texel(background_day, uv);
+		mediump vec4 dayNight = Texel(background_day, uv);
 	#endif
 	dayNight.a = col.a;
 	col = mix(col, dayNight, specular);
@@ -350,43 +367,43 @@ extern float wind;
 #endif
 
 //additional vertex attributes
-attribute vec3 VertexNormal;
-attribute vec3 VertexTangent;
-attribute vec3 VertexBitangent;
+attribute mediump vec3 VertexNormal;
+attribute mediump vec3 VertexTangent;
+attribute mediump vec3 VertexBitangent;
 
-vec4 position(mat4 transform_projection, vec4 vertex_position) {
+mediump vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	//calculate vertex position
 	#ifdef VARIANT_WIND
 	//where vertex_position.a is used for the waving strength
-	vec4 pos = (
+	mediump vec4 pos = (
 			vec4(vertex_position.xyz, 1.0)
 			+ vec4((cos(vertex_position.x*0.25+VertexNormal.x+wind) + cos(vertex_position.z*4.0+vertex_position.y+VertexNormal.y+wind*2.0)) * vertex_position.a, 0.0, 0.0, 0.0)
 		) * transform;
 	#else
-	vec4 pos = vertex_position * transform;
+	mediump vec4 pos = vertex_position * transform;
 	#endif
 	
 	//transform into tangential space
 	#ifdef LIGHTING
-		#ifdef OPENGL_ES
+]] .. (self.render == "OpenGL ES" and [[
 			#ifdef FLAT_SHADING
 			objToTangentSpace = transpose_optional(mat3(transform));
 			#else
 			objToTangentSpace = transpose_optional(mat3(transform)) * mat3(VertexTangent, VertexBitangent, VertexNormal);
 			#endif
-		#else
+]] or [[
 			#ifdef FLAT_SHADING
 			objToTangentSpace = transpose(mat3(transform));
 			#else
 			objToTangentSpace = transpose(mat3(transform)) * mat3(VertexTangent, VertexBitangent, VertexNormal);
 			#endif
-		#endif
+]]) .. [[
 	#endif
 	
 	posV = pos.xyz;
 	
 	//projective transform and depth extracting
-	vec4 vPos = transformProj * pos;
+	mediump vec4 vPos = transformProj * pos;
 	
 	#ifdef REFLECTIONS_ENABLED
 	normalV = VertexNormal;
@@ -401,7 +418,8 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 #endif]]
 		
 		--debug
-		--love.filesystem.write(info.name .. ".glsl", code)
+		print(">>", info.name .. ".glsl")
+		love.filesystem.write(info.name .. ".glsl", code)
 		
 		self[info.name].shader = love.graphics.newShader(code)
 	end

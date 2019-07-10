@@ -17,6 +17,7 @@ function lib.resourceLoader.add(self, object, priority)
 end
 function lib.resourceLoader.update(self, time)
 	time = (time or 1) / 1000
+	local worked = false
 	while time > 0 do
 		if #self.jobs > 0 then
 			if not self.jobs[self.progress] then
@@ -26,6 +27,7 @@ function lib.resourceLoader.update(self, time)
 			local t = love.timer.getTime()
 			self.jobs[self.progress].object:resume()
 			time = time - (love.timer.getTime() - t)
+			worked = true
 			
 			if self.jobs[self.progress].object.loaded then
 				self.subProgress = 1
@@ -41,62 +43,42 @@ function lib.resourceLoader.update(self, time)
 			break
 		end
 	end
-end
-
-lib.loadedTextures = { }
-function lib.loadTexture(self, name, path)
-	for _,path in ipairs(path and {
-		self.objectDir .. name,
-		self.objectDir .. path .. "/" .. name,
-		path .. "/" .. name,
-		name,
-		self.root .. "/missing.png"
-	} or {
-		self.objectDir .. name,
-		name
-	}) do
-		if self.loadedTextures[path] then
-			return self.loadedTextures[path]
-		end
-		if love.filesystem.getInfo(path) then
-			local t
-			local mipMap = path:sub(1, #path-4) .. "_1" .. path:sub(#path-3)
-			if love.filesystem.getInfo(mipMap) then
-				local maps = {path}
-				for i = 1, 16 do
-					local mipMap = path:sub(1, #path-4) .. "_" .. i .. path:sub(#path-3)
-					if love.filesystem.getInfo(mipMap) then
-						maps[#maps+1] = mipMap
-					else
-						break
-					end
-				end
-				t = love.graphics.newImage(maps, {mipmaps = maps})
-				t:setMipmapFilter("nearest")
-				t:setFilter("nearest")
-			else
-				t = love.graphics.newImage(path, {mipmaps = true})
-			end
-			t:setWrap("repeat")
-			self.loadedTextures[path] = t
-			return t
-		end
+	if not worked then
+		worked = self.self.textures:update()
 	end
+	return worked
 end
 
 function lib.loadObject(self, ...)
 	local obj = self:loadObjectLazy(...)
 	while obj:resume() do end
 	obj.loaded = true
-	
 	return obj
 end
 
-function lib.loadObjectLazy(self, name, args)
+function lib.loadObjectLazy(self, path, args)
 	if args and type(args) ~= "table" then
 		error("arguments are now packed in a table, check init.lua for example")
 	end
 	args = args or { }
+	
+	--make absolute
+	for _,typ in ipairs({
+		"mtl",
+		"vox",
+		"3de",
+		"obj",
+	}) do
+		if love.filesystem.getInfo(self.objectDir .. path .. "." .. typ) then
+			path = self.objectDir .. path
+			break
+		end
+	end
+	
+	--get name and dir
+	local n = self:split(path, "/")
+	name = n[#n] or path
+	local dir = #n > 1 and table.concat(n, "/", 1, #n-1) or ""
 	
 	if rasterMargin == true then rasterMargin = 2 end
 	local obj = {
@@ -116,7 +98,9 @@ function lib.loadObjectLazy(self, name, args)
 		
 		lights = { },
 		
-		name = name,
+		path = path, --absolute path to object
+		name = name, --name of object
+		dir = dir, --dir containing the object
 		splitMaterials = args.splitMaterials,
 		raster = args.raster,
 		forceTextured = args.forceTextured,
@@ -147,7 +131,7 @@ function lib.loadObjectLazy(self, name, args)
 		if not self.loaded then
 			local ok, err = coroutine.resume(self.co, self.self, self)
 			if not ok and err ~= "cannot resume dead coroutine" then
-				error("loader coroutine crashed:\n" .. err .. "\n" .. debug.traceback(self.co))
+				error("loader coroutine crashed:\n" .. tostring(err) .. "\n" .. debug.traceback(self.co))
 			end
 			return ok
 		end
@@ -157,9 +141,10 @@ function lib.loadObjectLazy(self, name, args)
 end
 
 function lib.loadObjectC(self, obj)
-	local n = self:split(obj.name, "/")
-	local path = #n > 1 and table.concat(n, "/", 1, #n-1) or ""
 	obj.objects.default.material = obj.materials.None
+	
+	--load textures
+	self.textures:add(obj.dir, true)
 	
 	--load files
 	--if two object files are available (.obj and .vox) it might crash, since it loads all
@@ -170,13 +155,13 @@ function lib.loadObjectC(self, obj)
 		"3de",
 		"obj",
 	}) do
-		if love.filesystem.getInfo(self.objectDir .. obj.name .. "." .. typ) or love.filesystem.getInfo(obj.name .. "." .. typ) then
+		if love.filesystem.getInfo(obj.path .. "." .. typ) then
 			found = true
 			--load the simplified objects if existing
 			for i = 8, 1, -1 do
-				if love.filesystem.getInfo(self.objectDir .. obj.name .. "_simple_" .. i .. "." .. typ) or love.filesystem.getInfo(obj.name .. "_simple_" .. i .. "." .. typ) then
+				if love.filesystem.getInfo(obj.path .. "_simple_" .. i .. "." .. typ) then
 					--load object and insert it to current
-					self.loader[typ](self, obj, obj.name .. "_simple_" .. i, path, i)
+					self.loader[typ](self, obj, obj.name .. "_simple_" .. i, obj.path, i)
 					
 					coroutine.yield()
 					
@@ -186,7 +171,7 @@ function lib.loadObjectC(self, obj)
 				end
 			end
 			
-			self.loader[typ](self, obj, obj.name, path)
+			self.loader[typ](self, obj, obj.name, obj.path)
 			for d,s in pairs(obj.objects) do
 				if not s.simpler and obj.objects[d .. "_simple_1"] then
 					s.simpler = d .. "_simple_1"
@@ -196,21 +181,33 @@ function lib.loadObjectC(self, obj)
 		end
 	end
 	if not found then
-		error("object " .. obj.name .. " not found")
+		error("object " .. obj.name .. " not found (" .. obj.path .. ")")
 	end
 	
 	--link textures
 	for d,s in pairs(obj.materials) do
-		if s.loadTextures then
-			local p = path .. "/" .. (s.loadTextures == true and (d .. "_") or s.loadTextures)
-			for _,t in ipairs({"diffuse", "normal", "specular"}) do
-				for _,f in ipairs({"jpg", "jpeg", "png", "tga", "JPG", "JPEG", "PNG", "TGA"}) do
-					local tex = self:loadTexture(p .. t .. "." .. f)
-					if tex then
-						s["tex_" .. t] = tex
-						break
-					end
+		local p_material = (d .. "_")
+		local p_name = (obj.name .. "_")
+		for _,t in ipairs({"diffuse", "normal", "specular"}) do
+			local custom = s["tex_" .. t]
+			s["tex_" .. t] = nil
+			for _,p in ipairs({
+				custom and (obj.dir .. "/" .. custom) or false,
+				custom or false,
+				obj.dir .. "/" .. p_material .. t,
+				p_material .. t,
+				obj.dir .. "/" .. p_name .. t,
+				p_name .. t,
+			}) do
+				if p and self.textures:get(p) then
+					s["tex_" .. t] = p
+					break
 				end
+			end
+			
+			--failed to load custom iamge set in mtl
+			if custom and not s["tex_" .. t] then
+				error("can not find texture specified in the .mtl file: " .. tostring(custom))
 			end
 		end
 	end
@@ -453,11 +450,6 @@ function lib.createMesh(self, o, obj, faceMap, forceTextured)
 	
 	--create mesh
 	o.mesh = love.graphics.newMesh(atypes, #finals, "triangles", "static")
-	
-	--set diffuse texture
-	if o.material.tex_diffuse then
-		o.mesh:setTexture(o.material.tex_diffuse)
-	end
 	coroutine.yield()
 	
 	--vertex map

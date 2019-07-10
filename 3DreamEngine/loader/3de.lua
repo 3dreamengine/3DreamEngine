@@ -4,7 +4,7 @@ extends the material (in case of .obj the material defined in the .mtl file) wit
 --]]
 
 _3DreamEngine.loader["3de"] = function(self, obj, name, path)
-	local extended = love.filesystem.getInfo(self.objectDir .. name .. ".3de") and dofile(self.objectDir .. name .. ".3de") or dofile(name .. ".3de")
+	local extended = dofile(path .. ".3de")
 	
 	obj.boneData = extended.boneData
 	obj.boneDataAutoPivot = extended.boneDataAutoPivot
@@ -25,7 +25,7 @@ _3DreamEngine.loader["3de"] = function(self, obj, name, path)
 					ps.normal = ps.normal or 1.0
 					
 					for i,v in pairs(ps.objects) do
-						local o = self:loadObjectLazy(path .. "/" .. i, {cleanup = false, noMesh = true})
+						local o = self:loadObjectLazy(obj.dir .. "/" .. i, {cleanup = false, noMesh = true})
 						while not o.loaded do
 							o:resume()
 							coroutine.yield()

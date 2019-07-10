@@ -15,7 +15,7 @@ _3DreamEngine.loader["obj"] = function(self, obj, name, path, simple)
 	
 	local yield = 0
 	local t = love.timer.getTime()
-	for l in (love.filesystem.getInfo(self.objectDir .. name .. ".obj") and love.filesystem.lines(self.objectDir .. name .. ".obj") or love.filesystem.lines(name .. ".obj")) do
+	for l in love.filesystem.lines(path .. ".obj") do
 		yield = yield + 1
 		if yield > self.performance_parser then
 			yield = yield - self.performance_parser

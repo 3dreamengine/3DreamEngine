@@ -173,7 +173,8 @@ function love.update(dt)
 	dream.cam.y = player.y+0.3
 	dream.cam.z = player.z
 	
-	dream.resourceLoader:update()
+	--load world, then if done load high res textures
+	local worked = dream.resourceLoader:update(8)
 end
 
 function love.keypressed(key)
