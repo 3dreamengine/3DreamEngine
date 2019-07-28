@@ -3,9 +3,9 @@
 supports the vox extension
 --]]
 
-_3DreamEngine.loader["vox"] = function(self, obj, name, path)
+_3DreamEngine.loader["vox"] = function(self, obj, path)
 	local ffi = require("ffi")
-	local file = love.filesystem.read(path .. ".vox")
+	local file = love.filesystem.read(path)
 	
 	function parseInt(i)
 		return string.byte(file:sub(i+1, i+1)) + string.byte(file:sub(i+2, i+2)) * 256 + string.byte(file:sub(i+3, i+3)) * 256^2 + string.byte(file:sub(i+4, i+4)) * 256^3

@@ -9,7 +9,6 @@ local lib = _3DreamEngine
 function lib.addParticlesystems(self, obj)
 	--add particle system objects
 	--for every material with particle systems attached, for every object which is not a particle system itself and contains the material with the attached particle system and is not a simplified version, for every object used as particle system create a new object
-	local yield = 0
 	for d,material in pairs(obj.materials) do
 		if material.particleSystems then
 			for particleSystemID, particleSystem in ipairs(material.particleSystems) do
@@ -22,7 +21,6 @@ function lib.addParticlesystems(self, obj)
 								break
 							end
 						end
-						coroutine.yield()
 						if contains then
 							local t = love.timer.getTime()
 							
@@ -93,16 +91,6 @@ function lib.addParticlesystems(self, obj)
 										
 										--add object to particle system object
 										local am = math.floor(area*math.max(1, amount)+math.random())
-										
-										--sleeper
-										yield = yield + am * particleVertexPerformanceImpact
-										if yield > self.performance_particlesystem then
-											yield = yield - self.performance_particlesystem
-											local diff = (love.timer.getTime() - t) * 1000
-											self.performance_particlesystem = self.performance_particlesystem + (diff < self.performance and 1 or -2)
-											coroutine.yield()
-											t = love.timer.getTime()
-										end
 										
 										for i = 1, am do
 											--location on the plane

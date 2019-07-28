@@ -4,7 +4,7 @@ love.window.setTitle("Knight Example")
 
 --settings
 dream.flat = true
-dream.objectDir = "examples/knight/"
+dream.objectDir = "examples/knight"
 
 dream.AO_enabled = true      --ambient occlusion?
 dream.AO_strength = 0.75     --blend strength

@@ -6,10 +6,10 @@ shader.lua - contains the shaders
 
 local lib = _3DreamEngine
 
-if love.filesystem.read("debugEnabled") == "true" then
+if _DEBUGMODE then
 	love.graphics.newShader_old = love.graphics.newShader
 	function love.graphics.newShader(pixel, vertex)
-		local status, err = love.graphics.validateShader(true, pixel, vertex)
+		local status, err = love.graphics.validateShader(_RENDERER == "OpenGL ES", pixel, vertex)
 		if not status then
 			print()
 			print("-----------------")
@@ -180,8 +180,7 @@ function lib.getShaderInfo(self, typ, variant, normal, specular, reflections, li
 	return self["info_" .. name]
 end
 
-lib.render = love.graphics.getRendererInfo( )
-print("render engine set to OpenGL ES")
+_RENDERER = love.graphics.getRendererInfo()
 function lib.getShader(self, typ, variant, normal, specular, reflections, lightings)
 	local info = self:getShaderInfo(typ, variant, normal, specular, reflections, lightings)
 	
@@ -203,10 +202,9 @@ function lib.getShader(self, typ, variant, normal, specular, reflections, lighti
 			(info.reflections_enabled_night and "#define REFLECTIONS_ENABLED_NIGHT\n" or "") ..
 			(variant == "wind" and "#define VARIANT_WIND\n" or "") ..
 			(lightings > 0 and "#define LIGHTING\n" or "") ..
-			(self.render == "OpenGL ES" and "#define OPENGL_ES\n" or "") ..
 			[[
 
-#ifdef OPENGL_ES
+]] .. (self.render == "OpenGL ES" and [[
 mediump mat3 transpose_optional(mat3 inMatrix) {
 	vec3 i0 = inMatrix[0];
 	vec3 i1 = inMatrix[1];
@@ -220,7 +218,7 @@ mediump mat3 transpose_optional(mat3 inMatrix) {
 	
 	return outMatrix;
 }
-#endif
+]] or "") .. [[
 
 //required for secondary depth buffer and AO
 #ifdef AO_ENABLED
@@ -418,8 +416,10 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 #endif]]
 		
 		--debug
-		print(">>", info.name .. ".glsl")
-		love.filesystem.write(info.name .. ".glsl", code)
+		if _DEBUGMODE then
+			print(">>", info.name .. ".glsl")
+			love.filesystem.write(info.name .. ".glsl", code)
+		end
 		
 		self[info.name].shader = love.graphics.newShader(code)
 	end

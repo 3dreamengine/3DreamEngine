@@ -2,7 +2,7 @@
 #obj - Wavefront OBJ file
 --]]
 
-_3DreamEngine.loader["obj"] = function(self, obj, name, path, simple)
+_3DreamEngine.loader["obj"] = function(self, obj, path, simple)
 	--store vertices, normals and texture coordinates
 	local vertices = { }
 	local normals = { }
@@ -13,18 +13,8 @@ _3DreamEngine.loader["obj"] = function(self, obj, name, path, simple)
 	local blocked = false
 	local o = obj.objects.default
 	
-	local yield = 0
 	local t = love.timer.getTime()
-	for l in love.filesystem.lines(path .. ".obj") do
-		yield = yield + 1
-		if yield > self.performance_parser then
-			yield = yield - self.performance_parser
-			local diff = (love.timer.getTime() - t) * 1000
-			self.performance_parser = self.performance_parser + (diff < self.performance and 4 or -4)
-			coroutine.yield()
-			t = love.timer.getTime()
-		end
-		
+	for l in love.filesystem.lines(path) do
 		local v = self:split(l, " ")
 		
 		if v[1] == "o" then
@@ -40,18 +30,18 @@ _3DreamEngine.loader["obj"] = function(self, obj, name, path, simple)
 		elseif v[1] == "usemtl" and not blocked then
 			material = obj.materials[l:sub(8)] or obj.materials.None
 			if obj.splitMaterials and not o.name:find("LAMP") then
-				local nameRaw = (o.baseName or o.name) .. "_" .. l:sub(8)
-				local name = nameRaw .. (simple and ("_simple_" .. simple) or "")
+				local nameBase = o.name .. "_" .. l:sub(8)
+				local name = simple and (nameBase .. "_simple_" .. simple) or nameBase
+				
 				obj.objects[name] = obj.objects[name] or {
-					baseName = o.name, --raw name of object, without material
 					faces = { },
 					final = { },
 					material = material,
 					
-					name = nameRaw,
+					name = o.name, --using base objects name instead, because the material is irelevant as a name
 					simple = simple,
-					super = simple and (simple == 1 and nameRaw or (nameRaw .. "_simple_" .. (simple-1))) or nil,
-					simpler = simple and (nameRaw .. "_simple_" .. (simple+1)) or nil,
+					super = simple and (simple == 1 and nameBase or (nameBase .. "_simple_" .. (simple-1))) or nil,
+					simpler = simple and (nameBase .. "_simple_" .. (simple+1)) or nil,
 				}
 				o = obj.objects[name]
 			else
@@ -86,30 +76,21 @@ _3DreamEngine.loader["obj"] = function(self, obj, name, path, simple)
 				error("only tris and quads supported (got " .. (#v-1) .. " vertices)")
 			end
 		elseif v[1] == "o" and not blocked then
-			if l:sub(3):find("REMOVE") then
+			if l:find("REMOVE") then
 				blocked = true
 			else
-				local nameRaw
-				if self.nameEncoder == "blender" then
-					local last, f = 0, false
-					while last and string.find(l, "_", last+1) do
-						f, last = string.find(l, "_", last+1)
-					end
-					nameRaw = l:sub(3, f and (f-1) or #l)
-				else
-					nameRaw = l:sub(3)
-				end
-				local name = nameRaw .. (simple and ("_simple_" .. simple) or "")
+				local nameBase = self:decodeObjectName(l:sub(3))
+				local name = simple and (nameBase .. "_simple_" .. simple) or nameBase
 				
 				obj.objects[name] = obj.objects[name] or {
 					faces = { },
 					final = { },
 					material = material,
 					
-					name = nameRaw,
+					name = nameBase,
 					simple = simple,
-					super = simple and (simple == 1 and nameRaw or (nameRaw .. "_simple_" .. (simple-1))) or nil,
-					simpler = simple and (nameRaw .. "_simple_" .. (simple+1)) or nil
+					super = simple == 1 and nameBase or simple and (nameBase .. "_simple_" .. (simple-1)) or nil,
+					simpler = simple and (nameBase .. "_simple_" .. (simple+1)) or nil
 				}
 				o = obj.objects[name]
 			end

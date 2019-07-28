@@ -3,8 +3,8 @@
 extends the material (in case of .obj the material defined in the .mtl file) with particle systems
 --]]
 
-_3DreamEngine.loader["3de"] = function(self, obj, name, path)
-	local extended = dofile(path .. ".3de")
+_3DreamEngine.loader["3de"] = function(self, obj, path)
+	local extended = love.filesystem.load(path)()
 	
 	obj.boneData = extended.boneData
 	obj.boneDataAutoPivot = extended.boneDataAutoPivot

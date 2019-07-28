@@ -2,10 +2,10 @@
 #mtl - Material Library File for .obj
 --]]
 
-_3DreamEngine.loader["mtl"] = function(self, obj, name, path)
+_3DreamEngine.loader["mtl"] = function(self, obj, path)
 	--materials
 	local material = obj.materials.None
-	for l in love.filesystem.lines(path .. ".mtl") do
+	for l in love.filesystem.lines(path) do
 		local v = self:split(l, " ")
 		if v[1] == "newmtl" then
 			obj.materials[l:sub(8)] = {
@@ -34,13 +34,10 @@ _3DreamEngine.loader["mtl"] = function(self, obj, name, path)
 			material.alphaThreshold = tonumber(v[2])
 		elseif v[1] == "map_Kd" then
 			material.tex_diffuse = obj.dir .. "/" .. (l:sub(8):match("(.+)%..+") or l:sub(8))
-			coroutine.yield()
 		elseif v[1] == "map_Ks" then
 			material.tex_specular = obj.dir .. "/" .. (l:sub(8):match("(.+)%..+") or l:sub(8))
-			coroutine.yield()
 		elseif v[1] == "map_Kn" then
 			material.tex_normal = obj.dir .. "/" .. (l:sub(8):match("(.+)%..+") or l:sub(8))
-			coroutine.yield()
 		end
 	end
 end

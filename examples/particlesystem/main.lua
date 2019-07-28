@@ -5,7 +5,7 @@ love.window.setTitle("Particle System Example")
 --settings
 dream.flat = true
 dream.pixelPerfect = true
-dream.objectDir = "examples/particlesystem/"
+dream.objectDir = "examples/particlesystem"
 
 dream.AO_enabled = true       --ambient occlusion?
 dream.AO_strength = 0.75      --blend strength

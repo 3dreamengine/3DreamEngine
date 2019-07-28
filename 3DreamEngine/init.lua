@@ -17,7 +17,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 dream = require("3DreamEngine")
 
 --settings
-dream.objectDir = "objects/"     --root directory of objects
+dream.objectDir = "objects"      --root directory of objects
 
 dream.fov = 90                   --field of view (10 < fov < 180)
 
@@ -31,7 +31,7 @@ dream.enable_reflections = false --uses the sky sphere to simulate reflections, 
 
 dream.lighting_max = 16          --max light sources, depends on GPU, has no performance impact if sources are unused
 
-dream.nameEncoder = "blender"    --blender/none automatically renames objects, blender exports them as ObjectName_meshType.ID, but only ObjectName is relevant
+dream.nameDecoder = "blender"    --blender/none automatically renames objects, blender exports them as ObjectName_meshType.ID, but only ObjectName is relevant
 
 --inits (applies settings)
 dream:init()
@@ -162,6 +162,22 @@ require((...) .. "/saveTable")
 
 lib.textures = require((...) .. "/textures")
 
+function lib.decodeObjectName(self, name)
+	if self.nameDecoder == "blender" then
+		local last, f = 0, false
+		while last and string.find(name, "_", last+1) do
+			f, last = string.find(name, "_", last+1)
+		end
+		return name:sub(1, f and (f-1) or #name)
+	else
+		return name
+	end
+end
+
+if love.filesystem.read("debugEnabled") == "true" then
+	_DEBUGMODE = true
+end
+
 
 --loader
 lib.loader = { }
@@ -199,7 +215,7 @@ lib.reflections_enabled = false
 
 lib.lighting_max = 16
 
-lib.nameEncoder = "blender"
+lib.nameDecoder = "blender"
 
 lib.object_light = lib:loadObject(lib.root .. "/objects/light")
 lib.object_clouds = lib:loadObject(lib.root .. "/objects/clouds_high", {forceTextured = true})
@@ -520,7 +536,7 @@ function lib.draw(self, obj, x, y, z, sx, sy, sz)
 	local levelOfAbstraction = math.floor(math.sqrt((self.currentCam.x-x)^2 + (self.currentCam.y-y)^2 + (self.currentCam.z-z)^2) / 20) - 1
 	local t = obj.objects or {obj}
 	for d,s in pairs(t) do
-		if (not s.simple or not t[s.super] or not t[s.super].meshLoaded) and s.mesh and (not s.particleSystem or levelOfAbstraction <= 2) then
+		if (not s.simple or not t[s.super] or not t[s.super].loaded) and s.mesh and (not s.particleSystem or levelOfAbstraction <= 2) then
 			for i = 1, levelOfAbstraction do
 				s = t[s.simpler] or s
 			end

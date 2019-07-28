@@ -3,7 +3,7 @@ dream = require("3DreamEngine")
 love.window.setTitle("Blacksmith")
 
 --settings
-dream.objectDir = "examples/reflections/"
+dream.objectDir = "examples/reflections"
 
 dream.AO_enabled = true       --ambient occlusion?
 dream.AO_strength = 0.75      --blend strength
@@ -11,7 +11,7 @@ dream.AO_quality = 24         --samples per pixel (8-32 recommended)
 dream.AO_quality_smooth = 2   --smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
 dream.AO_resolution = 0.75    --resolution factor
 
-dream.sky = love.graphics.newImage(dream.objectDir .. "background.jpg")
+dream.sky = love.graphics.newImage(dream.objectDir .. "/background.jpg")
 
 dream.reflections_enabled = true
 
@@ -70,11 +70,7 @@ function love.draw()
 			"\ndifferent shaders: " .. dream.stats.shadersInUse ..
 			"\ndifferent materials: " .. dream.stats.materialDraws ..
 			"\ndraws: " .. dream.stats.draws ..
-			"\nshaders: " .. shadersInUse ..
-			"\nperformance:" ..
-			"\n  vertex: " .. dream.performance_vertex ..
-			"\n  particle: " .. dream.performance_particlesystem ..
-			"\n  parser: " .. dream.performance_parser,
+			"\nshaders: " .. shadersInUse,
 			15, 400)
 		end
 end

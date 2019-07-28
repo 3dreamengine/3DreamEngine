@@ -3,7 +3,7 @@ dream = require("3DreamEngine")
 love.window.setTitle("Benchmark")
 
 --settings
-dream.objectDir = "examples/benchmark/"
+dream.objectDir = "examples/benchmark"
 
 dream.AO_enabled = true      --ambient occlusion?
 dream.AO_strength = 0.75     --blend strength
@@ -13,7 +13,7 @@ dream.AO_resolution = 0.75   --resolution factor
 
 dream.near = 1.0
 dream.far = 50
-dream.nameEncoder = "none"
+dream.nameDecoder = "none"
 
 dream:init()
 
@@ -131,16 +131,16 @@ function love.update(dt)
 					mesh = dream:loadObject(b.mesh, {forceTextured = false})
 				elseif b.mode == "texture" then
 					mesh = dream:loadObject(b.mesh, {forceTextured = true})
-					mesh.materials.Material.tex_diffuse = love.graphics.newImage(dream.objectDir .. "diffuse.png")
+					mesh.materials.Material.tex_diffuse = love.graphics.newImage(dream.objectDir .. "/diffuse.png")
 				elseif b.mode == "normal" then
 					mesh = dream:loadObject(b.mesh, {forceTextured = true})
-					mesh.materials.Material.tex_diffuse = love.graphics.newImage(dream.objectDir .. "diffuse.png")
-					mesh.materials.Material.tex_normal = love.graphics.newImage(dream.objectDir .. "normal.png")
+					mesh.materials.Material.tex_diffuse = love.graphics.newImage(dream.objectDir .. "/diffuse.png")
+					mesh.materials.Material.tex_normal = love.graphics.newImage(dream.objectDir .. "/normal.png")
 				elseif b.mode == "specular" then
 					mesh = dream:loadObject(b.mesh, {forceTextured = true})
-					mesh.materials.Material.tex_diffuse = love.graphics.newImage(dream.objectDir .. "diffuse.png")
-					mesh.materials.Material.tex_normal = love.graphics.newImage(dream.objectDir .. "normal.png")
-					mesh.materials.Material.tex_specular = love.graphics.newImage(dream.objectDir .. "specular.png")
+					mesh.materials.Material.tex_diffuse = love.graphics.newImage(dream.objectDir .. "/diffuse.png")
+					mesh.materials.Material.tex_normal = love.graphics.newImage(dream.objectDir .. "/normal.png")
+					mesh.materials.Material.tex_specular = love.graphics.newImage(dream.objectDir .. "/specular.png")
 				end
 			end
 		else

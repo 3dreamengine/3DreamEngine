@@ -3,7 +3,7 @@ dream = require("3DreamEngine")
 love.window.setTitle("Lamborghini Example")
 
 --settings
-dream.objectDir = "examples/Lamborghini/"
+dream.objectDir = "examples/Lamborghini"
 
 dream.AO_enabled = true      --ambient occlusion?
 dream.AO_strength = 0.75     --blend strength
@@ -13,7 +13,7 @@ dream.AO_resolution = 0.75   --resolution factor
 
 dream.near = 1.0
 dream.far = 100
-dream.nameEncoder = "none"
+dream.nameDecoder = "none"
 
 dream:init()
 
