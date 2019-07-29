@@ -387,13 +387,13 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 			#ifdef FLAT_SHADING
 			objToTangentSpace = transpose_optional(mat3(transform));
 			#else
-			objToTangentSpace = transpose_optional(mat3(transform)) * mat3(VertexTangent, VertexBitangent, VertexNormal);
+			objToTangentSpace = transpose_optional(mat3(transform)) * mat3(VertexTangent*2.0-1.0, VertexBitangent*2.0-1.0, VertexNormal*2.0-1.0);
 			#endif
 ]] or [[
 			#ifdef FLAT_SHADING
 			objToTangentSpace = transpose(mat3(transform));
 			#else
-			objToTangentSpace = transpose(mat3(transform)) * mat3(VertexTangent, VertexBitangent, VertexNormal);
+			objToTangentSpace = transpose(mat3(transform)) * mat3(VertexTangent*2.0-1.0, VertexBitangent*2.0-1.0, VertexNormal*2.0-1.0);
 			#endif
 ]]) .. [[
 	#endif

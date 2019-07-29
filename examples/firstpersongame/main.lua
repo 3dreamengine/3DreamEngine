@@ -3,7 +3,7 @@ dream = require("3DreamEngine")
 love.window.setTitle("Castle")
 
 --settings
-dream.objectDir = "examples/first person game/"
+dream.objectDir = "examples/firstpersongame"
 
 dream.AO_enabled = true       --ambient occlusion?
 dream.AO_strength = 0.75      --blend strength
@@ -12,18 +12,17 @@ dream.AO_quality_smooth = 2   --smoothing steps, 1 or 2 recommended, lower quali
 dream.AO_resolution = 0.75    --resolution factor
 
 dream.cloudDensity = 0.6
-dream.clouds = love.graphics.newImage(dream.objectDir .. "clouds.jpg")
-dream.sky = love.graphics.newImage(dream.objectDir .. "sky.jpg")
-dream.night = love.graphics.newImage(dream.objectDir .. "night.jpg")
+dream.clouds = love.graphics.newImage(dream.objectDir .. "/clouds.jpg")
+dream.sky = love.graphics.newImage(dream.objectDir .. "/sky.jpg")
+dream.night = love.graphics.newImage(dream.objectDir .. "/night.jpg")
 
 dream:init()
 
 --generate mipmaps from the leaves texture
---dream:generateMipMaps(dream.objectDir .. "objects/leaves.png")
---dream:generateMipMaps(dream.objectDir .. "objects/grass.png")
+--dream:generateMipMaps(dream.objectDir .. "/objects/leaves.png")
+--dream:generateMipMaps(dream.objectDir .. "/objects/grass.png")
 
-castle = dream:loadObjectLazy("objects/scene", {splitMaterials = true})
-dream.resourceLoader:add(castle)
+castle = dream:loadObject("objects/scene", {splitMaterials = true, export3do = true})
 
 love.graphics.setBackgroundColor(128/255, 218/255, 235/255)
 
@@ -78,11 +77,7 @@ function love.draw()
 			"\ndifferent shaders: " .. dream.stats.shadersInUse ..
 			"\ndifferent materials: " .. dream.stats.materialDraws ..
 			"\ndraws: " .. dream.stats.draws ..
-			"\nshaders: " .. shadersInUse ..
-			"\nperformance:" ..
-			"\n  vertex: " .. dream.performance_vertex ..
-			"\n  particle: " .. dream.performance_particlesystem ..
-			"\n  parser: " .. dream.performance_parser,
+			"\nshaders: " .. shadersInUse,
 			15, 400)
 		end
 end
@@ -174,7 +169,7 @@ function love.update(dt)
 	dream.cam.z = player.z
 	
 	--load world, then if done load high res textures
-	local worked = dream.resourceLoader:update(8)
+	dream.resourceLoader:update()
 end
 
 function love.keypressed(key)

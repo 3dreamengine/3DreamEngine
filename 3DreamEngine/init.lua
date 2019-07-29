@@ -1,11 +1,5 @@
 --[[
 #3DreamEngine - 3D library by Luke100000
-loads simple .obj files
-supports obj atlas (see usage)
-renders models using flat shading or textures
-supports ambient occlusion and fog
-
-
 #Copyright 2019 Luke100000
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
@@ -27,7 +21,7 @@ dream.AO_quality = 24            --samples per pixel (8-32 recommended)
 dream.AO_quality_smooth = 1      --smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
 dream.AO_resolution = 0.5        --resolution factor
 
-dream.enable_reflections = false --uses the sky sphere to simulate reflections, the materials .reflections value has to be true (in case of .obj objects add "reflections true" to the .mtl material), if enabled, it uses the specular value (constant material value on flat shading or specular texture, default 0.5) for reflection value
+dream.enable_reflections = false --uses the sky sphere to simulate reflections, the materials .reflections value has to be true (in case of .obj objects add "reflections true" to the .mtl material or reflections = true to the .3de material file), if enabled, it uses the specular value (constant material value on flat shading or specular texture, default 0.5) for reflection value
 
 dream.lighting_max = 16          --max light sources, depends on GPU, has no performance impact if sources are unused
 
@@ -40,30 +34,21 @@ dream:init()
 yourObject = dream:loadObject("objectName", args)
 
 --where args is a table with additional settings
---	splitMaterials = (boolean, false by default, has to be true if your object contains several (diffuse) textures)
---	raster = (boolean or integer, default to true (equals to 2), enables object splitting
---	forceTextured = uses textured mode (which includes normal tangent values, ...),
---	noMesh = load eberything, but skip mesh loading
---	cleanup = (boolean, default true) clean up memory by deleting faces and vertex data
+splitMaterials,       -- if a single mesh has different textured materials, it has to be split into single meshes. splitMaterials does this automatically.
+raster,               -- load the object as 3D raster of different meshes (must be split). Instead of an 1D table, obj.objects[x][y][z] will be created.
+forceTextured,        -- if the mesh gets created, it will determine texture mode or simple mode based on tetxures. forceTextured always loads as (non set) texture.
+noMesh,               -- load vertex information but do not create a final mesh - template objects etc
+noParticleSystem      -- prevent the particle system from bein generated, used by template objects, ... If noMesh is true and noParticleSystem nil, it assume noParticleSystem should be true too.
+cleanup               -- release vertex, ... information once done - prefer using 3do files if cleanup is nil or true, since then it would not even load this information into RAM
+export3do             -- loads the object as usual, then export the entire object, including simple versions and particle system, as a single, high speed 3do file
 
 --the name of the object (set by "o" inside .obj, in blender it is the name of the vertex data inside an object) can contain information:
 --  if it contains REMOVE, it will not be used. Their use can be frames, particle emitters, helper objects, ...)
---  if it contains LAMP_name where name is a custom ID, it will not be loaded, but instead an entry in object.lights will be made (name, x, y, z), can be used to set static lights more easy.
---prefixed, for example Icosphere_LAMP_myName are valid and will be ignored.
+--  if it contains LAMP_name where name is a custom name, it will not be loaded, but instead an entry in object.lights will be made (name, x, y, z), can be used to set static lights more easy.
+--    prefixes, for example Icosphere_LAMP_myName are valid and will be ignored.
 
---loads a lazy object
-yourObject = dream:loadObjectLazy("objectName", args)
-
---and load it step by step, for example slowly in the background
-while not yourObject.loaded do
-	yourObject:resume()
-end
-
---or add it to the master loader, priority is an int between 1 and inf, default is 3
-dream.resourceLoader:add(yourObject[, priority])
-
---and update the loader in love.update(), maxTime if the time available in ms, default 1 ms. Peaks may occur. Average total time per call is maxTime + 3ms (since worst case time can exceed maxTime)
-dream.resourceLoader:update(maxTime)
+--if 3do files or thumbnail textures are used, the resourceLoader requires to be updated. It controls the loader threads and texture loading.
+dream.resourceLoader:update(steps)
 
 --transform the object
 yourObject:reset()
@@ -161,6 +146,8 @@ require((...) .. "/boneManager")
 require((...) .. "/saveTable")
 
 lib.textures = require((...) .. "/textures")
+
+lib.ffi = require("ffi")
 
 function lib.decodeObjectName(self, name)
 	if self.nameDecoder == "blender" then
@@ -533,28 +520,40 @@ function lib.draw(self, obj, x, y, z, sx, sy, sz)
 		end
 	end
 	
-	local levelOfAbstraction = math.floor(math.sqrt((self.currentCam.x-x)^2 + (self.currentCam.y-y)^2 + (self.currentCam.z-z)^2) / 20) - 1
+	local levelOfAbstraction = math.floor(math.sqrt((self.currentCam.x-x)^2 + (self.currentCam.y-y)^2 + (self.currentCam.z-z)^2) / 30) - 1
 	local t = obj.objects or {obj}
 	for d,s in pairs(t) do
-		if (not s.simple or not t[s.super] or not t[s.super].loaded) and s.mesh and (not s.particleSystem or levelOfAbstraction <= 2) then
+		if not s.simple and (not s.particleSystem or levelOfAbstraction <= 2) then
 			for i = 1, levelOfAbstraction do
 				s = t[s.simpler] or s
 			end
+			local super
+			while not s.mesh and s.simpler and t[s.simpler] do
+				super = s
+				s = t[s.simpler] or s
+			end
+			if super then
+				super.requestMeshLoad = true
+			end
 			
 			--insert intro draw todo list
-			local shaderInfo = self:getShaderInfo(s.material.tex_diffuse and "textured" or "flat", s.material.shader or s.shader, s.material.tex_normal, s.material.tex_specular, s.material.reflections)
-			if not lib.drawTable[shaderInfo] then
-				lib.drawTable[shaderInfo] = { }
+			if s.mesh then
+				local shaderInfo = self:getShaderInfo(s.material.tex_diffuse and "textured" or "flat", s.material.shader or s.shader, s.material.tex_normal, s.material.tex_specular, s.material.reflections)
+				if not lib.drawTable[shaderInfo] then
+					lib.drawTable[shaderInfo] = { }
+				end
+				if not lib.drawTable[shaderInfo][s.material] then
+					lib.drawTable[shaderInfo][s.material] = { }
+				end
+				local r, g, b = love.graphics.getColor()
+				table.insert(lib.drawTable[shaderInfo][s.material], {
+					(transform * (bones and (obj.transform * bones[d]) or obj.transform or 1))^"T",
+					s,
+					r, g, b,
+				})
+			else
+				s.requestMeshLoad = true
 			end
-			if not lib.drawTable[shaderInfo][s.material] then
-				lib.drawTable[shaderInfo][s.material] = { }
-			end
-			local r, g, b = love.graphics.getColor()
-			table.insert(lib.drawTable[shaderInfo][s.material], {
-				(transform * (bones and (obj.transform * bones[d]) or obj.transform or 1))^"T",
-				s,
-				r, g, b,
-			})
 		end
 	end
 end

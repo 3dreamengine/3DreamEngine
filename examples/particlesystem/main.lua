@@ -3,7 +3,6 @@ dream = require("3DreamEngine")
 love.window.setTitle("Particle System Example")
 
 --settings
-dream.flat = true
 dream.pixelPerfect = true
 dream.objectDir = "examples/particlesystem"
 
@@ -17,8 +16,7 @@ dream.lighting_enabled = false
 
 dream:init()
 
-ground = dream:loadObjectLazy("ground")
-dream.resourceLoader:add(ground)
+ground = dream:loadObject("ground")
 
 love.graphics.setBackgroundColor(0.8, 0.8, 0.8)
 
@@ -34,8 +32,6 @@ function love.draw()
 end
 
 function love.update(dt)
-	dream.resourceLoader:update(10)
-	
 	local time = love.timer.getTime() * 0.5
 	
 	if not love.keyboard.isDown("space") then

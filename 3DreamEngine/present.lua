@@ -166,10 +166,10 @@ function lib.present(self, noDepth, noSky)
 				if step == 1 and material.color[4] == 1 or step == 2 and material.color[4] ~= 1 then
 					--diffuse texture already bound to mesh!
 					if shader.specular and count > 0 then
-						shader.shader:send("tex_specular", self.textures:get(material.tex_specular) or self.texture_missing)
+						shader.shader:send("tex_specular", self.textures:get(material.tex_specular, true) or self.texture_missing)
 					end
 					if shader.normal and count > 0 then
-						shader.shader:send("tex_normal", self.textures:get(material.tex_normal) or self.texture_missing)
+						shader.shader:send("tex_normal", self.textures:get(material.tex_normal, true) or self.texture_missing)
 					end
 					
 					shader.shader:send("alphaThreshold", material.alphaThreshold or 0.0)

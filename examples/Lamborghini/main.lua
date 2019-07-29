@@ -24,6 +24,8 @@ car = dream:loadObject("Lamborghini Aventador")
 love.graphics.setBackgroundColor(0.8, 0.8, 0.8)
 
 function love.draw()
+	dream.resourceLoader:update()
+	
 	dream.color_ambient = {0.1, 0.1, 0.1, 1}
 	dream.color_sun = {1, 1, 1, 2.0}
 	

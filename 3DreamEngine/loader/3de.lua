@@ -25,11 +25,7 @@ _3DreamEngine.loader["3de"] = function(self, obj, path)
 					ps.normal = ps.normal or 1.0
 					
 					for i,v in pairs(ps.objects) do
-						local o = self:loadObjectLazy(obj.dir .. "/" .. i, {cleanup = false, noMesh = true})
-						while not o.loaded do
-							o:resume()
-							coroutine.yield()
-						end
+						local o = self:loadObject(obj.dir .. "/" .. i, {cleanup = false, noMesh = true})
 						for d,s in pairs(o.objects) do
 							table.insert(ps.objects_new, {object = s, materials = o.materials, materialsID = o.materialsID, amount = v})
 						end

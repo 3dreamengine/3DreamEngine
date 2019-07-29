@@ -7,20 +7,69 @@ loader.lua - loads objects
 local lib = _3DreamEngine
 
 --master resource loader
-lib.resourceLoader = {jobs = { }, self = lib}
-function lib.resourceLoader.add(self, object, priority)
-	self.jobs[#self.jobs+1] = {object = object, priority = priority or 3}
+lib.resourceLoader = {jobs = { }, self = lib, lastID = 0, threads = { }}
+
+--start the threads
+for i = 1, math.max(1, love.system.getProcessorCount()-1) do
+	lib.resourceLoader.threads[i] = love.thread.newThread(lib.root .. "/thread.lua")
+	lib.resourceLoader.threads[i]:start()
 end
 
+lib.resourceLoader.channel_jobs = love.thread.getChannel("3DreamEngine_channel_jobs")
+lib.resourceLoader.channel_results = love.thread.getChannel("3DreamEngine_channel_results")
+
 --updates active resource tasks (mesh loading, texture loading, ...)
-function lib.resourceLoader.update(self, time)
+function lib.resourceLoader.update(self, steps)
+	--send jobs
+	for i = #self.jobs, 1, -1 do
+		local s = self.jobs[i]
+		if not s.ID then
+			s.ID = self.lastID
+			self.lastID = self.lastID + 1
+		end
+		
+		local found = false
+		for d,o in pairs(s.objects) do
+			if not o.mesh then
+				found = true
+			end
+			if o.requestMeshLoad and not o.mesh_temp then
+				o.mesh_temp = love.graphics.newMesh(o.vertexFormat, o.vertexCount, "triangles", "static")
+				o.mesh_temp:setVertexMap(o.vertexMap)
+				self.channel_jobs:push({s.ID, d, s.path .. ".3do", s.dataOffset + o.meshDataIndex, o.meshDataSize, s.compressed})
+				return true
+			end
+		end
+		
+		if not found then
+			table.remove(self.jobs, i)
+		end
+	end
 	
+	--receive processed byte data
+	local msg = self.channel_results:pop()
+	if msg then
+		for i,s in ipairs(self.jobs) do
+			if s.ID == msg[1] then
+				s.objects[msg[2]].mesh = s.objects[msg[2]].mesh_temp
+				s.objects[msg[2]].mesh_temp = nil
+				
+				s.objects[msg[2]].mesh:setVertices(msg[3])
+			end
+		end
+		return true
+	end
+	
+	--load textures
+	self.self.textures:update()
+	
+	return false
 end
 
 --loads an opject
---args is a table containing additional instructions on how to load the object (more informations in the local obj = { } creation)
+--args is a table containing additional instructions on how to load the object
 --path is either absolute (starting from the games root dir) or relative (starting from the optional set project objects base dir)
---if not disabled with args.noLazy, 3do objects will be loaded part by part. If abstracted files are available (yourObject_simple_1.3do) it will load the simplest file first and only load more detailed object once actually needed. Yourobject.objects.yourObject.loaded shows you if a mesh is fully loaded, .mesh might be a simplified version too, if present.
+--3do objects will be loaded part by part. If abstracted files are available (yourObject_simple_1.3do) it will load the simplest file first and only load more detailed object once actually needed. Yourobject.objects.yourObject.loaded shows you if a mesh is fully loaded, .mesh might be a simplified version too, if present.
 function lib.loadObject(self, path, args)
 	if args and type(args) ~= "table" then
 		error("arguments are now packed in a table, check init.lua for example")
@@ -28,11 +77,11 @@ function lib.loadObject(self, path, args)
 	args = args or { }
 	
 	local supportedFiles = {
+		"3do", --3DreamEngine object file - way faster than obj but does not keep vertex information
 		"mtl", --obj material file
 		"vox", --magicka voxel
 		"3de", --3DreamEngine information file
 		"obj", --obj file
-		"3do", --3DreamEngine object file - way faster than obj but does not keep vertex information
 	}
 	
 	--make absolute
@@ -61,13 +110,13 @@ function lib.loadObject(self, path, args)
 		dir = dir, --dir containing the object
 		
 		--args
-		splitMaterials = args.splitMaterials,            -- if a single mesh has different textured materials, it has to be split into single meshes. splitMaterials does this automatically.
-		raster = args.raster,                            -- load the object as 3D raster of different meshes (must be split). Instead of an 1D table, obj.objects[x][y][z] will be created.
-		forceTextured = args.forceTextured,              -- if the mesh gets created, it will determine texture mode or simple mode based on tetxures. forceTextured always loads as (non set) texture.
-		noMesh = args.noMesh,                            -- load vertex information but do not create a final mesh - template objects etc
-		noParticleSystem = args.noParticleSystem == nil and args.noMesh or args.noParticleSystem, -- prevent the particle system from bein generated, used by template objects, ... If noMesh is true and noParticleSystem nil, it assume noParticleSystem should be true too.
-		cleanup = (args.cleanup == nil or args.cleanup), -- release vertex, ... information once done - prefer using 3do files if cleanup is nil or true, since then it would not even load this information into RAM
-		noLazy = args.noLazy,                            -- prevent .3do from bein loaded lazy
+		splitMaterials = args.splitMaterials,
+		raster = args.raster,
+		forceTextured = args.forceTextured,
+		noMesh = args.noMesh,
+		noParticleSystem = args.noParticleSystem == nil and args.noMesh or args.noParticleSystem,
+		cleanup = (args.cleanup == nil or args.cleanup),
+		export3do = args.export3do,
 		
 		--the object transformation
 		transform = matrix{
@@ -101,10 +150,12 @@ function lib.loadObject(self, path, args)
 			found = true
 			
 			--load the simplified objects if existing
-			for i = 8, 1, -1 do
-				if love.filesystem.getInfo(obj.path .. "_simple_" .. i .. "." .. typ) then
-					--load object and insert it to current
-					self.loader[typ](self, obj, obj.path .. "_simple_" .. i .. "." .. typ, i)
+			if typ == "obj" then
+				for i = 8, 1, -1 do
+					if love.filesystem.getInfo(obj.path .. "_simple_" .. i .. "." .. typ) then
+						--load object and insert it to current
+						self.loader[typ](self, obj, obj.path .. "_simple_" .. i .. "." .. typ, i)
+					end
 				end
 			end
 			
@@ -114,6 +165,13 @@ function lib.loadObject(self, path, args)
 				if not s.simpler and obj.objects[d .. "_simple_1"] then
 					s.simpler = d .. "_simple_1"
 				end
+			end
+			
+			if typ == "3do" then
+				obj.noParticleSystem = true
+				obj.noMesh = true
+				obj.export3do = false
+				break
 			end
 		end
 	end
@@ -159,7 +217,7 @@ function lib.loadObject(self, path, args)
 				obj.dir .. "/" .. obj.name .. "_" .. t,            -- same name as object name, relative to object file
 				obj.name .. "_" .. t,                              -- same name as object name, relative to root
 			}) do
-				if p and self.textures:get(p) then
+				if p and self.textures:test(p) then
 					s["tex_" .. t] = p
 					break
 				end
@@ -196,7 +254,9 @@ function lib.loadObject(self, path, args)
 	
 	
 	--create particle systems
-	self:addParticlesystems(obj)
+	if not obj.noParticleSystem then
+		self:addParticlesystems(obj)
+	end
 	
 	
 	--remove empty objects
@@ -210,10 +270,7 @@ function lib.loadObject(self, path, args)
 	--create meshes
 	if not obj.noMesh then
 		for d,o in pairs(obj.objects) do
-			if not o.finished then
-				o.finished = true
-				self:createMesh(obj, o)
-			end
+			self:createMesh(obj, o)
 		end
 	end
 	
@@ -225,6 +282,92 @@ function lib.loadObject(self, path, args)
 			s.final = nil
 		end
 		collectgarbage()
+	end
+	
+	
+	--3do exporter
+	if obj.export3do then
+		function copy(first_table)
+			local second_table = { }
+			for k,v in pairs(first_table) do
+				if type(v) == "table" then
+					second_table[k] = copy(v)
+				else
+					second_table[k] = v
+				end
+			end
+			return second_table
+		end
+		
+		local compressed = "lz4"
+		local compressedLevel = 9
+		local meshHeaderData = { }
+		local meshDataStrings = { }
+		local meshDataIndex = 0
+		for d,o in pairs(obj.objects) do
+			if o.mesh then
+				local f = o.mesh:getVertexFormat()
+				meshHeaderData[d] = copy(o)
+				
+				meshHeaderData[d].vertexCount = o.mesh:getVertexCount()
+				meshHeaderData[d].vertexMap = o.mesh:getVertexMap()
+				meshHeaderData[d].vertexFormat = f
+				
+				meshHeaderData[d].final = nil
+				meshHeaderData[d].faces = nil
+				meshHeaderData[d].mesh = nil
+				meshHeaderData[d].loaded = nil
+				meshHeaderData[d].material = meshHeaderData[d].material or {color = {1.0, 1.0, 1.0, 1.0}, specular = 0.5, name = "None"}
+				meshHeaderData[d].material.ID = nil
+				
+				local hash = love.data.encode("string", "hex", love.data.hash("md5", table.save(f)))
+				local str = "typedef struct {" .. "\n"
+				local count = 0
+				local types = { }
+				for _,ff in ipairs(f) do
+					if ff[2] == "float" then
+						str = str .. "float "
+					elseif ff[2] == "byte" then
+						str = str .. "unsigned char "
+					else
+						error("unknown data type " .. ff[2])
+					end
+					for i = 1, ff[3] do
+						count = count + 1
+						types[count] = ff[2]
+						str = str .. "x" .. count .. (i == ff[3] and ";" or ", ")
+					end
+					str = str .. "\n"
+				end
+				str = str .. "} mesh_vertex_" .. hash .. ";"
+				--print(str)
+				
+				--byte data
+				self.ffi.cdef(str)
+				local byteData = love.data.newByteData(o.mesh:getVertexCount() * self.ffi.sizeof("mesh_vertex_" .. hash))
+				local meshData = self.ffi.cast("mesh_vertex_" .. hash .. "*", byteData:getPointer())
+				
+				--fill data
+				for i = 1, o.mesh:getVertexCount() do
+					local v = {o.mesh:getVertex(i)}
+					for i2 = 1, count do
+						meshData[i-1]["x" .. i2] = (types[i2] == "byte" and math.floor(v[i2]*255) or v[i2])
+					end
+				end
+				
+				--convert to string and store
+				meshDataStrings[#meshDataStrings+1] = love.data.compress("string", compressed, byteData:getString(), compressedLevel)
+				meshHeaderData[d].meshDataIndex = meshDataIndex
+				meshHeaderData[d].meshDataSize = #meshDataStrings[#meshDataStrings]
+				meshDataIndex = meshDataIndex + meshHeaderData[d].meshDataSize
+			end
+		end
+		
+		--export
+		local headerData = love.data.compress("string", compressed, table.save(meshHeaderData), compressedLevel)
+		local final = "3DO " .. compressed .. " " .. string.format("%08d", #headerData) .. headerData .. table.concat(meshDataStrings, "")
+		love.filesystem.createDirectory(obj.dir)
+		love.filesystem.write(obj.dir .. "/" .. obj.name .. ".3do", final)
 	end
 	
 	
@@ -255,22 +398,21 @@ function lib.createMesh(self, obj, o)
 	
 	--mesh structure
 	local atypes
-	local textureMode
 	if o.material.tex_diffuse or obj.forceTextured then
-		textureMode = true
+		o.textureMode = true
 		atypes = {
-		  {"VertexPosition", "float", 4},	-- x, y, z
-		  {"VertexTexCoord", "float", 2},	-- UV
-		  {"VertexNormal", "float", 3},		-- normal
-		  {"VertexTangent", "float", 3},	-- normal tangent
-		  {"VertexBitangent", "float", 3},	-- normal bitangent
+		  {"VertexPosition", "float", 4},    -- x, y, z, extra
+		  {"VertexTexCoord", "float", 2},    -- UV
+		  {"VertexNormal", "byte", 4},       -- normal
+		  {"VertexTangent", "byte", 4},      -- normal tangent
+		  {"VertexBitangent", "byte", 4},    -- normal bitangent
 		}
 	else
-		textureMode = false
+		o.textureMode = false
 		atypes = {
-		  {"VertexPosition", "float", 4},	-- x, y, z
-		  {"VertexTexCoord", "float", 4},	-- normal, specular
-		  {"VertexColor", "byte", 4},		-- color
+		  {"VertexPosition", "float", 4},    -- x, y, z
+		  {"VertexTexCoord", "float", 4},    -- normal, specular
+		  {"VertexColor", "byte", 4},        -- color
 		}
 	end
 	
@@ -289,7 +431,7 @@ function lib.createMesh(self, obj, o)
 	end
 	
 	--calculate vertex normals and uv normals
-	if textureMode then
+	if o.textureMode then
 		for f = 1, #vertexMap, 3 do
 			local P1 = finals[vertexMap[f+0]]
 			local P2 = finals[vertexMap[f+1]]
@@ -358,26 +500,25 @@ function lib.createMesh(self, obj, o)
 		end
 	end
 	
-	--here would be the .3do exporter
-	
 	--create mesh
 	o.mesh = love.graphics.newMesh(atypes, #finals, "triangles", "static")
 	
 	--vertex map
 	o.mesh:setVertexMap(vertexMap)
 	
+	--set vertices
 	for d,s in ipairs(finals) do
-		local m = o.materialsID and o.materialsID[s[8]] or  obj.materialsID[s[8]]
-		local c = m.color
-		if textureMode then
+		if o.textureMode then
 			o.mesh:setVertex(d,
 				s[1], s[2], s[3], s[4],
 				s[9], s[10],
-				s[5], s[6], s[7],
-				s[11], s[12], s[13],
-				s[14], s[15], s[16]
+				s[5]*0.5+0.5, s[6]*0.5+0.5, s[7]*0.5+0.5, 0.0,
+				s[11]*0.5+0.5, s[12]*0.5+0.5, s[13]*0.5+0.5, 0.0,
+				s[14]*0.5+0.5, s[15]*0.5+0.5, s[16]*0.5+0.5, 0.0
 			)
 		else
+			local m = o.materialsID and o.materialsID[s[8]] or  obj.materialsID[s[8]]
+			local c = m.color
 			o.mesh:setVertex(d,
 				s[1], s[2], s[3], s[4],
 				s[5], s[6], s[7],

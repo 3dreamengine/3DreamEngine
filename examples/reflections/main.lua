@@ -17,9 +17,7 @@ dream.reflections_enabled = true
 
 dream:init()
 
-scene = dream:loadObjectLazy("scene", {splitMaterials = true})
-
-dream.resourceLoader:add(scene)
+scene = dream:loadObject("scene", {splitMaterials = true})
 
 love.graphics.setBackgroundColor(128/255, 218/255, 235/255)
 

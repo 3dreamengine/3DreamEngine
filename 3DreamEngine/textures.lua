@@ -41,9 +41,21 @@ function manager.add(self, path, name, args)
 	end
 end
 
---load and/or return texture
 function manager.exists(self, name)
 	return self.textures[name]
+end
+
+function manager.test(self, name)
+	local p1 = name .. "_simple_1"
+	local p2 = name .. "_simple_2"
+	local p3 = name .. "_simple_3"
+	
+	local t0 = self.textures[name]
+	local t1 = self.textures[p1]
+	local t2 = self.textures[p2]
+	local t3 = self.textures[p3]
+	
+	return t0 or t1 or t2 or t3
 end
 
 function manager.get(self, name, lazy)
@@ -66,17 +78,17 @@ function manager.get(self, name, lazy)
 			elseif not t1 then
 				return self:get(name)
 			elseif t1.texture then
-				if t0 then t0.loadNext = lazy end
+				if t0 then t0.loadNext = 3 end
 				return t1.texture
 			elseif not t2 then
 				return self:get(p1)
 			elseif t2.texture then
-				if t1 then t1.loadNext = lazy end
+				if t1 then t1.loadNext = 2 end
 				return t2.texture
 			elseif not t3 then
 				return self:get(p2)
 			elseif t3.texture then
-				if t2 then t2.loadNext = lazy end
+				if t2 then t2.loadNext = 1 end
 				return t3.texture
 			else
 				return self:get(p3)
