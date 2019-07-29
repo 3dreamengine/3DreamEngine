@@ -6,6 +6,8 @@ loader.lua - loads objects
 
 local lib = _3DreamEngine
 
+lib.imageFormats = {"tga", "png", "gif", "bmp", "exr", "jpg", "jpe", "jpeg", "jp2"}
+
 --master resource loader
 lib.resourceLoader = {jobs = { }, self = lib, lastID = 0, threads = { }}
 
@@ -49,21 +51,80 @@ function lib.resourceLoader.update(self, steps)
 	--receive processed byte data
 	local msg = self.channel_results:pop()
 	if msg then
-		for i,s in ipairs(self.jobs) do
-			if s.ID == msg[1] then
-				s.objects[msg[2]].mesh = s.objects[msg[2]].mesh_temp
-				s.objects[msg[2]].mesh_temp = nil
-				
-				s.objects[msg[2]].mesh:setVertices(msg[3])
+		if msg[3] then
+			for i,s in ipairs(self.jobs) do
+				if s.ID == msg[1] then
+					s.objects[msg[2]].mesh = s.objects[msg[2]].mesh_temp
+					s.objects[msg[2]].mesh_temp = nil
+					
+					s.objects[msg[2]].mesh:setVertices(msg[3])
+				end
 			end
+		else
+			local s = self.texturesKnown[msg[1]]
+			s.texture = love.graphics.newImage(msg[2], {mipmaps = s.mipmaps})
+			s.texture:setWrap(s.wrap)
+			s.texture:setFilter(s.filter)
+			
+			s.working = false
 		end
 		return true
 	end
 	
 	--load textures
-	self.self.textures:update()
 	
 	return false
+end
+
+lib.resourceLoader.texturesKnown = { }
+lib.resourceLoader.texturesAwaitingLoad = { }
+function lib.resourceLoader.getTexture(self, path)
+	local t = { }
+	
+	--search for simple textures and right formats
+	local s = self.texturesKnown[path]
+	if not s then
+		self.texturesKnown[path] = {
+			levels = { },
+			texture = self.self.texture_missing,
+			working = false,
+			
+			mipmaps = true,
+			filter = "linear",
+			wrap = "repeat",
+		}
+		s = self.texturesKnown[path]
+		
+		for i = 0, 8 do
+			for _,t in ipairs(self.self.imageFormats) do
+				local p = path .. (i == 0 and "" or ("_simple_" .. i)) .. "." .. t
+				if love.filesystem.getInfo(p) then
+					s.levels[i] = p
+					break
+				end
+			end
+			if not s.levels[i] then
+				break
+			end
+		end
+	end
+	
+	--force load smallest image
+	if not self.self.startWithMissing and not s.texture then
+		s.texture = love.graphics.newImage(s.levels[#s.levels], {mipmaps = s.mipmaps})
+		s.texture:setWrap(s.wrap)
+		s.texture:setFilter(s.filter)
+		s.levels[#s.levels] = nil
+	end
+	
+	--add next texture to working stack
+	if not s.working and s.levels[0] then
+		s.working = true
+		self.channel_jobs:push({path, s.levels[#s.levels]})
+		s.levels[#s.levels] = nil
+	end
+	
+	return s.texture
 end
 
 --loads an opject
@@ -139,9 +200,6 @@ function lib.loadObject(self, path, args)
 	
 	obj.loaded = false
 	
-	--register textures relative to the project
-	self.textures:add(obj.dir, true)
-	
 	--load files
 	--if two object files are available (.obj and .vox) it might crash, since it loads all)
 	local found = false
@@ -206,25 +264,33 @@ function lib.loadObject(self, path, args)
 	
 	--link textures to materials
 	for d,s in pairs(obj.materials) do
-		for _,t in ipairs({"diffuse", "normal", "specular"}) do
-			local custom = s["tex_" .. t]
-			s["tex_" .. t] = nil
+		for _,typ in ipairs({"diffuse", "normal", "specular"}) do
+			local custom = s["tex_" .. typ]
+			s["tex_" .. typ] = nil
+			
 			for _,p in ipairs({
-				custom and (obj.dir .. "/" .. custom) or false,    -- custom name, relative to object file
-				custom or false,                                   -- custom name, relative to root
-				obj.dir .. "/" .. d .. "_" .. t,                   -- same name as material, relative to object file
-				d .. "_" .. t,                                     -- same name as material, relative to root
-				obj.dir .. "/" .. obj.name .. "_" .. t,            -- same name as object name, relative to object file
-				obj.name .. "_" .. t,                              -- same name as object name, relative to root
+				custom and (obj.dir .. "/" .. custom) or false,      -- custom name, relative to object file
+				custom or false,                                     -- custom name, relative to root
+				obj.dir .. "/" .. d .. "_" .. typ,                   -- same name as material, relative to object file
+				d .. "_" .. typ,                                     -- same name as material, relative to root
+				obj.dir .. "/" .. obj.name .. "_" .. typ,            -- same name as object name, relative to object file
+				obj.name .. "_" .. typ,                              -- same name as object name, relative to root
 			}) do
-				if p and self.textures:test(p) then
-					s["tex_" .. t] = p
-					break
+				if p then
+					for _,t in ipairs(self.imageFormats) do
+						if love.filesystem.getInfo(p .. "." .. t) then
+							s["tex_" .. typ] = p
+							break
+						end
+					end
+					if s["tex_" .. typ] then
+						break
+					end
 				end
 			end
 			
 			--failed to load custom image set in mtl
-			if custom and not s["tex_" .. t] then
+			if custom and not s["tex_" .. typ] then
 				error("can not find texture specified in the .mtl file: " .. tostring(custom))
 			end
 		end

@@ -27,6 +27,9 @@ dream.lighting_max = 16          --max light sources, depends on GPU, has no per
 
 dream.nameDecoder = "blender"    --blender/none automatically renames objects, blender exports them as ObjectName_meshType.ID, but only ObjectName is relevant
 
+
+dream.startWithMissing = false   -- use the gray missing texture, then load the textures threaded
+
 --inits (applies settings)
 dream:init()
 
@@ -145,8 +148,6 @@ require((...) .. "/particlesystem")
 require((...) .. "/boneManager")
 require((...) .. "/saveTable")
 
-lib.textures = require((...) .. "/textures")
-
 lib.ffi = require("ffi")
 
 function lib.decodeObjectName(self, name)
@@ -203,6 +204,8 @@ lib.reflections_enabled = false
 lib.lighting_max = 16
 
 lib.nameDecoder = "blender"
+
+lib.startWithMissing = true
 
 lib.object_light = lib:loadObject(lib.root .. "/objects/light")
 lib.object_clouds = lib:loadObject(lib.root .. "/objects/clouds_high", {forceTextured = true})
