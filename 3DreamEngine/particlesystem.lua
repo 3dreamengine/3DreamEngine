@@ -1,6 +1,5 @@
 --[[
 #part of the 3DreamEngine by Luke100000
-#see init.lua for license and documentation
 present.lua - final presentation of drawn objects, orders objects to decrease shader switches, also draws sky sphere, clouds, ...
 --]]
 

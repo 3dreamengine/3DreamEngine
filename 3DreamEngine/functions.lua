@@ -1,15 +1,16 @@
 --[[
 #part of the 3DreamEngine by Luke100000
-#see init.lua for license and documentation
 functions.lua - contains library relevant functions
 --]]
 
 local lib = _3DreamEngine
 
+lib.canvasFormats = love.graphics.getCanvasFormats()
+
 function lib.resize(self, w, h)
 	local msaa = 4
 	self.canvas = love.graphics.newCanvas(w, h, {format = "normal", readable = true, msaa = msaa})
-	self.canvas_depth = love.graphics.newCanvas(w, h, {format = "depth16", readable = false, msaa = msaa})
+	self.canvas_depth = love.graphics.newCanvas(w, h, {format = self.canvasFormats["depth32f"] and "depth32f" or self.canvasFormats["depth24"] and "depth24" or "depth16", readable = false, msaa = msaa})
 	if self.AO_enabled then
 		local ok = pcall(function()
 			self.canvas_z = love.graphics.newCanvas(w, h, {format = "r16f", readable = true, msaa = msaa})
@@ -87,7 +88,7 @@ function lib.getDayLight(self, time, strength)
 	direct[2] = 1.0 * (1-strength) + direct[2] * strength
 	direct[3] = 1.0 * (1-strength) + direct[3] * strength
 	
-	local ambient = {direct[1], direct[2], direct[3], 0.15 + direct[4]*0.15}
+	local ambient = {direct[1], direct[2], direct[3], 0.1 + direct[4]*0.1}
 	
 	return direct, ambient
 end

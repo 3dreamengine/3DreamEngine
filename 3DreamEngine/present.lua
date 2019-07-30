@@ -1,6 +1,5 @@
 --[[
 #part of the 3DreamEngine by Luke100000
-#see init.lua for license and documentation
 present.lua - final presentation of drawn objects, orders objects to decrease shader switches, also draws sky sphere, clouds, ...
 --]]
 
@@ -164,12 +163,11 @@ function lib.present(self, noDepth, noSky)
 			--for each material
 			for material, tasks in pairs(s) do
 				if step == 1 and material.color[4] == 1 or step == 2 and material.color[4] ~= 1 then
-					--diffuse texture already bound to mesh!
 					if shader.specular and count > 0 then
-						shader.shader:send("tex_specular", self.resourceLoader:getTexture(material.tex_specular) or self.texture_missing)
+						shader.shader:send("tex_specular", self.resourceLoader:getTexture(material.tex_specular, material.levelOfAbstraction) or self.texture_missing)
 					end
 					if shader.normal and count > 0 then
-						shader.shader:send("tex_normal", self.resourceLoader:getTexture(material.tex_normal) or self.texture_missing)
+						shader.shader:send("tex_normal", self.resourceLoader:getTexture(material.tex_normal, material.levelOfAbstraction) or self.texture_missing)
 					end
 					
 					shader.shader:send("alphaThreshold", material.alphaThreshold or 0.0)
@@ -178,7 +176,7 @@ function lib.present(self, noDepth, noSky)
 					for i,v in pairs(tasks) do
 						if not v[2].diffuseConnected then
 							if v[2].material.tex_diffuse then
-								local tex, final = self.resourceLoader:getTexture(v[2].material.tex_diffuse)
+								local tex, final = self.resourceLoader:getTexture(v[2].material.tex_diffuse, material.levelOfAbstraction)
 								if tex ~= v[2].tex_diffuse_last then
 									v[2].mesh:setTexture(tex)
 								end

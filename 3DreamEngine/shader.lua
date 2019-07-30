@@ -1,6 +1,5 @@
 --[[
 #part of the 3DreamEngine by Luke100000
-#see init.lua for license and documentation
 shader.lua - contains the shaders
 --]]
 
@@ -158,7 +157,7 @@ lib.shaderSky = love.graphics.newShader([[
 ]])
 
 function lib.getShaderInfo(self, typ, variant, normal, specular, reflections, lightings)
-	reflections = (reflections and self.reflections_enabled and dream.sky)
+	reflections = (reflections and self.reflections_enabled and self.sky)
 	variant = variant or "default"
 	
 	local name = "shader_" .. typ .. (self.AO_enabled and "_AO" or "") .. (reflections and "_reflections" or "") .. "_" .. variant .. (normal and "_normal" or "") .. (specular and "_specular" or "") .. "_" .. (lightings or 0)
@@ -319,18 +318,22 @@ void effect() {
 	
 	//final color
 	#ifdef FLAT_SHADING
-	mediump vec4 col = vec4(VaryingColor.rgb * lighting, VaryingColor.a);
+		mediump vec4 col = vec4(VaryingColor.rgb * lighting, VaryingColor.a);
 	#else
-	mediump vec4 diffuse = Texel(MainTex, VaryingTexCoord.xy);
-	mediump vec4 col = vec4(diffuse.rgb * lighting, diffuse.a);
+		mediump vec4 diffuse = Texel(MainTex, VaryingTexCoord.xy);
+		mediump vec4 col = vec4(diffuse.rgb * lighting, diffuse.a);
 	#endif
 	
 	//reflections
 	#ifdef REFLECTIONS_ENABLED
-	mediump vec3 n = normalize(normalV + normal*transpose(objToTangentSpace)*0.25 - (posV-viewPos)).xyz;
+	#ifdef FLAT_SHADING
+		mediump vec3 n = normalize(normalV - (posV-viewPos)).xyz;
+	#else
+		mediump vec3 n = normalize(normalV + normal*transpose(objToTangentSpace)*0.25 - (posV-viewPos)).xyz;
+	#endif
 	float u = atan(n.x, n.z) * 0.1591549430919 + 0.5;
 	float v = n.y * 0.5 + 0.5;
-	mediump vec2 uv = vec2(u, v);
+	mediump vec2 uv = 1.0 - vec2(u, v);
 	
 	#ifdef REFLECTIONS_ENABLED_NIGHT
 		mediump vec4 dayNight = mix(Texel(background_day, uv), Texel(background_night, uv), background_time) * background_color;
@@ -365,9 +368,11 @@ extern float wind;
 #endif
 
 //additional vertex attributes
+#ifndef FLAT_SHADING
 attribute mediump vec3 VertexNormal;
 attribute mediump vec3 VertexTangent;
 attribute mediump vec3 VertexBitangent;
+#endif
 
 vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	//calculate vertex position
@@ -375,7 +380,7 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	//where vertex_position.a is used for the waving strength
 	mediump vec4 pos = (
 			vec4(vertex_position.xyz, 1.0)
-			+ vec4((cos(vertex_position.x*0.25+VertexNormal.x+wind) + cos(vertex_position.z*4.0+vertex_position.y+VertexNormal.y+wind*2.0)) * vertex_position.a, 0.0, 0.0, 0.0)
+			+ vec4((cos(vertex_position.x*0.25+wind) + cos(vertex_position.z*4.0+vertex_position.y+wind*2.0)) * vertex_position.a, 0.0, 0.0, 0.0)
 		) * transform;
 	#else
 	mediump vec4 pos = vertex_position * transform;
@@ -404,7 +409,11 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	mediump vec4 vPos = transformProj * pos;
 	
 	#ifdef REFLECTIONS_ENABLED
-	normalV = VertexNormal;
+		#ifdef FLAT_SHADING
+			normalV = VertexTexCoord.xyz;
+		#else
+			normalV = VertexNormal*2.0-1.0;
+		#endif
 	#endif
 	
 	#ifdef AO_ENABLED

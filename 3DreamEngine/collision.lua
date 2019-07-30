@@ -1,6 +1,5 @@
 --[[
 #part of the 3DreamEngine by Luke100000
-#see init.lua for license and documentation
 collision.lua - loads .obj files as collision object(s) and handles per-point collisions of cuboids in any rotation
 --]]
 

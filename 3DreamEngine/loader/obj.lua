@@ -54,14 +54,14 @@ _3DreamEngine.loader["obj"] = function(self, obj, path, simple)
 				
 				local dv = vertices[tonumber(v2[1])]
 				local dn = normals[tonumber(v2[3])]
-				local uv = texVertices[tonumber(v2[2])] or {0, 0}
+				local uv = texVertices[tonumber(v2[2])]
 				
 				o.final[#o.final+1] = {
-					dv[1], dv[2], dv[3],    --position
-					material.shaderInfo or o.shaderInfo or 1.0, --extra float for animations
-					dn[1], dn[2], dn[3],    --normal
-					material.ID,            --material
-					uv[1], uv[2],           --UV
+					dv[1], dv[2], dv[3],                             --position
+					material.shaderInfo or o.shaderInfo or 1.0,      --extra float for animations
+					dn[1], dn[2], dn[3],                             --normal
+					material.ID,                                     --material
+					uv and uv[1], uv and uv[2],                      --UV
 				}
 			end
 			

@@ -3,11 +3,25 @@ return {
 	Ivy = {
 		shader = "wind",
 		shaderInfo = 0.02,
+		tex_diffuse = "ivy_diffuse",
+		tex_normal = "ivy_normal",
 	},
 	Iron = {
+		specular = 0.5,
 		reflections = true,
+		tex_diffuse = "iron_diffuse",
+		tex_normal = "iron_normal",
+		tex_specular = "iron_specular",
 	},
 	Wood = {
 		reflections = true,
+		tex_diffuse = "wood_diffuse",
+		tex_normal = "wood_normal",
+		tex_specular = "wood_specular",
+	},
+	Material = {
+		tex_diffuse = "bricks_diffuse",
+		tex_normal = "bricks_normal",
+		tex_specular = "bricks_specular",
 	},
 }

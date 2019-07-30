@@ -16,6 +16,9 @@ dream.clouds = love.graphics.newImage(dream.objectDir .. "/clouds.jpg")
 dream.sky = love.graphics.newImage(dream.objectDir .. "/sky.jpg")
 dream.night = love.graphics.newImage(dream.objectDir .. "/night.jpg")
 
+dream.reflections_enabled = true
+dream.startWithMissing = true
+
 dream:init()
 
 --generate mipmaps from the leaves texture
@@ -32,9 +35,9 @@ io.stdout:setvbuf("no")
 love.mouse.setRelativeMode(true)
 
 player = {
-	x = 3,
+	x = 10,
 	y = 5,
-	z = 0,
+	z = 5,
 	ax = 0,
 	ay = 0,
 	az = 0,
@@ -49,7 +52,9 @@ dream.cam.ry = 0
 
 function love.draw()
 	dream.color_sun, dream.color_ambient = dream:getDayLight()
+	dream.color_ambient[4] = dream.color_ambient[4] * 2.0
 	dream.dayTime = love.timer.getTime() * 0.05
+	dream.sun = {0.3, math.cos(dream.dayTime*math.pi*2), math.sin(dream.dayTime*math.pi*2)}
 	
 	--update camera
 	dream.cam:reset()
@@ -59,7 +64,7 @@ function love.draw()
 	
 	--update light
 	dream:resetLight()
-	dream:addLight(player.x, player.y, player.z, 1.0, 0.75, 0.1, 1.0 + love.math.noise(love.timer.getTime()*2, 1.0)*0.5, 2.0)
+	dream:addLight(player.x, player.y, player.z, 1.0, 0.75, 0.1, 1.0 + love.math.noise(love.timer.getTime()*2, 1.0)*0.5, 1.5)
 	
 	dream:prepare()
 	

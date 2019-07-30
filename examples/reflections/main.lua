@@ -14,6 +14,7 @@ dream.AO_resolution = 0.75    --resolution factor
 dream.sky = love.graphics.newImage(dream.objectDir .. "/background.jpg")
 
 dream.reflections_enabled = true
+dream.startWithMissing = true
 
 dream:init()
 

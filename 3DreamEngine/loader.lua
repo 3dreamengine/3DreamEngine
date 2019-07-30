@@ -1,6 +1,5 @@
 --[[
 #part of the 3DreamEngine by Luke100000
-#see init.lua for license and documentation
 loader.lua - loads objects
 --]]
 
@@ -21,7 +20,7 @@ lib.resourceLoader.channel_jobs = love.thread.getChannel("3DreamEngine_channel_j
 lib.resourceLoader.channel_results = love.thread.getChannel("3DreamEngine_channel_results")
 
 --updates active resource tasks (mesh loading, texture loading, ...)
-function lib.resourceLoader.update(self, steps)
+function lib.resourceLoader.update(self)
 	--send jobs
 	for i = #self.jobs, 1, -1 do
 		local s = self.jobs[i]
@@ -44,6 +43,7 @@ function lib.resourceLoader.update(self, steps)
 		end
 		
 		if not found then
+			s.loaded = true
 			table.remove(self.jobs, i)
 		end
 	end
@@ -78,7 +78,7 @@ end
 
 lib.resourceLoader.texturesKnown = { }
 lib.resourceLoader.texturesAwaitingLoad = { }
-function lib.resourceLoader.getTexture(self, path)
+function lib.resourceLoader.getTexture(self, path, abstraction)
 	local t = { }
 	
 	--search for simple textures and right formats
@@ -87,7 +87,9 @@ function lib.resourceLoader.getTexture(self, path)
 		self.texturesKnown[path] = {
 			levels = { },
 			texture = self.self.texture_missing,
+			abstractionLayer = 0,
 			working = false,
+			notLoadedYet = true,
 			
 			mipmaps = true,
 			filter = "linear",
@@ -104,24 +106,30 @@ function lib.resourceLoader.getTexture(self, path)
 				end
 			end
 			if not s.levels[i] then
+				s.abstractionLayer = i
 				break
 			end
 		end
 	end
 	
 	--force load smallest image
-	if not self.self.startWithMissing and not s.texture then
+	if not self.self.startWithMissing and s.texture == self.self.texture_missing then
 		s.texture = love.graphics.newImage(s.levels[#s.levels], {mipmaps = s.mipmaps})
 		s.texture:setWrap(s.wrap)
 		s.texture:setFilter(s.filter)
 		s.levels[#s.levels] = nil
+		s.abstractionLayer = s.abstractionLayer - 1
+		s.notLoadedYet = false
 	end
 	
 	--add next texture to working stack
-	if not s.working and s.levels[0] then
+	if not s.working and s.levels[0] and (not abstraction or abstraction < s.abstractionLayer or s.notLoadedYet) then
+		print(path, s.levels[#s.levels], abstraction, s.abstractionLayer, s.notLoadedYet) io.flush()
 		s.working = true
 		self.channel_jobs:push({path, s.levels[#s.levels]})
 		s.levels[#s.levels] = nil
+		s.abstractionLayer = s.abstractionLayer - 1
+		s.notLoadedYet = false
 	end
 	
 	return s.texture
@@ -198,7 +206,7 @@ function lib.loadObject(self, path, args)
 		self = self,
 	}
 	
-	obj.loaded = false
+	obj.loaded = true
 	
 	--load files
 	--if two object files are available (.obj and .vox) it might crash, since it loads all)
@@ -498,6 +506,12 @@ function lib.createMesh(self, obj, o)
 	
 	--calculate vertex normals and uv normals
 	if o.textureMode then
+		--expand uv if missing
+		for d,f in ipairs(finals) do
+			f[9] = f[9] or 0
+			f[10] = f[10] or 0
+		end
+		
 		for f = 1, #vertexMap, 3 do
 			local P1 = finals[vertexMap[f+0]]
 			local P2 = finals[vertexMap[f+1]]
@@ -595,5 +609,4 @@ function lib.createMesh(self, obj, o)
 	end
 	
 	o.mesh:flush()
-	o.loaded = true
 end

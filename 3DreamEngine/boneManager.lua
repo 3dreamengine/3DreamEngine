@@ -1,6 +1,5 @@
 --[[
 #part of the 3DreamEngine by Luke100000
-#see init.lua for license and documentation
 collision.lua - loads .obj files as collision object(s) and handles per-point collisions of cuboids in any rotation
 --]]
 
@@ -174,7 +173,7 @@ function lib.boneManager.draw()
 			end
 			
 			d = d + 1
-			if i > 10 then
+			if i > 18 then
 				break
 			end
 		end

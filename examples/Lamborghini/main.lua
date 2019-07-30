@@ -15,9 +15,9 @@ dream.near = 1.0
 dream.far = 100
 dream.nameDecoder = "none"
 
-dream:init()
+dream.startWithMissing = true
 
-dream.showLightSources = false
+dream:init()
 
 car = dream:loadObject("Lamborghini Aventador")
 
@@ -41,7 +41,7 @@ function love.draw()
 	love.graphics.setColor(1, 1, 1)
 	car:reset()
 	car:rotateY(-2.25-(love.mouse.getX()/love.graphics.getWidth()-0.5)*4.0)
-	dream:draw(car, 0, -10, -35)
+	dream:draw(car, 0, -10, -38)
 	
 	dream:present()
 	

@@ -4,135 +4,6 @@
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-
-#usage
---loads the lib
-dream = require("3DreamEngine")
-
---settings
-dream.objectDir = "objects"      --root directory of objects
-
-dream.fov = 90                   --field of view (10 < fov < 180)
-
-dream.AO_enabled = true          --ambient occlusion?
-dream.AO_strength = 0.5          --blend strength
-dream.AO_quality = 24            --samples per pixel (8-32 recommended)
-dream.AO_quality_smooth = 1      --smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
-dream.AO_resolution = 0.5        --resolution factor
-
-dream.enable_reflections = false --uses the sky sphere to simulate reflections, the materials .reflections value has to be true (in case of .obj objects add "reflections true" to the .mtl material or reflections = true to the .3de material file), if enabled, it uses the specular value (constant material value on flat shading or specular texture, default 0.5) for reflection value
-
-dream.lighting_max = 16          --max light sources, depends on GPU, has no performance impact if sources are unused
-
-dream.nameDecoder = "blender"    --blender/none automatically renames objects, blender exports them as ObjectName_meshType.ID, but only ObjectName is relevant
-
-
-dream.startWithMissing = false   -- use the gray missing texture, then load the textures threaded
-
---inits (applies settings)
-dream:init()
-
---loads a object
-yourObject = dream:loadObject("objectName", args)
-
---where args is a table with additional settings
-splitMaterials,       -- if a single mesh has different textured materials, it has to be split into single meshes. splitMaterials does this automatically.
-raster,               -- load the object as 3D raster of different meshes (must be split). Instead of an 1D table, obj.objects[x][y][z] will be created.
-forceTextured,        -- if the mesh gets created, it will determine texture mode or simple mode based on tetxures. forceTextured always loads as (non set) texture.
-noMesh,               -- load vertex information but do not create a final mesh - template objects etc
-noParticleSystem      -- prevent the particle system from bein generated, used by template objects, ... If noMesh is true and noParticleSystem nil, it assume noParticleSystem should be true too.
-cleanup               -- release vertex, ... information once done - prefer using 3do files if cleanup is nil or true, since then it would not even load this information into RAM
-export3do             -- loads the object as usual, then export the entire object, including simple versions and particle system, as a single, high speed 3do file
-
---the name of the object (set by "o" inside .obj, in blender it is the name of the vertex data inside an object) can contain information:
---  if it contains REMOVE, it will not be used. Their use can be frames, particle emitters, helper objects, ...)
---  if it contains LAMP_name where name is a custom name, it will not be loaded, but instead an entry in object.lights will be made (name, x, y, z), can be used to set static lights more easy.
---    prefixes, for example Icosphere_LAMP_myName are valid and will be ignored.
-
---if 3do files or thumbnail textures are used, the resourceLoader requires to be updated. It controls the loader threads and texture loading.
-dream.resourceLoader:update(steps)
-
---transform the object
-yourObject:reset()
-yourObject:translate(x, y, z)
-yourObject:scale(x, y, z)
-yourObject:rotateX(angle)
-yourObject:rotateY(angle)
-yourObject:rotateZ(angle)
-
---update camera postion (transformations as yourObject)
-dream.cam:reset()
-dream.cam:translate(x, y, z)
-
---if you want an own camera use
-yourCam = dream:newCam()
---and pass it to dream:prepare
-
---update sun position/vector
-dream.sun = {-0.3, 0.6, -0.5}
-
---update sun color
-dream.color_ambient = {0.25, 0.25, 0.25}
-dream.color_sun = {1.5, 1.5, 1.5}
-
---use the inbuilt sky sphere and clouds
-dream.cloudDensity = 0.6
-dream.clouds = love.graphics.newImage("clouds.jpg")
-dream.sky = love.graphics.newImage("sky.jpg")
-dream.night = love.graphics.newImage("night.jpg") --can be nil to only have daytime
-
---add this line somewhere in the draw or update loop to automatically set lighting based on dayTime
-dream.color_sun, dream.color_ambient = dream:getDayLight()
-
---dayTime = 0 -> midnight, dayTime 0.5 -> noon, loops
-dream.dayTime = love.timer.getTime() * 0.05
-
---resets light sources (noDayLight to true if the sun should not be added automatically)
-dream:resetLight(noDayLight)
-
---add light, note that in case of exceeding the max light sources it only uses the most relevant sources, based on distance and brightness
-dream:addLight(posX, posY, posZ, red, green, blue, brightness)
-
---prepare for rendering
---if cam is nil, it uses the default cam (dream.cam)
-dream:prepare(cam)
-
---draw
---obj can be either the entire object, or an object inside the file (obj.objects.yourObject)
-dream:draw(obj, x, y, z, sx, sy, sz)
-
---finish render session, it is possible to render several times per frame
---noDepth disables the depth buffer, useful for gui elements
---if noDepth is enabled, noSky will be true too by default
-dream:present(noDepth, noSky)
-
-#extend .obj
-The .mtl file usually exported with .obj will be loaded automatically.
-To use more 3DreamEngine specific features (disable automatic texture loading, particle system, wind animation ...) a .3de file is required.
-
-example file:
---3DreamEngine material properties file
-return {
-	Grass = { --extend material Grass
-		reflections = true, --metalic reflections (using specular value)
-		shader = "wind", --shader affecting the entire object
-		shaderInfo = 1.0,
-		particleSystems = { --add particleSystems
-			{ --first system
-				objects = { --add objects, they have to be in the same directory as the scene (sub directories like particles/grass work too)
-					["grass"] = 20,
-				},
-				randomSize = {0.75, 1.25}, --randomize the particle size
-				randomRotation = true, --randomize the rotation
-				normal = 0.9, --align to 90% with its emitters surface normal
-				shader = "wind", --use the wind shader
-				shaderInfo = "grass", --tell the wind shader to behave like grass, the amount of waving depends on its Y-value
-				--shaderInfo = 0.2, --or use a constant float
-			},
-		}
-	},
-}
 --]]
 
 local lib = { }
@@ -186,11 +57,11 @@ lib.fov = 90
 
 --distance fog
 lib.fog = 0.0
-lib.near = 0.1
-lib.far = 500
+lib.near = lib.canvasFormats["depth32f"] and 0.1 or lib.canvasFormats["depth24"] and 0.25 or 0.5
+lib.far = lib.canvasFormats["depth32f"] and 1000 or lib.canvasFormats["depth24"] and 750 or 500
 
 --root directory of objects
-lib.objectDir = "objects/"
+lib.objectDir = ""
 
 --settings
 lib.AO_enabled = true
@@ -203,9 +74,11 @@ lib.reflections_enabled = false
 
 lib.lighting_max = 16
 
+lib.abstractionDistance = 30
+
 lib.nameDecoder = "blender"
 
-lib.startWithMissing = true
+lib.startWithMissing = false
 
 lib.object_light = lib:loadObject(lib.root .. "/objects/light")
 lib.object_clouds = lib:loadObject(lib.root .. "/objects/clouds_high", {forceTextured = true})
@@ -523,10 +396,10 @@ function lib.draw(self, obj, x, y, z, sx, sy, sz)
 		end
 	end
 	
-	local levelOfAbstraction = math.floor(math.sqrt((self.currentCam.x-x)^2 + (self.currentCam.y-y)^2 + (self.currentCam.z-z)^2) / 30) - 1
+	local levelOfAbstraction = math.floor(math.sqrt((self.currentCam.x-x)^2 + (self.currentCam.y-y)^2 + (self.currentCam.z-z)^2) / self.abstractionDistance) - 1
 	local t = obj.objects or {obj}
 	for d,s in pairs(t) do
-		if not s.simple and (not s.particleSystem or levelOfAbstraction <= 2) then
+		if not s.disabled and not s.simple and (not s.particleSystem or levelOfAbstraction <= 2) then
 			for i = 1, levelOfAbstraction do
 				s = t[s.simpler] or s
 			end
@@ -548,11 +421,12 @@ function lib.draw(self, obj, x, y, z, sx, sy, sz)
 				if not lib.drawTable[shaderInfo][s.material] then
 					lib.drawTable[shaderInfo][s.material] = { }
 				end
+				s.material.levelOfAbstraction = math.min(s.material.levelOfAbstraction or 99, levelOfAbstraction)
 				local r, g, b = love.graphics.getColor()
 				table.insert(lib.drawTable[shaderInfo][s.material], {
 					(transform * (bones and (obj.transform * bones[d]) or obj.transform or 1))^"T",
 					s,
-					r, g, b,
+					r, g, b
 				})
 			else
 				s.requestMeshLoad = true
