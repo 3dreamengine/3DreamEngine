@@ -31,11 +31,13 @@ function lib.addParticlesystems(self, obj)
 								particleSystem = true,
 								noBackFaceCulling = true,
 								material = particleSystem.objects[1].object.material or obj.materials.None,
-								shader = particleSystem.shader,
 								
 								materials = particleSystem.objects[1].materials,
 								materialsID = particleSystem.objects[1].materialsID
 							}
+							for d,s in pairs(obj.objects[pname].materials) do
+								s.shader = particleSystem.shader
+							end
 							local po = obj.objects[pname]
 							
 							for _,particle in ipairs(particleSystem.objects) do

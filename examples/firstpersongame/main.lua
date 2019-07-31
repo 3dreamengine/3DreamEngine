@@ -11,12 +11,14 @@ dream.AO_quality = 24         --samples per pixel (8-32 recommended)
 dream.AO_quality_smooth = 2   --smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
 dream.AO_resolution = 0.75    --resolution factor
 
+dream.bloom_size = 16.0
+dream.bloom_strength = 8.0
+
 dream.cloudDensity = 0.6
 dream.clouds = love.graphics.newImage(dream.objectDir .. "/clouds.jpg")
 dream.sky = love.graphics.newImage(dream.objectDir .. "/sky.jpg")
 dream.night = love.graphics.newImage(dream.objectDir .. "/night.jpg")
 
-dream.reflections_enabled = true
 dream.startWithMissing = true
 
 dream:init()
@@ -74,15 +76,10 @@ function love.draw()
 	dream:present()
 	
 	if love.keyboard.isDown(".") then
-		local shadersInUse = ""
-		for d,s in pairs(dream.stats.perShader) do
-			shadersInUse = shadersInUse .. d.name .. ": " .. s .. "x  "
-		end
 		love.graphics.print("Stats" ..
 			"\ndifferent shaders: " .. dream.stats.shadersInUse ..
 			"\ndifferent materials: " .. dream.stats.materialDraws ..
-			"\ndraws: " .. dream.stats.draws ..
-			"\nshaders: " .. shadersInUse,
+			"\ndraws: " .. dream.stats.draws,
 			15, 400)
 		end
 end
@@ -196,6 +193,10 @@ function love.keypressed(key)
 			end
 			love.graphics.captureScreenshot(love.thread.getChannel("screenshots"))
 		end
+	end
+	
+	if key == "3" then
+		dream.anaglyph3D = not dream.anaglyph3D
 	end
 
 	--fullscreen

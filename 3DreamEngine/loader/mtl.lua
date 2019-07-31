@@ -32,12 +32,16 @@ _3DreamEngine.loader["mtl"] = function(self, obj, path)
 			material.shader = v[2]
 		elseif v[1] == "alphaThreshold" then
 			material.alphaThreshold = tonumber(v[2])
+		elseif v[1] == "emission" then
+			material.emission = tonumber(v[2])
 		elseif v[1] == "map_Kd" then
 			material.tex_diffuse = obj.dir .. "/" .. (l:sub(8):match("(.+)%..+") or l:sub(8))
 		elseif v[1] == "map_Ks" then
 			material.tex_specular = obj.dir .. "/" .. (l:sub(8):match("(.+)%..+") or l:sub(8))
 		elseif v[1] == "map_Kn" then
 			material.tex_normal = obj.dir .. "/" .. (l:sub(8):match("(.+)%..+") or l:sub(8))
+		elseif v[1] == "map_Ke" then
+			material.tex_emission = obj.dir .. "/" .. (l:sub(8):match("(.+)%..+") or l:sub(8))
 		end
 	end
 end

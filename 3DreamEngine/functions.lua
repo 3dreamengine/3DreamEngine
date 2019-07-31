@@ -20,7 +20,19 @@ function lib.resize(self, w, h)
 			self.canvas_blur_2 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
 		else
 			self.AO_enabled = false
-			print("r16f canvas creation failed")
+			print("r16f canvas creation failed, AO deactivated")
+		end
+	end
+	if self.bloom_enabled then
+		local ok = pcall(function()
+			self.canvas_bloom = love.graphics.newCanvas(w, h, {format = "normal", readable = true, msaa = msaa})
+		end)
+		if ok then
+			self.canvas_bloom_1 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = "normal", readable = true, msaa = 0})
+			self.canvas_bloom_2 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = "normal", readable = true, msaa = 0})
+		else
+			self.bloom_enabled = false
+			print("r8 canvas creation failed, bloom deactivated")
 		end
 	end
 end

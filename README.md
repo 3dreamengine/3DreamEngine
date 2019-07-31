@@ -16,6 +16,7 @@
 * point-source lighting
 * threaded object loading using 3DreamEngine specific object files, boosted with luaJITs FFI, converter included
 * threaded texture loading
+* anaglyph 3D
 
 ![screenshots](https://raw.githubusercontent.com/3dreamengine/3DreamEngine/master/screenshots.jpg)
 
@@ -60,7 +61,14 @@ dream.AO_quality = 24            --samples per pixel (8-32 recommended)
 dream.AO_quality_smooth = 1      --smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
 dream.AO_resolution = 0.5        --resolution factor
 
-dream.enable_reflections = false --uses the sky sphere to simulate reflections, the materials .reflections value has to be true (in case of .obj objects add "reflections true" to the .mtl material or reflections = true to the .3de material file), if enabled, it uses the specular value (constant material value on flat shading or specular texture, default 0.5) for reflection value
+lib.bloom_enabled = true         --enable bloom (simulate brightness exceeding the 1.0 screen limit)
+lib.bloom_size = 12.0            --the size of the bloom effect
+lib.bloom_quality = 4            --the steps of blurring
+lib.bloom_resolution = 0.5       --the resolution while blurring
+lib.bloom_strength = 2.0         --the blend strength
+
+lib.anaglyph3D = false           --enable anaglyph 3D (red - cyan)
+lib.anaglyph3D_eyeDistance = 0.05--distance between eyes
 
 dream.lighting_max = 16          --max light sources, depends on GPU, has no performance impact if sources are unused
 
@@ -68,7 +76,13 @@ dream.abstractionDistance = 30   --if simple files are provided (check chapter s
 
 dream.nameDecoder = "blender"    --blender/none automatically renames objects, blender exports them as ObjectName_meshType.ID, but only ObjectName is relevant
 
-dream.startWithMissing = false   -- use the gray missing texture, then load the textures threaded
+dream.startWithMissing = false   --use the gray missing texture, then load the textures threaded
+
+--use the inbuilt sky sphere and clouds
+dream.cloudDensity = 0.6
+dream.clouds = love.graphics.newImage("clouds.jpg")  --a noise texture, see firstpersongame for examples
+dream.sky = love.graphics.newImage("sky.jpg")        --2:1 background
+dream.night = love.graphics.newImage("night.jpg")    --can be nil to only have daytime
 ```
 
 ## functions
@@ -121,12 +135,6 @@ dream.sun = {0.3, math.cos(dream.dayTime*math.pi*2), math.sin(dream.dayTime*math
 --update sun color, where color is a vec4, alpha is a multiplier, getDayLight() return colors based on dayTime.
 dream.color_sun, dream.color_ambient = dream:getDayLight()
 
---use the inbuilt sky sphere and clouds
-dream.cloudDensity = 0.6
-dream.clouds = love.graphics.newImage("clouds.jpg")
-dream.sky = love.graphics.newImage("sky.jpg")
-dream.night = love.graphics.newImage("night.jpg") --can be nil to only have daytime
-
 --resets light sources (if noDayLight is set to true, the sun light will not be added automatically)
 dream:resetLight(noDayLight)
 
@@ -147,18 +155,36 @@ dream:draw(obj, x, y, z, sx, sy, sz)
 dream:present(noDepth, noSky)
 ```
 
+## textures
+To add textures to the model either...
+* set the texture path (without extension!) in the mtl file (map_Kd, map_Ks, map_Kn, map_Ke for diffuse, specular, normal and emission)
+* set the texture path (without extension!) or the loaded texture (not recommended) in the 3de file (tex_diffuse, tex_specular, tex_normal, tex_emission)
+* name the textures exactly like a) the object or b) like the material and put it next to the object. It will find it automatically.
+
+The diffuse texture is a RGB non alpha texture with the color.
+The specular texture is either the sharpness of specular lighting, or more importantly the amount of reflection if enabled.
+The normal texture contains local normal coordinates.
+The emission texture contains RGBA, where A is just a multiplier, and will be multiplied by the materials emission value. Check out the Lamborghini example for an example. Only makes sense if bloom is enabled.
+
 ## simple files
 Simple files decrease loading time and increase performance by using simplified objects.
 * Only supported in 3do files: load only the layer of abstraction actually needed, based on distance. Also, load simpler version first, then complex ones to faster provide results.
 * Supported on obj files too: display abstraction based on distance.
 Simple files (only .obj, .mtl will be ignored) have to contain the same materials, the same objects (or less) and should look similar enough to avoid ugly transitions.
 
-
 Textures can also be simple: yourTexture_simple_1.png, ...
 
 If startWithMissing is disabled, it will load the lowest quality file first. Simpler textures do not have to has the same file format. Mixing png and jpg works too.
 Texture loading then is threaded and will load nessesary textures automatically, based on distance.
 (dream.resourceLoader:update() required)
+
+## reflections
+To enable reflections on materials either ...
+* set material.reflections_day / material.reflections_night to a path (without extension, uses resource loader) or to an texture.
+* set object.reflections_day / object.reflections_night to a path (without extension, uses resource loader) or to an texture.
+* set material.reflections to true ("reflections true" in mtl files, "reflections = true" in 3de files). This will use the sky/night sphere texture if provided.
+
+(in order, if the material already has an texture defined, it will use it instead of the objects texture)
 
 ## 3de - 3Dream material file
 The .mtl file usually exported with .obj will be loaded automatically.
@@ -172,11 +198,18 @@ If you do not edit the variables it is recommended to remove the line, it then u
 return {
 	Grass = { --extend material Grass
 		reflections = true,            -- metalic reflections (using specular value)
+		
 		shader = "wind",               -- shader affecting the entire object
 		shaderInfo = 1.0,              -- animation multiplier
 		
+		--some shaders have additional values, like the wind shader (currently the only one)
+		shader_wind_speed = 0.5,       -- the time multiplier
+		shader_wind_strength = 1.0,    -- the multiplier of animation
+		shader_wind_scale = 3.0,       -- the scale of wind waves
+		
 		color = {1.0, 1.0, 1.0, 1.0},  -- color used for flat shading
 		specular = 0.5,                -- specular or reflection used when no specular texture is provided
+		emission = 0.0,                -- the brightness of the emission texture, the diffuse texture or the face color
 		
 		alphaThreshold = 0.0           -- since the depth buffer only supports alpha 0.0 or 1.0, a threshold will choose when to draw. For grass, ... a threshold of 0.75 works fine.
 		
@@ -184,8 +217,18 @@ return {
 		tex_diffuse = "tex_diffuse",
 		tex_normal = "tex_normal",
 		tex_specular = "tex_specular",
+		tex_emission = "tex_emission",
 		
-		particleSystems = { --add particleSystems
+		--a function called every object before rendering
+		--while you can change any values, do NOT remove values (like textures). Only switch them if necessary.
+		--m is the material, o is either the object, or the subObject (rare case)
+		update = function(m, o)
+			o.torch_id = o.torch_id or math.random()
+			m.emission = love.math.noise(love.timer.getTime() * 2.0 + o.torch_id) * 1.0 + 1.0
+		end,
+		
+		--add particleSystems
+		particleSystems = {
 			{ --first system
 				objects = { --add objects, they have to be in the same directory as the scene (sub directories like particles/grass work too)
 					["grass"] = 20,

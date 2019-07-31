@@ -3,7 +3,6 @@ dream = require("3DreamEngine")
 love.window.setTitle("Particle System Example")
 
 --settings
-dream.pixelPerfect = true
 dream.objectDir = "examples/particlesystem"
 
 dream.AO_enabled = true       --ambient occlusion?

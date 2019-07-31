@@ -13,12 +13,12 @@ dream.AO_resolution = 0.75    --resolution factor
 
 dream.sky = love.graphics.newImage(dream.objectDir .. "/background.jpg")
 
-dream.reflections_enabled = true
 dream.startWithMissing = true
 
 dream:init()
 
 scene = dream:loadObject("scene", {splitMaterials = true})
+torch = dream:loadObject("torch", {splitMaterials = true})
 
 love.graphics.setBackgroundColor(128/255, 218/255, 235/255)
 
@@ -51,27 +51,26 @@ function love.draw()
 	dream:resetLight(true) --true disables the sun
 	for d,s in ipairs(scene.lights) do
 		if s.name == "torch" then
-			dream:addLight(s.x, s.y, s.z, 1.0, 0.75, 0.1, 1.0 + 0.5 * love.math.noise(love.timer.getTime()*2, 1.0))
+			--dream:addLight(s.x, s.y, s.z, 1.0, 0.75, 0.1, 1.0 + 0.5 * love.math.noise(love.timer.getTime()*2, 1.0))
 		end
 	end
 	
+	--torches
+	dream:addLight(0, 0.25, 1.85, 1.0, 0.75, 0.1, 1.0 + 0.5 * love.math.noise(love.timer.getTime()*2, 1.0))
+	dream:addLight(1.25, 0.25, -1.85, 1.0, 0.75, 0.1, 1.0 + 0.5 * love.math.noise(love.timer.getTime()*2, 2.0))
+	dream:addLight(-1.25, 0.25, -1.85, 1.0, 0.75, 0.1, 1.0 + 0.5 * love.math.noise(love.timer.getTime()*2, 3.0))
+	
 	dream:prepare()
 	dream:draw(scene, 0, 0, 0)
+	
+	torch:reset()
+	torch:rotateY(math.pi/2)
+	dream:draw(torch, 0, 0, 1.9, 0.075)
+	torch:rotateY(math.pi)
+	dream:draw(torch, 1.25, 0, -1.9, 0.075)
+	dream:draw(torch, -1.25, 0, -1.9, 0.075)
 
 	dream:present()
-	
-	if love.keyboard.isDown(".") then
-		local shadersInUse = ""
-		for d,s in pairs(dream.stats.perShader) do
-			shadersInUse = shadersInUse .. d.name .. ": " .. s .. "x  "
-		end
-		love.graphics.print("Stats" ..
-			"\ndifferent shaders: " .. dream.stats.shadersInUse ..
-			"\ndifferent materials: " .. dream.stats.materialDraws ..
-			"\ndraws: " .. dream.stats.draws ..
-			"\nshaders: " .. shadersInUse,
-			15, 400)
-		end
 end
 
 function love.mousemoved(_, _, x, y)

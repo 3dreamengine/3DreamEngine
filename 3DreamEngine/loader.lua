@@ -78,7 +78,11 @@ end
 
 lib.resourceLoader.texturesKnown = { }
 lib.resourceLoader.texturesAwaitingLoad = { }
-function lib.resourceLoader.getTexture(self, path, abstraction)
+function lib.resourceLoader.getTexture(self, path, abstraction, forceLoad)
+	if type(path) == "userdata" then
+		return path
+	end
+	
 	local t = { }
 	
 	--search for simple textures and right formats
@@ -113,7 +117,7 @@ function lib.resourceLoader.getTexture(self, path, abstraction)
 	end
 	
 	--force load smallest image
-	if not self.self.startWithMissing and s.texture == self.self.texture_missing then
+	if not (self.self.startWithMissing and not forceLoad) and s.texture == self.self.texture_missing then
 		s.texture = love.graphics.newImage(s.levels[#s.levels], {mipmaps = s.mipmaps})
 		s.texture:setWrap(s.wrap)
 		s.texture:setFilter(s.filter)
@@ -124,7 +128,6 @@ function lib.resourceLoader.getTexture(self, path, abstraction)
 	
 	--add next texture to working stack
 	if not s.working and s.levels[0] and (not abstraction or abstraction < s.abstractionLayer or s.notLoadedYet) then
-		print(path, s.levels[#s.levels], abstraction, s.abstractionLayer, s.notLoadedYet) io.flush()
 		s.working = true
 		self.channel_jobs:push({path, s.levels[#s.levels]})
 		s.levels[#s.levels] = nil
@@ -148,8 +151,8 @@ function lib.loadObject(self, path, args)
 	local supportedFiles = {
 		"3do", --3DreamEngine object file - way faster than obj but does not keep vertex information
 		"mtl", --obj material file
-		"vox", --magicka voxel
 		"3de", --3DreamEngine information file
+		"vox", --magicka voxel
 		"obj", --obj file
 	}
 	
@@ -272,7 +275,7 @@ function lib.loadObject(self, path, args)
 	
 	--link textures to materials
 	for d,s in pairs(obj.materials) do
-		for _,typ in ipairs({"diffuse", "normal", "specular"}) do
+		for _,typ in ipairs({"diffuse", "normal", "specular", "emission"}) do
 			local custom = s["tex_" .. typ]
 			s["tex_" .. typ] = nil
 			
@@ -473,7 +476,7 @@ function lib.createMesh(self, obj, o)
 	--mesh structure
 	local atypes
 	if o.material.tex_diffuse or obj.forceTextured then
-		o.textureMode = true
+		o.material.textureMode = true
 		atypes = {
 		  {"VertexPosition", "float", 4},    -- x, y, z, extra
 		  {"VertexTexCoord", "float", 2},    -- UV
@@ -482,7 +485,7 @@ function lib.createMesh(self, obj, o)
 		  {"VertexBitangent", "byte", 4},    -- normal bitangent
 		}
 	else
-		o.textureMode = false
+		o.material.textureMode = false
 		atypes = {
 		  {"VertexPosition", "float", 4},    -- x, y, z
 		  {"VertexTexCoord", "float", 4},    -- normal, specular
@@ -505,7 +508,7 @@ function lib.createMesh(self, obj, o)
 	end
 	
 	--calculate vertex normals and uv normals
-	if o.textureMode then
+	if o.material.textureMode then
 		--expand uv if missing
 		for d,f in ipairs(finals) do
 			f[9] = f[9] or 0
@@ -588,7 +591,7 @@ function lib.createMesh(self, obj, o)
 	
 	--set vertices
 	for d,s in ipairs(finals) do
-		if o.textureMode then
+		if o.material.textureMode then
 			o.mesh:setVertex(d,
 				s[1], s[2], s[3], s[4],
 				s[9], s[10],
@@ -597,8 +600,8 @@ function lib.createMesh(self, obj, o)
 				s[14]*0.5+0.5, s[15]*0.5+0.5, s[16]*0.5+0.5, 0.0
 			)
 		else
-			local m = o.materialsID and o.materialsID[s[8]] or  obj.materialsID[s[8]]
-			local c = m.color
+			local m = o.materialsID and o.materialsID[s[8]] or obj.materialsID[s[8]]
+			local c = m.color or {1.0, 1.0, 1.0}
 			o.mesh:setVertex(d,
 				s[1], s[2], s[3], s[4],
 				s[5], s[6], s[7],

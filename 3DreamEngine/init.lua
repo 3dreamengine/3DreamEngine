@@ -70,14 +70,18 @@ lib.AO_quality = 24
 lib.AO_quality_smooth = 1
 lib.AO_resolution = 0.5
 
-lib.reflections_enabled = false
+lib.bloom_enabled = true
+lib.bloom_size = 12.0
+lib.bloom_quality = 4
+lib.bloom_resolution = 0.5
+lib.bloom_strength = 4.0
+
+lib.anaglyph3D = false
+lib.anaglyph3D_eyeDistance = 0.05
 
 lib.lighting_max = 16
-
 lib.abstractionDistance = 30
-
 lib.nameDecoder = "blender"
-
 lib.startWithMissing = false
 
 lib.object_light = lib:loadObject(lib.root .. "/objects/light")
@@ -119,6 +123,8 @@ function lib.init(self)
 			self.shaderSkyNight:send("night", self.night)
 		end
 	end
+	
+	self:clearShaders()
 end
 
 function lib.prepare(self, c, noDepth)
@@ -148,12 +154,29 @@ function lib.prepare(self, c, noDepth)
 		{0,	0,	-1,	0},
 	}
 	
+	local camRot = self.currentCam.transform:copy()
+	camRot[4][2] = 0
+	camRot[4][3] = 0
+	camRot[4][4] = 0
+	camRot[2][4] = 0
+	camRot[3][4] = 0
+	camRot[4][4] = 0
+	
 	--camera transformation
-	self.shaderVars_transformProj = projection * self.currentCam.transform
+	if self.anaglyph3D then
+		local offsetX = self.currentCam.transform^"T" * (matrix{{self.anaglyph3D_eyeDistance/2, 0, 0, 0}}^"T")
+		local offset = camRot * matrix{{0, 0, 0, offsetX[1][1]}, {0, 0, 0, offsetX[2][1]}, {0, 0, 0, offsetX[3][1]}, {0, 0, 0, 0}}
+		self.shaderVars_transformProj = projection * (self.currentCam.transform + offset)
+		
+		local offsetX = self.currentCam.transform^"T" * (matrix{{-self.anaglyph3D_eyeDistance/2, 0, 0, 0}}^"T")
+		local offset = camRot * matrix{{0, 0, 0, offsetX[1][1]}, {0, 0, 0, offsetX[2][1]}, {0, 0, 0, offsetX[3][1]}, {0, 0, 0, 0}}
+		self.shaderVars_transformProj_2 = projection * (self.currentCam.transform + offset)
+	else
+		self.shaderVars_transformProj = projection * self.currentCam.transform
+	end
 	
 	--camera normal
 	local normal = self.currentCam.transform^"T" * (matrix{{0, 0, 1, 0}}^"T")
-	--print(normal[1][1], normal[2][1], -normal[3][1]) io.flush()
 	cam.normal = {normal[1][1], normal[2][1], normal[3][1]}
 	
 	--clear draw table
@@ -414,7 +437,11 @@ function lib.draw(self, obj, x, y, z, sx, sy, sz)
 			
 			--insert intro draw todo list
 			if s.mesh then
-				local shaderInfo = self:getShaderInfo(s.material.tex_diffuse and "textured" or "flat", s.material.shader or s.shader, s.material.tex_normal, s.material.tex_specular, s.material.reflections)
+				--outdated - only used in firstpersongame demo scene and I don't want to update
+				s.material.textureMode = s.material.textureMode or s.textureMode
+				s.material.shader = s.material.shader or s.shader
+				
+				local shaderInfo = self:getShaderInfo(s.material, obj)
 				if not lib.drawTable[shaderInfo] then
 					lib.drawTable[shaderInfo] = { }
 				end
@@ -426,7 +453,8 @@ function lib.draw(self, obj, x, y, z, sx, sy, sz)
 				table.insert(lib.drawTable[shaderInfo][s.material], {
 					(transform * (bones and (obj.transform * bones[d]) or obj.transform or 1))^"T",
 					s,
-					r, g, b
+					r, g, b,
+					obj,
 				})
 			else
 				s.requestMeshLoad = true

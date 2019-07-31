@@ -21,6 +21,9 @@ dream:init()
 
 car = dream:loadObject("Lamborghini Aventador")
 
+--use custom reflections on this model, applies on all materials if not otherwise specified
+car.reflections_day = dream.objectDir .. "/sky"
+
 love.graphics.setBackgroundColor(0.8, 0.8, 0.8)
 
 function love.draw()
@@ -45,38 +48,10 @@ function love.draw()
 	
 	dream:present()
 	
-	--instructions
+	--stats
 	love.graphics.setColor(0.1, 0.1, 0.1)
-	love.graphics.print("Lamborghini Aventador" ..
-		"\nFPS: " .. love.timer.getFPS() ..
-		"\n(1) toggle ambient occlusion (" .. tostring(dream.AO_enabled == true) .. ")" ..
-		"\n(2) toggle per pixel shading (" .. tostring(dream.pixelPerfect == true) .. ")" .. 
-		"\n(3) toggle lighting (" .. tostring(dream.lighting_enabled == true) .. ")" ..
-		"\n(4) show light sources (" .. tostring(dream.showLightSources == true) .. ")", 15, 5)
-	
-	local shadersInUse = ""
-	for d,s in pairs(dream.stats.perShader) do
-		shadersInUse = shadersInUse .. d.name .. ": " .. s .. "x  "
-	end
 	love.graphics.print("Stats" ..
 		"\ndifferent shaders: " .. dream.stats.shadersInUse ..
 		"\ndifferent materials: " .. dream.stats.materialDraws ..
-		"\ndraws: " .. dream.stats.draws ..
-		"\nshaders: " .. shadersInUse, 15, 500)
-end
-
-function love.keypressed(key)
-	if key == "1" then
-		dream.AO_enabled = not dream.AO_enabled
-		dream:init()
-	elseif key == "2" then
-		dream.pixelPerfect = not dream.pixelPerfect
-		dream:init()
-	elseif key == "3" then
-		dream.lighting_enabled = not dream.lighting_enabled
-		dream:init()
-	elseif key == "4" then
-		dream.showLightSources = not dream.showLightSources
-	end
-	dream:init()
+		"\ndraws: " .. dream.stats.draws, 15, 500)
 end

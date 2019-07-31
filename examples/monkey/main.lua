@@ -23,8 +23,7 @@ function love.draw()
 	dream:prepare()
 	
 	monkey:reset()
-	--monkey:rotateY(love.timer.getTime())
-	monkey:rotateY(math.pi*0.9)
+	monkey:rotateY(love.timer.getTime())
 	dream:draw(monkey, 0, 0, -2.25)
 
 	dream:present()

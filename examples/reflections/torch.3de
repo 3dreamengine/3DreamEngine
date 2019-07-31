@@ -1,0 +1,18 @@
+--3DreamEngine material properties file
+return {
+	Coal = {
+		tex_diffuse = "coal_diffuse",
+		tex_emission = "coal_emission",
+		update = function(m, o)
+			o.torch_id = o.torch_id or math.random()
+			m.emission = love.math.noise(love.timer.getTime() * 2.0 + o.torch_id) * 1.0 + 1.0
+		end,
+	},
+	Iron = {
+		specular = 0.5,
+		reflections = true,
+		tex_diffuse = "iron_diffuse",
+		tex_normal = "iron_normal",
+		tex_specular = "iron_specular",
+	},
+}
