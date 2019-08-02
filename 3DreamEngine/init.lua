@@ -142,8 +142,8 @@ function lib.prepare(self, c, noDepth)
 	self.shaderVars_viewPos = -self.currentCam.transform^"T" * (matrix{{self.currentCam.transform[1][4], self.currentCam.transform[2][4], self.currentCam.transform[3][4], self.currentCam.transform[4][4]}}^"T")
 	self.shaderVars_viewPos = {self.shaderVars_viewPos[1][1], self.shaderVars_viewPos[2][1], self.shaderVars_viewPos[3][1]}
 	
-	local n = lib.near
-	local f = lib.far
+	local n = self.near
+	local f = self.far
 	local fov = self.fov
 	local S = 1 / (math.tan(fov/2*math.pi/180))
 	
@@ -180,7 +180,9 @@ function lib.prepare(self, c, noDepth)
 	cam.normal = {normal[1][1], normal[2][1], normal[3][1]}
 	
 	--clear draw table
-	lib.drawTable = { }
+	self.drawTable = { }
+	self.particles = { }
+	self.particleCounter = 0
 	
 	--show light sources
 	if self.lighting_enabled and self.showLightSources then
@@ -460,6 +462,27 @@ function lib.draw(self, obj, x, y, z, sx, sy, sz)
 				s.requestMeshLoad = true
 			end
 		end
+	end
+end
+
+lib.particles = { }
+lib.particleCounter = 0
+function lib.drawParticle(self, tex, quad, x, y, z, size, rot, emission, emissionTexture)
+	if type(quads) == "number" then
+		self:drawParticle(tex, false, x, y, z, size, rot)
+		return
+	end
+	
+	local transformProj = self.shaderVars_transformProj
+	
+	local pz = transformProj[3][1] * x + transformProj[3][2] * y + transformProj[3][3] * z + transformProj[3][4]
+	if pz > 0 then
+		local pw = transformProj[4][1] * x + transformProj[4][2] * y + transformProj[4][3] * z + transformProj[4][4]
+		local px = (transformProj[1][1] * x + transformProj[1][2] * y + transformProj[1][3] * z + transformProj[1][4]) / pw
+		local py = (transformProj[2][1] * x + transformProj[2][2] * y + transformProj[2][3] * z + transformProj[2][4]) / pw
+		
+		self.particleCounter = self.particleCounter + 1
+		self.particles[self.particleCounter] = {tex, quad, px, py, pz / pw, (size or 1.0) / pz, rot or 0.0, emission or 0.0, emissionTexture}
 	end
 end
 

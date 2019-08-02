@@ -231,6 +231,30 @@ function lib.present(self, noDepth, noSky)
 			end
 		end
 		
+		
+		--particles
+		if self.bloom_enabled then
+			love.graphics.setCanvas({self.canvas, self.canvas_bloom, depthstencil = self.canvas_depth})
+		else
+			love.graphics.setCanvas({self.canvas, depthstencil = self.canvas_depth})
+		end
+		
+		table.sort(self.particles, function(a, b) return a[5] > b[5] end)
+		love.graphics.setShader(self.shaderParticle)
+		for d,s in ipairs(self.particles) do
+			self.shaderParticle:send("depth", s[5])
+			self.shaderParticle:send("emission", s[8])
+			self.shaderParticle:send("tex_emission", s[9] or s[1])
+			
+			if s[2] then
+				local _, _, w, h = s[2]:getViewport()
+				love.graphics.draw(s[1], s[2], (s[3]+1)*love.graphics.getWidth()/2, (s[4]+1)*love.graphics.getHeight()/2, s[7], s[6], s[6], w/2, h/2)
+			else
+				love.graphics.draw(s[1], (s[3]+1)*love.graphics.getWidth()/2, (s[4]+1)*love.graphics.getHeight()/2, s[7], s[6], s[6], s[1]:getWidth()/2, s[1]:getHeight()/2)
+			end
+		end
+		
+		
 		love.graphics.setDepthMode()
 		love.graphics.origin()
 		love.graphics.setColor(1, 1, 1)

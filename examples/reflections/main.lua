@@ -27,6 +27,15 @@ io.stdout:setvbuf("no")
 
 love.mouse.setRelativeMode(true)
 
+texture_candle = love.graphics.newImage(dream.objectDir .. "/candle.png")
+local factor = texture_candle:getHeight() / texture_candle:getWidth()
+quads = { }
+for y = 1, 5 do
+	for x = 1, 5 do
+		quads[#quads+1] = love.graphics.newQuad(x-1, (y-1)*factor, 1, factor, 5, 5*factor)
+	end
+end
+
 player = {
 	x = 0,
 	y = 0,
@@ -39,6 +48,9 @@ player = {
 --because it is easier to work with two rotations
 dream.cam.rx = 0
 dream.cam.ry = 0
+
+particles = { }
+lastParticleID = 0
 
 function love.draw()
 	--update camera
@@ -55,13 +67,27 @@ function love.draw()
 		end
 	end
 	
-	--torches
-	dream:addLight(0, 0.25, 1.85, 1.0, 0.75, 0.1, 1.0 + 0.5 * love.math.noise(love.timer.getTime()*2, 1.0))
-	dream:addLight(1.25, 0.25, -1.85, 1.0, 0.75, 0.1, 1.0 + 0.5 * love.math.noise(love.timer.getTime()*2, 2.0))
-	dream:addLight(-1.25, 0.25, -1.85, 1.0, 0.75, 0.1, 1.0 + 0.5 * love.math.noise(love.timer.getTime()*2, 3.0))
+	--torches, lights and particles
+	for d,s in ipairs({
+		{0, 0.25, 1.85},
+		{1.25, 0.25, -1.85},
+		{-1.25, 0.25, -1.85},
+	}) do
+		dream:addLight(s[1], s[2], s[3], 1.0, 0.75, 0.1, 1.0 + 0.5 * love.math.noise(love.timer.getTime()*2, d))
+		
+		if math.random() < love.timer.getDelta()*8.0 then
+			particles[lastParticleID] = {s[1] + (math.random()-0.5)*0.1, s[2] + (math.random()-0.5)*0.1, s[3] + (math.random()-0.5)*0.1, math.random()+1.0}
+			lastParticleID = lastParticleID + 1
+		end
+	end
 	
 	dream:prepare()
 	dream:draw(scene, 0, 0, 0)
+	
+	--particles
+	for d,s in pairs(particles) do
+		dream:drawParticle(texture_candle, quads[math.ceil(d + s[4]*25) % 25 + 1], s[1], s[2], s[3], s[4]*32, 0.0, 0.25)
+	end
 	
 	torch:reset()
 	torch:rotateY(math.pi/2)
@@ -88,6 +114,15 @@ end
 function love.update(dt)
 	local d = love.keyboard.isDown
 	local speed = 10*dt
+	
+	--particles
+	for d,s in pairs(particles) do
+		s[2] = s[2] + dt*0.25
+		s[4] = s[4] - dt
+		if s[4] < 0 then
+			particles[d] = nil
+		end
+	end
 	
 	--collision
 	player.x = player.x + player.ax * dt
