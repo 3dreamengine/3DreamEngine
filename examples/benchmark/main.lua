@@ -128,16 +128,16 @@ function love.update(dt)
 				love.update(dt)
 			else
 				if b.mode == "flat" then
-					mesh = dream:loadObject(b.mesh, {forceTextured = false})
+					mesh = dream:loadObject(b.mesh, {meshType = "^flat"})
 				elseif b.mode == "texture" then
-					mesh = dream:loadObject(b.mesh, {forceTextured = true})
+					mesh = dream:loadObject(b.mesh, {meshType = "textured"})
 					mesh.materials.Material.tex_diffuse = love.graphics.newImage(dream.objectDir .. "/diffuse.png")
 				elseif b.mode == "normal" then
-					mesh = dream:loadObject(b.mesh, {forceTextured = true})
+					mesh = dream:loadObject(b.mesh, {meshType = "textured_normal"})
 					mesh.materials.Material.tex_diffuse = love.graphics.newImage(dream.objectDir .. "/diffuse.png")
 					mesh.materials.Material.tex_normal = love.graphics.newImage(dream.objectDir .. "/normal.png")
 				elseif b.mode == "specular" then
-					mesh = dream:loadObject(b.mesh, {forceTextured = true})
+					mesh = dream:loadObject(b.mesh, {meshType = "textured_normal"})
 					mesh.materials.Material.tex_diffuse = love.graphics.newImage(dream.objectDir .. "/diffuse.png")
 					mesh.materials.Material.tex_normal = love.graphics.newImage(dream.objectDir .. "/normal.png")
 					mesh.materials.Material.tex_specular = love.graphics.newImage(dream.objectDir .. "/specular.png")

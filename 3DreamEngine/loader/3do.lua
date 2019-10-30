@@ -18,5 +18,11 @@ _3DreamEngine.loader["3do"] = function(self, obj, path)
 	
 	obj.objects = table.load(love.data.decompress("string", compressed:sub(1, 3), headerData))
 	
+	--outdated - makes old saves compatible
+	for d,s in pairs(obj.objects) do
+		s.meshType = s.meshType or (s.textureMode and "textured_normal" or "flat")
+		s.material.shader = s.material.shader or s.shader
+	end
+	
 	table.insert(self.resourceLoader.jobs, obj)
 end

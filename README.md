@@ -286,7 +286,7 @@ object = {
 			super = simple == 1 and nameBase or simple and (nameBase .. "_simple_" .. (simple-1)) or nil, --the next more detailed object
 			simpler = simple and (nameBase .. "_simple_" .. (simple+1)) or nil, --the next more abstract object, object may not exist
 			
-			textureMode = true, --using textured meshes
+			meshType = "textured", --flat, textured or textured_normal - determines the data the mesh contains
 			mesh = love.graphics.newMesh(), --a static, triangles-mesh, may be nil when using 3do, loads automatically
 		}
 	},

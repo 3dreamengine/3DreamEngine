@@ -5,6 +5,10 @@ shader.lua - contains the shaders
 
 local lib = _3DreamEngine
 
+if not love.graphics then
+	return
+end
+
 if _DEBUGMODE then
 	love.graphics.newShader_old = love.graphics.newShader
 	function love.graphics.newShader(pixel, vertex)
@@ -191,29 +195,33 @@ lib.shaderSky = love.graphics.newShader([[
 --store all shaders
 function lib.clearShaders()
 	lib.shaders = { }
-	for _,textureMode in ipairs({true, false}) do
-		lib.shaders[textureMode] = { }
+	for _,flat in ipairs({true, false}) do
+		lib.shaders[flat] = { }
 		for _,variant in ipairs({"default", "wind"}) do
-			lib.shaders[textureMode][variant] = { }
+			lib.shaders[flat][variant] = { }
 			for _,normal in ipairs({true, false}) do
-				lib.shaders[textureMode][variant][normal] = { }
+				lib.shaders[flat][variant][normal] = { }
 				for _,specular in ipairs({true, false}) do
-					lib.shaders[textureMode][variant][normal][specular] = { }
+					lib.shaders[flat][variant][normal][specular] = { }
 					for _,emission in ipairs({true, false}) do
-						lib.shaders[textureMode][variant][normal][specular][emission] = { }
-						for _,reflections_day in ipairs({true, false}) do
-							lib.shaders[textureMode][variant][normal][specular][emission][reflections_day] = { }
-							for _,reflections_night in ipairs({true, false}) do
-								lib.shaders[textureMode][variant][normal][specular][emission][reflections_day][reflections_night] = {
-									textureMode = textureMode,
-									variant = variant,
-									normal = normal,
-									specular = specular,
-									emission = emission,
-									reflections_day = reflections_day,
-									reflections_night = reflections_night,
-									shaders = { },
-								}
+						lib.shaders[flat][variant][normal][specular][emission] = { }
+						for _,arrayImage in ipairs({true, false}) do
+							lib.shaders[flat][variant][normal][specular][emission][arrayImage] = { }
+							for _,reflections_day in ipairs({true, false}) do
+								lib.shaders[flat][variant][normal][specular][emission][arrayImage][reflections_day] = { }
+								for _,reflections_night in ipairs({true, false}) do
+									lib.shaders[flat][variant][normal][specular][emission][arrayImage][reflections_day][reflections_night] = {
+										flat = flat,
+										variant = variant,
+										normal = normal,
+										specular = specular,
+										emission = emission,
+										arrayImage = arrayImage,
+										reflections_day = reflections_day,
+										reflections_night = reflections_night,
+										shaders = { },
+									}
+								end
 							end
 						end
 					end
@@ -223,24 +231,24 @@ function lib.clearShaders()
 	end
 end
 
---returns a fitting shader for the current material
-function lib.getShaderInfo(self, mat, obj)
-	return lib.shaders[mat.textureMode and true or false][mat.shader or "default"][mat.textureMode and mat.tex_normal and true or false][mat.textureMode and mat.tex_specular and true or false][mat.textureMode and mat.tex_emission and true or false][(obj.reflections_day or mat.reflections_day or mat.reflections and self.sky) and true or false][(obj.reflections_night or mat.reflections_night or mat.reflections and self.night) and true or false]
+--returns a fitting shader for the current material and meshtype
+function lib.getShaderInfo(self, mat, meshType, obj)
+	return lib.shaders[meshType == "flat" and true or false][mat.shader or "default"][(meshType == "textured_normal" or meshType == "textured_array_normal") and mat.tex_normal and true or false][meshType ~= "flat" and mat.tex_specular and true or false][meshType ~= "flat" and mat.tex_emission and true or false][meshType == "textured_array_normal" or meshType == "textured_array"][(obj and obj.reflections_day or mat.reflections_day or mat.reflections and self.sky) and true or false][(obj and obj.reflections_night or mat.reflections_night or mat.reflections and self.night) and true or false]
 end
 
 --returns a full shader based on the shaderInfo and lighting count
 _RENDERER = love.graphics.getRendererInfo()
 function lib.getShader(self, info, lightings)
 	if not info.shaders[lightings] then
-		for d,s in pairs(info) do print(d, s) end print()
 		local code = 
 			--defines
-			(not info.textureMode and "#define FLAT_SHADING\n" or "") ..
+			(info.flat and "#define FLAT_SHADING\n" or "") ..
 			(info.normal and "#define TEX_NORMAL\n" or "") ..
 			(info.specular and "#define TEX_SPECULAR\n" or "") ..
 			(info.emission and "#define TEX_EMISSION\n" or "") ..
 			(self.AO_enabled and "#define AO_ENABLED\n" or "") ..
 			(self.bloom_enabled and "#define BLOOM_ENABLED\n" or "") ..
+			(info.arrayImage and "#define ARRAY_IMAGE\n" or "") ..
 			(info.reflections_day and "#define REFLECTIONS_DAY\n" or "") ..
 			(info.reflections_night and "#define REFLECTIONS_NIGHT\n" or "") ..
 			(info.variant == "wind" and "#define VARIANT_WIND\n" or "") ..
@@ -268,9 +276,7 @@ mediump mat3 transpose_optional(mat3 inMatrix) {
 	varying float depth;
 #endif
 
-#ifdef REFLECTIONS_DAY
-	varying vec3 normalV;
-#endif
+varying vec3 normalV;
 
 //lighting
 #ifdef LIGHTING
@@ -303,11 +309,19 @@ extern Image tex_shadow;
 extern float shadowPrecision;
 
 #ifdef TEX_NORMAL
-	extern Image tex_normal;    //normal texture
+	#ifdef ARRAY_IMAGE
+		extern ArrayImage tex_normal;    //normal texture
+	#else
+		extern Image tex_normal;    //normal texture
+	#endif
 #endif
 
 #ifdef TEX_SPECULAR
-	extern Image tex_specular;  //specular texture
+	#ifdef ARRAY_IMAGE
+		extern ArrayImage tex_specular;  //specular texture
+	#else
+		extern Image tex_specular;  //specular texture
+	#endif
 #else
 	#ifndef FLAT_SHADING
 		extern float specular;
@@ -315,7 +329,11 @@ extern float shadowPrecision;
 #endif
 
 #ifdef TEX_EMISSION
-	extern Image tex_emission;  //emission texture
+	#ifdef ARRAY_IMAGE
+		extern ArrayImage tex_emission;  //emission texture
+	#else
+		extern Image tex_emission;  //emission texture
+	#endif
 #endif
 
 extern float emission;
@@ -330,14 +348,22 @@ extern float emission;
 #endif
 
 #ifndef FLAT_SHADING
-	uniform Image MainTex;      //diffuse texture
+	#ifdef ARRAY_IMAGE
+		uniform ArrayImage MainTex;      //diffuse texture
+	#else
+		uniform Image MainTex;      //diffuse texture
+	#endif
 #endif
 
 extern float alphaThreshold;
 
 void effect() {
 	#ifdef TEX_SPECULAR
-		float spec = Texel(tex_specular, VaryingTexCoord.xy).r * 0.95;
+		#ifdef ARRAY_IMAGE
+			float spec = Texel(tex_specular, VaryingTexCoord.xyz).r * 0.95;
+		#else
+			float spec = Texel(tex_specular, VaryingTexCoord.xy).r * 0.95;
+		#endif
 	#else
 		#ifdef FLAT_SHADING
 			float spec = VaryingTexCoord.a * 0.95;
@@ -347,13 +373,13 @@ void effect() {
 	#endif
 	
 	#ifdef TEX_NORMAL
-		vec3 normal = (Texel(tex_normal, VaryingTexCoord.xy).rgb * 2.0 - 1.0);
-	#else
-		#ifdef FLAT_SHADING
-			vec3 normal = VaryingTexCoord.xyz;
+		#ifdef ARRAY_IMAGE
+			vec3 normal = (Texel(tex_normal, VaryingTexCoord.xyz).rgb * 2.0 - 1.0);
 		#else
-			vec3 normal = vec3(0, 0, 1.0);
+			vec3 normal = (Texel(tex_normal, VaryingTexCoord.xy).rgb * 2.0 - 1.0);
 		#endif
+	#else
+		vec3 normal = normalV;
 	#endif
 	
 	mediump vec3 lighting = ambient;
@@ -379,13 +405,21 @@ void effect() {
 	#ifdef FLAT_SHADING
 		mediump vec4 col = vec4(VaryingColor.rgb * lighting, VaryingColor.a);
 	#else
-		mediump vec4 diffuse = Texel(MainTex, VaryingTexCoord.xy);
+		#ifdef ARRAY_IMAGE
+			mediump vec4 diffuse = Texel(MainTex, VaryingTexCoord.xyz);
+		#else
+			mediump vec4 diffuse = Texel(MainTex, VaryingTexCoord.xy);
+		#endif
 		mediump vec4 col = vec4(diffuse.rgb * lighting, diffuse.a);
 	#endif
 	
 	//emission
 	#ifdef TEX_EMISSION
-		vec4 e = Texel(tex_emission, VaryingTexCoord.xy);
+		#ifdef ARRAY_IMAGE
+			vec4 e = Texel(tex_emission, VaryingTexCoord.xyz);
+		#else
+			vec4 e = Texel(tex_emission, VaryingTexCoord.xy);
+		#endif
 		col += vec4(e.rgb * e.a * emission, e.a);
 	#else
 		if (emission > 0) {
@@ -402,7 +436,11 @@ void effect() {
 		#ifdef FLAT_SHADING
 			mediump vec3 n = normalize(normalV - normalize(posV-viewPos)).xyz;
 		#else
-			mediump vec3 n = normalize(normalV + normal*transpose(objToTangentSpace)*0.25 - normalize(posV-viewPos)).xyz;
+			#ifdef TEX_NORMAL
+				mediump vec3 n = normalize(normalV + normal*transpose(objToTangentSpace)*0.25 - normalize(posV-viewPos)).xyz;
+			#else
+				mediump vec3 n = normalize(normalV - normalize(posV-viewPos)).xyz;
+			#endif
 		#endif
 		float u = atan(n.x, n.z) * 0.1591549430919 + 0.5;
 		float v = n.y * 0.5 + 0.5;
@@ -460,8 +498,10 @@ void effect() {
 //additional vertex attributes
 #ifndef FLAT_SHADING
 	attribute mediump vec3 VertexNormal;
-	attribute mediump vec3 VertexTangent;
-	attribute mediump vec3 VertexBitangent;
+	#ifdef TEX_NORMAL
+		attribute mediump vec3 VertexTangent;
+		attribute mediump vec3 VertexBitangent;
+	#endif
 #endif
 
 vec4 position(mat4 transform_projection, vec4 vertex_position) {
@@ -479,17 +519,25 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	//transform into tangential space
 	#ifdef LIGHTING
 ]] .. (self.render == "OpenGL ES" and [[
-			#ifdef FLAT_SHADING
-				objToTangentSpace = transpose_optional(mat3(transform));
-			#else
+		#ifdef FLAT_SHADING
+			objToTangentSpace = transpose_optional(mat3(transform));
+		#else
+			#ifdef TEX_NORMAL
 				objToTangentSpace = transpose_optional(mat3(transform)) * mat3(VertexTangent*2.0-1.0, VertexBitangent*2.0-1.0, VertexNormal*2.0-1.0);
-			#endif
-]] or [[
-			#ifdef FLAT_SHADING
-				objToTangentSpace = transpose(mat3(transform));
 			#else
-				objToTangentSpace = transpose(mat3(transform)) * mat3(VertexTangent*2.0-1.0, VertexBitangent*2.0-1.0, VertexNormal*2.0-1.0);
+				objToTangentSpace = transpose(mat3(transform));
 			#endif
+		#endif
+]] or [[
+		#ifdef FLAT_SHADING
+			objToTangentSpace = transpose(mat3(transform));
+		#else
+			#ifdef TEX_NORMAL
+				objToTangentSpace = transpose(mat3(transform)) * mat3(VertexTangent*2.0-1.0, VertexBitangent*2.0-1.0, VertexNormal*2.0-1.0);
+			#else
+				objToTangentSpace = transpose(mat3(transform));
+			#endif
+		#endif
 ]]) .. [[
 	#endif
 	
@@ -503,12 +551,10 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	//projective transform and depth extracting
 	mediump vec4 vPos = transformProj * pos;
 	
-	#ifdef REFLECTIONS_DAY
-		#ifdef FLAT_SHADING
-			normalV = VertexTexCoord.xyz;
-		#else
-			normalV = VertexNormal*2.0-1.0;
-		#endif
+	#ifdef FLAT_SHADING
+		normalV = VertexTexCoord.xyz*2.0-1.0;
+	#else
+		normalV = VertexNormal*2.0-1.0;
 	#endif
 	
 	#ifdef AO_ENABLED
@@ -521,7 +567,7 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 		
 		--debug
 		if _DEBUGMODE then
-			--love.filesystem.write("shader.glsl", code)
+			--love.filesystem.write(tostring(info):gsub(":", "") .. ".glsl", code)
 		end
 		
 		info.shaders[lightings] = love.graphics.newShader(code)
