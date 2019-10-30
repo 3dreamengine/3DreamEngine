@@ -11,6 +11,7 @@ function lib.resize(self, w, h)
 	local msaa = 4
 	self.canvas = love.graphics.newCanvas(w, h, {format = "normal", readable = true, msaa = msaa})
 	self.canvas_depth = love.graphics.newCanvas(w, h, {format = self.canvasFormats["depth32f"] and "depth32f" or self.canvasFormats["depth24"] and "depth24" or "depth16", readable = false, msaa = msaa})
+	
 	if self.AO_enabled then
 		local ok = pcall(function()
 			self.canvas_z = love.graphics.newCanvas(w, h, {format = "r16f", readable = true, msaa = msaa})
@@ -23,6 +24,7 @@ function lib.resize(self, w, h)
 			print("r16f canvas creation failed, AO deactivated")
 		end
 	end
+	
 	if self.bloom_enabled then
 		local ok = pcall(function()
 			self.canvas_bloom = love.graphics.newCanvas(w, h, {format = "normal", readable = true, msaa = msaa})
@@ -35,6 +37,10 @@ function lib.resize(self, w, h)
 			print("r8 canvas creation failed, bloom deactivated")
 		end
 	end
+	
+	self.canvas_shadow_depth = love.graphics.newCanvas(self.shadow_resolution, self.shadow_resolution, {format = self.canvasFormats["depth32f"] and "depth32f" or self.canvasFormats["depth24"] and "depth24" or "depth16", readable = false, msaa = 0})
+	self.canvas_shadow = love.graphics.newCanvas(self.shadow_resolution, self.shadow_resolution, {format = "r32f", readable = true, msaa = 0})
+	self.canvas_shadow:setWrap("clampzero")
 end
 
 function lib.split(self, text, sep)

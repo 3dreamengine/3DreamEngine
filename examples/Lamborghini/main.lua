@@ -11,8 +11,6 @@ dream.AO_quality = 32        --samples per pixel (8-32 recommended)
 dream.AO_quality_smooth = 2  --smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
 dream.AO_resolution = 0.75   --resolution factor
 
-dream.near = 1.0
-dream.far = 100
 dream.nameDecoder = "none"
 
 dream.startWithMissing = true
@@ -20,6 +18,7 @@ dream.startWithMissing = true
 dream:init()
 
 car = dream:loadObject("Lamborghini Aventador")
+socket = dream:loadObject("socket")
 
 --use custom reflections on this model, applies on all materials if not otherwise specified
 car.reflections_day = dream.objectDir .. "/sky"
@@ -29,6 +28,7 @@ love.graphics.setBackgroundColor(0.8, 0.8, 0.8)
 function love.draw()
 	dream.resourceLoader:update()
 	
+	dream.sun = {-1.0, 0.6, 0.5}
 	dream.color_ambient = {0.1, 0.1, 0.1, 1}
 	dream.color_sun = {1, 1, 1, 2.0}
 	
@@ -43,8 +43,10 @@ function love.draw()
 	--draw the car 
 	love.graphics.setColor(1, 1, 1)
 	car:reset()
-	car:rotateY(-2.25-(love.mouse.getX()/love.graphics.getWidth()-0.5)*4.0)
+	car:rotateY(love.mouse.isDown(1) and (-2.25-(love.mouse.getX()/love.graphics.getWidth()-0.5)*4.0) or love.timer.getTime()*0.5)
 	dream:draw(car, 0, -10, -38)
+	
+	dream:draw(socket, 0, -10, -38, 30)
 	
 	dream:present()
 	

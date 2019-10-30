@@ -76,6 +76,9 @@ lib.bloom_quality = 4
 lib.bloom_resolution = 0.5
 lib.bloom_strength = 4.0
 
+lib.shadow_resolution = 1024*4
+lib.shadow_distance = lib.far/2
+
 lib.anaglyph3D = false
 lib.anaglyph3D_eyeDistance = 0.05
 
@@ -133,12 +136,6 @@ function lib.prepare(self, c, noDepth)
 	local cam = c == false and self:newCam() or c or self.cam
 	self.currentCam = cam
 	
-	local sun = {self.sun[1], self.sun[2], self.sun[3]}
-	sun[1] = sun[1] * 1000
-	sun[2] = sun[2] * 1000
-	sun[3] = sun[3] * 1000
-	
-	self.shaderVars_sun = sun
 	self.shaderVars_viewPos = -self.currentCam.transform^"T" * (matrix{{self.currentCam.transform[1][4], self.currentCam.transform[2][4], self.currentCam.transform[3][4], self.currentCam.transform[4][4]}}^"T")
 	self.shaderVars_viewPos = {self.shaderVars_viewPos[1][1], self.shaderVars_viewPos[2][1], self.shaderVars_viewPos[3][1]}
 	
@@ -174,6 +171,25 @@ function lib.prepare(self, c, noDepth)
 	else
 		self.shaderVars_transformProj = projection * self.currentCam.transform
 	end
+	
+	--shadow
+	local n = self.near
+	local f = self.far
+	local fov = 10
+	local S = 1 / (math.tan(fov/2*math.pi/180))
+	local projection = matrix{
+		{S,	0,	0,	0},
+		{0,	-S,	0,	0},
+		{0,	0,	-f/(f-n),	-(f*n)/(f-n)},
+		{0,	0,	-1,	0},
+	}
+	local cam = self:newCam()
+	local sun = self.sun
+	
+	cam:translate(-self.shaderVars_viewPos[1] - sun[1]*self.shadow_distance, -self.shaderVars_viewPos[2] - sun[2]*self.shadow_distance, -self.shaderVars_viewPos[3] - sun[3]*self.shadow_distance)
+	cam:rotateY(math.atan2(sun[1], sun[3]))
+	cam:rotateX(math.atan2(sun[2], math.sqrt(sun[1]^2 + sun[3]^2)))
+	self.shaderVars_transformProjShadow = projection * cam.transform
 	
 	--camera normal
 	local normal = self.currentCam.transform^"T" * (matrix{{0, 0, 1, 0}}^"T")

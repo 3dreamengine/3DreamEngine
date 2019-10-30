@@ -282,8 +282,9 @@ mediump mat3 transpose_optional(mat3 inMatrix) {
 #endif
 
 //transformations
-extern mediump mat4 transformProj;   //projective transformation
-extern mediump mat4 transform;       //model transformation
+extern mediump mat4 transformProjShadow; //projective transformation for shadows
+extern mediump mat4 transformProj;       //projective transformation
+extern mediump mat4 transform;           //model transformation
 
 //ambient
 extern mediump vec3 ambient;     //ambient sun color
@@ -292,9 +293,14 @@ extern mediump vec3 ambient;     //ambient sun color
 extern mediump vec3 viewPos;     //position of viewer in world space
 varying mediump vec3 posV;       //vertex position for pixel shader
 
+varying mediump vec4 vPosShadow; //projected vertex position on shadow map
+
 varying mediump mat3 objToTangentSpace;
 
 #ifdef PIXEL
+
+extern Image tex_shadow;
+extern float shadowPrecision;
 
 #ifdef TEX_NORMAL
 	extern Image tex_normal;    //normal texture
@@ -415,6 +421,13 @@ void effect() {
 		discard;
 	}
 	
+	//apply shadow
+	vec2 shadowUV = vPosShadow.xy / vPosShadow.z;
+	float shadowDepth = Texel(tex_shadow, shadowUV * 0.5 + 0.5).r;
+	if (shadowDepth + shadowPrecision * 2.0 / vPosShadow.z < vPosShadow.z * shadowPrecision) {
+		col *= vec4(0.25, 0.25, 0.25, 1.0);
+	}
+	
 	love_Canvases[0] = col;
 	
 	#ifdef AO_ENABLED
@@ -482,6 +495,11 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	
 	posV = pos.xyz;
 	
+	
+	
+	//projective transform for the shadow
+	vPosShadow = transformProjShadow * pos;
+	
 	//projective transform and depth extracting
 	mediump vec4 vPos = transformProj * pos;
 	
@@ -513,3 +531,38 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	
 	return info
 end
+
+
+
+--the shadow shader
+lib.shaderShadow = love.graphics.newShader([[
+	//transformations
+	extern mediump mat4 transformProj;   //projective transformation
+	extern mediump mat4 transform;       //model transformation
+	
+	extern float shadowPrecision;
+	
+	varying float depth;
+
+	#ifdef PIXEL
+	void effect() {
+		love_Canvases[0] = vec4(depth, 0.0, 0.0, 1.0);
+	}
+	#endif
+
+
+	#ifdef VERTEX
+
+	vec4 position(mat4 transform_projection, vec4 vertex_position) {
+		//calculate vertex position
+		mediump vec4 pos = vec4(vertex_position.xyz, 1.0) * transform;
+		
+		//projective transform and depth extracting
+		mediump vec4 vPos = transformProj * pos;
+		
+		depth = vPos.z * shadowPrecision;
+		
+		return vPos;
+	}
+	#endif
+]])

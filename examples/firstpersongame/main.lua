@@ -28,6 +28,7 @@ dream:init()
 --dream:generateMipMaps(dream.objectDir .. "/objects/grass.png")
 
 castle = dream:loadObject("objects/scene", {splitMaterials = true, export3do = true})
+ground = dream:loadObject("objects/ground")
 
 love.graphics.setBackgroundColor(128/255, 218/255, 235/255)
 
@@ -72,6 +73,7 @@ function love.draw()
 	
 	castle:reset()
 	dream:draw(castle)
+	dream:draw(ground)
 
 	dream:present()
 	
