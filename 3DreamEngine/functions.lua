@@ -5,7 +5,7 @@ functions.lua - contains library relevant functions
 
 local lib = _3DreamEngine
 
-lib.canvasFormats = love.graphics.getCanvasFormats()
+lib.canvasFormats = love.graphics and love.graphics.getCanvasFormats() or { }
 
 function lib.resize(self, w, h)
 	local msaa = 4
@@ -134,4 +134,81 @@ function lib.generateMipMaps(self, path)
 	end
 	
 	love.graphics.pop()
+end
+
+--add tangents to a 3Dream vertex format
+--x, y, z, shaderData, nx, ny, nz, materialID, u, v, tx, ty, tz, btx, bty, btz
+function lib.calcTangents(self, finals, vertexMap)
+	--expand uv if missing
+	for d,f in ipairs(finals) do
+		f[9] = f[9] or 0
+		f[10] = f[10] or 0
+	end
+	
+	for f = 1, #vertexMap, 3 do
+		local P1 = finals[vertexMap[f+0]]
+		local P2 = finals[vertexMap[f+1]]
+		local P3 = finals[vertexMap[f+2]]
+		local N1 = finals[vertexMap[f+0]]
+		local N2 = finals[vertexMap[f+1]]
+		local N3 = finals[vertexMap[f+2]]
+		
+		local tangent = { }
+		local bitangent = { }
+		
+		local edge1 = {P2[1] - P1[1], P2[2] - P1[2], P2[3] - P1[3]}
+		local edge2 = {P3[1] - P1[1], P3[2] - P1[2], P3[3] - P1[3]}
+		local edge1uv = {N2[9] - N1[9], N2[10] - N1[10]}
+		local edge2uv = {N3[9] - N1[9], N3[10] - N1[10]}
+		
+		local cp = edge1uv[2] * edge2uv[1] - edge1uv[1] * edge2uv[2]
+		
+		if cp ~= 0.0 then
+			for i = 1, 3 do
+				tangent[i] = (edge1[i] * edge2uv[2] - edge2[i] * edge1uv[2]) / cp
+				bitangent[i] = (edge2[i] * edge1uv[1] - edge1[i] * edge2uv[1]) / cp
+			end
+			
+			local l = math.sqrt(tangent[1]^2+tangent[2]^2+tangent[3]^2)
+			tangent[1] = tangent[1] / l
+			tangent[2] = tangent[2] / l
+			tangent[3] = tangent[3] / l
+			
+			local l = math.sqrt(bitangent[1]^2+bitangent[2]^2+bitangent[3]^2)
+			bitangent[1] = bitangent[1] / l
+			bitangent[2] = bitangent[2] / l
+			bitangent[3] = bitangent[3] / l
+			
+			for i = 1, 3 do
+				finals[vertexMap[f+i-1]][11] = (finals[vertexMap[f+i-1]][11] or 0) + tangent[1]
+				finals[vertexMap[f+i-1]][12] = (finals[vertexMap[f+i-1]][12] or 0) + tangent[2]
+				finals[vertexMap[f+i-1]][13] = (finals[vertexMap[f+i-1]][13] or 0) + tangent[3]
+				
+				finals[vertexMap[f+i-1]][14] = (finals[vertexMap[f+i-1]][14] or 0) + bitangent[1]
+				finals[vertexMap[f+i-1]][15] = (finals[vertexMap[f+i-1]][15] or 0) + bitangent[2]
+				finals[vertexMap[f+i-1]][16] = (finals[vertexMap[f+i-1]][16] or 0) + bitangent[3]
+			end
+		end
+	end
+	
+	--complete smoothing step
+	for d,f in ipairs(finals) do
+		if f[11] then
+			--Gram-Schmidt orthogonalization
+			local dot = (f[11] * f[5] + f[12] * f[6] + f[13] * f[7])
+			f[11] = f[11] - f[5] * dot
+			f[12] = f[12] - f[6] * dot
+			f[13] = f[13] - f[7] * dot
+			
+			local l = math.sqrt(f[11]^2+f[12]^2+f[13]^2)
+			f[11] = -f[11] / l
+			f[12] = -f[12] / l
+			f[13] = -f[13] / l
+			
+			l = math.sqrt(f[14]^2+f[15]^2+f[16]^2)
+			f[14] = f[14] / l
+			f[15] = f[15] / l
+			f[16] = f[16] / l
+		end
+	end
 end

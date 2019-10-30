@@ -11,7 +11,7 @@ lib.imageFormats = {"tga", "png", "gif", "bmp", "exr", "jpg", "jpe", "jpeg", "jp
 lib.resourceLoader = {jobs = { }, self = lib, lastID = 0, threads = { }}
 
 --start the threads
-for i = 1, math.max(1, love.system.getProcessorCount()-1) do
+for i = 1, math.max(1, require("love.system").getProcessorCount()-1) do
 	lib.resourceLoader.threads[i] = love.thread.newThread(lib.root .. "/thread.lua")
 	lib.resourceLoader.threads[i]:start()
 end
@@ -71,14 +71,12 @@ function lib.resourceLoader.update(self)
 		return true
 	end
 	
-	--load textures
-	
 	return false
 end
 
 lib.resourceLoader.texturesKnown = { }
 lib.resourceLoader.texturesAwaitingLoad = { }
-function lib.resourceLoader.getTexture(self, path, abstraction, forceLoad)
+function lib.resourceLoader.getTexture(self, path, abstraction, forceLoad, filter, mipmaps, wrap)
 	if type(path) == "userdata" then
 		return path
 	end
@@ -95,9 +93,9 @@ function lib.resourceLoader.getTexture(self, path, abstraction, forceLoad)
 			working = false,
 			notLoadedYet = true,
 			
-			mipmaps = true,
-			filter = "linear",
-			wrap = "repeat",
+			mipmaps = mipmaps == nil and true or mipmaps,
+			filter = filter or "linear",
+			wrap = wrap or "repeat",
 		}
 		s = self.texturesKnown[path]
 		
@@ -184,11 +182,11 @@ function lib.loadObject(self, path, args)
 		--args
 		splitMaterials = args.splitMaterials,
 		raster = args.raster,
-		forceTextured = args.forceTextured,
 		noMesh = args.noMesh,
 		noParticleSystem = args.noParticleSystem == nil and args.noMesh or args.noParticleSystem,
-		cleanup = (args.cleanup == nil or args.cleanup),
+		noCleanup = args.noCleanup,
 		export3do = args.export3do,
+		meshType = args.meshType,
 		
 		--the object transformation
 		transform = matrix{
@@ -310,21 +308,25 @@ function lib.loadObject(self, path, args)
 	
 	--if raster is enabled, calculate their position in the grid and move it to the center. The 'position' is the ceiled integer vertex weight origin.
 	if obj.raster then
+		local rast = obj.raster == true and 1 or obj.raster
 		for d,o in pairs(obj.objects) do
-			local x, y, z = 0, 0, 0
+			local minX, maxX, minY, maxY, minZ, maxZ
 			for i,v in ipairs(o.final) do
-				x = x + v[1]
-				y = y + v[2]
-				z = z + v[3]
+				minX = math.min(minX or v[1], v[1])
+				maxX = math.max(maxX or v[1], v[1])
+				minY = math.min(minY or v[2], v[2])
+				maxY = math.max(maxY or v[2], v[2])
+				minZ = math.min(minZ or v[3], v[3])
+				maxZ = math.max(maxZ or v[3], v[3])
 			end
-			o.x = math.ceil(x / #o.final)
-			o.y = math.ceil(y / #o.final)
-			o.z = math.ceil(z / #o.final)
+			o.x = math.floor((((maxX or 0) + (minX or 0)) / 2 + rast/2) / rast)
+			o.y = math.floor((((maxY or 0) + (minY or 0)) / 2 + rast/2) / rast)
+			o.z = math.floor((((maxZ or 0) + (minZ or 0)) / 2 + rast/2) / rast)
 			
 			for i,v in ipairs(o.final) do
-				v[1] = v[1] - o.x
-				v[2] = v[2] - o.y
-				v[3] = v[3] - o.z
+				v[1] = v[1] - o.x * rast
+				v[2] = v[2] - o.y * rast
+				v[3] = v[3] - o.z * rast
 			end
 		end
 	end
@@ -353,7 +355,7 @@ function lib.loadObject(self, path, args)
 	
 	
 	--cleaning up
-	if obj.cleanup then
+	if not obj.noCleanup then
 		for d,s in pairs(obj.objects) do
 			s.faces = nil
 			s.final = nil
@@ -468,27 +470,43 @@ end
 --takes an final and face table (inside .obj) and generates the mesh and vertexMap
 --note that .3do files has it's own mesh loader
 function lib.createMesh(self, obj, o)
-	--backup material
+	--fallback material
 	if not o.material then
 		o.material = {color = {1.0, 1.0, 1.0, 1.0}, specular = 0.5, name = "None"}
 	end
 	
+	--the type of the mesh determines the data the mesh contains, if not set automatically it will choose it based on textures
+	o.meshType = o.meshType or obj.meshType --meshType globally set as an arg
+	if not o.meshType then
+		if o.material.tex_normal then
+			o.meshType = "textured_normal"
+		elseif o.material.tex_diffuse then
+			o.meshType = "textured"
+		else
+			o.meshType = "flat"
+		end
+	end
+	
 	--mesh structure
 	local atypes
-	if o.material.tex_diffuse or obj.forceTextured then
-		o.material.textureMode = true
+	if o.meshType == "textured_normal" or o.meshType == "textured_array_normal" then
 		atypes = {
 		  {"VertexPosition", "float", 4},    -- x, y, z, extra
-		  {"VertexTexCoord", "float", 2},    -- UV
+		  {"VertexTexCoord", "float", o.meshType == "textured_array_normal" and 3 or 2},    -- UV
 		  {"VertexNormal", "byte", 4},       -- normal
 		  {"VertexTangent", "byte", 4},      -- normal tangent
 		  {"VertexBitangent", "byte", 4},    -- normal bitangent
 		}
+	elseif o.meshType == "textured" or o.meshType == "textured_array" then
+		atypes = {
+		  {"VertexPosition", "float", 4},    -- x, y, z, extra
+		  {"VertexTexCoord", "float", o.meshType == "textured_array" and 3 or 2},    -- UV
+		  {"VertexNormal", "byte", 4},       -- normal
+		}
 	else
-		o.material.textureMode = false
 		atypes = {
 		  {"VertexPosition", "float", 4},    -- x, y, z
-		  {"VertexTexCoord", "float", 4},    -- normal, specular
+		  {"VertexTexCoord", "byte", 4},     -- normal, specular
 		  {"VertexColor", "byte", 4},        -- color
 		}
 	end
@@ -508,80 +526,7 @@ function lib.createMesh(self, obj, o)
 	end
 	
 	--calculate vertex normals and uv normals
-	if o.material.textureMode then
-		--expand uv if missing
-		for d,f in ipairs(finals) do
-			f[9] = f[9] or 0
-			f[10] = f[10] or 0
-		end
-		
-		for f = 1, #vertexMap, 3 do
-			local P1 = finals[vertexMap[f+0]]
-			local P2 = finals[vertexMap[f+1]]
-			local P3 = finals[vertexMap[f+2]]
-			local N1 = finals[vertexMap[f+0]]
-			local N2 = finals[vertexMap[f+1]]
-			local N3 = finals[vertexMap[f+2]]
-			
-			local tangent = { }
-			local bitangent = { }
-			
-			local edge1 = {P2[1] - P1[1], P2[2] - P1[2], P2[3] - P1[3]}
-			local edge2 = {P3[1] - P1[1], P3[2] - P1[2], P3[3] - P1[3]}
-			local edge1uv = {N2[9] - N1[9], N2[10] - N1[10]}
-			local edge2uv = {N3[9] - N1[9], N3[10] - N1[10]}
-			
-			local cp = edge1uv[2] * edge2uv[1] - edge1uv[1] * edge2uv[2]
-			
-			if cp ~= 0.0 then
-				for i = 1, 3 do
-					tangent[i] = (edge1[i] * edge2uv[2] - edge2[i] * edge1uv[2]) / cp
-					bitangent[i] = (edge2[i] * edge1uv[1] - edge1[i] * edge2uv[1]) / cp
-				end
-				
-				local l = math.sqrt(tangent[1]^2+tangent[2]^2+tangent[3]^2)
-				tangent[1] = tangent[1] / l
-				tangent[2] = tangent[2] / l
-				tangent[3] = tangent[3] / l
-				
-				local l = math.sqrt(bitangent[1]^2+bitangent[2]^2+bitangent[3]^2)
-				bitangent[1] = bitangent[1] / l
-				bitangent[2] = bitangent[2] / l
-				bitangent[3] = bitangent[3] / l
-				
-				for i = 1, 3 do
-					finals[vertexMap[f+i-1]][11] = (finals[vertexMap[f+i-1]][11] or 0) + tangent[1]
-					finals[vertexMap[f+i-1]][12] = (finals[vertexMap[f+i-1]][12] or 0) + tangent[2]
-					finals[vertexMap[f+i-1]][13] = (finals[vertexMap[f+i-1]][13] or 0) + tangent[3]
-					
-					finals[vertexMap[f+i-1]][14] = (finals[vertexMap[f+i-1]][14] or 0) + bitangent[1]
-					finals[vertexMap[f+i-1]][15] = (finals[vertexMap[f+i-1]][15] or 0) + bitangent[2]
-					finals[vertexMap[f+i-1]][16] = (finals[vertexMap[f+i-1]][16] or 0) + bitangent[3]
-				end
-			end
-		end
-		
-		--complete smoothing step
-		for d,f in ipairs(finals) do
-			if f[11] then
-				--Gram-Schmidt orthogonalization
-				local dot = (f[11] * f[5] + f[12] * f[6] + f[13] * f[7])
-				f[11] = f[11] - f[5] * dot
-				f[12] = f[12] - f[6] * dot
-				f[13] = f[13] - f[7] * dot
-				
-				local l = math.sqrt(f[11]^2+f[12]^2+f[13]^2)
-				f[11] = -f[11] / l
-				f[12] = -f[12] / l
-				f[13] = -f[13] / l
-				
-				l = math.sqrt(f[14]^2+f[15]^2+f[16]^2)
-				f[14] = f[14] / l
-				f[15] = f[15] / l
-				f[16] = f[16] / l
-			end
-		end
-	end
+	self:calcTangents(finals, vertexMap)
 	
 	--create mesh
 	o.mesh = love.graphics.newMesh(atypes, #finals, "triangles", "static")
@@ -591,7 +536,7 @@ function lib.createMesh(self, obj, o)
 	
 	--set vertices
 	for d,s in ipairs(finals) do
-		if o.material.textureMode then
+		if o.meshType == "textured_normal" then
 			o.mesh:setVertex(d,
 				s[1], s[2], s[3], s[4],
 				s[9], s[10],
@@ -599,15 +544,39 @@ function lib.createMesh(self, obj, o)
 				s[11]*0.5+0.5, s[12]*0.5+0.5, s[13]*0.5+0.5, 0.0,
 				s[14]*0.5+0.5, s[15]*0.5+0.5, s[16]*0.5+0.5, 0.0
 			)
-		else
+		elseif o.meshType == "textured" then
+			o.mesh:setVertex(d,
+				s[1], s[2], s[3], s[4],
+				s[9], s[10],
+				s[5]*0.5+0.5, s[6]*0.5+0.5, s[7]*0.5+0.5, 0.0
+			)
+		elseif o.meshType == "textured_array_normal" then
+			--uses the material ID for image array index
+			o.mesh:setVertex(d,
+				s[1], s[2], s[3], s[4],
+				s[8], s[9], s[10],
+				s[5]*0.5+0.5, s[6]*0.5+0.5, s[7]*0.5+0.5, 0.0,
+				s[11]*0.5+0.5, s[12]*0.5+0.5, s[13]*0.5+0.5, 0.0,
+				s[14]*0.5+0.5, s[15]*0.5+0.5, s[16]*0.5+0.5, 0.0
+			)
+		elseif o.meshType == "textured_array" then
+			--uses the material ID for image array index
+			o.mesh:setVertex(d,
+				s[1], s[2], s[3], s[4],
+				s[8], s[9], s[10],
+				s[5]*0.5+0.5, s[6]*0.5+0.5, s[7]*0.5+0.5, 0.0
+			)
+		elseif o.meshType == "flat" then
 			local m = o.materialsID and o.materialsID[s[8]] or obj.materialsID[s[8]]
 			local c = m.color or {1.0, 1.0, 1.0}
 			o.mesh:setVertex(d,
 				s[1], s[2], s[3], s[4],
-				s[5], s[6], s[7],
+				s[5]*0.5+0.5, s[6]*0.5+0.5, s[7]*0.5+0.5,
 				m.specular,
 				c[1], c[2], c[3], c[4]
 			)
+		else
+			error("unknown mesh type " .. o.meshType .. ", manual mesh creating required!")
 		end
 	end
 	

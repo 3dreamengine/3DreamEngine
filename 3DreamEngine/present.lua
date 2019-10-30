@@ -189,18 +189,20 @@ function lib.present(self, noDepth, noSky)
 							end	
 							
 							--set textures
-							if shader.textureMode then
-								v[2].mesh:setTexture(self.resourceLoader:getTexture(material.tex_diffuse, material.levelOfAbstraction) or self.texture_missing)
+							if not shader.flat then
+								if material.tex_diffuse then
+									v[2].mesh:setTexture(self.resourceLoader:getTexture(material.tex_diffuse, material.levelOfAbstraction, false, material.tex_filter, material.tex_mipmaps, material.tex_mipmaps) or self.texture_missing)
+								end
 								if shader.specular and count > 0 then
-									shader.shader:send("tex_specular", self.resourceLoader:getTexture(material.tex_specular, material.levelOfAbstraction) or self.texture_missing)
+									shader.shader:send("tex_specular", self.resourceLoader:getTexture(material.tex_specular, material.levelOfAbstraction, false, material.tex_filter, material.tex_mipmaps, material.tex_mipmaps) or self.texture_missing)
 								else
 									shader.shader:send("specular", material.specular or 0.5)
 								end
 								if shader.normal and count > 0 then
-									shader.shader:send("tex_normal", self.resourceLoader:getTexture(material.tex_normal, material.levelOfAbstraction) or self.texture_missing)
+									shader.shader:send("tex_normal", self.resourceLoader:getTexture(material.tex_normal, material.levelOfAbstraction, false, material.tex_filter, material.tex_mipmaps, material.tex_mipmaps) or self.texture_missing)
 								end
 								if shader.emission then
-									shader.shader:send("tex_emission", self.resourceLoader:getTexture(material.tex_emission, material.levelOfAbstraction, true) or self.texture_missing)
+									shader.shader:send("tex_emission", self.resourceLoader:getTexture(material.tex_emission, material.levelOfAbstraction, true, material.tex_filter, material.tex_mipmaps, material.tex_mipmaps) or self.texture_missing)
 								end
 							end
 							

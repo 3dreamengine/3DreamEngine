@@ -13,7 +13,6 @@ _3DreamEngine.loader["obj"] = function(self, obj, path, simple)
 	local blocked = false
 	local o = obj.objects.default
 	
-	local t = love.timer.getTime()
 	for l in love.filesystem.lines(path) do
 		local v = self:split(l, " ")
 		

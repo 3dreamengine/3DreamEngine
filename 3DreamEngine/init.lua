@@ -18,6 +18,7 @@ require((...) .. "/collision")
 require((...) .. "/particlesystem")
 require((...) .. "/boneManager")
 require((...) .. "/saveTable")
+require((...) .. "/bones")
 
 lib.ffi = require("ffi")
 
@@ -84,10 +85,12 @@ lib.abstractionDistance = 30
 lib.nameDecoder = "blender"
 lib.startWithMissing = false
 
-lib.object_light = lib:loadObject(lib.root .. "/objects/light")
-lib.object_clouds = lib:loadObject(lib.root .. "/objects/clouds_high", {forceTextured = true})
-lib.object_sky = lib:loadObject(lib.root .. "/objects/sky", {forceTextured = true})
-lib.texture_missing = love.graphics.newImage(lib.root .. "/missing.png")
+if love.graphics then
+	lib.object_light = lib:loadObject(lib.root .. "/objects/light")
+	lib.object_clouds = lib:loadObject(lib.root .. "/objects/clouds_high", {meshType = "textured"})
+	lib.object_sky = lib:loadObject(lib.root .. "/objects/sky", {meshType = "textured"})
+	lib.texture_missing = love.graphics.newImage(lib.root .. "/missing.png")
+end
 
 --set lib clouds to an cloud texture (noise, tilable) to enable clouds
 lib.clouds = false
@@ -177,7 +180,7 @@ function lib.prepare(self, c, noDepth)
 	
 	--camera normal
 	local normal = self.currentCam.transform^"T" * (matrix{{0, 0, 1, 0}}^"T")
-	cam.normal = {normal[1][1], normal[2][1], normal[3][1]}
+	cam.normal = {-normal[1][1], -normal[2][1], -normal[3][1]}
 	
 	--clear draw table
 	self.drawTable = { }
@@ -298,127 +301,7 @@ function lib.draw(self, obj, x, y, z, sx, sy, sz)
 	
 	local bones
 	if obj.bones then
-		bones = { }
-		for d,s in pairs(obj.bones) do
-			bones[d] = {
-				x = 0,
-				y = 0,
-				z = 0,
-				rotation = matrix{
-					{1, 0, 0},
-					{0, 1, 0},
-					{0, 0, 1},
-				}
-			}
-		end
-		
-		--move
-		local todo = {obj.bones.root.mountedBy}
-		while #todo > 0 do
-			local old = todo
-			todo = { }
-			for _,sp in ipairs(old) do
-				for _,d in ipairs(sp) do
-					local s = obj.bones[d]
-					local ms = obj.bones[s.mount]
-					todo[#todo+1] = s.mountedBy
-					if s.mount ~= "root" then
-						--move
-						local ox, oy, oz = unpack(bones[s.mount].rotation * (matrix{{s.x - ms.x, s.y - ms.y, s.z - ms.z}}^"T"))
-						bones[d].x = bones[s.mount].x + ox[1]
-						bones[d].y = bones[s.mount].y + oy[1]
-						bones[d].z = bones[s.mount].z + oz[1]
-						
-						local rx, ry, rz = s.rotationX, s.rotationY, s.rotationZ
-						
-						--local space
-						local cc = math.cos(s.initRotationX)
-						local ss = math.sin(s.initRotationX)
-						local rotX = matrix{
-							{1, 0, 0},
-							{0, cc, -ss},
-							{0, ss, cc},
-						}
-						
-						local cc = math.cos(s.initRotationY)
-						local ss = math.sin(s.initRotationY)
-						local rotY = matrix{
-							{cc, 0, -ss},
-							{0, 1, 0},
-							{ss, 0, cc},
-						}
-						
-						local localSpace = rotY * rotX
-						
-						--to local space
-						bones[d].rotation = localSpace * bones[d].rotation
-						
-						
-						--rotate
-						local cc = math.cos(rx or 0)
-						local ss = math.sin(rx or 0)
-						local rotX = matrix{
-							{1, 0, 0},
-							{0, cc, -ss},
-							{0, ss, cc},
-						}
-						
-						local cc = math.cos(ry or 0)
-						local ss = math.sin(ry or 0)
-						local rotY = matrix{
-							{cc, 0, -ss},
-							{0, 1, 0},
-							{ss, 0, cc},
-						}
-						
-						local cc = math.cos(rz or 0)
-						local ss = math.sin(rz or 0)
-						local rotZ = matrix{
-							{cc, ss, 0},
-							{-ss, cc, 0},
-							{0, 0, 1},
-						}
-						
-						bones[d].rotation = rotX * rotY * rotZ * bones[d].rotation
-						
-						--back to global space
-						bones[d].rotation = localSpace:transpose() * bones[d].rotation
-						
-						
-						--add mount bone rotation
-						bones[d].rotation = bones[s.mount].rotation * bones[d].rotation
-					end
-				end
-			end
-		end
-		
-		for d,s in pairs(obj.bones) do
-			local b = bones[d]
-			local r = b.rotation
-			
-			local rotate = matrix{
-				{r[1][1], r[1][2], r[1][3], 0},
-				{r[2][1], r[2][2], r[2][3], 0},
-				{r[3][1], r[3][2], r[3][3], 0},
-				{0, 0, 0, 1},
-			}
-			
-			local center = matrix{
-				{1, 0, 0, -s.x},
-				{0, 1, 0, -s.y},
-				{0, 0, 1, -s.z},
-				{0, 0, 0, 1},
-			}
-			
-			local translate = matrix{
-				{1, 0, 0, b.x},
-				{0, 1, 0, b.y},
-				{0, 0, 1, b.z},
-				{0, 0, 0, 1},
-			}
-			
-			bones[d] = translate * rotate * center
-		end
+		bones = self:getBoneTransformations(obj)
 	end
 	
 	local levelOfAbstraction = math.floor(math.sqrt((self.currentCam.x-x)^2 + (self.currentCam.y-y)^2 + (self.currentCam.z-z)^2) / self.abstractionDistance) - 1
@@ -439,11 +322,7 @@ function lib.draw(self, obj, x, y, z, sx, sy, sz)
 			
 			--insert intro draw todo list
 			if s.mesh then
-				--outdated - only used in firstpersongame demo scene and I don't want to update
-				s.material.textureMode = s.material.textureMode or s.textureMode
-				s.material.shader = s.material.shader or s.shader
-				
-				local shaderInfo = self:getShaderInfo(s.material, obj)
+				local shaderInfo = self:getShaderInfo(s.material, s.meshType, obj)
 				if not lib.drawTable[shaderInfo] then
 					lib.drawTable[shaderInfo] = { }
 				end
@@ -476,7 +355,7 @@ function lib.drawParticle(self, tex, quad, x, y, z, size, rot, emission, emissio
 	local transformProj = self.shaderVars_transformProj
 	
 	local pz = transformProj[3][1] * x + transformProj[3][2] * y + transformProj[3][3] * z + transformProj[3][4]
-	if pz > 0 then
+	if pz > 0.075 then
 		local pw = transformProj[4][1] * x + transformProj[4][2] * y + transformProj[4][3] * z + transformProj[4][4]
 		local px = (transformProj[1][1] * x + transformProj[1][2] * y + transformProj[1][3] * z + transformProj[1][4]) / pw
 		local py = (transformProj[2][1] * x + transformProj[2][2] * y + transformProj[2][3] * z + transformProj[2][4]) / pw
