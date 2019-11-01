@@ -77,6 +77,7 @@ lib.bloom_quality = 4
 lib.bloom_resolution = 0.5
 lib.bloom_strength = 4.0
 
+lib.shadow_enabled = false --needs implementation
 lib.shadow_resolution = 1024*4
 lib.shadow_distance = lib.far/2
 
@@ -178,7 +179,7 @@ function lib.prepare(self, c, noDepth)
 	--shadow
 	local n = self.near
 	local f = self.far
-	local fov = 10
+	local fov = 15
 	local S = 1 / (math.tan(fov/2*math.pi/180))
 	local projection = matrix{
 		{S,	0,	0,	0},

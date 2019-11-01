@@ -306,7 +306,6 @@ varying mediump mat3 objToTangentSpace;
 #ifdef PIXEL
 
 extern Image tex_shadow;
-extern float shadowPrecision;
 
 #ifdef TEX_NORMAL
 	#ifdef ARRAY_IMAGE
@@ -462,7 +461,7 @@ void effect() {
 	//apply shadow
 	vec2 shadowUV = vPosShadow.xy / vPosShadow.z;
 	float shadowDepth = Texel(tex_shadow, shadowUV * 0.5 + 0.5).r;
-	if (shadowDepth + shadowPrecision * 2.0 / vPosShadow.z < vPosShadow.z * shadowPrecision) {
+	if (shadowDepth + 1.0 < vPosShadow.z) {
 		col *= vec4(0.25, 0.25, 0.25, 1.0);
 	}
 	
@@ -586,8 +585,6 @@ lib.shaderShadow = love.graphics.newShader([[
 	extern mediump mat4 transformProj;   //projective transformation
 	extern mediump mat4 transform;       //model transformation
 	
-	extern float shadowPrecision;
-	
 	varying float depth;
 
 	#ifdef PIXEL
@@ -606,7 +603,7 @@ lib.shaderShadow = love.graphics.newShader([[
 		//projective transform and depth extracting
 		mediump vec4 vPos = transformProj * pos;
 		
-		depth = vPos.z * shadowPrecision;
+		depth = vPos.z;
 		
 		return vPos;
 	}
