@@ -16,7 +16,6 @@ require((...) .. "/loader")
 require((...) .. "/present")
 require((...) .. "/collision")
 require((...) .. "/particlesystem")
-require((...) .. "/boneManager")
 require((...) .. "/saveTable")
 require((...) .. "/bones")
 
@@ -77,9 +76,10 @@ lib.bloom_quality = 4
 lib.bloom_resolution = 0.5
 lib.bloom_strength = 4.0
 
-lib.shadow_enabled = false --needs implementation
+--shadows not fully working yet
+lib.shadow_enabled = false
 lib.shadow_resolution = 1024*4
-lib.shadow_distance = lib.far/2
+lib.shadow_distance = lib.far/6
 
 lib.anaglyph3D = false
 lib.anaglyph3D_eyeDistance = 0.05
@@ -163,6 +163,10 @@ function lib.prepare(self, c, noDepth)
 	camRot[3][4] = 0
 	camRot[4][4] = 0
 	
+	--camera normal
+	local normal = self.currentCam.transform^"T" * (matrix{{0, 0, 1, 0}}^"T")
+	cam.normal = {-normal[1][1], -normal[2][1], -normal[3][1]}
+	
 	--camera transformation
 	if self.anaglyph3D then
 		local offsetX = self.currentCam.transform^"T" * (matrix{{self.anaglyph3D_eyeDistance/2, 0, 0, 0}}^"T")
@@ -177,27 +181,25 @@ function lib.prepare(self, c, noDepth)
 	end
 	
 	--shadow
-	local n = self.near
-	local f = self.far
-	local fov = 15
-	local S = 1 / (math.tan(fov/2*math.pi/180))
-	local projection = matrix{
-		{S,	0,	0,	0},
-		{0,	-S,	0,	0},
-		{0,	0,	-f/(f-n),	-(f*n)/(f-n)},
-		{0,	0,	-1,	0},
-	}
-	local cam = self:newCam()
-	local sun = self.sun
-	
-	cam:translate(-self.shaderVars_viewPos[1] - sun[1]*self.shadow_distance, -self.shaderVars_viewPos[2] - sun[2]*self.shadow_distance, -self.shaderVars_viewPos[3] - sun[3]*self.shadow_distance)
-	cam:rotateY(math.atan2(sun[1], sun[3]))
-	cam:rotateX(math.atan2(sun[2], math.sqrt(sun[1]^2 + sun[3]^2)))
-	self.shaderVars_transformProjShadow = projection * cam.transform
-	
-	--camera normal
-	local normal = self.currentCam.transform^"T" * (matrix{{0, 0, 1, 0}}^"T")
-	cam.normal = {-normal[1][1], -normal[2][1], -normal[3][1]}
+	if self.shadow_enabled then
+		local n = self.near
+		local f = self.far
+		local fov = 15
+		local S = 1 / (math.tan(fov/2*math.pi/180))
+		local projection = matrix{
+			{S,	0,	0,	0},
+			{0,	-S,	0,	0},
+			{0,	0,	-f/(f-n),	-(f*n)/(f-n)},
+			{0,	0,	-1,	0},
+		}
+		local cam2 = self:newCam()
+		local sun = self.sun
+		
+		cam2:translate(-self.shaderVars_viewPos[1] - sun[1]*self.shadow_distance, -self.shaderVars_viewPos[2] - sun[2]*self.shadow_distance, -self.shaderVars_viewPos[3] - sun[3]*self.shadow_distance)
+		cam2:rotateY(math.atan2(sun[1], sun[3]))
+		cam2:rotateX(math.atan2(sun[2], math.sqrt(sun[1]^2 + sun[3]^2)))
+		self.shaderVars_transformProjShadow = projection * cam2.transform
+	end
 	
 	--clear draw table
 	self.drawTable = { }

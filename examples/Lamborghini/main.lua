@@ -15,6 +15,8 @@ dream.nameDecoder = "none"
 
 dream.startWithMissing = true
 
+dream.shadow_distance = dream.far/2
+
 dream:init()
 
 car = dream:loadObject("Lamborghini Aventador")

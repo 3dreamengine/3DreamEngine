@@ -55,7 +55,6 @@ dream.cam.ry = 0
 
 function love.draw()
 	dream.color_sun, dream.color_ambient = dream:getDayLight()
-	dream.color_ambient[4] = dream.color_ambient[4] * 2.0
 	dream.dayTime = love.timer.getTime() * 0.05
 	dream.sun = {0.3, math.cos(dream.dayTime*math.pi*2), math.sin(dream.dayTime*math.pi*2)}
 	
@@ -73,7 +72,7 @@ function love.draw()
 	
 	castle:reset()
 	dream:draw(castle)
-	dream:draw(ground)
+	dream:draw(ground, 0, -2, 0)
 
 	dream:present()
 	

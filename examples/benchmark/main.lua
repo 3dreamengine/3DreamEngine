@@ -5,37 +5,26 @@ love.window.setTitle("Benchmark")
 --settings
 dream.objectDir = "examples/benchmark"
 
-dream.AO_enabled = true      --ambient occlusion?
-dream.AO_strength = 0.75     --blend strength
-dream.AO_quality = 24        --samples per pixel (8-32 recommended)
-dream.AO_quality_smooth = 2  --smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
-dream.AO_resolution = 0.75   --resolution factor
-
-dream.near = 1.0
-dream.far = 50
+dream.AO_enabled = false
+dream.bloom_enabled = false
 dream.nameDecoder = "none"
 
 dream:init()
 
-dream.showLightSources = false
-
 love.graphics.setBackgroundColor(0.8, 0.8, 0.8)
 
 amounts = { }
-amounts[#amounts+1] = 32
-amounts[#amounts+1] = 128
-amounts[#amounts+1] = 1024
-amounts[#amounts+1] = 1024*8
+amounts[#amounts+1] = 16
+amounts[#amounts+1] = 256
+amounts[#amounts+1] = 2048
 
 benchmarks = { }
-index = 0
 for _, mode in ipairs({"flat", "texture", "specular"}) do
-	for _, mesh in ipairs({12, 48, 192, 768, 3072, 12288}) do
-		for i = 0, 3 do
+	for _, mesh in ipairs({192, 768, 3072, 12288}) do
+		for i = 0, 2 do
 			for d,s in ipairs(amounts) do
-				benchmarks[#benchmarks+1] = {mesh = mesh, amount = s, amountIndex = d, mode = mode, lights = i == 0 and 0 or 4^i, index = index}
+				benchmarks[#benchmarks+1] = {mesh = mesh, amount = s, amountIndex = d, mode = mode, lights = i == 0 and 0 or 8^i}
 			end
-			index = index + 1
 		end
 	end
 end
@@ -46,7 +35,7 @@ for d,s in ipairs(benchmarks) do
 end
 
 currBenchmark = 0
-timer = 5
+timer = 2
 
 lastTime = 0
 time = 0
@@ -101,7 +90,7 @@ end
 function love.update(dt)
 	timer = timer - dt
 	if timer < 0 and time_samples >= 10 then
-		timer = 1
+		timer = 3
 		firstIngore = 3
 		
 		local b = benchmarks[currBenchmark]
@@ -128,7 +117,7 @@ function love.update(dt)
 				love.update(dt)
 			else
 				if b.mode == "flat" then
-					mesh = dream:loadObject(b.mesh, {meshType = "^flat"})
+					mesh = dream:loadObject(b.mesh, {meshType = "flat"})
 				elseif b.mode == "texture" then
 					mesh = dream:loadObject(b.mesh, {meshType = "textured"})
 					mesh.materials.Material.tex_diffuse = love.graphics.newImage(dream.objectDir .. "/diffuse.png")

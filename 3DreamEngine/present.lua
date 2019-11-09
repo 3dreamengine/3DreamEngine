@@ -14,27 +14,29 @@ function lib.present(self, noDepth, noSky)
 	if noDepth and noSky ~= false then noSky = true end
 	
 	--render shadow
-	love.graphics.setCanvas({self.canvas_shadow, depthstencil = self.canvas_shadow_depth})
-	love.graphics.clear({0, 0, 0, 0}, {255, 255, 255, 255})
-	love.graphics.setMeshCullMode("none")
-	self.shaderShadow:send("transformProj", self.shaderVars_transformProjShadow)
-	love.graphics.setDepthMode("less", true)
-	love.graphics.setShader(self.shaderShadow)
-	for shaderInfo, s in pairs(self.drawTable) do
-		for material, tasks in pairs(s) do
-			if shaderInfo.variant ~= "wind" then
-				for i,v in pairs(tasks) do
-					
-					self.shaderShadow:send("transform", v[1])
-					
-					--final draw
-					love.graphics.draw(v[2].mesh)
+	if self.shadow_enabled then
+		love.graphics.setCanvas({self.canvas_shadow, depthstencil = self.canvas_shadow_depth})
+		love.graphics.clear({0, 0, 0, 0}, {255, 255, 255, 255})
+		love.graphics.setMeshCullMode("none")
+		self.shaderShadow:send("transformProj", self.shaderVars_transformProjShadow)
+		love.graphics.setDepthMode("less", true)
+		love.graphics.setShader(self.shaderShadow)
+		for shaderInfo, s in pairs(self.drawTable) do
+			for material, tasks in pairs(s) do
+				if shaderInfo.variant ~= "wind" then
+					for i,v in pairs(tasks) do
+						
+						self.shaderShadow:send("transform", v[1])
+						
+						--final draw
+						love.graphics.draw(v[2].mesh)
+					end
 				end
 			end
 		end
+		love.graphics.setShader()
+		love.graphics.setCanvas()
 	end
-	love.graphics.setShader()
-	love.graphics.setCanvas()
 	
 	
 	for i = 1, self.anaglyph3D and 2 or 1 do
@@ -187,8 +189,11 @@ function lib.present(self, noDepth, noSky)
 					shader.shader:send("viewPos", self.shaderVars_viewPos)
 				end
 				shader.shader:send("transformProj", transformProj)
-				shader.shader:send("transformProjShadow", self.shaderVars_transformProjShadow)
-				shader.shader:send("tex_shadow", self.canvas_shadow)
+				
+				if self.shadow_enabled then
+					shader.shader:send("transformProjShadow", self.shaderVars_transformProjShadow)
+					shader.shader:send("tex_shadow", self.canvas_shadow)
+				end
 				
 				--for each material
 				for material, tasks in pairs(s) do
@@ -369,7 +374,7 @@ function lib.present(self, noDepth, noSky)
 		end
 	end
 	
-	if love.keyboard.isDown("f8") then
+	if love.keyboard.isDown("f8") and self.shadow_enabled then
 		love.graphics.setCanvas()
 		love.graphics.setShader()
 		love.graphics.draw(self.canvas_shadow, 0, 0, 0, 256 / self.canvas_shadow_depth:getWidth())

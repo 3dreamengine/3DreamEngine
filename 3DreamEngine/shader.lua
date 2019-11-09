@@ -247,6 +247,7 @@ function lib.getShader(self, info, lightings)
 			(info.specular and "#define TEX_SPECULAR\n" or "") ..
 			(info.emission and "#define TEX_EMISSION\n" or "") ..
 			(self.AO_enabled and "#define AO_ENABLED\n" or "") ..
+			(self.shadow_enabled and "#define SHADOWS_ENABLED\n" or "") ..
 			(self.bloom_enabled and "#define BLOOM_ENABLED\n" or "") ..
 			(info.arrayImage and "#define ARRAY_IMAGE\n" or "") ..
 			(info.reflections_day and "#define REFLECTIONS_DAY\n" or "") ..
@@ -256,12 +257,12 @@ function lib.getShader(self, info, lightings)
 			[[
 
 ]] .. (self.render == "OpenGL ES" and [[
-mediump mat3 transpose_optional(mat3 inMatrix) {
+highp mat3 transpose_optional(mat3 inMatrix) {
 	vec3 i0 = inMatrix[0];
 	vec3 i1 = inMatrix[1];
 	vec3 i2 = inMatrix[2];
 	
-    mediump mat3 outMatrix = mat3(
+    highp mat3 outMatrix = mat3(
 		vec3(i0.x, i1.x, i2.x),
 		vec3(i0.y, i1.y, i2.y),
 		vec3(i0.z, i1.z, i2.z)
@@ -283,29 +284,35 @@ varying vec3 normalV;
 	const int lightCount = ]] .. lightings .. [[;
 
 	//light pos and color (r, g, b and distance meter)
-	extern mediump vec3 lightPos[lightCount];
-	extern mediump vec4 lightColor[lightCount];
+	extern highp vec3 lightPos[lightCount];
+	extern highp vec4 lightColor[lightCount];
 #endif
 
 //transformations
-extern mediump mat4 transformProjShadow; //projective transformation for shadows
-extern mediump mat4 transformProj;       //projective transformation
-extern mediump mat4 transform;           //model transformation
+#ifdef SHADOWS_ENABLED
+extern highp mat4 transformProjShadow; //projective transformation for shadows
+#endif
+extern highp mat4 transformProj;       //projective transformation
+extern highp mat4 transform;           //model transformation
 
 //ambient
 extern mediump vec3 ambient;     //ambient sun color
 
 //viewer
-extern mediump vec3 viewPos;     //position of viewer in world space
-varying mediump vec3 posV;       //vertex position for pixel shader
+extern highp vec3 viewPos;     //position of viewer in world space
+varying highp vec3 posV;       //vertex position for pixel shader
 
-varying mediump vec4 vPosShadow; //projected vertex position on shadow map
+#ifdef SHADOWS_ENABLED
+varying highp vec4 vPosShadow; //projected vertex position on shadow map
+#endif
 
-varying mediump mat3 objToTangentSpace;
+varying highp mat3 objToTangentSpace;
 
 #ifdef PIXEL
 
+#ifdef SHADOWS_ENABLED
 extern Image tex_shadow;
+#endif
 
 #ifdef TEX_NORMAL
 	#ifdef ARRAY_IMAGE
@@ -384,13 +391,13 @@ void effect() {
 	mediump vec3 lighting = ambient;
 	
 	#ifdef LIGHTING
-	mediump vec3 viewVec = normalize(viewPos - posV) * objToTangentSpace;
+	highp vec3 viewVec = normalize(viewPos - posV) * objToTangentSpace;
 	
 	//lighting
 	float NdotL;
 	float NdotH;
 	for (int i = 0; i < lightCount; i++) {
-		mediump vec3 lightVec = normalize(lightPos[i] - posV) * objToTangentSpace;
+		highp vec3 lightVec = normalize(lightPos[i] - posV) * objToTangentSpace;
 		
 		NdotL = clamp(dot(normal, lightVec), 0.0, 1.0);
 		NdotH = clamp(dot(normal, normalize(viewVec + lightVec)), 0.0, 1.0);
@@ -433,12 +440,12 @@ void effect() {
 	//reflections
 	#ifdef REFLECTIONS_DAY
 		#ifdef FLAT_SHADING
-			mediump vec3 n = normalize(normalV - normalize(posV-viewPos)).xyz;
+			highp vec3 n = normalize(normalV - normalize(posV-viewPos)).xyz;
 		#else
 			#ifdef TEX_NORMAL
-				mediump vec3 n = normalize(normalV + normal*transpose(objToTangentSpace)*0.25 - normalize(posV-viewPos)).xyz;
+				highp vec3 n = normalize(normalV + normal*transpose(objToTangentSpace)*0.25 - normalize(posV-viewPos)).xyz;
 			#else
-				mediump vec3 n = normalize(normalV - normalize(posV-viewPos)).xyz;
+				highp vec3 n = normalize(normalV - normalize(posV-viewPos)).xyz;
 			#endif
 		#endif
 		float u = atan(n.x, n.z) * 0.1591549430919 + 0.5;
@@ -459,11 +466,13 @@ void effect() {
 	}
 	
 	//apply shadow
+	#ifdef SHADOWS_ENABLED
 	vec2 shadowUV = vPosShadow.xy / vPosShadow.z;
 	float shadowDepth = Texel(tex_shadow, shadowUV * 0.5 + 0.5).r;
-	if (shadowDepth + 1.0 < vPosShadow.z) {
+	if (shadowDepth + 0.75 / 128.0 < vPosShadow.z) {
 		col *= vec4(0.25, 0.25, 0.25, 1.0);
 	}
+	#endif
 	
 	love_Canvases[0] = col;
 	
@@ -496,10 +505,10 @@ void effect() {
 
 //additional vertex attributes
 #ifndef FLAT_SHADING
-	attribute mediump vec3 VertexNormal;
+	attribute highp vec3 VertexNormal;
 	#ifdef TEX_NORMAL
-		attribute mediump vec3 VertexTangent;
-		attribute mediump vec3 VertexBitangent;
+		attribute highp vec3 VertexTangent;
+		attribute highp vec3 VertexBitangent;
 	#endif
 #endif
 
@@ -507,12 +516,12 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	//calculate vertex position
 	#ifdef VARIANT_WIND
 		//where vertex_position.a is used for the waving strength
-		mediump vec4 pos = (
+		highp vec4 pos = (
 				vec4(vertex_position.xyz, 1.0)
 				+ vec4((cos(vertex_position.x*0.25*shader_wind_scale + wind) + cos((vertex_position.z*4.0+vertex_position.y)*shader_wind_scale + wind*2.0)) * vertex_position.a * shader_wind_strength, 0.0, 0.0, 0.0)
 			) * transform;
 	#else
-		mediump vec4 pos = vertex_position * transform;
+		highp vec4 pos = vertex_position * transform;
 	#endif
 	
 	//transform into tangential space
@@ -545,10 +554,12 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	
 	
 	//projective transform for the shadow
+	#ifdef SHADOWS_ENABLED
 	vPosShadow = transformProjShadow * pos;
+	#endif
 	
 	//projective transform and depth extracting
-	mediump vec4 vPos = transformProj * pos;
+	highp vec4 vPos = transformProj * pos;
 	
 	#ifdef FLAT_SHADING
 		normalV = VertexTexCoord.xyz*2.0-1.0;
@@ -582,8 +593,8 @@ end
 --the shadow shader
 lib.shaderShadow = love.graphics.newShader([[
 	//transformations
-	extern mediump mat4 transformProj;   //projective transformation
-	extern mediump mat4 transform;       //model transformation
+	extern highp mat4 transformProj;   //projective transformation
+	extern highp mat4 transform;       //model transformation
 	
 	varying float depth;
 
@@ -598,10 +609,10 @@ lib.shaderShadow = love.graphics.newShader([[
 
 	vec4 position(mat4 transform_projection, vec4 vertex_position) {
 		//calculate vertex position
-		mediump vec4 pos = vec4(vertex_position.xyz, 1.0) * transform;
+		highp vec4 pos = vec4(vertex_position.xyz, 1.0) * transform;
 		
 		//projective transform and depth extracting
-		mediump vec4 vPos = transformProj * pos;
+		highp vec4 vPos = transformProj * pos;
 		
 		depth = vPos.z;
 		
