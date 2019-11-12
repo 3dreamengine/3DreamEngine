@@ -18,15 +18,15 @@ function lib.present(self, noDepth, noSky)
 		love.graphics.setCanvas({self.canvas_shadow, depthstencil = self.canvas_shadow_depth})
 		love.graphics.clear({0, 0, 0, 0}, {255, 255, 255, 255})
 		love.graphics.setMeshCullMode("none")
-		self.shaderShadow:send("transformProj", self.shaderVars_transformProjShadow)
+		self.shaders.shadow:send("transformProj", self.shaderVars_transformProjShadow)
 		love.graphics.setDepthMode("less", true)
-		love.graphics.setShader(self.shaderShadow)
+		love.graphics.setShader(self.shaders.shadow)
 		for shaderInfo, s in pairs(self.drawTable) do
 			for material, tasks in pairs(s) do
 				if shaderInfo.variant ~= "wind" then
 					for i,v in pairs(tasks) do
 						
-						self.shaderShadow:send("transform", v[1])
+						self.shaders.shadow:send("transform", v[1])
 						
 						--final draw
 						love.graphics.draw(v[2].mesh)
@@ -87,15 +87,15 @@ function lib.present(self, noDepth, noSky)
 				color[4] = 1.0
 				
 				if self.night then
-					love.graphics.setShader(self.shaderSkyNight)
-					self.shaderSkyNight:send("cam", transformProj * transform)
-					self.shaderSkyNight:send("color", color)
-					self.shaderSkyNight:send("time", timeFac)
+					love.graphics.setShader(self.shaders.skyNight)
+					self.shaders.skyNight:send("cam", transformProj * transform)
+					self.shaders.skyNight:send("color", color)
+					self.shaders.skyNight:send("time", timeFac)
 					love.graphics.draw(self.object_sky.objects.Cube.mesh)
 				else
-					love.graphics.setShader(self.shaderSky)
-					self.shaderSky:send("cam", transformProj * transform)
-					self.shaderSky:send("color", color)
+					love.graphics.setShader(self.shaders.sky)
+					self.shaders.sky:send("cam", transformProj * transform)
+					self.shaders.sky:send("color", color)
 					love.graphics.draw(self.object_sky.objects.Cube.mesh)
 				end
 			end
@@ -111,11 +111,11 @@ function lib.present(self, noDepth, noSky)
 				
 				love.graphics.setDepthMode("less", false)
 				love.graphics.setCanvas({self.canvas, depthstencil = self.canvas_depth})
-				love.graphics.setShader(self.shaderCloud)
+				love.graphics.setShader(self.shaders.cloud)
 				
-				self.shaderCloud:send("density", self.cloudDensity)
-				self.shaderCloud:send("time", love.timer.getTime() / 1000)
-				self.shaderCloud:send("cam", transformProj * transform)
+				self.shaders.cloud:send("density", self.cloudDensity)
+				self.shaders.cloud:send("time", love.timer.getTime() / 1000)
+				self.shaders.cloud:send("cam", transformProj * transform)
 				
 				love.graphics.draw(self.object_clouds.objects.Cube.mesh)
 			end
@@ -273,11 +273,11 @@ function lib.present(self, noDepth, noSky)
 		end
 		
 		table.sort(self.particles, function(a, b) return a[5] > b[5] end)
-		love.graphics.setShader(self.shaderParticle)
+		love.graphics.setShader(self.shaders.particle)
 		for d,s in ipairs(self.particles) do
-			self.shaderParticle:send("depth", s[5])
-			self.shaderParticle:send("emission", s[8])
-			self.shaderParticle:send("tex_emission", s[9] or s[1])
+			self.shaders.particle:send("depth", s[5])
+			self.shaders.particle:send("emission", s[8])
+			self.shaders.particle:send("tex_emission", s[9] or s[1])
 			
 			if s[2] then
 				local _, _, w, h = s[2]:getViewport()
@@ -297,32 +297,31 @@ function lib.present(self, noDepth, noSky)
 			love.graphics.setBlendMode("replace", "premultiplied")
 			love.graphics.setCanvas(self.canvas_blur_1)
 			love.graphics.clear()
-			love.graphics.setShader(self.AO)
+			love.graphics.setShader(self.shaders.AO)
 			love.graphics.draw(self.canvas_z, 0, 0, 0, self.AO_resolution)
-			love.graphics.setShader(self.blur)
-			self.blur:send("size", {1/self.canvas_blur_1:getWidth(), 1/self.canvas_blur_1:getHeight()})
+			love.graphics.setShader(self.shaders.blur)
+			self.shaders.blur:send("size", {1/self.canvas_blur_1:getWidth(), 1/self.canvas_blur_1:getHeight()})
 			
 			for i = 1, self.AO_quality_smooth do
-				self.blur:send("vstep", 1.0)
-				self.blur:send("hstep", 0.0)
+				self.shaders.blur:send("vstep", 1.0)
+				self.shaders.blur:send("hstep", 0.0)
 				love.graphics.setCanvas(self.canvas_blur_2)
 				love.graphics.clear()
 				love.graphics.draw(self.canvas_blur_1)
 				
-				self.blur:send("vstep", 0.0)
-				self.blur:send("hstep", 1.0)
+				self.shaders.blur:send("vstep", 0.0)
+				self.shaders.blur:send("hstep", 1.0)
 				love.graphics.setCanvas(self.canvas_blur_1)
 				love.graphics.clear()
 				love.graphics.draw(self.canvas_blur_2)
 			end
 			
 			love.graphics.setCanvas()
-			local shader = self.post
-			love.graphics.setShader(shader)
-			shader:send("AO", self.canvas_blur_1)
-			shader:send("strength", love.keyboard.isDown("f9") and 0.0 or self.AO_strength)
-			shader:send("depth", self.canvas_z)
-			shader:send("fog", self.fog)
+			love.graphics.setShader(self.shaders.post)
+			self.shaders.post:send("AO", self.canvas_blur_1)
+			self.shaders.post:send("strength", love.keyboard.isDown("f9") and 0.0 or self.AO_strength)
+			self.shaders.post:send("depth", self.canvas_z)
+			self.shaders.post:send("fog", self.fog)
 			love.graphics.setColor(clearColor)
 			love.graphics.setBlendMode(i == 2 and "add" or "alpha")
 			love.graphics.draw(self.canvas)
@@ -344,19 +343,19 @@ function lib.present(self, noDepth, noSky)
 			love.graphics.clear()
 			love.graphics.draw(self.canvas_bloom, 0, 0, 0, self.bloom_resolution)
 			
-			love.graphics.setShader(self.blur)
-			self.blur:send("size", {1/self.canvas_bloom_1:getWidth(), 1/self.canvas_bloom_1:getHeight()})
+			love.graphics.setShader(self.shaders.blur)
+			self.shaders.blur:send("size", {1/self.canvas_bloom_1:getWidth(), 1/self.canvas_bloom_1:getHeight()})
 			
 			local strength = self.bloom_size * self.bloom_resolution / math.sqrt(self.bloom_quality)
 			for i = 1, self.bloom_quality do
-				self.blur:send("vstep", strength)
-				self.blur:send("hstep", 0.0)
+				self.shaders.blur:send("vstep", strength)
+				self.shaders.blur:send("hstep", 0.0)
 				love.graphics.setCanvas(self.canvas_bloom_2)
 				love.graphics.clear()
 				love.graphics.draw(self.canvas_bloom_1)
 				
-				self.blur:send("vstep", 0.0)
-				self.blur:send("hstep", strength)
+				self.shaders.blur:send("vstep", 0.0)
+				self.shaders.blur:send("hstep", strength)
 				love.graphics.setCanvas(self.canvas_bloom_1)
 				love.graphics.clear()
 				love.graphics.draw(self.canvas_bloom_2)
@@ -365,8 +364,8 @@ function lib.present(self, noDepth, noSky)
 			love.graphics.setCanvas()
 			love.graphics.setShader(shader)
 			love.graphics.setBlendMode("add", "premultiplied")
-			love.graphics.setShader(self.bloom)
-			self.bloom:send("strength", self.bloom_strength)
+			love.graphics.setShader(self.shaders.bloom)
+			self.shaders.bloom:send("strength", self.bloom_strength)
 			love.graphics.setColor(clearColor)
 			love.graphics.draw(self.canvas_bloom_1, 0, 0, 0, 1 / self.bloom_resolution)
 			love.graphics.setShader()

@@ -26,23 +26,23 @@ return {
 		particleSystems = {
 			{
 				objects = {
-					["leave"] = 100,
+					["leave"] = 200,
 				},
 				randomSize = {0.25, 0.35},
 				randomRotation = true,
 				normal = 0.9,
 				shader = "wind",
-				shaderInfo = 0.1,
+				shaderInfo = 0.05,
 			},
 			{
 				objects = {
-					["leave"] = 100,
+					["leave"] = 200,
 				},
 				randomSize = {0.25, 0.35},
 				randomRotation = true,
 				normal = 0.9,
 				shader = "wind",
-				shaderInfo = -0.075,
+				shaderInfo = -0.03,
 			},
 		}
 	},
