@@ -247,7 +247,7 @@ void effect() {
 #ifdef SHADOWS_ENABLED
 	vec2 shadowUV = vPosShadow.xy / vPosShadow.z;
 	float shadowDepth = Texel(tex_shadow, shadowUV * 0.5 + 0.5).r;
-	if (shadowDepth + 0.75 / 128.0 < vPosShadow.z) {
+	if (shadowDepth + 0.25 < vPosShadow.z) {
 		col *= vec4(0.25, 0.25, 0.25, 1.0);
 	}
 #endif

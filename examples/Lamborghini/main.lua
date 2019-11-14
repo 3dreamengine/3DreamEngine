@@ -17,6 +17,7 @@ dream.nameDecoder = "none"
 
 dream.startWithMissing = true
 
+dream.shadow_enabled = false
 dream.shadow_distance = dream.far/2
 
 dream:init()
@@ -50,7 +51,9 @@ function love.draw()
 	car:rotateY(love.mouse.isDown(1) and (-2.25-(love.mouse.getX()/love.graphics.getWidth()-0.5)*4.0) or love.timer.getTime()*0.5)
 	dream:draw(car, 0, -10, -38)
 	
-	--dream:draw(socket, 0, -10, -38, 30)
+	if dream.shadow_enabled then
+		dream:draw(socket, 0, -10, -38, 30)
+	end
 	
 	dream:present()
 	
