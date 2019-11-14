@@ -33,7 +33,7 @@ function love.update(dt)
 	
 	if not love.keyboard.isDown("space") then
 		dream.cam:reset()
-		dream.cam:translate(math.cos(time) * 1.5, -0.5, math.sin(time) * 1.5)
+		dream.cam:translate(math.cos(time) * 2.0, -0.5, math.sin(time) * 2.0)
 		dream.cam:rotateY(-math.pi/2-time)
 	end
 end
@@ -63,4 +63,8 @@ function love.keypressed(key)
 	if key == "f11" then
 		love.window.setFullscreen(not love.window.getFullscreen())
 	end
+end
+
+function love.resize()
+	dream:init()
 end

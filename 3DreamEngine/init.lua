@@ -127,7 +127,7 @@ function lib.init(self)
 		self.object_sky.objects.Cube.mesh:setTexture(self.sky)
 		if self.night then
 			self.night:setWrap("repeat")
-			self.shaderSkyNight:send("night", self.night)
+			self.shaders.skyNight:send("night", self.night)
 		end
 	end
 	

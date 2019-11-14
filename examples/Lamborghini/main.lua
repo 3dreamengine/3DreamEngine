@@ -11,10 +11,13 @@ dream.AO_quality = 32        --samples per pixel (8-32 recommended)
 dream.AO_quality_smooth = 2  --smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
 dream.AO_resolution = 0.75   --resolution factor
 
+dream.bloom_strength = 6.0
+
 dream.nameDecoder = "none"
 
 dream.startWithMissing = true
 
+dream.shadow_enabled = false
 dream.shadow_distance = dream.far/2
 
 dream:init()
@@ -48,7 +51,9 @@ function love.draw()
 	car:rotateY(love.mouse.isDown(1) and (-2.25-(love.mouse.getX()/love.graphics.getWidth()-0.5)*4.0) or love.timer.getTime()*0.5)
 	dream:draw(car, 0, -10, -38)
 	
-	dream:draw(socket, 0, -10, -38, 30)
+	if dream.shadow_enabled then
+		dream:draw(socket, 0, -10, -38, 30)
+	end
 	
 	dream:present()
 	
@@ -58,4 +63,35 @@ function love.draw()
 		"\ndifferent shaders: " .. dream.stats.shadersInUse ..
 		"\ndifferent materials: " .. dream.stats.materialDraws ..
 		"\ndraws: " .. dream.stats.draws, 15, 500)
+end
+
+function love.keypressed(key)
+	--screenshots!
+	if key == "f2" then
+		if love.keyboard.isDown("lctrl") then
+			love.system.openURL(love.filesystem.getSaveDirectory() .. "/screenshots")
+		else
+			love.filesystem.createDirectory("screenshots")
+			if not screenShotThread then
+				screenShotThread = love.thread.newThread([[
+					require("love.image")
+					channel = love.thread.getChannel("screenshots")
+					while true do
+						local screenshot = channel:demand()
+						screenshot:encode("png", "screenshots/screen_" .. tostring(os.time()) .. ".png")
+					end
+				]]):start()
+			end
+			love.graphics.captureScreenshot(love.thread.getChannel("screenshots"))
+		end
+	end
+
+	--fullscreen
+	if key == "f11" then
+		love.window.setFullscreen(not love.window.getFullscreen())
+	end
+end
+
+function love.resize()
+	dream:init()
 end
