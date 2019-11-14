@@ -180,13 +180,7 @@ function lib.loadObject(self, path, args)
 		dir = dir, --dir containing the object
 		
 		--args
-		splitMaterials = args.splitMaterials,
-		raster = args.raster,
-		noMesh = args.noMesh,
 		noParticleSystem = args.noParticleSystem == nil and args.noMesh or args.noParticleSystem,
-		noCleanup = args.noCleanup,
-		export3do = args.export3do,
-		meshType = args.meshType,
 		
 		--the object transformation
 		transform = matrix{
@@ -206,6 +200,10 @@ function lib.loadObject(self, path, args)
 		
 		self = self,
 	}
+	
+	for d,s in pairs(args) do
+		obj[d] = obj[d] or s
+	end
 	
 	obj.loaded = true
 	
@@ -306,7 +304,7 @@ function lib.loadObject(self, path, args)
 	end
 	
 	
-	--if raster is enabled, calculate their position in the grid and move it to the center. The 'position' is the ceiled integer vertex weight origin.
+	--if raster is enabled, calculate their position in the 3D raster and move it to the center. The 'position' is the ceiled integer vertex bounding box center.
 	if obj.raster then
 		local rast = obj.raster == true and 1 or obj.raster
 		for d,o in pairs(obj.objects) do
@@ -327,6 +325,27 @@ function lib.loadObject(self, path, args)
 				v[1] = v[1] - o.x * rast
 				v[2] = v[2] - o.y * rast
 				v[3] = v[3] - o.z * rast
+			end
+		end
+	end
+	
+	--grid moves all vertices so 0, 0, 0 is the floored origin with an maximal overhang of 0.25
+	if obj.grid then
+		for d,o in pairs(obj.objects) do
+			local minX, minY, minZ
+			for i,v in ipairs(o.final) do
+				minX = math.min(minX or v[1], v[1])
+				minY = math.min(minY or v[2], v[2])
+				minZ = math.min(minZ or v[3], v[3])
+			end
+			o.x = math.floor((minX or 0) + 0.25)
+			o.y = math.floor((minY or 0) + 0.25)
+			o.z = math.floor((minZ or 0) + 0.25)
+			
+			for i,v in ipairs(o.final) do
+				v[1] = v[1] - o.x
+				v[2] = v[2] - o.y
+				v[3] = v[3] - o.z
 			end
 		end
 	end
@@ -569,6 +588,7 @@ function lib.createMesh(self, obj, o)
 		elseif o.meshType == "flat" then
 			local m = o.materialsID and o.materialsID[s[8]] or obj.materialsID[s[8]]
 			local c = m.color or {1.0, 1.0, 1.0}
+			
 			o.mesh:setVertex(d,
 				s[1], s[2], s[3], s[4],
 				s[5]*0.5+0.5, s[6]*0.5+0.5, s[7]*0.5+0.5,

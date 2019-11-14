@@ -207,7 +207,7 @@ function lib.prepare(self, c, noDepth)
 	self.particleCounter = 0
 	
 	--show light sources
-	if self.lighting_enabled and self.showLightSources then
+	if self.showLightSources then
 		for d,s in ipairs(self.lighting) do
 			love.graphics.setColor(s.r, s.g, s.b)
 			self:draw(self.object_light, s.x, s.y, s.z, 0.2, nil, nil)

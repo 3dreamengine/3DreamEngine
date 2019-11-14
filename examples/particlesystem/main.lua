@@ -11,8 +11,6 @@ dream.AO_quality = 24         --samples per pixel (8-32 recommended)
 dream.AO_quality_smooth = 2   --smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
 dream.AO_resolution = 0.5     --resolution factor
 
-dream.lighting_enabled = false
-
 dream:init()
 
 ground = dream:loadObject("ground")

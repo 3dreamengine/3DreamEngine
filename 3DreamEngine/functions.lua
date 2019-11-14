@@ -221,3 +221,59 @@ function lib.calcTangents(self, finals, vertexMap)
 		end
 	end
 end
+
+function lib.HSVtoRGB(h, s, v)
+	local i = math.floor(h * 6)
+	local f = h * 6 - i
+	local p = v * (1 - s)
+	local q = v * (1 - f * s)
+	local t = v * (1 - (1 - f) * s)
+	
+	if i % 6 == 0 then
+		return v, t, p
+	elseif i % 6 == 1 then
+		return q, v, p
+	elseif i % 6 == 2 then
+		return p, v, t
+	elseif i % 6 == 3 then
+		return p, q, v
+	elseif i % 6 == 4 then
+		return t, p, v
+	else
+		return v, p, q
+	end
+end
+
+function lib.RGBtoHSV(r, g, b)
+	local h, s, v
+	local min = math.min(r, g, b)
+	local max = math.max(r, g, b)
+
+	local v = max
+	local delta = max - min
+	if max ~= 0 then
+		s = delta / max
+	else
+		r, g, b = 0, 0, 0
+		s = 0
+		h = -1
+		return h, s, 0.0
+	end
+	
+	if r == max then
+		h = (g - b) / delta
+	elseif g == max then
+		h = 2 + (b - r) / delta
+	else
+		h = 4 + (r - g) / delta
+	end
+	
+	h = h * 60 / 360
+	if h < 0 then
+		h = h + 1
+	elseif delta == 0 then
+		h = 0
+	end
+	
+	return h, s, v
+end

@@ -19,9 +19,16 @@ _3DreamEngine.loader["mtl"] = function(self, obj, path)
 		elseif v[1] == "Ks" then
 			material.specular = tonumber(v[2])
 		elseif v[1] == "Kd" then
-			material.color[1] = tonumber(v[2])
-			material.color[2] = tonumber(v[3])
-			material.color[3] = tonumber(v[4])
+			local r, g, b = tonumber(v[2]), tonumber(v[3]), tonumber(v[4])
+			
+			if obj.desaturate then
+				local ch, cs, cb = self.RGBtoHSV(r, g, b)
+				r, g, b = self.HSVtoRGB(ch, cs * 0.85, cb^0.6)
+			end
+			
+			material.color[1] = r
+			material.color[2] = g
+			material.color[3] = b
 		elseif v[1] == "d" then
 			material.color[4] = tonumber(v[2])
 		elseif v[1] == "reflections" then
