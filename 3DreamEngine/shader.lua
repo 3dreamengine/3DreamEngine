@@ -69,8 +69,8 @@ function lib.loadShader(self)
 	for i = 1, self.AO_quality do
 		local r = i / self.AO_quality * math.pi * 2
 		local d = (0.5 + i % 4) / 4
-		local range = 16
-		f[#f+1] = {math.cos(r)*d*range / love.graphics.getWidth(), math.sin(r)*d*range / love.graphics.getHeight(), (1-d)^2}
+		local range = 24
+		f[#f+1] = {math.cos(r)*d*range / love.graphics.getWidth(), math.sin(r)*d*range / love.graphics.getHeight(), (1-d)^2 / self.AO_quality}
 	end
 	self.shaders.AO:send("samples", unpack(f))
 end

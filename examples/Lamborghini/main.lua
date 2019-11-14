@@ -9,7 +9,7 @@ dream.AO_enabled = true      --ambient occlusion?
 dream.AO_strength = 0.75     --blend strength
 dream.AO_quality = 32        --samples per pixel (8-32 recommended)
 dream.AO_quality_smooth = 2  --smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
-dream.AO_resolution = 0.75   --resolution factor
+dream.AO_resolution = 1.0    --resolution factor
 
 dream.bloom_strength = 6.0
 
@@ -38,10 +38,6 @@ function love.draw()
 	dream.color_sun = {1, 1, 1, 2.0}
 	
 	dream:resetLight()
-	if dream.lighting_enabled then
-		dream:addLight(-1, math.cos(love.timer.getTime()) + 0.5, -5, 1.0, 1.0, 1.0, 10.0)
-		dream:addLight(math.cos(love.timer.getTime())+4, -1, math.cos(love.timer.getTime())-5, 1.0, 1.0, 1.0, 10.0)
-	end
 	
 	dream:prepare()
 	
