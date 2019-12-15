@@ -66,7 +66,7 @@ function love.draw()
 	
 	--update light
 	dream:resetLight()
-	dream:addLight(player.x, player.y, player.z, 1.0, 0.75, 0.1, 1.0 + love.math.noise(love.timer.getTime()*2, 1.0)*0.5, 1.5)
+	dream:addLight(player.x, player.y, player.z, 1.0, 0.75, 0.1, 2.0 + love.math.noise(love.timer.getTime()*2, 1.0))
 	
 	dream:prepare()
 	

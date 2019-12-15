@@ -50,7 +50,7 @@ _3DreamEngine = nil
 --sun
 lib.sun = {-0.3, 0.6, 0.5}
 lib.color_ambient = {1.0, 1.0, 1.0, 0.25}
-lib.color_sun = {1.0, 1.0, 1.0, 1.5}
+lib.color_sun = {1.0, 1.0, 1.0, 1.0}
 
 --field of view
 lib.fov = 90
@@ -79,7 +79,7 @@ lib.bloom_strength = 4.0
 --shadows not fully working yet
 lib.shadow_enabled = false
 lib.shadow_resolution = 1024*4
-lib.shadow_distance = lib.far/6
+lib.shadow_distance = 30
 
 lib.anaglyph3D = false
 lib.anaglyph3D_eyeDistance = 0.05
@@ -148,6 +148,7 @@ function lib.prepare(self, c, noDepth)
 	local fov = self.fov
 	local S = 1 / (math.tan(fov/2*math.pi/180))
 	
+	--perspective
 	local projection = matrix{
 		{S,	0,	0,	0},
 		{0,	-S/love.graphics.getHeight()*love.graphics.getWidth(),	0,	0},
@@ -192,12 +193,34 @@ function lib.prepare(self, c, noDepth)
 			{0,	0,	-f/(f-n),	-(f*n)/(f-n)},
 			{0,	0,	-1,	0},
 		}
+		
+		--orthographic
+		local r = self.shadow_distance/2
+		local t = self.shadow_distance/2
+		local l = -r
+		local b = -t
+		
+		local n = 0.1
+		local f = 100
+		
+		local projection = matrix{
+			{2 / (r - l),	0,	0,	-(r + l) / (r - l)},
+			{0, -2 / (t - b), 0, -(t + b) / (t - b)},
+			{0, 0, -2 / (f - n), -(f + n) / (f - n)},
+			{0, 0, 0, 1},
+		}
+		
 		local cam2 = self:newCam()
 		local sun = self.sun
 		
-		cam2:translate(-self.shaderVars_viewPos[1] - sun[1]*self.shadow_distance, -self.shaderVars_viewPos[2] - sun[2]*self.shadow_distance, -self.shaderVars_viewPos[3] - sun[3]*self.shadow_distance)
+		cam2:translate(-self.cam.normal[1]*self.shadow_distance*0.5, -self.cam.normal[2]*self.shadow_distance*0.5, -self.cam.normal[3]*self.shadow_distance*0.5)
+		cam2:translate(-self.shaderVars_viewPos[1], -self.shaderVars_viewPos[2], -self.shaderVars_viewPos[3])
+		
 		cam2:rotateY(math.atan2(sun[1], sun[3]))
 		cam2:rotateX(math.atan2(sun[2], math.sqrt(sun[1]^2 + sun[3]^2)))
+		
+		cam2:translate(0, 0, -self.shadow_distance/2)
+		
 		self.shaderVars_transformProjShadow = projection * cam2.transform
 	end
 	
@@ -393,17 +416,17 @@ function lib.resetLight(self, noDayLight)
 				x = self.sun[1] * 1000,
 				y = self.sun[2] * 1000,
 				z = self.sun[3] * 1000,
-				r = self.color_sun[1] / math.sqrt(self.color_sun[1]^2 + self.color_sun[2]^2 + self.color_sun[3]^2) * self.color_sun[4] * 0.02,
-				g = self.color_sun[2] / math.sqrt(self.color_sun[1]^2 + self.color_sun[2]^2 + self.color_sun[3]^2) * self.color_sun[4] * 0.02,
-				b = self.color_sun[3] / math.sqrt(self.color_sun[1]^2 + self.color_sun[2]^2 + self.color_sun[3]^2) * self.color_sun[4] * 0.02,
-				meter = 1/100000,
+				r = self.color_sun[1] / math.sqrt(self.color_sun[1]^2 + self.color_sun[2]^2 + self.color_sun[3]^2) * self.color_sun[4],
+				g = self.color_sun[2] / math.sqrt(self.color_sun[1]^2 + self.color_sun[2]^2 + self.color_sun[3]^2) * self.color_sun[4],
+				b = self.color_sun[3] / math.sqrt(self.color_sun[1]^2 + self.color_sun[2]^2 + self.color_sun[3]^2) * self.color_sun[4],
+				sun = 1.0,
 				importance = math.huge,
 			},
 		}
 	end
 end
 
-function lib.addLight(self, posX, posY, posZ, red, green, blue, brightness, meter, importance)
+function lib.addLight(self, posX, posY, posZ, red, green, blue, brightness, sun, importance)
 	self.lighting[#self.lighting+1] = {
 		x = posX,
 		y = posY,
@@ -411,7 +434,7 @@ function lib.addLight(self, posX, posY, posZ, red, green, blue, brightness, mete
 		r = red / math.sqrt(red^2+green^2+blue^2) * (brightness or 10.0),
 		g = green / math.sqrt(red^2+green^2+blue^2) * (brightness or 10.0),
 		b = blue / math.sqrt(red^2+green^2+blue^2) * (brightness or 10.0),
-		meter = 1.0 / (meter or 1.0),
+		sun = sun and 1.0 or 0.0,
 		importance = importance or 1.0,
 	}
 end

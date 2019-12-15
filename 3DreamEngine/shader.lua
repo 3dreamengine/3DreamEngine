@@ -125,7 +125,7 @@ _RENDERER = love.graphics.getRendererInfo()
 function lib.getShader(self, info, lightings)
 	if not info.shaders[lightings] then
 		--construct shader
-		local code = 
+		local code = "#pragma language glsl3\n" ..
 			(self.render == "OpenGL ES" and "#define OPENGL_ES\n" or "") ..
 			(info.flat and "#define FLAT_SHADING\n" or "") ..
 			(info.normal and "#define TEX_NORMAL\n" or "") ..
@@ -143,7 +143,13 @@ function lib.getShader(self, info, lightings)
 			"\n" .. 
 			love.filesystem.read(self.root .. "/shaders/shader.glsl")
 		
-		info.shaders[lightings] = love.graphics.newShader(code)
+		local ok, shader = pcall(love.graphics.newShader, code)
+		if ok then
+			info.shaders[lightings] = shader
+		else
+			love.filesystem.write("shader.glsl", code)
+			error(shader)
+		end
 	end
 	
 	info.shader = info.shaders[lightings]

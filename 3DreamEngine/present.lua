@@ -16,7 +16,7 @@ function lib.present(self, noDepth, noSky)
 	--render shadow
 	if self.shadow_enabled then
 		love.graphics.setCanvas({self.canvas_shadow, depthstencil = self.canvas_shadow_depth})
-		love.graphics.clear({0, 0, 0, 0}, {255, 255, 255, 255})
+		love.graphics.clear({255, 0, 0, 0}, {255, 255, 255, 255})
 		love.graphics.setMeshCullMode("none")
 		self.shaders.shadow:send("transformProj", self.shaderVars_transformProjShadow)
 		love.graphics.setDepthMode("less", true)
@@ -165,7 +165,7 @@ function lib.present(self, noDepth, noSky)
 					end
 					if best then
 						best.used = true
-						light[#light+1] = {best.r, best.g, best.b, best.meter}
+						light[#light+1] = {best.r, best.g, best.b, best.sun}
 						pos[#pos+1] = {best.x, best.y, best.z}
 						count = count + 1
 					else
@@ -192,7 +192,7 @@ function lib.present(self, noDepth, noSky)
 				
 				if self.shadow_enabled then
 					shader.shader:send("transformProjShadow", self.shaderVars_transformProjShadow)
-					shader.shader:send("tex_shadow", self.canvas_shadow)
+					shader.shader:send("tex_shadow", self.canvas_shadow_depth)
 				end
 				
 				--for each material

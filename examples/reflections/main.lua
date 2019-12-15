@@ -59,6 +59,8 @@ function love.draw()
 	dream.cam:rotateY(dream.cam.ry)
 	dream.cam:rotateX(dream.cam.rx)
 	
+	dream.color_ambient[4] = 0
+	
 	--update lights
 	dream:resetLight(true) --true disables the sun
 	for d,s in ipairs(scene.lights) do
@@ -73,7 +75,7 @@ function love.draw()
 		{1.25, 0.25, -1.85},
 		{-1.25, 0.25, -1.85},
 	}) do
-		dream:addLight(s[1], s[2], s[3], 1.0, 0.75, 0.1, 1.0 + 0.5 * love.math.noise(love.timer.getTime()*2, d))
+		dream:addLight(s[1], s[2], s[3], 1.0, 0.75, 0.1, 2.0 + 1.0 * love.math.noise(love.timer.getTime()*2, d))
 		
 		if math.random() < love.timer.getDelta()*8.0 then
 			particles[lastParticleID] = {s[1] + (math.random()-0.5)*0.1, s[2] + (math.random()-0.5)*0.1, s[3] + (math.random()-0.5)*0.1, math.random()+1.0}

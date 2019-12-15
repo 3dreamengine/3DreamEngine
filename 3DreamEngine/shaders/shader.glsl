@@ -28,6 +28,7 @@ varying vec3 normalV;
 #ifdef LIGHTING
 	//light pos and color (r, g, b and distance meter)
 	extern highp vec3 lightPos[lightCount];
+	varying highp vec3 lightPosT[lightCount];
 	extern highp vec4 lightColor[lightCount];
 #endif
 
@@ -44,6 +45,7 @@ extern mediump vec3 ambient;            //ambient sun color
 
 //viewer
 extern highp vec3 viewPos;              //position of viewer in world space
+varying highp vec3 viewPosT;            //position of viewer in world space
 varying highp vec3 posV;                //vertex position for pixel shader
 
 //shadows
@@ -51,7 +53,7 @@ varying highp vec3 posV;                //vertex position for pixel shader
 	varying highp vec4 vPosShadow;      //projected vertex position on shadow map
 #endif
 
-varying highp mat3 objToTangentSpace;
+highp mat3 objToTangentSpace;
 
 
 
@@ -59,7 +61,7 @@ varying highp mat3 objToTangentSpace;
 
 //shadows
 #ifdef SHADOWS_ENABLED
-	extern Image tex_shadow;
+	extern sampler2DShadow tex_shadow;
 #endif
 
 //normal texture
@@ -143,12 +145,30 @@ void effect() {
 //get the normal vector, either from the texture or the varying vector from the fragment shader
 #ifdef TEX_NORMAL
 #ifdef ARRAY_IMAGE
-	vec3 normal = (Texel(tex_normal, VaryingTexCoord.xyz).rgb * 2.0 - 1.0);
+	vec3 normal = normalize(Texel(tex_normal, VaryingTexCoord.xyz).rgb * 2.0 - 1.0);
 #else
-	vec3 normal = (Texel(tex_normal, VaryingTexCoord.xy).rgb * 2.0 - 1.0);
+	vec3 normal = normalize(Texel(tex_normal, VaryingTexCoord.xy).rgb * 2.0 - 1.0);
 #endif
 #else
 	vec3 normal = normalV;
+#endif
+
+	//apply shadow
+#ifdef SHADOWS_ENABLED
+	float bias = 0.0005;
+	vec3 shadowUV = vPosShadow.xyz * 0.5 + 0.5 - vec3(0.0, 0.0, bias);
+	
+	float ox = float(fract(love_PixelCoord.x * 0.5) > 0.25);
+	float oy = float(fract(love_PixelCoord.y * 0.5) > 0.25) + ox;
+	if (oy > 1.1) oy = 0;
+
+	float texelSize = 1.0 / 4096.0;
+	float shadow = (
+		texture(tex_shadow, shadowUV + vec3(-1.5 + ox, 0.5 + oy, 0.0) * texelSize) +
+		texture(tex_shadow, shadowUV + vec3(0.5 + ox, 0.5 + oy, 0.0) * texelSize) +
+		texture(tex_shadow, shadowUV + vec3(-1.5 + ox, -1.5 + oy, 0.0) * texelSize) +
+		texture(tex_shadow, shadowUV + vec3(0.5 + ox, -1.5 + oy, 0.0) * texelSize)
+	) * 0.25;
 #endif
 	
 	//base light
@@ -156,19 +176,28 @@ void effect() {
 
 	//point source lightings
 #ifdef LIGHTING
-	highp vec3 viewVec = normalize(viewPos - posV) * objToTangentSpace;
+	highp vec3 viewVec = normalize(viewPosT - posV);
 	
 	//lighting
 	float NdotL;
 	float NdotH;
 	for (int i = 0; i < lightCount; i++) {
-		highp vec3 lightVec = normalize(lightPos[i] - posV) * objToTangentSpace;
+		vec3 lightVec = normalize(lightPosT[i] - posV);
+		float diff = max(dot(lightVec, normal), 0.0);
 		
-		NdotL = clamp(dot(normal, lightVec), 0.0, 1.0);
-		NdotH = clamp(dot(normal, normalize(viewVec + lightVec)), 0.0, 1.0);
+		// specular
+		float specular = pow(max(dot(viewVec, reflect(-lightVec, normal)), 0.0), spec * 128.0) * spec * 8.0;
 		
-		NdotH = pow(max(0.0, (NdotH - spec) / (1.0 - spec)), 2.0) * spec * 2.0;
-		lighting += (NdotH + NdotL) * lightColor[i].rgb / (0.01 + lightColor[i].a * length(lightPos[i] - posV));
+#ifdef SHADOWS_ENABLED
+		float power = (i == 0 ? shadow : 1.0);
+#else
+		float power = 1.0;
+#endif
+		if (lightColor[i].a < 0.5) {
+			power /= pow(0.1 + length(lightPosT[i] - posV), 2.0);
+		}
+		
+		lighting += (diff + specular) * lightColor[i].rgb * power;
 	}
 #endif
 	
@@ -214,11 +243,11 @@ void effect() {
 #ifdef REFLECTIONS_DAY
 	//get reflected normal
 #ifdef FLAT_SHADING
-	highp vec3 n = normalize(normalV - normalize(posV-viewPos)).xyz;
+	highp vec3 n = normalize(normalV - normalize(posV-viewPosT)).xyz;
 #elif defined TEX_NORMAL
-	highp vec3 n = normalize(normalV + normal*transpose(objToTangentSpace)*0.25 - normalize(posV-viewPos)).xyz;
+	highp vec3 n = normalize(normalV + normal - normalize(posV-viewPosT)).xyz;
 #else
-	highp vec3 n = normalize(normalV - normalize(posV-viewPos)).xyz;
+	highp vec3 n = normalize(normalV - normalize(posV-viewPosT)).xyz;
 #endif
 
 	//get UV coord
@@ -242,15 +271,6 @@ void effect() {
 	if (col.a < alphaThreshold) {
 		discard;
 	}
-	
-	//apply shadow
-#ifdef SHADOWS_ENABLED
-	vec2 shadowUV = vPosShadow.xy / vPosShadow.z;
-	float shadowDepth = Texel(tex_shadow, shadowUV * 0.5 + 0.5).r;
-	if (shadowDepth + 0.25 < vPosShadow.z) {
-		col *= vec4(0.25, 0.25, 0.25, 1.0);
-	}
-#endif
 	
 	//pass color to canvas
 	love_Canvases[0] = col;
@@ -305,6 +325,7 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	) * transform;
 #else
 	highp vec4 pos = vertex_position * transform;
+	//todo: wrong, inverse matrix mul
 #endif
 	
 	//transform into tangential space
@@ -318,29 +339,48 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 #elif defined TEX_NORMAL
 	objToTangentSpace = transpose_optional(mat3(transform)) * mat3(VertexTangent*2.0-1.0, VertexBitangent*2.0-1.0, VertexNormal*2.0-1.0);
 #else
-	objToTangentSpace = transpose(mat3(transform));
+	objToTangentSpace = transpose_optional(mat3(transform));
 #endif
 
 #else
 
 #ifdef FLAT_SHADING
-	objToTangentSpace = transpose(mat3(transform));
+	objToTangentSpace = mat3(transform);
 #elif defined TEX_NORMAL
-	objToTangentSpace = transpose(mat3(transform)) * mat3(VertexTangent*2.0-1.0, VertexBitangent*2.0-1.0, VertexNormal*2.0-1.0);
+	vec3 T = normalize(vec3(transform * vec4((VertexTangent*2.0-1.0), 0.0)));
+	vec3 N = normalize(vec3(transform * vec4((VertexNormal*2.0-1.0), 0.0)));
+	vec3 B = normalize(vec3(transform * vec4((VertexBitangent*2.0-1.0), 0.0)));
+	//vec3 B = cross(N, T);
+	// re-orthogonalize T with respect to N
+	T = normalize(T - dot(T, N) * N);
+	// then retrieve perpendicular vector B with the cross product of T and N
+
+	objToTangentSpace = transpose(mat3(T, B, N));
 #else
-	objToTangentSpace = transpose(mat3(transform));
+	objToTangentSpace = mat3(transform);
 #endif
 
 #endif
 
 #endif
 	
-	//pass raw vertex position to fragment shader
+#ifdef TEX_NORMAL
+	posV = objToTangentSpace * pos.xyz;
+	viewPosT = objToTangentSpace * viewPos;
+	
+	for (int i = 0; i < lightCount; i++) {
+		lightPosT[i] = objToTangentSpace * lightPos[i];
+	}
+#else
 	posV = pos.xyz;
+	viewPosT = viewPos;
+	lightPosT = lightPos;
+#endif
 	
 	//projective transform for the shadow
 #ifdef SHADOWS_ENABLED
 	vPosShadow = transformProjShadow * pos;
+	vPosShadow.xyz = vPosShadow.xyz / vPosShadow.w; //not necessary for orthographic transforms
 #endif
 	
 	//projective transform for the vertex
@@ -348,9 +388,9 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	
 	//extract normal vector used for reflections, for flat shading lighting too
 #ifdef FLAT_SHADING
-	normalV = VertexTexCoord.xyz*2.0-1.0;
+	normalV = normalize(objToTangentSpace * (VertexTexCoord.xyz*2.0-1.0));
 #else
-	normalV = VertexNormal*2.0-1.0;
+	normalV = normalize(objToTangentSpace * (VertexNormal.xyz*2.0-1.0));
 #endif
 	
 	//extract and pass depth

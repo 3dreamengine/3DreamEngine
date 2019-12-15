@@ -39,10 +39,15 @@ function lib.resize(self, w, h)
 	end
 	
 	if self.shadow_enabled then
-		self.canvas_shadow_depth = love.graphics.newCanvas(self.shadow_resolution, self.shadow_resolution, {format = self.canvasFormats["depth32f"] and "depth32f" or self.canvasFormats["depth24"] and "depth24" or "depth16", readable = false, msaa = 0})
-		self.canvas_shadow = love.graphics.newCanvas(self.shadow_resolution, self.shadow_resolution, {format = "r16f", readable = true, msaa = 0})
+		self.canvas_shadow_depth = love.graphics.newCanvas(self.shadow_resolution, self.shadow_resolution, {format = self.canvasFormats["depth32f"] and "depth32f" or self.canvasFormats["depth24"] and "depth24" or "depth16", readable = true, msaa = 0})
+		
+		self.canvas_shadow_depth:setDepthSampleMode("greater")
+		self.canvas_shadow_depth:setFilter("linear", "linear", 1)
+		
+		self.canvas_shadow = love.graphics.newCanvas(self.shadow_resolution, self.shadow_resolution, {format = "r8", readable = true, msaa = 0})
+		
+		self.canvas_shadow:setFilter("linear", "linear", 1)
 		self.canvas_shadow:setWrap("clampzero")
-		self.canvas_shadow:setFilter("linear")
 	end
 end
 

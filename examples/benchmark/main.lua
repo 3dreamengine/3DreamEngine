@@ -55,7 +55,7 @@ function love.draw()
 		dream.lighting_max = b.lights
 		dream:resetLight(true)
 		for i = 1, b.lights do
-			dream:addLight((love.math.noise(-i, love.timer.getTime()*0.1)-0.5)*25, (love.math.noise(-i-100, love.timer.getTime()*0.1)-0.5)*25, (love.math.noise(-i-200, love.timer.getTime()*0.1)-0.5)*25-30, math.random(), math.random(), math.random(), math.random()*2+1)
+			dream:addLight((love.math.noise(-i, love.timer.getTime()*0.1)-0.5)*25, (love.math.noise(-i-100, love.timer.getTime()*0.1)-0.5)*25, (love.math.noise(-i-200, love.timer.getTime()*0.1)-0.5)*25-30, math.random())
 		end
 		
 		dream:prepare()

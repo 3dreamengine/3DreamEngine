@@ -138,8 +138,9 @@ dream.color_sun, dream.color_ambient = dream:getDayLight()
 --resets light sources (if noDayLight is set to true, the sun light will not be added automatically)
 dream:resetLight(noDayLight)
 
---add light, note that in case of exceeding the max light sources it only uses the most relevant sources, based on distance and brightness
-dream:addLight(posX, posY, posZ, red, green, blue, brightness)
+--add light, note that in case of exceeding the max light sources it only uses the most relevant sources, based on distance and brightness multiplied by factor importance
+--sun disables distance attenuation
+dream:addLight(posX, posY, posZ, red, green, blue, brightness, sun, importance)
 
 --prepare for rendering
 --if cam is nil, it uses the default cam (dream.cam)

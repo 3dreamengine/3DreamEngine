@@ -10,7 +10,7 @@ vec4 effect(vec4 color, Image texture, vec2 tc, vec2 sc) {
 	}
 	
 	for (int i = 0; i < sampleCount; i++) {
-		float r = Texel(texture, tc + samples[i].xy / (z*0.1)).r;
+		float r = Texel(texture, tc + samples[i].xy / (0.1+z*0.1)).r;
 		
 		//samples differences (but clamps it)
 		if (r < 250.0) {
