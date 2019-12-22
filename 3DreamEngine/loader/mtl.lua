@@ -29,22 +29,23 @@ _3DreamEngine.loader["mtl"] = function(self, obj, path)
 			material.color[1] = r
 			material.color[2] = g
 			material.color[3] = b
+		elseif v[1] == "reflections" then
+			--PBR (textured) shaders will use it anyways, if not explicitely set to false
+			material.reflections = v[2] == "true"
 		elseif v[1] == "d" then
 			material.color[4] = tonumber(v[2])
-		elseif v[1] == "reflections" then
-			material.reflections = v[2] ~= "false"
 		elseif v[1] == "shaderInfo" then
 			material.shaderInfo = v[2]
 		elseif v[1] == "shader" then
 			material.shader = v[2]
-		elseif v[1] == "alphaThreshold" then
-			material.alphaThreshold = tonumber(v[2])
 		elseif v[1] == "emission" then
 			material.emission = tonumber(v[2])
-		elseif v[1] == "map_Kd" then
-			material.tex_diffuse = obj.dir .. "/" .. (l:sub(8):match("(.+)%..+") or l:sub(8))
-		elseif v[1] == "map_Ks" then
-			material.tex_specular = obj.dir .. "/" .. (l:sub(8):match("(.+)%..+") or l:sub(8))
+		elseif v[1] == "map_Ka" or v[1] == "map_Kd" then
+			material.tex_albedo = obj.dir .. "/" .. (l:sub(8):match("(.+)%..+") or l:sub(8))
+		elseif v[1] == "map_Kr" or v[1] == "map_Ks" then
+			material.tex_roughness = obj.dir .. "/" .. (l:sub(8):match("(.+)%..+") or l:sub(8))
+		elseif v[1] == "map_Km" then
+			material.tex_metallic = obj.dir .. "/" .. (l:sub(8):match("(.+)%..+") or l:sub(8))
 		elseif v[1] == "map_Kn" then
 			material.tex_normal = obj.dir .. "/" .. (l:sub(8):match("(.+)%..+") or l:sub(8))
 		elseif v[1] == "map_Ke" then

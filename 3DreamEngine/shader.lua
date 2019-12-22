@@ -79,45 +79,39 @@ end
 lib.mainShaders = { }
 function lib.clearShaders(self)
 	self.mainShaders = { }
-	for _,flat in ipairs({true, false}) do
-		self.mainShaders[flat] = { }
-		for _,variant in ipairs({"default", "wind"}) do
-			self.mainShaders[flat][variant] = { }
-			for _,normal in ipairs({true, false}) do
-				self.mainShaders[flat][variant][normal] = { }
-				for _,specular in ipairs({true, false}) do
-					self.mainShaders[flat][variant][normal][specular] = { }
-					for _,emission in ipairs({true, false}) do
-						self.mainShaders[flat][variant][normal][specular][emission] = { }
-						for _,arrayImage in ipairs({true, false}) do
-							self.mainShaders[flat][variant][normal][specular][emission][arrayImage] = { }
-							for _,reflections_day in ipairs({true, false}) do
-								self.mainShaders[flat][variant][normal][specular][emission][arrayImage][reflections_day] = { }
-								for _,reflections_night in ipairs({true, false}) do
-									self.mainShaders[flat][variant][normal][specular][emission][arrayImage][reflections_day][reflections_night] = {
-										flat = flat,
-										variant = variant,
-										normal = normal,
-										specular = specular,
-										emission = emission,
-										arrayImage = arrayImage,
-										reflections_day = reflections_day,
-										reflections_night = reflections_night,
-										shaders = { },
-									}
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-	end
 end
 
 --returns a fitting shader for the current material and meshtype
 function lib.getShaderInfo(self, mat, meshType, obj)
-	return self.mainShaders[meshType == "flat" and true or false][mat.shader or "default"][(meshType == "textured_normal" or meshType == "textured_array_normal") and mat.tex_normal and true or false][meshType ~= "flat" and mat.tex_specular and true or false][meshType ~= "flat" and mat.tex_emission and true or false][meshType == "textured_array_normal" or meshType == "textured_array"][(obj and obj.reflections_day or mat.reflections_day or mat.reflections and self.sky) and true or false][(obj and obj.reflections_night or mat.reflections_night or mat.reflections and self.night) and true or false]
+	local dat = {
+		meshType = meshType,
+		variant = mat.shader or "default",
+		
+		combined = false,
+		arrayImage = meshType == "textured_array",
+		
+		reflections_day = (obj and obj.reflections_day or mat.reflections_day or (meshType ~= "flat" or mat.reflections) and self.sky) and true or false,
+		reflections_night = (obj and obj.reflections_night or mat.reflections_night or (meshType ~= "flat" or mat.reflections) and self.night) and true or false,
+		
+		tex_albedo = mat.tex_albedo ~= nil,
+		tex_normal = mat.tex_normal ~= nil,
+		tex_roughness = mat.tex_roughness ~= nil,
+		tex_metallic = mat.tex_metallic ~= nil,
+		tex_ao = mat.tex_ao ~= nil,
+		tex_emission = mat.tex_emission ~= nil,
+		
+		shaders = { },
+	}
+	
+	local ID = (dat.combined and 0 or 1) + (dat.arrayImage and 0 or 2) + (dat.reflections_day and 0 or 4) + (dat.reflections_night and 0 or 8)
+		+ (dat.tex_albedo and 0 or 16) + (dat.tex_normal and 0 or 32) + (dat.tex_roughness and 0 or 64) + (dat.tex_metallic and 0 or 128) + (dat.tex_ao and 0 or 256) + (dat.tex_emission and 0 or 512)
+	local str = table.concat({dat.meshType, dat.variant, ID}, "_")
+	
+	if not self.mainShaders[str] then
+		self.mainShaders[str] = dat
+	end
+	
+	return self.mainShaders[str]
 end
 
 --returns a full shader based on the shaderInfo and lighting count
@@ -125,25 +119,54 @@ _RENDERER = love.graphics.getRendererInfo()
 function lib.getShader(self, info, lightings)
 	if not info.shaders[lightings] then
 		--construct shader
-		local code = "#pragma language glsl3\n" ..
-			(self.render == "OpenGL ES" and "#define OPENGL_ES\n" or "") ..
-			(info.flat and "#define FLAT_SHADING\n" or "") ..
-			(info.normal and "#define TEX_NORMAL\n" or "") ..
-			(info.specular and "#define TEX_SPECULAR\n" or "") ..
-			(info.emission and "#define TEX_EMISSION\n" or "") ..
-			(self.AO_enabled and "#define AO_ENABLED\n" or "") ..
-			(self.shadow_enabled and "#define SHADOWS_ENABLED\n" or "") ..
-			(self.bloom_enabled and "#define BLOOM_ENABLED\n" or "") ..
-			(info.arrayImage and "#define ARRAY_IMAGE\n" or "") ..
-			(info.reflections_day and "#define REFLECTIONS_DAY\n" or "") ..
-			(info.reflections_night and "#define REFLECTIONS_NIGHT\n" or "") ..
-			(info.variant == "wind" and "#define VARIANT_WIND\n" or "") ..
-			(lightings > 0 and "#define LIGHTING\n" or "") ..
-			(lightings > 0 and "const int lightCount = " .. lightings .. ";\n" or "") ..
-			"\n" .. 
-			love.filesystem.read(self.root .. "/shaders/shader.glsl")
+		local code
+		if info.meshType == "flat" then
+			code = "#pragma language glsl3\n" ..
+				(self.render == "OpenGL ES" and "#define OPENGL_ES\n" or "") ..
+				
+				(self.AO_enabled and "#define AO_ENABLED\n" or "") ..
+				(self.shadow_enabled and "#define SHADOWS_ENABLED\n" or "") ..
+				(self.bloom_enabled and "#define BLOOM_ENABLED\n" or "") ..
+				
+				(info.reflections_day and "#define REFLECTIONS_DAY\n" or "") ..
+				(info.reflections_night and "#define REFLECTIONS_NIGHT\n" or "") ..
+				
+				(info.variant == "wind" and "#define VARIANT_WIND\n" or "") ..
+				
+				(lightings > 0 and "#define LIGHTING\n" or "") ..
+				(lightings > 0 and "const int lightCount = " .. lightings .. ";\n" or "") ..
+				"\n" .. 
+				love.filesystem.read(self.root .. "/shaders/shader_flat.glsl")
+		else
+			code = "#pragma language glsl3\n" ..
+				(self.render == "OpenGL ES" and "#define OPENGL_ES\n" or "") ..
+				
+				(info.arrayImage and "#define ARRAY_IMAGE\n" or "") ..
+				(info.combined and "#define TEX_COMBINED\n" or "") ..
+				
+				(self.AO_enabled and "#define AO_ENABLED\n" or "") ..
+				(self.shadow_enabled and "#define SHADOWS_ENABLED\n" or "") ..
+				(self.bloom_enabled and "#define BLOOM_ENABLED\n" or "") ..
+				
+				(info.reflections_day and "#define REFLECTIONS_DAY\n" or "") ..
+				(info.reflections_night and "#define REFLECTIONS_NIGHT\n" or "") ..
+				
+				(info.variant == "wind" and "#define VARIANT_WIND\n" or "") ..
+				
+				(info.tex_albedo and "#define TEX_ALBEDO\n" or "") ..
+				(info.tex_normal and "#define TEX_NORMAL\n" or "") ..
+				(info.tex_roughness and "#define TEX_ROUGHNESS\n" or "") ..
+				(info.tex_metallic and "#define TEX_METALLIC\n" or "") ..
+				(info.tex_ao and "#define TEX_AO\n" or "") ..
+				(info.tex_emission and "#define TEX_EMISSION\n" or "") ..
+				
+				(lightings > 0 and "#define LIGHTING\n" or "") ..
+				(lightings > 0 and "const int lightCount = " .. lightings .. ";\n" or "") ..
+				"\n" .. 
+				love.filesystem.read(self.root .. "/shaders/shader.glsl")
+		end
 		
-		local ok, shader = pcall(love.graphics.newShader, code)
+		local ok, shader = pcall(love.graphics.newShader, code:gsub("	", ""))
 		if ok then
 			info.shaders[lightings] = shader
 		else

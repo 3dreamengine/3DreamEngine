@@ -2,7 +2,7 @@
 #obj - Wavefront OBJ file
 --]]
 
-_3DreamEngine.loader["obj"] = function(self, obj, path, simple)
+_3DreamEngine.loader["obj"] = function(self, obj, path)
 	--store vertices, normals and texture coordinates
 	local vertices = { }
 	local normals = { }
@@ -29,8 +29,7 @@ _3DreamEngine.loader["obj"] = function(self, obj, path, simple)
 		elseif v[1] == "usemtl" and not blocked then
 			material = obj.materials[l:sub(8)] or obj.materials.None
 			if obj.splitMaterials and not o.name:find("LAMP") then
-				local nameBase = o.name .. "_" .. l:sub(8)
-				local name = simple and (nameBase .. "_simple_" .. simple) or nameBase
+				local name = o.name .. "_" .. l:sub(8)
 				
 				obj.objects[name] = obj.objects[name] or {
 					faces = { },
@@ -38,9 +37,6 @@ _3DreamEngine.loader["obj"] = function(self, obj, path, simple)
 					material = material,
 					
 					name = o.name, --using base objects name instead, because the material is irelevant as a name
-					simple = simple,
-					super = simple and (simple == 1 and nameBase or (nameBase .. "_simple_" .. (simple-1))) or nil,
-					simpler = simple and (nameBase .. "_simple_" .. (simple+1)) or nil,
 				}
 				o = obj.objects[name]
 			else
@@ -78,18 +74,14 @@ _3DreamEngine.loader["obj"] = function(self, obj, path, simple)
 			if l:find("REMOVE") then
 				blocked = true
 			else
-				local nameBase = self:decodeObjectName(l:sub(3))
-				local name = simple and (nameBase .. "_simple_" .. simple) or nameBase
+				local name = self:decodeObjectName(l:sub(3))
 				
 				obj.objects[name] = obj.objects[name] or {
 					faces = { },
 					final = { },
 					material = material,
 					
-					name = nameBase,
-					simple = simple,
-					super = simple == 1 and nameBase or simple and (nameBase .. "_simple_" .. (simple-1)) or nil,
-					simpler = simple and (nameBase .. "_simple_" .. (simple+1)) or nil
+					name = name,
 				}
 				o = obj.objects[name]
 			end

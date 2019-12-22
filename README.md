@@ -2,19 +2,19 @@
 <a href="https://discord.gg/hpmZxNQ"><img src="https://discordapp.com/api/guilds/561664262481641482/embed.png" alt="Discord server" /></a>
 
 # Features
-* loading and rendering .obj files, supports materials and textures included in .mtl files
 * fast rendering with z-buffer and vertex shaders
 * screen space ambient occlusion (ssao)
+* PBR rendering (albedo, normal, roughness, metallic, ao, emission)
 * distance fog
-* pseudo-volumetric clouds
-* sky sphere
-* static particle emitter (grass, leaves, random rocks, smaller details)
-* specular map
-* normal map
+* pseudo-volumetric clouds (WIP)
+* sky / HDR background
 * pseudo-reflections
+* orthographic shadow mapping
+* static particle emitter (grass, leaves, random rocks, smaller details)
 * wind animation (leaves, grass, ...)
 * point-source lighting
-* threaded object loading using 3DreamEngine specific object files, boosted with luaJITs FFI, converter included
+* loading and rendering .obj files, supports materials and textures included in .mtl files
+* threaded object loading using 3DreamEngine specific object files, boosted with luaJITs FFI (converter included)
 * threaded texture loading
 * anaglyph 3D
 
@@ -63,20 +63,25 @@ dream.AO_resolution = 0.5        --resolution factor
 
 lib.bloom_enabled = true         --enable bloom (simulate brightness exceeding the 1.0 screen limit)
 lib.bloom_size = 12.0            --the size of the bloom effect
-lib.bloom_quality = 4            --the steps of blurring
+lib.bloom_quality = 6            --the steps of blurring
 lib.bloom_resolution = 0.5       --the resolution while blurring
-lib.bloom_strength = 2.0         --the blend strength
+lib.bloom_strength = 4.0         --the blend strength
+
+lib.textures_mipmaps = true      --default mipmapping
+lib.textures_filter = "linear"   --default filter, set to nearest for pixel art
+
+lib.msaa = 4                     --msaa count when rendering
+
+lib.shadow_enabled = false       --shadow
+lib.shadow_resolution = 4096     --shadow map resolution
+lib.shadow_distance = 30         --range of map, smaller numbers increase precision and decreases max range
 
 lib.anaglyph3D = false           --enable anaglyph 3D (red - cyan)
 lib.anaglyph3D_eyeDistance = 0.05--distance between eyes
 
 dream.lighting_max = 16          --max light sources, depends on GPU, has no performance impact if sources are unused
 
-dream.abstractionDistance = 30   --if simple files are provided (check chapter simple files) every 30 units of distance one more level of abstraction is used
-
 dream.nameDecoder = "blender"    --blender/none automatically renames objects, blender exports them as ObjectName_meshType.ID, but only ObjectName is relevant
-
-dream.startWithMissing = false   --use the gray missing texture, then load the textures threaded
 
 --use the inbuilt sky sphere and clouds
 dream.cloudDensity = 0.6
@@ -94,6 +99,7 @@ dream:init()
 yourObject = dream:loadObject("objectName", args)
 
 	--where args is a table with additional settings
+	textures             -- location for textures, use "dir/" to specify diretcory, "file" to specify "file_albedo", "file_roughness", ...
 	splitMaterials       -- if a single mesh has different textured materials, it has to be split into single meshes. splitMaterials does this automatically.
 	raster               -- load the object as 3D raster of different meshes (must be split). Instead of an 1D table, obj.objects[x][y][z] will be created.
 	forceTextured        -- if the mesh gets created, it will determine texture mode or simple mode based on tetxures. forceTextured always loads as (non set) texture.
@@ -107,7 +113,8 @@ yourObject = dream:loadObject("objectName", args)
 --  if it contains LAMP_name where name is a custom name, it will not be loaded, but instead an entry in object.lights will be made {name, x, y, z}, it can be used to set static lights more easy.
 --    prefixes, for example Icosphere_LAMP_myName are valid and will be ignored.
 
---if 3do files or thumbnail textures are used, the resource loader requires to be updated. It controls the loader threads and texture loading.
+--required for loading!
+--returns false if nothing has been loaded, loads only one object per call
 dream.resourceLoader:update()
 
 --transform the object
@@ -139,8 +146,8 @@ dream.color_sun, dream.color_ambient = dream:getDayLight()
 dream:resetLight(noDayLight)
 
 --add light, note that in case of exceeding the max light sources it only uses the most relevant sources, based on distance and brightness multiplied by factor importance
---sun disables distance attenuation
-dream:addLight(posX, posY, posZ, red, green, blue, brightness, sun, importance)
+--meter controls distance attenuation, 0 disables it
+dream:addLight(posX, posY, posZ, red, green, blue, brightness, meter, importance)
 
 --prepare for rendering
 --if cam is nil, it uses the default cam (dream.cam)
@@ -158,40 +165,28 @@ dream:present(noDepth, noSky)
 
 ## textures
 To add textures to the model either...
-* set the texture path (without extension!) in the mtl file (map_Kd, map_Ks, map_Kn, map_Ke for diffuse, specular, normal and emission)
-* set the texture path (without extension!) or the loaded texture (not recommended) in the 3de file (tex_diffuse, tex_specular, tex_normal, tex_emission)
-* name the textures exactly like a) the object or b) like the material and put it next to the object. It will find it automatically.
+* set the texture path in the mtl file. See (3DreamEngine/loader/mtl.lua) for up to date parser information
+* set the texture in the 3de file (tex_diffuse, tex_normal, tex_emission, ...)
+* it will try to search the file as absolute, relative to objectDir and relativ to the objects current dir
+* it does automatically choose the best format
 
 The diffuse texture is a RGB non alpha texture with the color.
-The specular texture is either the sharpness of specular lighting, or more importantly the amount of reflection if enabled.
 The normal texture contains local normal coordinates.
-The emission texture contains RGBA, where A is just a multiplier, and will be multiplied by the materials emission value. Check out the Lamborghini example for an example. Only makes sense if bloom is enabled.
+The emission texture contains single channel brightness multpliers, further multiplied by a const in the shader.
 
-## simple files
-Simple files decrease loading time and increase performance by using simplified objects.
-* Only supported in 3do files: load only the layer of abstraction actually needed, based on distance. Also, load simpler version first, then complex ones to faster provide results.
-* Supported on obj files too: display abstraction based on distance.
-Simple files (only .obj, .mtl will be ignored) have to contain the same materials, the same objects (or less) and should look similar enough to avoid ugly transitions.
-
-Textures can also be simple: yourTexture_simple_1.png, ...
-
-If startWithMissing is disabled, it will load the lowest quality file first. Simpler textures do not have to has the same file format. Mixing png and jpg works too.
-Texture loading then is threaded and will load nessesary textures automatically, based on distance.
-(dream.resourceLoader:update() required)
+## thumbnails
+Name a (smaller) file "yourImage_thumb.ext" to let the texture loader automatically load it first, then load the full textures at the end.
 
 ## reflections
 To enable reflections on materials either ...
-* set material.reflections_day / material.reflections_night to a path (without extension, uses resource loader) or to an texture.
-* set object.reflections_day / object.reflections_night to a path (without extension, uses resource loader) or to an texture.
+* set material.reflections_day / material.reflections_night to a path or a texture
+* set object.reflections_day / object.reflections_night to a path or texture
 * set material.reflections to true ("reflections true" in mtl files, "reflections = true" in 3de files). This will use the sky/night sphere texture if provided.
-
-(in order, if the material already has an texture defined, it will use it instead of the objects texture)
+* if using the PBR render reflections are default on and can be turned off by setting to false
 
 ## 3de - 3Dream material file
 The .mtl file usually exported with .obj will be loaded automatically.
 To use more 3DreamEngine specific features (reflections, particle system, wind animation ...) a .3de file is required. A .3de file can replace the .mtl file entirely, else it will extend it.
-If you do not edit the variables it is recommended to remove the line, it then uses the default values.
-(dream.resourceLoader:update() required)
 
 ### example 3de file:
 ```lua 
@@ -209,16 +204,21 @@ return {
 		shader_wind_scale = 3.0,       -- the scale of wind waves
 		
 		color = {1.0, 1.0, 1.0, 1.0},  -- color used for flat shading
-		specular = 0.5,                -- specular or reflection used when no specular texture is provided
+		specular = 0.5,                -- specular value, if enabled the reflection too, for flat shading
+		
+		--PBR
+		albedo = {1.0, 1.0, 1.0, 1.0}, -- albedo if no texture is set
+		roughness = 0.5,               -- roughness if no texture is set
+		metallic = 0.5,                -- metallic if no texture is set
 		emission = 0.0,                -- the brightness of the emission texture, the diffuse texture or the face color
 		
-		alphaThreshold = 0.0           -- since the depth buffer only supports alpha 0.0 or 1.0, a threshold will choose when to draw. For grass, ... a threshold of 0.75 works fine.
-		
 		--change textures
-		tex_diffuse = "tex_diffuse",
-		tex_normal = "tex_normal",
-		tex_specular = "tex_specular",
-		tex_emission = "tex_emission",
+		tex_albedo = "path/name",
+		tex_normal = "path/name",
+		tex_roughness = "path/name",
+		tex_metallic = "path/name",
+		tex_ao = "path/name",
+		tex_emission = "path/name",
 		
 		--a function called every object before rendering
 		--while you can change any values, do NOT remove values (like textures). Only switch them if necessary.
@@ -253,7 +253,7 @@ To export, just set the argument export3do to true when loading. This then combi
 But note that...
 * The file will not refresh if changes to the original files are made
 * You can not modify 3do files, they contain binary mesh data. Therefore keep the original files!
-* Particle systems and simple files are packed too, it is not possible to e.g. change the particle system based on user settings. Instead, disable particle system objects manually (yourObject.objects.particleSystemName.disabled = true).
+* Particle systems are packed too, it is not possible to e.g. change the particle system based on user settings. Instead, disable particle system objects manually (yourObject.objects.particleSystemName.disabled = true).
 
 ## Object format
 dream:loadObject() returns an object using this format:
@@ -268,7 +268,7 @@ object = {
 			ID = 1,            --internal value
 		},
 	},
-	materialsID = {"None"}, -- internal value, only used for flat shading to store a single ID
+	materialsID = {"None"}, -- internal value, only used for flat shading to store a single ID instead
 	
 	objects = {
 		yourSubObject = {
@@ -283,16 +283,11 @@ object = {
 			material = material, --mesh material. If several materials are used (and splitMaterials is disabled), it can only use the last.
 			
 			name = "yourSubObjectBaseName", --the name, without material postfixes (if splitMaterials is used) and simple postfixes (simple_x)
-			simple = simple, --the level of abstraction, or nil
-			super = simple == 1 and nameBase or simple and (nameBase .. "_simple_" .. (simple-1)) or nil, --the next more detailed object
-			simpler = simple and (nameBase .. "_simple_" .. (simple+1)) or nil, --the next more abstract object, object may not exist
 			
-			meshType = "textured", --flat, textured or textured_normal - determines the data the mesh contains
+			meshType = "textured", --flat, textured - determines the data the mesh contains
 			mesh = love.graphics.newMesh(), --a static, triangles-mesh, may be nil when using 3do, loads automatically
 		}
 	},
-	
-	loaded = true, --true if fully loaded, always true by .obj, with .3do when all meshes are loaded (they only load when needed)
 
 	--instead of loading LIGHT_ objects as meshes, put them into the lights table for manual use and skip them.
 	lights = { },

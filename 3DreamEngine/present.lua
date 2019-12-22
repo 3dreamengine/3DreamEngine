@@ -86,18 +86,21 @@ function lib.present(self, noDepth, noSky)
 				local color = self:getDayLight(self.dayTime, 0.25)
 				color[4] = 1.0
 				
+				love.graphics.push("all")
+				love.graphics.setColor(self.color_ambient[1] * self.color_ambient[4], self.color_ambient[2] * self.color_ambient[4], self.color_ambient[3] * self.color_ambient[4])
 				if self.night then
 					love.graphics.setShader(self.shaders.skyNight)
 					self.shaders.skyNight:send("cam", transformProj * transform)
 					self.shaders.skyNight:send("color", color)
 					self.shaders.skyNight:send("time", timeFac)
-					love.graphics.draw(self.object_sky.objects.Cube.mesh)
+					love.graphics.draw(self.object_sky.objects.Sphere.mesh)
 				else
 					love.graphics.setShader(self.shaders.sky)
 					self.shaders.sky:send("cam", transformProj * transform)
 					self.shaders.sky:send("color", color)
-					love.graphics.draw(self.object_sky.objects.Cube.mesh)
+					love.graphics.draw(self.object_sky.objects.Sphere.mesh)
 				end
+				love.graphics.pop()
 			end
 			
 			--clouds
@@ -165,7 +168,7 @@ function lib.present(self, noDepth, noSky)
 					end
 					if best then
 						best.used = true
-						light[#light+1] = {best.r, best.g, best.b, best.sun}
+						light[#light+1] = {best.r, best.g, best.b, best.meter}
 						pos[#pos+1] = {best.x, best.y, best.z}
 						count = count + 1
 					else
@@ -185,9 +188,7 @@ function lib.present(self, noDepth, noSky)
 				shader.shader:send("ambient", {self.color_ambient[1] * self.color_ambient[4], self.color_ambient[2] * self.color_ambient[4], self.color_ambient[3] * self.color_ambient[4], 1.0})
 				
 				--camera
-				if count > 0 then
-					shader.shader:send("viewPos", self.shaderVars_viewPos)
-				end
+				shader.shader:send("viewPos", self.shaderVars_viewPos)
 				shader.shader:send("transformProj", transformProj)
 				
 				if self.shadow_enabled then
@@ -209,7 +210,7 @@ function lib.present(self, noDepth, noSky)
 								local timeFac = 1.0 - (math.cos(self.dayTime*math.pi*2)*0.5+0.5)
 								local color = self:getDayLight(self.dayTime, 0.25)
 								
-								shader.shader:send("background_day", self.resourceLoader:getTexture(material.reflections_day or v[6].reflections_day or self.sky))
+								shader.shader:send("background_day", self.resourceLoader:getTexture(material.reflections_day or v[6].reflections_day or self.sky) or self.textures.default_emission)
 								
 								if shader.reflections_night then
 									shader.shader:send("background_color", color)
@@ -220,25 +221,46 @@ function lib.present(self, noDepth, noSky)
 							end	
 							
 							--set textures
-							if not shader.flat then
-								if material.tex_diffuse then
-									v[2].mesh:setTexture(self.resourceLoader:getTexture(material.tex_diffuse, material.levelOfAbstraction, false, material.tex_filter, material.tex_mipmaps, material.tex_mipmaps) or self.texture_missing)
-								end
-								if shader.specular and count > 0 then
-									shader.shader:send("tex_specular", self.resourceLoader:getTexture(material.tex_specular, material.levelOfAbstraction, false, material.tex_filter, material.tex_mipmaps, material.tex_mipmaps) or self.texture_missing)
+							if shader.meshType == "flat" then
+								shader.shader:send("emission", material.emission or (shader.emission and 1.0 or 0.0))
+							else
+								local tex = shader.arrayImage and self.textures_array or self.textures
+								if shader.tex_albedo then
+									v[2].mesh:setTexture(self.resourceLoader:getTexture(material.tex_albedo) or tex.default_albedo)
 								else
-									shader.shader:send("specular", material.specular or 0.5)
+									shader.shader:send("albedo", material.albedo and {material.albedo[1], material.albedo[2], material.albedo[3], material.albedo[4] or 1.0} or {0.5, 0.5, 0.5, 1.0})
 								end
-								if shader.normal and count > 0 then
-									shader.shader:send("tex_normal", self.resourceLoader:getTexture(material.tex_normal, material.levelOfAbstraction, false, material.tex_filter, material.tex_mipmaps, material.tex_mipmaps) or self.texture_missing)
+								
+								if shader.tex_normal then
+									shader.shader:send("tex_normal", self.resourceLoader:getTexture(material.tex_normal) or tex.default_normal)
+								else
+									shader.shader:send("normalT", material.normal or {0, 0, 1.0})
 								end
-								if shader.emission then
-									shader.shader:send("tex_emission", self.resourceLoader:getTexture(material.tex_emission, material.levelOfAbstraction, true, material.tex_filter, material.tex_mipmaps, material.tex_mipmaps) or self.texture_missing)
+								
+								if shader.tex_roughness then
+									shader.shader:send("tex_roughness", self.resourceLoader:getTexture(material.tex_roughness) or tex.default_roughness)
+								else
+									shader.shader:send("roughness", material.roughness or 0.5)
+								end
+								
+								if shader.tex_metallic then
+									shader.shader:send("tex_metallic", self.resourceLoader:getTexture(material.tex_metallic) or tex.default_metallic)
+								else
+									shader.shader:send("metallic", material.metallic or 0)
+								end
+								
+								if shader.tex_emission then
+									shader.shader:send("tex_emission", self.resourceLoader:getTexture(material.tex_emission) or tex.default_emission)
+								else
+									shader.shader:send("emission", material.emission or 0)
+								end
+								
+								if shader.tex_ao then
+									shader.shader:send("tex_ao", self.resourceLoader:getTexture(material.tex_ao) or tex.default_ao)
+								else
+									shader.shader:send("ao", material.ao or 1.0)
 								end
 							end
-							
-							shader.shader:send("alphaThreshold", material.alphaThreshold or 0.0)
-							shader.shader:send("emission", material.emission or (shader.emission and 1.0 or 0.0))
 							
 							if shader.variant == "wind" then
 								shader.shader:send("shader_wind_strength", material.shader_wind_strength or 1.0)
@@ -249,7 +271,7 @@ function lib.present(self, noDepth, noSky)
 							love.graphics.setMeshCullMode(v[2].noBackFaceCulling and "none" or "back")
 							love.graphics.setColor(v[3], v[4], v[5])
 							
-							shader.shader:send("transform", v[1])
+							shader.shader:send("transform", v[1]^"T")
 							
 							--final draw
 							love.graphics.draw(v[2].mesh)

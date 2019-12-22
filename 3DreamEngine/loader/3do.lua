@@ -11,18 +11,20 @@ _3DreamEngine.loader["3do"] = function(self, obj, path)
 	local headerLength = file:read(8)
 	local headerData = file:read(tonumber(headerLength))
 	
-	obj.loaded = false
-	
-	obj.dataOffset = 16 + headerLength
-	obj.compressed = compressed:sub(1, 3)
+	local dataOffset = 16 + headerLength
+	local compressed = compressed:sub(1, 3)
 	
 	obj.objects = table.load(love.data.decompress("string", compressed:sub(1, 3), headerData))
 	
-	--outdated - makes old saves compatible
+	--relink materials
+	obj.materials = { }
 	for d,s in pairs(obj.objects) do
-		s.meshType = s.meshType or (s.textureMode and "textured_normal" or "flat")
-		s.material.shader = s.material.shader or s.shader
+		obj.materials[s.material.name] = s.material
 	end
 	
+	--insert in loader
 	table.insert(self.resourceLoader.jobs, obj)
+	for d, o in pairs(obj.objects) do
+		self.resourceLoader.channel_jobs_priority:push({"3do", #self.resourceLoader.jobs, d, path, dataOffset + o.meshDataIndex, o.meshDataSize, compressed})
+	end
 end

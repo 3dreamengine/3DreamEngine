@@ -1,7 +1,7 @@
 #ifdef PIXEL
 extern vec4 color;
 vec4 effect(vec4 c, Image day, vec2 tc, vec2 sc) {
-	return Texel(day, tc) * color;
+	return Texel(day, tc) * color * c;
 }
 #endif
 

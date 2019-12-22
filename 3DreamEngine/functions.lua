@@ -5,50 +5,126 @@ functions.lua - contains library relevant functions
 
 local lib = _3DreamEngine
 
-lib.canvasFormats = love.graphics and love.graphics.getCanvasFormats() or { }
+function lib.newCam(self)
+	local c = {
+		transform = matrix{
+			{1, 0, 0, 0},
+			{0, 1, 0, 0},
+			{0, 0, 1, 0},
+			{0, 0, 0, 1},
+		},
+		
+		normal = {0, 0, 0},
+		
+		x = 0,
+		y = 0,
+		z = 0,
+	}
+	
+	setmetatable(c, self.operations)
+	
+	return c
+end
 
-function lib.resize(self, w, h)
-	local msaa = 4
-	self.canvas = love.graphics.newCanvas(w, h, {format = "normal", readable = true, msaa = msaa})
-	self.canvas_depth = love.graphics.newCanvas(w, h, {format = self.canvasFormats["depth32f"] and "depth32f" or self.canvasFormats["depth24"] and "depth24" or "depth16", readable = false, msaa = msaa})
-	
-	if self.AO_enabled then
-		local ok = pcall(function()
-			self.canvas_z = love.graphics.newCanvas(w, h, {format = "r16f", readable = true, msaa = msaa})
-		end)
-		if ok then
-			self.canvas_blur_1 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
-			self.canvas_blur_2 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
-		else
-			self.AO_enabled = false
-			print("r16f canvas creation failed, AO deactivated")
-		end
+function lib.resetLight(self, noDayLight)
+	if noDayLight then
+		self.lighting = { }
+	else
+		local l = math.sqrt(self.sun[1]^2 + self.sun[2]^2 + self.sun[3]^2)
+		self.lighting = {
+			{
+				x = self.sun[1] / l,
+				y = self.sun[2] / l,
+				z = self.sun[3] / l,
+				r = self.color_sun[1] / math.sqrt(self.color_sun[1]^2 + self.color_sun[2]^2 + self.color_sun[3]^2) * self.color_sun[4],
+				g = self.color_sun[2] / math.sqrt(self.color_sun[1]^2 + self.color_sun[2]^2 + self.color_sun[3]^2) * self.color_sun[4],
+				b = self.color_sun[3] / math.sqrt(self.color_sun[1]^2 + self.color_sun[2]^2 + self.color_sun[3]^2) * self.color_sun[4],
+				meter = 0.0,
+				importance = math.huge,
+			},
+		}
 	end
-	
-	if self.bloom_enabled then
-		local ok = pcall(function()
-			self.canvas_bloom = love.graphics.newCanvas(w, h, {format = "normal", readable = true, msaa = msaa})
-		end)
-		if ok then
-			self.canvas_bloom_1 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = "normal", readable = true, msaa = 0})
-			self.canvas_bloom_2 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = "normal", readable = true, msaa = 0})
-		else
-			self.bloom_enabled = false
-			print("r8 canvas creation failed, bloom deactivated")
-		end
-	end
-	
-	if self.shadow_enabled then
-		self.canvas_shadow_depth = love.graphics.newCanvas(self.shadow_resolution, self.shadow_resolution, {format = self.canvasFormats["depth32f"] and "depth32f" or self.canvasFormats["depth24"] and "depth24" or "depth16", readable = true, msaa = 0})
-		
-		self.canvas_shadow_depth:setDepthSampleMode("greater")
-		self.canvas_shadow_depth:setFilter("linear", "linear", 1)
-		
-		self.canvas_shadow = love.graphics.newCanvas(self.shadow_resolution, self.shadow_resolution, {format = "r8", readable = true, msaa = 0})
-		
-		self.canvas_shadow:setFilter("linear", "linear", 1)
-		self.canvas_shadow:setWrap("clampzero")
-	end
+end
+
+function lib.addLight(self, posX, posY, posZ, red, green, blue, brightness, meter, importance)
+	self.lighting[#self.lighting+1] = {
+		x = posX,
+		y = posY,
+		z = posZ,
+		r = red / math.sqrt(red^2+green^2+blue^2) * (brightness or 10.0),
+		g = green / math.sqrt(red^2+green^2+blue^2) * (brightness or 10.0),
+		b = blue / math.sqrt(red^2+green^2+blue^2) * (brightness or 10.0),
+		meter = meter or 1.0,
+		importance = importance or 1.0,
+	}
+end
+
+lib.operations = { }
+lib.operations.__index = lib.operations
+
+function lib.operations.reset(obj)
+	obj.transform = matrix{
+		{1, 0, 0, 0},
+		{0, 1, 0, 0},
+		{0, 0, 1, 0},
+		{0, 0, 0, 1},
+	}
+end
+
+function lib.operations.translate(obj, x, y, z)
+	local translate = matrix{
+		{1, 0, 0, x},
+		{0, 1, 0, y},
+		{0, 0, 1, z},
+		{0, 0, 0, 1},
+	}
+	obj.transform = translate * obj.transform
+end
+
+function lib.operations.scale(obj, x, y, z)
+	local scale = matrix{
+		{x, 0, 0, 0},
+		{0, y or x, 0, 0},
+		{0, 0, z or x, 0},
+		{0, 0, 0, 1},
+	}
+	obj.transform = scale * obj.transform
+end
+
+function lib.operations.rotateX(obj, rx)
+	local c = math.cos(rx or 0)
+	local s = math.sin(rx or 0)
+	local rotX = matrix{
+		{1, 0, 0, 0},
+		{0, c, -s, 0},
+		{0, s, c, 0},
+		{0, 0, 0, 1},
+	}
+	obj.transform = rotX * obj.transform
+end
+
+function lib.operations.rotateY(obj, ry)
+	local c = math.cos(ry or 0)
+	local s = math.sin(ry or 0)
+	local rotY = matrix{
+		{c, 0, -s, 0},
+		{0, 1, 0, 0},
+		{s, 0, c, 0},
+		{0, 0, 0, 1},
+	}
+	obj.transform = rotY * obj.transform
+end
+
+function lib.operations.rotateZ(obj, rz)
+	local c = math.cos(rz or 0)
+	local s = math.sin(rz or 0)
+	local rotZ = matrix{
+		{c, s, 0, 0},
+		{-s, c, 0, 0},
+		{0, 0, 1, 0},
+		{0, 0, 0, 1},
+	}
+	obj.transform = rotZ * obj.transform
 end
 
 function lib.split(self, text, sep)
@@ -99,7 +175,7 @@ end
 --get the daylight color at a specific daytime, where 0 is midnight
 function lib.getDayLight(self, time, strength)
 	if not strength then
-		strength = 0
+		strength = 0.1
 	end
 	if not time then
 		time = self.dayTime
@@ -109,12 +185,12 @@ function lib.getDayLight(self, time, strength)
 	local c2 = self.dayLightColors[((math.floor(time*#self.dayLightColors)+1) % #self.dayLightColors)+1]
 	local f = (time*#self.dayLightColors) % 1
 	
-	local direct = {c1[1] * (1-f) + c2[1] * f, c1[2] * (1-f) + c2[2] * f, c1[3] * (1-f) + c2[3] * f, 1.25 * math.min(1, c1[4] * (1-f) + c2[4] * f)}
+	local direct = {c1[1] * (1-f) + c2[1] * f, c1[2] * (1-f) + c2[2] * f, c1[3] * (1-f) + c2[3] * f, math.min(1, c1[4] * (1-f) + c2[4] * f)}
 	direct[1] = 1.0 * (1-strength) + direct[1] * strength
 	direct[2] = 1.0 * (1-strength) + direct[2] * strength
 	direct[3] = 1.0 * (1-strength) + direct[3] * strength
 	
-	local ambient = {direct[1], direct[2], direct[3], 0.1 + direct[4]*0.1}
+	local ambient = {direct[1], direct[2], direct[3], 0.25 + direct[4]*0.25}
 	
 	return direct, ambient
 end
@@ -157,73 +233,78 @@ function lib.calcTangents(self, finals, vertexMap)
 	for d,f in ipairs(finals) do
 		f[9] = f[9] or 0
 		f[10] = f[10] or 0
+		
+		f[11] = 0
+		f[12] = 0
+		f[13] = 0
+		f[14] = 0
+		f[15] = 0
+		f[16] = 0
 	end
+	
+	--9-10 UV
+	--5-7 Normal
 	
 	for f = 1, #vertexMap, 3 do
 		local P1 = finals[vertexMap[f+0]]
 		local P2 = finals[vertexMap[f+1]]
 		local P3 = finals[vertexMap[f+2]]
-		local N1 = finals[vertexMap[f+0]]
-		local N2 = finals[vertexMap[f+1]]
-		local N3 = finals[vertexMap[f+2]]
 		
 		local tangent = { }
 		local bitangent = { }
 		
 		local edge1 = {P2[1] - P1[1], P2[2] - P1[2], P2[3] - P1[3]}
 		local edge2 = {P3[1] - P1[1], P3[2] - P1[2], P3[3] - P1[3]}
-		local edge1uv = {N2[9] - N1[9], N2[10] - N1[10]}
-		local edge2uv = {N3[9] - N1[9], N3[10] - N1[10]}
+		local edge1uv = {P2[9] - P1[9], P2[10] - P1[10]}
+		local edge2uv = {P3[9] - P1[9], P3[10] - P1[10]}
 		
-		local cp = edge1uv[2] * edge2uv[1] - edge1uv[1] * edge2uv[2]
+		local cp = edge1uv[1] * edge2uv[2] - edge1uv[2] * edge2uv[1]
 		
 		if cp ~= 0.0 then
 			for i = 1, 3 do
 				tangent[i] = (edge1[i] * edge2uv[2] - edge2[i] * edge1uv[2]) / cp
-				bitangent[i] = (edge2[i] * edge1uv[1] - edge1[i] * edge2uv[1]) / cp
+				bitangent[i] = (edge1[i] * edge2uv[1] - edge2[i] * edge1uv[1]) / cp
 			end
 			
-			local l = math.sqrt(tangent[1]^2+tangent[2]^2+tangent[3]^2)
-			tangent[1] = tangent[1] / l
-			tangent[2] = tangent[2] / l
-			tangent[3] = tangent[3] / l
-			
-			local l = math.sqrt(bitangent[1]^2+bitangent[2]^2+bitangent[3]^2)
-			bitangent[1] = bitangent[1] / l
-			bitangent[2] = bitangent[2] / l
-			bitangent[3] = bitangent[3] / l
-			
 			for i = 1, 3 do
-				finals[vertexMap[f+i-1]][11] = (finals[vertexMap[f+i-1]][11] or 0) + tangent[1]
-				finals[vertexMap[f+i-1]][12] = (finals[vertexMap[f+i-1]][12] or 0) + tangent[2]
-				finals[vertexMap[f+i-1]][13] = (finals[vertexMap[f+i-1]][13] or 0) + tangent[3]
+				finals[vertexMap[f+i-1]][11] = finals[vertexMap[f+i-1]][11] + tangent[1]
+				finals[vertexMap[f+i-1]][12] = finals[vertexMap[f+i-1]][12] + tangent[2]
+				finals[vertexMap[f+i-1]][13] = finals[vertexMap[f+i-1]][13] + tangent[3]
 				
-				finals[vertexMap[f+i-1]][14] = (finals[vertexMap[f+i-1]][14] or 0) + bitangent[1]
-				finals[vertexMap[f+i-1]][15] = (finals[vertexMap[f+i-1]][15] or 0) + bitangent[2]
-				finals[vertexMap[f+i-1]][16] = (finals[vertexMap[f+i-1]][16] or 0) + bitangent[3]
+				finals[vertexMap[f+i-1]][14] = finals[vertexMap[f+i-1]][14] + bitangent[1]
+				finals[vertexMap[f+i-1]][15] = finals[vertexMap[f+i-1]][15] + bitangent[2]
+				finals[vertexMap[f+i-1]][16] = finals[vertexMap[f+i-1]][16] + bitangent[3]
 			end
 		end
 	end
 	
+	--normalize
+	for d,f in ipairs(finals) do
+		local o = 10
+		local l = math.sqrt(f[1+o]^2 + f[2+o]^2 + f[3+o]^2)
+		f[1+o] = f[1+o] / l
+		f[2+o] = f[2+o] / l
+		f[3+o] = f[3+o] / l
+		
+		local o = 13
+		local l = math.sqrt(f[1+o]^2 + f[2+o]^2 + f[3+o]^2)
+		f[1+o] = f[1+o] / l
+		f[2+o] = f[2+o] / l
+		f[3+o] = f[3+o] / l
+	end	
+	
 	--complete smoothing step
 	for d,f in ipairs(finals) do
-		if f[11] then
-			--Gram-Schmidt orthogonalization
-			local dot = (f[11] * f[5] + f[12] * f[6] + f[13] * f[7])
-			f[11] = f[11] - f[5] * dot
-			f[12] = f[12] - f[6] * dot
-			f[13] = f[13] - f[7] * dot
-			
-			local l = math.sqrt(f[11]^2+f[12]^2+f[13]^2)
-			f[11] = -f[11] / l
-			f[12] = -f[12] / l
-			f[13] = -f[13] / l
-			
-			l = math.sqrt(f[14]^2+f[15]^2+f[16]^2)
-			f[14] = f[14] / l
-			f[15] = f[15] / l
-			f[16] = f[16] / l
-		end
+		--Gram-Schmidt orthogonalization
+		local dot = (f[11] * f[5] + f[12] * f[6] + f[13] * f[7])
+		f[11] = f[11] - f[5] * dot
+		f[12] = f[12] - f[6] * dot
+		f[13] = f[13] - f[7] * dot
+		
+		local l = math.sqrt(f[11]^2 + f[12]^2 + f[13]^2)
+		f[11] = f[11] / l
+		f[12] = f[12] / l
+		f[13] = f[13] / l
 	end
 end
 
@@ -281,4 +362,16 @@ function lib.RGBtoHSV(r, g, b)
 	end
 	
 	return h, s, v
+end
+
+function lib.decodeObjectName(self, name)
+	if self.nameDecoder == "blender" then
+		local last, f = 0, false
+		while last and string.find(name, "_", last+1) do
+			f, last = string.find(name, "_", last+1)
+		end
+		return name:sub(1, f and (f-1) or #name)
+	else
+		return name
+	end
 end

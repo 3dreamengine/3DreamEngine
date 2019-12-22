@@ -12,3 +12,4 @@ d 1.000000
 alphaThreshold 0.75
 illum 2
 map_Kd grass.png
+roughness = 1.0

@@ -13,8 +13,6 @@ dream.AO_resolution = 0.75    --resolution factor
 
 dream.sky = love.graphics.newImage(dream.objectDir .. "/background.jpg")
 
-dream.startWithMissing = true
-
 dream:init()
 
 scene = dream:loadObject("scene", {splitMaterials = true})
@@ -59,13 +57,13 @@ function love.draw()
 	dream.cam:rotateY(dream.cam.ry)
 	dream.cam:rotateX(dream.cam.rx)
 	
-	dream.color_ambient[4] = 0
+	dream.color_ambient[4] = 0.25
 	
 	--update lights
 	dream:resetLight(true) --true disables the sun
 	for d,s in ipairs(scene.lights) do
 		if s.name == "torch" then
-			--dream:addLight(s.x, s.y, s.z, 1.0, 0.75, 0.1, 1.0 + 0.5 * love.math.noise(love.timer.getTime()*2, 1.0))
+			
 		end
 	end
 	
@@ -75,7 +73,7 @@ function love.draw()
 		{1.25, 0.25, -1.85},
 		{-1.25, 0.25, -1.85},
 	}) do
-		dream:addLight(s[1], s[2], s[3], 1.0, 0.75, 0.1, 2.0 + 1.0 * love.math.noise(love.timer.getTime()*2, d))
+		dream:addLight(s[1], s[2], s[3], 1.0, 0.75, 0.1, 0.5 + 0.3 * love.math.noise(love.timer.getTime()*2, d))
 		
 		if math.random() < love.timer.getDelta()*8.0 then
 			particles[lastParticleID] = {s[1] + (math.random()-0.5)*0.1, s[2] + (math.random()-0.5)*0.1, s[3] + (math.random()-0.5)*0.1, math.random()+1.0}

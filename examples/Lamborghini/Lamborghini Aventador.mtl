@@ -11,10 +11,6 @@ Ni 1.000000
 d 1.000000
 illum 1
 reflections true
-emission 4
-map_Kd Lamborghini Aventador_diffuse
-map_Ks Lamborghini Aventador_spec
-map_Ke Lamborghini Aventador_emission
 
 newmtl Lamborghini_Aventador:GlassSG
 Ns 4.310004
@@ -26,4 +22,3 @@ Ni 1.000000
 d 0.7500000
 illum 9
 reflections true
-emission 6

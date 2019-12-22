@@ -11,15 +11,10 @@ dream.AO_quality = 24         --samples per pixel (8-32 recommended)
 dream.AO_quality_smooth = 2   --smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
 dream.AO_resolution = 0.75    --resolution factor
 
-dream.bloom_size = 12.0
-dream.bloom_strength = 8.0
-
 dream.cloudDensity = 0.6
 dream.clouds = love.graphics.newImage(dream.objectDir .. "/clouds.jpg")
 dream.sky = love.graphics.newImage(dream.objectDir .. "/sky.jpg")
 dream.night = love.graphics.newImage(dream.objectDir .. "/night.jpg")
-
-dream.startWithMissing = true
 
 dream:init()
 
@@ -66,7 +61,9 @@ function love.draw()
 	
 	--update light
 	dream:resetLight()
-	dream:addLight(player.x, player.y, player.z, 1.0, 0.75, 0.1, 2.0 + love.math.noise(love.timer.getTime()*2, 1.0))
+	if love.mouse.isDown(1) then
+		dream:addLight(player.x, player.y, player.z, 1.0, 0.75, 0.1, 5.0 + love.math.noise(love.timer.getTime()*2, 1.0))
+	end
 	
 	dream:prepare()
 	

@@ -5,10 +5,8 @@ loader.lua - loads objects
 
 local lib = _3DreamEngine
 
-lib.imageFormats = {"tga", "png", "gif", "bmp", "exr", "jpg", "jpe", "jpeg", "jp2"}
-
 --master resource loader
-lib.resourceLoader = {jobs = { }, self = lib, lastID = 0, threads = { }}
+lib.resourceLoader = {jobs = { }, self = lib, threads = { }}
 
 --start the threads
 for i = 1, math.max(1, require("love.system").getProcessorCount()-1) do
@@ -16,130 +14,92 @@ for i = 1, math.max(1, require("love.system").getProcessorCount()-1) do
 	lib.resourceLoader.threads[i]:start()
 end
 
+lib.resourceLoader.channel_jobs_priority = love.thread.getChannel("3DreamEngine_channel_jobs_priority")
 lib.resourceLoader.channel_jobs = love.thread.getChannel("3DreamEngine_channel_jobs")
 lib.resourceLoader.channel_results = love.thread.getChannel("3DreamEngine_channel_results")
 
 --updates active resource tasks (mesh loading, texture loading, ...)
+--only process one job at a time
 function lib.resourceLoader.update(self)
-	--send jobs
-	for i = #self.jobs, 1, -1 do
-		local s = self.jobs[i]
-		if not s.ID then
-			s.ID = self.lastID
-			self.lastID = self.lastID + 1
-		end
-		
-		local found = false
-		for d,o in pairs(s.objects) do
-			if not o.mesh then
-				found = true
-			end
-			if o.requestMeshLoad and not o.mesh_temp then
-				o.mesh_temp = love.graphics.newMesh(o.vertexFormat, o.vertexCount, "triangles", "static")
-				o.mesh_temp:setVertexMap(o.vertexMap)
-				self.channel_jobs:push({s.ID, d, s.path .. ".3do", s.dataOffset + o.meshDataIndex, o.meshDataSize, s.compressed})
-				return true
-			end
-		end
-		
-		if not found then
-			s.loaded = true
-			table.remove(self.jobs, i)
-		end
-	end
-	
-	--receive processed byte data
 	local msg = self.channel_results:pop()
 	if msg then
-		if msg[3] then
-			for i,s in ipairs(self.jobs) do
-				if s.ID == msg[1] then
-					s.objects[msg[2]].mesh = s.objects[msg[2]].mesh_temp
-					s.objects[msg[2]].mesh_temp = nil
-					
-					s.objects[msg[2]].mesh:setVertices(msg[3])
-				end
-			end
+		if msg[1] == "3do" then
+			--3do file
+			local o = self.jobs[msg[2]].objects[msg[3]]
+			o.mesh = love.graphics.newMesh(o.vertexFormat, o.vertexCount, "triangles", "static")
+			o.mesh:setVertexMap(o.vertexMap)
+			o.mesh:setVertices(msg[4])
 		else
-			local s = self.texturesKnown[msg[1]]
-			s.texture = love.graphics.newImage(msg[2], {mipmaps = s.mipmaps})
-			s.texture:setWrap(s.wrap)
-			s.texture:setFilter(s.filter)
-			
-			s.working = false
+			--image
+			local tex = love.graphics.newImage(msg[2], {mipmaps = self.self.textures_mipmaps})
+			tex:setWrap("repeat", "repeat")
+			tex:setFilter(self.self.textures_filter, self.self.textures_filter)
+			self.texturesLoaded[msg[2]] = tex
 		end
 		return true
 	end
-	
 	return false
 end
 
-lib.resourceLoader.texturesKnown = { }
-lib.resourceLoader.texturesAwaitingLoad = { }
-function lib.resourceLoader.getTexture(self, path, abstraction, forceLoad, filter, mipmaps, wrap)
+lib.resourceLoader.texturesLoaded = { }
+function lib.resourceLoader.getTexture(self, path)
 	if type(path) == "userdata" then
 		return path
 	end
+	if not path then
+		return false
+	end
 	
-	local t = { }
-	
-	--search for simple textures and right formats
-	local s = self.texturesKnown[path]
-	if not s then
-		self.texturesKnown[path] = {
-			levels = { },
-			texture = self.self.texture_missing,
-			abstractionLayer = 0,
-			working = false,
-			notLoadedYet = true,
-			
-			mipmaps = mipmaps == nil and true or mipmaps,
-			filter = filter or "linear",
-			wrap = wrap or "repeat",
-		}
-		s = self.texturesKnown[path]
+	--request image load, optional a thumbnail first
+	local s = self.texturesLoaded[path]
+	if s == nil then
+		self.texturesLoaded[path] = false
 		
-		for i = 0, 8 do
-			for _,t in ipairs(self.self.imageFormats) do
-				local p = path .. (i == 0 and "" or ("_simple_" .. i)) .. "." .. t
-				if love.filesystem.getInfo(p) then
-					s.levels[i] = p
-					break
+		local ext = path:match("^.+(%..+)$") or ""
+		local p = path:sub(1, #path-#ext) .. "_thumb" .. path:sub(#path-#ext+1)
+		if love.filesystem.getInfo(p, "file") then
+			self.channel_jobs_priority:push({"image", p})
+		end
+		self.channel_jobs:push({"image", path})
+	end
+	
+	return s
+end
+
+--scan for image files
+lib.imageFormats = {"tga", "png", "gif", "bmp", "exr", "jpg", "jpe", "jpeg", "jp2"}
+lib.imageFormat = { }
+for d,s in ipairs(lib.imageFormats) do
+	lib.imageFormat["." .. s] = d
+end
+
+lib.images = {}
+lib.imagesPriority = {}
+local function scan(path)
+	if path:sub(1, 1) ~= "." then
+		for d,s in ipairs(love.filesystem.getDirectoryItems(path)) do
+			if love.filesystem.getInfo(path .. "/" .. s, "directory") then
+				scan(path .. "/" .. s)
+			else
+				local ext = s:match("^.+(%..+)$")
+				if ext and lib.imageFormat[ext] then
+					local p = path .. "/" .. s:sub(1, #s-#ext)
+					if not lib.images[p] or lib.imageFormat[ext] < lib.imagesPriority[p] then
+						lib.images[p] = path .. "/" .. s
+						lib.imagesPriority[p] = lib.imageFormat[ext]
+					end
 				end
-			end
-			if not s.levels[i] then
-				s.abstractionLayer = i
-				break
 			end
 		end
 	end
-	
-	--force load smallest image
-	if not (self.self.startWithMissing and not forceLoad) and s.texture == self.self.texture_missing then
-		s.texture = love.graphics.newImage(s.levels[#s.levels], {mipmaps = s.mipmaps})
-		s.texture:setWrap(s.wrap)
-		s.texture:setFilter(s.filter)
-		s.levels[#s.levels] = nil
-		s.abstractionLayer = s.abstractionLayer - 1
-		s.notLoadedYet = false
-	end
-	
-	--add next texture to working stack
-	if not s.working and s.levels[0] and (not abstraction or abstraction < s.abstractionLayer or s.notLoadedYet) then
-		s.working = true
-		self.channel_jobs:push({path, s.levels[#s.levels]})
-		s.levels[#s.levels] = nil
-		s.abstractionLayer = s.abstractionLayer - 1
-		s.notLoadedYet = false
-	end
-	
-	return s.texture
 end
+scan("")
+lib.imagesPriority = nil
 
---loads an opject
---args is a table containing additional instructions on how to load the object
---path is either absolute (starting from the games root dir) or relative (starting from the optional set project objects base dir)
---3do objects will be loaded part by part. If abstracted files are available (yourObject_simple_1.3do) it will load the simplest file first and only load more detailed object once actually needed. Yourobject.objects.yourObject.loaded shows you if a mesh is fully loaded, .mesh might be a simplified version too, if present.
+--loads an object
+--args is a table containing additional settings
+--path is either absolute (starting from the games root dir) or relative (starting from the optional objects base dir)
+--3do objects will be loaded part by part, threaded. yourObject.objects.yourMesh.mesh is nil, if its not loaded yet
 function lib.loadObject(self, path, args)
 	if args and type(args) ~= "table" then
 		error("arguments are now packed in a table, check init.lua for example")
@@ -172,14 +132,14 @@ function lib.loadObject(self, path, args)
 		materialsID = {"None"},
 		objects = { },
 		
-		--instead of loading LIGHT_ objects as meshes, put them into the lights table for manual use and skip them.
+		--instead of loading LIGHT_ objects as meshes, put them into the lights table for manual use and skip loading
 		lights = { },
 		
 		path = path, --absolute path to object
 		name = name, --name of object
 		dir = dir, --dir containing the object
 		
-		--args
+		--additional args settings
 		noParticleSystem = args.noParticleSystem == nil and args.noMesh or args.noParticleSystem,
 		
 		--the object transformation
@@ -190,22 +150,14 @@ function lib.loadObject(self, path, args)
 			{0, 0, 0, 1},
 		},
 		
-		--project related functions
-		reset = self.reset,
-		translate = self.translate,
-		scale = self.scale,
-		rotateX = self.rotateX,
-		rotateY = self.rotateY,
-		rotateZ = self.rotateZ,
-		
 		self = self,
 	}
+	setmetatable(obj, self.operations)
 	
+	--merge args
 	for d,s in pairs(args) do
 		obj[d] = obj[d] or s
 	end
-	
-	obj.loaded = true
 	
 	--load files
 	--if two object files are available (.obj and .vox) it might crash, since it loads all)
@@ -214,24 +166,11 @@ function lib.loadObject(self, path, args)
 		if love.filesystem.getInfo(obj.path .. "." .. typ) then
 			found = true
 			
-			--load the simplified objects if existing
-			if typ == "obj" then
-				for i = 8, 1, -1 do
-					if love.filesystem.getInfo(obj.path .. "_simple_" .. i .. "." .. typ) then
-						--load object and insert it to current
-						self.loader[typ](self, obj, obj.path .. "_simple_" .. i .. "." .. typ, i)
-					end
-				end
-			end
-			
 			--load most detailed/default object
 			self.loader[typ](self, obj, obj.path .. "." .. typ)
-			for d,s in pairs(obj.objects) do
-				if not s.simpler and obj.objects[d .. "_simple_1"] then
-					s.simpler = d .. "_simple_1"
-				end
-			end
 			
+			--skip furhter modifying and exporting if already packed as 3do
+			--also skips mesh loading since it is done manually
 			if typ == "3do" then
 				obj.noParticleSystem = true
 				obj.noMesh = true
@@ -240,6 +179,7 @@ function lib.loadObject(self, path, args)
 			end
 		end
 	end
+	
 	if not found then
 		error("object " .. obj.name .. " not found (" .. obj.path .. ")")
 	end
@@ -270,35 +210,32 @@ function lib.loadObject(self, path, args)
 	
 	
 	--link textures to materials
+	obj.textures = obj.textures or self.objectDir
 	for d,s in pairs(obj.materials) do
-		for _,typ in ipairs({"diffuse", "normal", "specular", "emission"}) do
+		for _,typ in ipairs({"albedo", "normal", "roughness", "metallic", "emission", "ao"}) do
 			local custom = s["tex_" .. typ]
+			custom = custom and custom:match("(.+)%..+") or custom
 			s["tex_" .. typ] = nil
-			
-			for _,p in ipairs({
-				custom and (obj.dir .. "/" .. custom) or false,      -- custom name, relative to object file
-				custom or false,                                     -- custom name, relative to root
+			for _,p in pairs({
+				custom,
+				custom and (obj.dir .. "/" .. custom),               -- custom name, relative to object file
+				obj.dir .. "/" .. obj.textures .. typ,               -- in provided directory, relative to object file
+				obj.dir .. "/" .. obj.textures .. "_" .. typ,        -- as provided file, relative to object file
+				self.objectDir .. "/" .. obj.textures .. typ,        -- in provided directory, relative to base dir
+				self.objectDir .. "/" .. obj.textures .. "_" .. typ, -- as provided file, relative to base dir
+				obj.textures .. typ,                                 -- in provided directory, relative to root
+				obj.textures .. "_" .. typ,                          -- as provided file, relative to root
+				
 				obj.dir .. "/" .. d .. "_" .. typ,                   -- same name as material, relative to object file
 				d .. "_" .. typ,                                     -- same name as material, relative to root
 				obj.dir .. "/" .. obj.name .. "_" .. typ,            -- same name as object name, relative to object file
 				obj.name .. "_" .. typ,                              -- same name as object name, relative to root
 			}) do
-				if p then
-					for _,t in ipairs(self.imageFormats) do
-						if love.filesystem.getInfo(p .. "." .. t) then
-							s["tex_" .. typ] = p
-							break
-						end
-					end
-					if s["tex_" .. typ] then
-						break
-					end
+				p = string.gsub("/" .. p, "//", "/")
+				if p and lib.images[p] then
+					s["tex_" .. typ] = lib.images[p]:sub(2)
+					break
 				end
-			end
-			
-			--failed to load custom image set in mtl
-			if custom and not s["tex_" .. typ] then
-				error("can not find texture specified in the .mtl file: " .. tostring(custom))
 			end
 		end
 	end
@@ -414,7 +351,6 @@ function lib.loadObject(self, path, args)
 				meshHeaderData[d].final = nil
 				meshHeaderData[d].faces = nil
 				meshHeaderData[d].mesh = nil
-				meshHeaderData[d].loaded = nil
 				meshHeaderData[d].material = meshHeaderData[d].material or {color = {1.0, 1.0, 1.0, 1.0}, specular = 0.5, name = "None"}
 				meshHeaderData[d].material.ID = nil
 				
@@ -486,7 +422,7 @@ function lib.loadObject(self, path, args)
 	return obj
 end
 
---takes an final and face table (inside .obj) and generates the mesh and vertexMap
+--takes an final and face table and generates the mesh and vertexMap
 --note that .3do files has it's own mesh loader
 function lib.createMesh(self, obj, o)
 	--fallback material
@@ -497,9 +433,7 @@ function lib.createMesh(self, obj, o)
 	--the type of the mesh determines the data the mesh contains, if not set automatically it will choose it based on textures
 	o.meshType = o.meshType or obj.meshType --meshType globally set as an arg
 	if not o.meshType then
-		if o.material.tex_normal then
-			o.meshType = "textured_normal"
-		elseif o.material.tex_diffuse then
+		if o.material.tex_albedo then
 			o.meshType = "textured"
 		else
 			o.meshType = "flat"
@@ -507,23 +441,16 @@ function lib.createMesh(self, obj, o)
 	end
 	
 	--mesh structure
-	local atypes
-	if o.meshType == "textured_normal" or o.meshType == "textured_array_normal" then
-		atypes = {
-		  {"VertexPosition", "float", 4},    -- x, y, z, extra
-		  {"VertexTexCoord", "float", o.meshType == "textured_array_normal" and 3 or 2},    -- UV
-		  {"VertexNormal", "byte", 4},       -- normal
-		  {"VertexTangent", "byte", 4},      -- normal tangent
-		  {"VertexBitangent", "byte", 4},    -- normal bitangent
-		}
-	elseif o.meshType == "textured" or o.meshType == "textured_array" then
-		atypes = {
+	if o.meshType == "textured" or o.meshType == "textured_array" then
+		o.meshAttributes = {
 		  {"VertexPosition", "float", 4},    -- x, y, z, extra
 		  {"VertexTexCoord", "float", o.meshType == "textured_array" and 3 or 2},    -- UV
 		  {"VertexNormal", "byte", 4},       -- normal
+		  {"VertexTangent", "byte", 4},       -- normal tangent
+		  {"VertexBiTangent", "byte", 4}       -- normal tangent
 		}
 	else
-		atypes = {
+		o.meshAttributes = {
 		  {"VertexPosition", "float", 4},    -- x, y, z
 		  {"VertexTexCoord", "byte", 4},     -- normal, specular
 		  {"VertexColor", "byte", 4},        -- color
@@ -545,35 +472,22 @@ function lib.createMesh(self, obj, o)
 	end
 	
 	--calculate vertex normals and uv normals
-	self:calcTangents(finals, vertexMap)
+	if o.meshType ~= "flat" then
+		self:calcTangents(finals, vertexMap)
+	end
 	
 	--create mesh
-	o.mesh = love.graphics.newMesh(atypes, #finals, "triangles", "static")
+	o.mesh = love.graphics.newMesh(o.meshAttributes, #finals, "triangles", "static")
 	
 	--vertex map
 	o.mesh:setVertexMap(vertexMap)
 	
 	--set vertices
 	for d,s in ipairs(finals) do
-		if o.meshType == "textured_normal" then
+		if o.meshType == "textured" then
 			o.mesh:setVertex(d,
 				s[1], s[2], s[3], s[4],
 				s[9], s[10],
-				s[5]*0.5+0.5, s[6]*0.5+0.5, s[7]*0.5+0.5, 0.0,
-				s[11]*0.5+0.5, s[12]*0.5+0.5, s[13]*0.5+0.5, 0.0,
-				s[14]*0.5+0.5, s[15]*0.5+0.5, s[16]*0.5+0.5, 0.0
-			)
-		elseif o.meshType == "textured" then
-			o.mesh:setVertex(d,
-				s[1], s[2], s[3], s[4],
-				s[9], s[10],
-				s[5]*0.5+0.5, s[6]*0.5+0.5, s[7]*0.5+0.5, 0.0
-			)
-		elseif o.meshType == "textured_array_normal" then
-			--uses the material ID for image array index
-			o.mesh:setVertex(d,
-				s[1], s[2], s[3], s[4],
-				s[8], s[9], s[10],
 				s[5]*0.5+0.5, s[6]*0.5+0.5, s[7]*0.5+0.5, 0.0,
 				s[11]*0.5+0.5, s[12]*0.5+0.5, s[13]*0.5+0.5, 0.0,
 				s[14]*0.5+0.5, s[15]*0.5+0.5, s[16]*0.5+0.5, 0.0
@@ -583,7 +497,8 @@ function lib.createMesh(self, obj, o)
 			o.mesh:setVertex(d,
 				s[1], s[2], s[3], s[4],
 				s[8], s[9], s[10],
-				s[5]*0.5+0.5, s[6]*0.5+0.5, s[7]*0.5+0.5, 0.0
+				s[5]*0.5+0.5, s[6]*0.5+0.5, s[7]*0.5+0.5, 0.0,
+				s[11]*0.5+0.5, s[12]*0.5+0.5, s[13]*0.5+0.5, 0.0
 			)
 		elseif o.meshType == "flat" then
 			local m = o.materialsID and o.materialsID[s[8]] or obj.materialsID[s[8]]

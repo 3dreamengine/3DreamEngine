@@ -12,7 +12,7 @@ function lib.addParticlesystems(self, obj)
 		if material.particleSystems then
 			for particleSystemID, particleSystem in ipairs(material.particleSystems) do
 				for _,o in pairs(obj.objects) do
-					if not o.particleSystem and not o.simple then
+					if not o.particleSystem then
 						local contains = false
 						for _,f in ipairs(o.faces) do
 							if o.final[f[1]][8] == material.ID then
