@@ -8,6 +8,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 local lib = { }
 
+if love.filesystem.read("debugEnabled") == "true" then
+	_DEBUGMODE = true
+end
+
 _3DreamEngine = lib
 lib.root = (...)
 require((...) .. "/functions")
@@ -19,10 +23,6 @@ require((...) .. "/libs/saveTable")
 matrix = require((...) .. "/libs/matrix")
 
 lib.ffi = require("ffi")
-
-if love.filesystem.read("debugEnabled") == "true" then
-	_DEBUGMODE = true
-end
 
 
 --loader
@@ -64,6 +64,9 @@ lib.bloom_size = 12.0
 lib.bloom_quality = 6
 lib.bloom_resolution = 0.5
 lib.bloom_strength = 4.0
+
+lib.SSR_enabled = false
+lib.SSR_resolution = 1.0
 
 lib.textures_mipmaps = true
 lib.textures_filter = "linear"
@@ -155,6 +158,12 @@ function lib.resize(self, w, h)
 		end
 	end
 	
+	if self.SSR_enabled then
+		self.canvas_normal = love.graphics.newCanvas(w, h, {format = self.canvasFormats["rgba16f"] and "rgba16f" or "normal", readable = true, msaa = self.msaa})
+		self.canvas_reflectiness = love.graphics.newCanvas(w, h, {format = self.canvasFormats["r8"] and "r8" or "normal", readable = true, msaa = self.msaa})
+		self.canvas_SSR_post = love.graphics.newCanvas(w * self.SSR_resolution, h * self.SSR_resolution, {format = "normal", readable = true, msaa = 0})
+	end
+	
 	if self.shadow_enabled then
 		self.canvas_shadow_depth = love.graphics.newCanvas(self.shadow_resolution, self.shadow_resolution, {format = self.canvasFormats["depth32f"] and "depth32f" or self.canvasFormats["depth24"] and "depth24" or "depth16", readable = true, msaa = 0})
 		
@@ -235,6 +244,7 @@ function lib.prepare(self, c, noDepth)
 	else
 		self.shaderVars_transformProj = projection * self.currentCam.transform
 	end
+	self.shaderVars_camTransformInverse = self.currentCam.transform:subm(1, 1, 3, 3)
 	
 	--shadow
 	if self.shadow_enabled then

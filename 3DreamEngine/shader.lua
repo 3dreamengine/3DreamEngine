@@ -14,11 +14,14 @@ end
 if _DEBUGMODE then
 	love.graphics.newShader_old = love.graphics.newShader
 	function love.graphics.newShader(pixel, vertex)
-		local status, err = love.graphics.validateShader(_RENDERER == "OpenGL ES", pixel, vertex)
+		local status, err = love.graphics.validateShader(true, pixel, vertex)
 		if not status then
 			print()
 			print("-----------------")
 			print("SHADER ERROR")
+			if not vertex and #pixel < 1024 and not pixel:find("\n") then
+				print(pixel)
+			end
 			print(err)
 			print(debug.traceback())
 			print("-----------------")
@@ -50,6 +53,12 @@ lib.shaders.sky = love.graphics.newShader(lib.root .. "/shaders/sky.glsl")
 
 --the shadow shader
 lib.shaders.shadow = love.graphics.newShader(lib.root .. "/shaders/shadow.glsl")
+
+--the shadow shader
+lib.shaders.SSR = love.graphics.newShader(lib.root .. "/shaders/SSR.glsl")
+
+--the shadow shader
+lib.shaders.SSR_post = love.graphics.newShader(lib.root .. "/shaders/SSR_post.glsl")
 
 function lib.loadShader(self)
 	--the particle shader, draw textures at a given depth, also applies depth
@@ -90,8 +99,8 @@ function lib.getShaderInfo(self, mat, meshType, obj)
 		combined = false,
 		arrayImage = meshType == "textured_array",
 		
-		reflections_day = (obj and obj.reflections_day or mat.reflections_day or (meshType ~= "flat" or mat.reflections) and self.sky) and true or false,
-		reflections_night = (obj and obj.reflections_night or mat.reflections_night or (meshType ~= "flat" or mat.reflections) and self.night) and true or false,
+		reflections_day = (obj and obj.reflections_day or mat.reflections_day or (meshType ~= "flat" or mat.reflections) and self.sky) and not self.SSR_enabled,
+		reflections_night = (obj and obj.reflections_night or mat.reflections_night or (meshType ~= "flat" or mat.reflections) and self.night) and not self.SSR_enabled,
 		
 		tex_albedo = mat.tex_albedo ~= nil,
 		tex_normal = mat.tex_normal ~= nil,
@@ -119,15 +128,19 @@ _RENDERER = love.graphics.getRendererInfo()
 function lib.getShader(self, info, lightings)
 	if not info.shaders[lightings] then
 		--construct shader
-		local code
+		local code = "#pragma language glsl3\n" ..
+			((self.AO_enabled or self.SSR_enabled) and "#define AO_ENABLED\n" or "") ..
+			(self.shadow_enabled and "#define SHADOWS_ENABLED\n" or "") ..
+			(self.bloom_enabled and "#define BLOOM_ENABLED\n" or "") ..
+			(self.SSR_enabled and "#define SSR_ENABLED\n" or "") ..
+			
+			"const int DEPTH_CANVAS_ID = " .. (1) .. ";\n" ..
+			"const int BLOOM_CANVAS_ID = " .. ((self.AO_enabled or self.SSR_enabled) and 2 or 1) .. ";\n" ..
+			"const int NORMAL_CANVAS_ID = " .. (self.bloom_enabled and 3 or 2) .. ";\n" ..
+			"const int REFLECTINESS_CANVAS_ID = " .. (self.bloom_enabled and 4 or 3) .. ";\n"
+			
 		if info.meshType == "flat" then
-			code = "#pragma language glsl3\n" ..
-				(self.render == "OpenGL ES" and "#define OPENGL_ES\n" or "") ..
-				
-				(self.AO_enabled and "#define AO_ENABLED\n" or "") ..
-				(self.shadow_enabled and "#define SHADOWS_ENABLED\n" or "") ..
-				(self.bloom_enabled and "#define BLOOM_ENABLED\n" or "") ..
-				
+			code = code ..
 				(info.reflections_day and "#define REFLECTIONS_DAY\n" or "") ..
 				(info.reflections_night and "#define REFLECTIONS_NIGHT\n" or "") ..
 				
@@ -138,15 +151,9 @@ function lib.getShader(self, info, lightings)
 				"\n" .. 
 				love.filesystem.read(self.root .. "/shaders/shader_flat.glsl")
 		else
-			code = "#pragma language glsl3\n" ..
-				(self.render == "OpenGL ES" and "#define OPENGL_ES\n" or "") ..
-				
+			code = code ..
 				(info.arrayImage and "#define ARRAY_IMAGE\n" or "") ..
 				(info.combined and "#define TEX_COMBINED\n" or "") ..
-				
-				(self.AO_enabled and "#define AO_ENABLED\n" or "") ..
-				(self.shadow_enabled and "#define SHADOWS_ENABLED\n" or "") ..
-				(self.bloom_enabled and "#define BLOOM_ENABLED\n" or "") ..
 				
 				(info.reflections_day and "#define REFLECTIONS_DAY\n" or "") ..
 				(info.reflections_night and "#define REFLECTIONS_NIGHT\n" or "") ..

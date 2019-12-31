@@ -1,22 +1,6 @@
 //part of the 3DreamEngine by Luke100000
 //shader.glsl - the main vertex and fragment shader
 
-#ifdef OPENGL_ES
-	highp mat3 transpose_optional(mat3 inMatrix) {
-		vec3 i0 = inMatrix[0];
-		vec3 i1 = inMatrix[1];
-		vec3 i2 = inMatrix[2];
-		
-		highp mat3 outMatrix = mat3(
-			vec3(i0.x, i1.x, i2.x),
-			vec3(i0.y, i1.y, i2.y),
-			vec3(i0.z, i1.z, i2.z)
-		);
-		
-		return outMatrix;
-	}
-#endif
-
 //required for secondary depth buffer and AO
 #ifdef AO_ENABLED
 	varying float depth;
@@ -71,7 +55,7 @@ extern float emission;
 	//an optional texture for night, blending done automatically
 	#ifdef REFLECTIONS_NIGHT
 		extern Image background_night;          //background night texture
-		extern mediump vec4 background_color;   //background color
+		extern mediump vec3 background_color;   //background color
 		extern float background_time;           //background day/night factor
 	#endif
 #endif
@@ -87,7 +71,7 @@ void effect() {
 		
 		float ox = float(fract(love_PixelCoord.x * 0.5) > 0.25);
 		float oy = float(fract(love_PixelCoord.y * 0.5) > 0.25) + ox;
-		if (oy > 1.1) oy = 0;
+		if (oy > 1.1) oy = 0.0;
 		
 		float texelSize = 1.0 / 4096.0;
 		float shadow = (
@@ -100,12 +84,12 @@ void effect() {
 	
 	//base light
 	mediump vec3 lighting = ambient;
+	
+	highp vec3 viewVec = normalize(viewPos - vertexPos);
+	highp vec3 normal = normalize(normalVec);
 
 	//point source lightings
 	#ifdef LIGHTING
-		highp vec3 viewVec = normalize(viewPos - vertexPos);
-		highp vec3 normal = normalize(normalVec);
-		
 		//lighting
 		for (int i = 0; i < lightCount; i++) {
 			#ifdef SHADOWS_ENABLED
@@ -115,7 +99,7 @@ void effect() {
 			#endif
 			
 			highp vec3 lightVecN;
-			if (lightColor[i].a == 0) {
+			if (lightColor[i].a == 0.0) {
 				lightVecN = lightPos[i];
 			} else {
 				highp vec3 lightVec = lightPos[i] - vertexPos;
@@ -136,7 +120,7 @@ void effect() {
 	//reflections
 	#ifdef REFLECTIONS_DAY
 		//get reflected normal
-		highp vec3 n = reflect(-viewVec, normal);
+		highp vec3 n = reflect(viewVec, normal);
 		
 		//get UV coord
 		float u = atan(n.x, n.z) * 0.1591549430919 + 0.5;
@@ -145,7 +129,7 @@ void effect() {
 		
 		//get (optional blend) the color of the sky/background
 		#ifdef REFLECTIONS_NIGHT
-			mediump vec3 reflection = mix(Texel(background_day, uv), Texel(background_night, uv), background_time).rgb * background_color.rgb;
+			mediump vec3 reflection = mix(Texel(background_day, uv), Texel(background_night, uv), background_time).rgb * background_color;
 		#else
 			mediump vec3 reflection = Texel(background_day, uv).rgb;
 		#endif
@@ -173,6 +157,12 @@ void effect() {
 		#else
 			love_Canvases[1] = (col - vec4(1.0, 1.0, 1.0, 0.0)) * vec4(0.125, 0.125, 0.125, 1.0);
 		#endif
+	#endif
+
+	//normal and reflectiness for normal/reflection canvas
+	#ifdef SSR_ENABLED
+		love_Canvases[NORMAL_CANVAS_ID] = vec4(reflect(viewVec, normal)*0.5+0.5, 1.0);
+		love_Canvases[REFLECTINESS_CANVAS_ID] = vec4(spec, 1.0, 1.0, 1.0);
 	#endif
 
 }//end effetcs()
@@ -211,7 +201,7 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	//projective transform for the vertex
 	highp vec4 vPos = transformProj * pos;
 	
-	//extract normal vector used for reflections, for flat shading lighting too
+	//extract normal vector
 	normalVec = (transform * vec4(VertexTexCoord.xyz*2.0-1.0, 0.0)).xyz;
 	
 	//extract and pass depth

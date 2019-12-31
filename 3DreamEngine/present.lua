@@ -51,16 +51,16 @@ function lib.present(self, noDepth, noSky)
 		--clear canvas
 		if self.bloom_enabled then
 			if self.AO_enabled then
-				love.graphics.setCanvas({self.canvas, self.canvas_z, self.canvas_bloom, depthstencil = self.canvas_depth})
-				love.graphics.clear({0, 0, 0, 0}, {255, 255, 255, 255}, {0, 0, 0, 0}, {0, 0, 0, 0})
+				love.graphics.setCanvas({self.canvas, self.canvas_z, self.canvas_bloom, self.SSR_enabled and self.canvas_normal or nil, self.SSR_enabled and self.canvas_reflectiness or nil, depthstencil = self.canvas_depth})
+				love.graphics.clear({0, 0, 0, 0}, {255, 255, 255, 255}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0})
 			else
 				love.graphics.setCanvas({self.canvas, self.canvas_bloom, depthstencil = self.canvas_depth})
 				love.graphics.clear({0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0})
 			end
 		else
 			if self.AO_enabled then
-				love.graphics.setCanvas({self.canvas, self.canvas_z, depthstencil = self.canvas_depth})
-				love.graphics.clear({0, 0, 0, 0}, {255, 255, 255, 255}, {0, 0, 0, 0})
+				love.graphics.setCanvas({self.canvas, self.canvas_z, self.SSR_enabled and self.canvas_normal or nil, self.SSR_enabled and self.canvas_reflectiness or nil, depthstencil = self.canvas_depth})
+				love.graphics.clear({0, 0, 0, 0}, {255, 255, 255, 255}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0})
 			else
 				love.graphics.setCanvas({self.canvas, depthstencil = self.canvas_depth})
 				love.graphics.clear({0, 0, 0, 0}, {255, 255, 255, 255})
@@ -127,13 +127,13 @@ function lib.present(self, noDepth, noSky)
 		--set canvas
 		if self.bloom_enabled then
 			if self.AO_enabled then
-				love.graphics.setCanvas({self.canvas, self.canvas_z, self.canvas_bloom, depthstencil = self.canvas_depth})
+				love.graphics.setCanvas({self.canvas, self.canvas_z, self.canvas_bloom, self.SSR_enabled and self.canvas_normal or nil, self.SSR_enabled and self.canvas_reflectiness or nil, depthstencil = self.canvas_depth})
 			else
 				love.graphics.setCanvas({self.canvas, self.canvas_bloom, depthstencil = self.canvas_depth})
 			end
 		else
 			if self.AO_enabled then
-				love.graphics.setCanvas({self.canvas, self.canvas_z, depthstencil = self.canvas_depth})
+				love.graphics.setCanvas({self.canvas, self.canvas_z, self.SSR_enabled and self.canvas_normal or nil, self.SSR_enabled and self.canvas_reflectiness or nil, depthstencil = self.canvas_depth})
 			else
 				love.graphics.setCanvas({self.canvas, depthstencil = self.canvas_depth})
 			end
@@ -209,6 +209,7 @@ function lib.present(self, noDepth, noSky)
 							if shader.reflections_day then
 								local timeFac = 1.0 - (math.cos(self.dayTime*math.pi*2)*0.5+0.5)
 								local color = self:getDayLight(self.dayTime, 0.25)
+								color[4] = nil
 								
 								shader.shader:send("background_day", self.resourceLoader:getTexture(material.reflections_day or v[6].reflections_day or self.sky) or self.textures.default_emission)
 								
@@ -399,5 +400,44 @@ function lib.present(self, noDepth, noSky)
 		love.graphics.setCanvas()
 		love.graphics.setShader()
 		love.graphics.draw(self.canvas_shadow, 0, 0, 0, 256 / self.canvas_shadow_depth:getWidth())
+	end
+	
+	if not love.keyboard.isDown("f7") and self.SSR_enabled then
+		love.graphics.setCanvas(self.canvas_SSR_post)
+		love.graphics.clear()
+		love.graphics.setShader(self.shaders.SSR)
+		self.shaders.SSR:send("depth", self.canvas_z)
+		self.shaders.SSR:send("camTransformInverse", self.shaderVars_camTransformInverse)
+		love.graphics.draw(self.canvas_normal, 0, 0, 0, self.SSR_resolution)
+		love.graphics.setCanvas()
+		
+		love.graphics.setShader(self.shaders.SSR_post)
+		self.shaders.SSR_post:send("diffuse", self.canvas)
+		self.shaders.SSR_post:send("normal", self.canvas_normal)
+		self.shaders.SSR_post:send("reflectiness", self.canvas_reflectiness)
+		
+		local dayTex = self.resourceLoader:getTexture(self.sky) or self.textures.default_emission
+		local nightTex = self.resourceLoader:getTexture(self.night or self.sky) or self.textures.default_emission
+		
+		self.shaders.SSR_post:send("background_day", dayTex)
+		
+		if dayTex == dayTex then
+			local timeFac = 1.0 - (math.cos(self.dayTime*math.pi*2)*0.5+0.5)
+			local color = self:getDayLight(self.dayTime, 0.25)
+			color[4] = nil
+			
+			self.shaders.SSR_post:send("background_color", color)
+			self.shaders.SSR_post:send("background_time", timeFac)
+			
+			self.shaders.SSR_post:send("background_night", nightTex)
+		else
+			self.shaders.SSR_post:send("background_color", {1.0, 1.0, 1.0})
+			self.shaders.SSR_post:send("background_time", 1.0)
+			
+			self.shaders.SSR_post:send("background_night", dayTex)
+		end
+		
+		love.graphics.draw(self.canvas_SSR_post, 0, 0, 0, 1/self.SSR_resolution)
+		love.graphics.setShader()
 	end
 end

@@ -40,6 +40,10 @@ _3DreamEngine.loader["mtl"] = function(self, obj, path)
 			material.shader = v[2]
 		elseif v[1] == "emission" then
 			material.emission = tonumber(v[2])
+		elseif v[1] == "roughness" then
+			material.roughness = tonumber(v[2])
+		elseif v[1] == "metallic" then
+			material.metallic = tonumber(v[2])
 		elseif v[1] == "map_Ka" or v[1] == "map_Kd" then
 			material.tex_albedo = obj.dir .. "/" .. (l:sub(8):match("(.+)%..+") or l:sub(8))
 		elseif v[1] == "map_Kr" or v[1] == "map_Ks" then

@@ -34,7 +34,7 @@ varying highp vec3 vertexPos;              //vertex position for pixel shader
 	varying highp vec4 vertexPosShadow;    //projected vertex position on shadow map
 #endif
 
-varying mat3 objToTangentSpace;
+varying mat3 objToWorldSpace;
 
 
 #ifdef PIXEL
@@ -96,7 +96,7 @@ varying mat3 objToTangentSpace;
 	//an optional texture for night, blending done automatically
 	#ifdef REFLECTIONS_NIGHT
 		extern Image background_night;          //background night texture
-		extern mediump vec4 background_color;   //background color
+		extern mediump vec3 background_color;   //background color
 		extern float background_time;           //background day/night factor
 	#endif
 #endif
@@ -148,12 +148,12 @@ void effect() {
 
 	#ifdef TEX_NORMAL
 		#ifdef ARRAY_IMAGE
-			vec3 normal = normalize(objToTangentSpace * normalize(Texel(tex_normal, VaryingTexCoord.xyz).rgb - 0.5));
+			vec3 normal = normalize(objToWorldSpace * normalize(Texel(tex_normal, VaryingTexCoord.xyz).rgb - 0.5));
 		#else
-			vec3 normal = normalize(objToTangentSpace * normalize(Texel(tex_normal, VaryingTexCoord.xy).rgb - 0.5));
+			vec3 normal = normalize(objToWorldSpace * normalize(Texel(tex_normal, VaryingTexCoord.xy).rgb - 0.5));
 		#endif
 	#else
-		vec3 normal = normalize(objToTangentSpace * normalT);
+		vec3 normal = normalize(objToWorldSpace * normalT);
 	#endif
 
 	#ifdef TEX_ROUGHNESS
@@ -182,9 +182,9 @@ void effect() {
 
 	#ifdef TEX_EMISSION
 		#ifdef ARRAY_IMAGE
-			float emission = Texel(tex_emission, VaryingTexCoord.xyz).r;
+			vec3 emission = Texel(tex_emission, VaryingTexCoord.xyz).rgb;
 		#else
-			float emission = Texel(tex_emission, VaryingTexCoord.xy).r;
+			vec3 emission = Texel(tex_emission, VaryingTexCoord.xy).rgb;
 		#endif
 	#endif
 	
@@ -196,7 +196,7 @@ void effect() {
 		
 		float ox = float(fract(love_PixelCoord.x * 0.5) > 0.25);
 		float oy = float(fract(love_PixelCoord.y * 0.5) > 0.25) + ox;
-		if (oy > 1.1) oy = 0;
+		if (oy > 1.1) oy = 0.0;
 		
 		float texelSize = 1.0 / 4096.0;
 		float shadow = (
@@ -221,12 +221,10 @@ void effect() {
 		
 		//get (optional blend) the color of the sky/background
 		#ifdef REFLECTIONS_NIGHT
-			mediump vec3 reflection = mix(Texel(background_day, uv), Texel(background_night, uv), background_time).rgb * background_color.rgb;
+			mediump vec3 reflection = mix(Texel(background_day, uv), Texel(background_night, uv), background_time).rgb * background_color;
 		#else
 			mediump vec3 reflection = Texel(background_day, uv).rgb;
 		#endif
-	#else
-		vec3 reflection = vec3(0.75);
 	#endif
 	
 	
@@ -238,7 +236,11 @@ void effect() {
 	vec3 reflectiness = mix(fresnel, vec3(1.0), metallic) * pow(1.0 - roughness, 2.0);
 	
 	//color
-	vec3 col = 0.25 * ambient * albedo.rgb * ao + albedo.rgb * emission * 8.0 + reflection * ambient * reflectiness;
+	#ifdef REFLECTIONS_DAY
+		vec3 col = 0.25 * ambient * albedo.rgb * ao + albedo.rgb * emission * 4.0 + reflection * ambient * reflectiness;
+	#else
+		vec3 col = 0.25 * ambient * albedo.rgb * ao + albedo.rgb * emission * 4.0;
+	#endif
 
 	//point source lightings
 	#ifdef LIGHTING
@@ -250,7 +252,7 @@ void effect() {
 			#endif
 			
 			highp vec3 lightVec;
-			if (lightColor[i].a == 0) {
+			if (lightColor[i].a == 0.0) {
 				lightVec = lightPos[i];
 			} else {
 				highp vec3 lightVecR = lightPos[i] - vertexPos;
@@ -276,11 +278,6 @@ void effect() {
 			vec3 specular = nominator / max(denominator, 0.00001);
 			
 			col += lightColor[i].rgb * 4.0 * (diffuse + specular) * power * lightAngle;
-			
-			//debug
-			if (emission >= 0.0) {
-				//col = fresnel;
-			}
 		}
 	#endif
 	
@@ -293,18 +290,19 @@ void effect() {
 	
 	//pass depth
 	#ifdef AO_ENABLED
-		love_Canvases[1] = vec4(depth, 0.0, 0.0, 1.0);
+		love_Canvases[DEPTH_CANVAS_ID] = vec4(depth, 0.0, 0.0, 1.0);
 	#endif
 
 	//pass overflow of final color to the HDR canvas
 	#ifdef BLOOM_ENABLED
-		#ifdef AO_ENABLED
-			love_Canvases[2] = (vec4(col, 1.0) - vec4(1.0, 1.0, 1.0, 0.0)) * vec4(0.125, 0.125, 0.125, 1.0);
-		#else
-			love_Canvases[1] = (vec4(col, 1.0) - vec4(1.0, 1.0, 1.0, 0.0)) * vec4(0.125, 0.125, 0.125, 1.0);
-		#endif
+		love_Canvases[BLOOM_CANVAS_ID] = (vec4(col, 1.0) - vec4(1.0, 1.0, 1.0, 0.0)) * vec4(0.125, 0.125, 0.125, 1.0);
 	#endif
 
+	//normal and reflectiness for normal/reflection canvas
+	#ifdef SSR_ENABLED
+		love_Canvases[NORMAL_CANVAS_ID] = vec4(reflect(viewVec, normal)*0.5+0.5, 1.0);
+		love_Canvases[REFLECTINESS_CANVAS_ID] = vec4(length(reflectiness), 1.0, 1.0, 1.0);
+	#endif
 }
 #endif
 
@@ -339,7 +337,7 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	vec3 N = normalize(vec3(transform * vec4((VertexNormal*2.0-1.0), 0.0)));
 	vec3 B = normalize(vec3(transform * vec4((VertexBiTangent*2.0-1.0), 0.0)));
 	
-	objToTangentSpace = mat3(T, B, N);
+	objToWorldSpace = mat3(T, B, N);
 	
 	vertexPos = pos.xyz;
 	
