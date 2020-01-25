@@ -33,9 +33,9 @@ io.stdout:setvbuf("no")
 love.mouse.setRelativeMode(true)
 
 player = {
-	x = 10,
-	y = 5,
-	z = 5,
+	x = 8,
+	y = 10,
+	z = 2,
 	ax = 0,
 	ay = 0,
 	az = 0,

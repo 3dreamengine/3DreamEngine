@@ -5,6 +5,6 @@ newmtl None
 Ns 500
 Ka 0.8 0.8 0.8
 Kd 0.25 0.25 0.25
-Ks 0.1 0.1 0.1
+Ks 0.5 0.1 0.1
 d 1
 illum 2

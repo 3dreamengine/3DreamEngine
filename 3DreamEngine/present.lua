@@ -38,7 +38,7 @@ function lib.present(self, noDepth, noSky)
 		love.graphics.setCanvas()
 	end
 	
-	
+	--render meshes
 	for i = 1, self.anaglyph3D and 2 or 1 do
 		lib.stats.shadersInUse = 0
 		lib.stats.materialDraws = 0
@@ -67,10 +67,11 @@ function lib.present(self, noDepth, noSky)
 			end
 		end
 		
-		--sky
+		--sky and clouds
 		if not noSky then
 			love.graphics.setColor(clearColor)
 			
+			--sky
 			if self.sky then
 				local transform = matrix{
 					{1, 0, 0, self.shaderVars_viewPos[1]},
@@ -79,8 +80,8 @@ function lib.present(self, noDepth, noSky)
 					{0, 0, 0, 1},
 				}
 				
-				love.graphics.setDepthMode("less", false)
-				love.graphics.setCanvas({self.canvas, depthstencil = self.canvas_depth})
+				love.graphics.setDepthMode()
+				love.graphics.setCanvas(self.canvas)
 				
 				local timeFac = 1.0 - (math.cos(self.dayTime*math.pi*2)*0.5+0.5)
 				local color = self:getDayLight(self.dayTime, 0.25)
@@ -120,6 +121,7 @@ function lib.present(self, noDepth, noSky)
 				self.shaders.cloud:send("time", love.timer.getTime() / 1000)
 				self.shaders.cloud:send("cam", transformProj * transform)
 				
+				love.graphics.setColor(self.color_ambient[1] * self.color_ambient[4], self.color_ambient[2] * self.color_ambient[4], self.color_ambient[3] * self.color_ambient[4])
 				love.graphics.draw(self.object_clouds.objects.Cube.mesh)
 			end
 		end
@@ -146,7 +148,7 @@ function lib.present(self, noDepth, noSky)
 			else
 				love.graphics.setDepthMode("less", step == 1)
 			end
-			for shaderInfo, s in pairs(self.drawTable) do
+			for shaderInfo,s in pairs(self.drawTable) do
 				--lighting
 				local light = { }
 				local pos = { }
@@ -182,6 +184,7 @@ function lib.present(self, noDepth, noSky)
 				if count > 0 then
 					shader.shader:send("lightColor", unpack(light))
 					shader.shader:send("lightPos", unpack(pos))
+					shader.shader:send("lightCount", count)
 				end
 				
 				--ambient lighting
@@ -206,6 +209,7 @@ function lib.present(self, noDepth, noSky)
 								material:update(v[2], v[6])
 							end
 							
+							--sky texture
 							if shader.reflections_day then
 								local timeFac = 1.0 - (math.cos(self.dayTime*math.pi*2)*0.5+0.5)
 								local color = self:getDayLight(self.dayTime, 0.25)
@@ -253,7 +257,7 @@ function lib.present(self, noDepth, noSky)
 								if shader.tex_emission then
 									shader.shader:send("tex_emission", self.resourceLoader:getTexture(material.tex_emission) or tex.default_emission)
 								else
-									shader.shader:send("emission", material.emission or 0)
+									shader.shader:send("emissionFactor", material.emission or 0)
 								end
 								
 								if shader.tex_ao then

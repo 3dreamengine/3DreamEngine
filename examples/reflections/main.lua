@@ -69,9 +69,9 @@ function love.draw()
 	
 	--torches, lights and particles
 	for d,s in ipairs({
-		{0, 0.25, 1.85},
-		{1.25, 0.25, -1.85},
-		{-1.25, 0.25, -1.85},
+		{0, 0.25, -1.85},
+		{1.25, 0.25, 1.85},
+		{-1.25, 0.25, 1.85},
 	}) do
 		dream:addLight(s[1], s[2], s[3], 1.0, 0.75, 0.1, 0.5 + 0.3 * love.math.noise(love.timer.getTime()*2, d))
 		
@@ -90,11 +90,11 @@ function love.draw()
 	end
 	
 	torch:reset()
-	torch:rotateY(math.pi/2)
-	dream:draw(torch, 0, 0, 1.9, 0.075)
-	torch:rotateY(math.pi)
-	dream:draw(torch, 1.25, 0, -1.9, 0.075)
-	dream:draw(torch, -1.25, 0, -1.9, 0.075)
+	torch:rotateY(-math.pi/2)
+	dream:draw(torch, 0, 0, -1.9, 0.075)
+	torch:rotateY(-math.pi)
+	dream:draw(torch, 1.25, 0, 1.9, 0.075)
+	dream:draw(torch, -1.25, 0, 1.9, 0.075)
 
 	dream:present()
 end

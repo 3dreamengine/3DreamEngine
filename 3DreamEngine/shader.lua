@@ -108,8 +108,6 @@ function lib.getShaderInfo(self, mat, meshType, obj)
 		tex_metallic = mat.tex_metallic ~= nil,
 		tex_ao = mat.tex_ao ~= nil,
 		tex_emission = mat.tex_emission ~= nil,
-		
-		shaders = { },
 	}
 	
 	local ID = (dat.combined and 0 or 1) + (dat.arrayImage and 0 or 2) + (dat.reflections_day and 0 or 4) + (dat.reflections_night and 0 or 8)
@@ -125,8 +123,8 @@ end
 
 --returns a full shader based on the shaderInfo and lighting count
 _RENDERER = love.graphics.getRendererInfo()
-function lib.getShader(self, info, lightings)
-	if not info.shaders[lightings] then
+function lib.getShader(self, info)
+	if not info.shader then
 		--construct shader
 		local code = "#pragma language glsl3\n" ..
 			((self.AO_enabled or self.SSR_enabled) and "#define AO_ENABLED\n" or "") ..
@@ -146,8 +144,8 @@ function lib.getShader(self, info, lightings)
 				
 				(info.variant == "wind" and "#define VARIANT_WIND\n" or "") ..
 				
-				(lightings > 0 and "#define LIGHTING\n" or "") ..
-				(lightings > 0 and "const int lightCount = " .. lightings .. ";\n" or "") ..
+				(self.max_lights > 0 and "#define LIGHTING\n" or "") ..
+				(self.max_lights > 0 and "const int MAX_LIGHTS = " .. self.max_lights .. ";\n" or "") ..
 				"\n" .. 
 				love.filesystem.read(self.root .. "/shaders/shader_flat.glsl")
 		else
@@ -167,22 +165,22 @@ function lib.getShader(self, info, lightings)
 				(info.tex_ao and "#define TEX_AO\n" or "") ..
 				(info.tex_emission and "#define TEX_EMISSION\n" or "") ..
 				
-				(lightings > 0 and "#define LIGHTING\n" or "") ..
-				(lightings > 0 and "const int lightCount = " .. lightings .. ";\n" or "") ..
+				(self.max_lights > 0 and "#define LIGHTING\n" or "") ..
+				(self.max_lights > 0 and "const int MAX_LIGHTS = " .. self.max_lights .. ";\n" or "") ..
 				"\n" .. 
 				love.filesystem.read(self.root .. "/shaders/shader.glsl")
 		end
 		
 		local ok, shader = pcall(love.graphics.newShader, code:gsub("	", ""))
 		if ok then
-			info.shaders[lightings] = shader
+			info.shader = shader
 		else
 			love.filesystem.write("shader.glsl", code)
 			error(shader)
 		end
 	end
 	
-	info.shader = info.shaders[lightings]
+	info.shader = info.shader
 	
 	return info
 end

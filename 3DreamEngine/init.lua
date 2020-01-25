@@ -72,6 +72,7 @@ lib.textures_mipmaps = true
 lib.textures_filter = "linear"
 
 lib.msaa = 4
+lib.max_lights = 16
 
 lib.shadow_enabled = false
 lib.shadow_resolution = 4096

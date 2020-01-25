@@ -163,7 +163,19 @@ function lib.loadObject(self, path, args)
 	--if two object files are available (.obj and .vox) it might crash, since it loads all)
 	local found = false
 	for _,typ in ipairs(supportedFiles) do
-		if love.filesystem.getInfo(obj.path .. "." .. typ) then
+		local info = love.filesystem.getInfo(obj.path .. "." .. typ)
+		if info then
+			--check if 3do is up to date
+			if typ == "3do" then
+				local info2 = love.filesystem.getInfo(obj.path .. ".obj")
+				local info3 = love.filesystem.getInfo(obj.path .. ".mtl")
+				local info4 = love.filesystem.getInfo(obj.path .. ".3de")
+				print(info3)
+				if info2 and info2.modtime > info.modtime or info3 and info3.modtime > info.modtime or info4 and info4.modtime > info.modtime then
+					goto skip
+				end
+			end
+			
 			found = true
 			
 			--load most detailed/default object
@@ -178,6 +190,7 @@ function lib.loadObject(self, path, args)
 				break
 			end
 		end
+		::skip::
 	end
 	
 	if not found then

@@ -9,9 +9,9 @@
 //lighting
 #ifdef LIGHTING
 	//light pos and color (r, g, b and distance meter)
-	extern highp vec3 lightPos[lightCount];
-	extern highp vec3 lightPosT[lightCount];
-	extern lowp vec4 lightColor[lightCount];
+	extern highp vec3 lightPos[MAX_LIGHTS];
+	extern lowp vec4 lightColor[MAX_LIGHTS];
+	extern int lightCount;
 #endif
 
 //transformations
@@ -81,7 +81,7 @@ varying mat3 objToWorldSpace;
 #endif
 
 #ifndef TEX_EMISSION
-	extern float emission;
+	extern float emissionFactor;
 #elif defined ARRAY_IMAGE
 	extern ArrayImage tex_emission;
 #else
@@ -186,6 +186,8 @@ void effect() {
 		#else
 			vec3 emission = Texel(tex_emission, VaryingTexCoord.xy).rgb;
 		#endif
+	#else
+		vec3 emission = albedo.xyz * emissionFactor;
 	#endif
 	
 
@@ -237,9 +239,9 @@ void effect() {
 	
 	//color
 	#ifdef REFLECTIONS_DAY
-		vec3 col = 0.25 * ambient * albedo.rgb * ao + albedo.rgb * emission * 4.0 + reflection * ambient * reflectiness;
+		vec3 col = 0.25 * ambient * albedo.rgb * ao + emission * 4.0 + reflection * ambient * reflectiness;
 	#else
-		vec3 col = 0.25 * ambient * albedo.rgb * ao + albedo.rgb * emission * 4.0;
+		vec3 col = 0.25 * ambient * albedo.rgb * ao + emission * 4.0;
 	#endif
 
 	//point source lightings

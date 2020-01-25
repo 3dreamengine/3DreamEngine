@@ -21,11 +21,11 @@ _3DreamEngine.loader["obj"] = function(self, obj, path)
 		end
 		
 		if v[1] == "v" then
-			vertices[#vertices+1] = {tonumber(v[2]), tonumber(v[3]), -tonumber(v[4])}
+			vertices[#vertices+1] = {tonumber(v[2]), tonumber(v[3]), tonumber(v[4])}
 		elseif v[1] == "vn" then
-			normals[#normals+1] = {tonumber(v[2]), tonumber(v[3]), -tonumber(v[4])}
+			normals[#normals+1] = {tonumber(v[2]), tonumber(v[3]), tonumber(v[4])}
 		elseif v[1] == "vt" then
-			texVertices[#texVertices+1] = {tonumber(v[2]), 1-tonumber(v[3])}
+			texVertices[#texVertices+1] = {tonumber(v[2]), 1.0 - tonumber(v[3])}
 		elseif v[1] == "usemtl" and not blocked then
 			material = obj.materials[l:sub(8)] or obj.materials.None
 			if obj.splitMaterials and not o.name:find("LAMP") then
@@ -62,11 +62,11 @@ _3DreamEngine.loader["obj"] = function(self, obj, path)
 			
 			if #v-1 == 3 then
 				--tris
-				o.faces[#o.faces+1] = {#o.final-0, #o.final-1, #o.final-2}
+				o.faces[#o.faces+1] = {#o.final-2, #o.final-1, #o.final-0}
 			elseif #v-1 == 4 then
 				--quad
-				o.faces[#o.faces+1] = {#o.final-1, #o.final-2, #o.final-3}
-				o.faces[#o.faces+1] = {#o.final-0, #o.final-1, #o.final-3}
+				o.faces[#o.faces+1] = {#o.final-3, #o.final-2, #o.final-1}
+				o.faces[#o.faces+1] = {#o.final-3, #o.final-1, #o.final-0}
 			else
 				error("only tris and quads supported (got " .. (#v-1) .. " vertices)")
 			end

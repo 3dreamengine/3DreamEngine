@@ -11,8 +11,9 @@ varying vec3 normalVec;
 //lighting
 #ifdef LIGHTING
 	//light pos and color (r, g, b and distance meter)
-	extern highp vec3 lightPos[lightCount];
-	extern highp vec4 lightColor[lightCount];
+	extern highp vec3 lightPos[MAX_LIGHTS];
+	extern highp vec4 lightColor[MAX_LIGHTS];
+	extern int lightCount;
 #endif
 
 //transformations
