@@ -170,7 +170,7 @@ function lib.loadObject(self, path, args)
 				local info2 = love.filesystem.getInfo(obj.path .. ".obj")
 				local info3 = love.filesystem.getInfo(obj.path .. ".mtl")
 				local info4 = love.filesystem.getInfo(obj.path .. ".3de")
-				print(info3)
+				
 				if info2 and info2.modtime > info.modtime or info3 and info3.modtime > info.modtime or info4 and info4.modtime > info.modtime then
 					goto skip
 				end

@@ -36,6 +36,9 @@ lib.shaders = { }
 --blur, 7-Kernel, only red channel
 lib.shaders.blur = love.graphics.newShader(lib.root .. "/shaders/blur.glsl")
 
+--only red channel
+lib.shaders.rOnly = love.graphics.newShader(lib.root .. "/shaders/rOnly.glsl")
+
 --combines AO, applies distance fog
 lib.shaders.post = love.graphics.newShader(lib.root .. "/shaders/post.glsl")
 
@@ -54,11 +57,11 @@ lib.shaders.sky = love.graphics.newShader(lib.root .. "/shaders/sky.glsl")
 --the shadow shader
 lib.shaders.shadow = love.graphics.newShader(lib.root .. "/shaders/shadow.glsl")
 
---the shadow shader
+--the SSR shader
 lib.shaders.SSR = love.graphics.newShader(lib.root .. "/shaders/SSR.glsl")
 
 --the shadow shader
-lib.shaders.SSR_post = love.graphics.newShader(lib.root .. "/shaders/SSR_post.glsl")
+lib.shaders.fxaa = love.graphics.newShader(lib.root .. "/shaders/fxaa.glsl")
 
 function lib.loadShader(self)
 	--the particle shader, draw textures at a given depth, also applies depth
@@ -68,20 +71,21 @@ function lib.loadShader(self)
 	)
 
 	--the ambient occlusion shader
-	self.shaders.AO = love.graphics.newShader(
-		"const int sampleCount = " .. self.AO_quality .. ";\n" ..
-		love.filesystem.read(self.root .. "/shaders/AO.glsl")
+	self.shaders.SSAO = love.graphics.newShader(
+		"#define SAMPLE_COUNT " .. self.AO_quality .. "\n" ..
+		love.filesystem.read(self.root .. "/shaders/SSAO.glsl")
 	)
 	
 	--pass samples to the shader
+	local range = 16.0
 	local f = { }
 	for i = 1, self.AO_quality do
-		local r = i / self.AO_quality * math.pi * 2
-		local d = (0.5 + i % 4) / 4
-		local range = 24
-		f[#f+1] = {math.cos(r)*d*range / love.graphics.getWidth(), math.sin(r)*d*range / love.graphics.getHeight(), (1-d)^2 / self.AO_quality}
+		local x = (math.random()*2.0-1.0)
+		local y = (math.random()*2.0-1.0)
+		local l = math.random() * range / math.sqrt(x*x+y*y)
+		f[#f+1] = {x * l / self.canvas:getWidth(), y * l / self.canvas:getHeight()}
 	end
-	self.shaders.AO:send("samples", unpack(f))
+	self.shaders.SSAO:send("samples", unpack(f))
 end
 
 --store all main shaders
@@ -132,9 +136,9 @@ function lib.getShader(self, info)
 			(self.bloom_enabled and "#define BLOOM_ENABLED\n" or "") ..
 			(self.SSR_enabled and "#define SSR_ENABLED\n" or "") ..
 			
-			"const int DEPTH_CANVAS_ID = " .. (1) .. ";\n" ..
-			"const int BLOOM_CANVAS_ID = " .. ((self.AO_enabled or self.SSR_enabled) and 2 or 1) .. ";\n" ..
-			"const int NORMAL_CANVAS_ID = " .. (self.bloom_enabled and 3 or 2) .. ";\n" ..
+			"const int NORMAL_CANVAS_ID = " .. (1) .. ";\n" ..
+			"const int POSITION_CANVAS_ID = " .. (2) .. ";\n" ..
+			"const int BLOOM_CANVAS_ID = " .. (3) .. ";\n" ..
 			"const int REFLECTINESS_CANVAS_ID = " .. (self.bloom_enabled and 4 or 3) .. ";\n"
 			
 		if info.meshType == "flat" then

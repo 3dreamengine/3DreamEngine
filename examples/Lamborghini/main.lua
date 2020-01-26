@@ -5,12 +5,6 @@ love.window.setTitle("Lamborghini Example")
 --settings
 dream.objectDir = "examples/Lamborghini"
 
-dream.AO_enabled = true      --ambient occlusion?
-dream.AO_strength = 0.75     --blend strength
-dream.AO_quality = 32        --samples per pixel (8-32 recommended)
-dream.AO_quality_smooth = 2  --smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
-dream.AO_resolution = 1.0    --resolution factor
-
 dream.bloom_strength = 5.0
 
 dream.nameDecoder = "none"

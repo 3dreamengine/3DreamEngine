@@ -50,21 +50,11 @@ function lib.present(self, noDepth, noSky)
 		
 		--clear canvas
 		if self.bloom_enabled then
-			if self.AO_enabled then
-				love.graphics.setCanvas({self.canvas, self.canvas_z, self.canvas_bloom, self.SSR_enabled and self.canvas_normal or nil, self.SSR_enabled and self.canvas_reflectiness or nil, depthstencil = self.canvas_depth})
-				love.graphics.clear({0, 0, 0, 0}, {255, 255, 255, 255}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0})
-			else
-				love.graphics.setCanvas({self.canvas, self.canvas_bloom, depthstencil = self.canvas_depth})
-				love.graphics.clear({0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0})
-			end
+			love.graphics.setCanvas({self.canvas, self.canvas_normal, self.canvas_position, self.canvas_bloom, self.SSR_enabled and self.canvas_reflectiness or nil, depthstencil = self.canvas_depth})
+			love.graphics.clear({0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0})
 		else
-			if self.AO_enabled then
-				love.graphics.setCanvas({self.canvas, self.canvas_z, self.SSR_enabled and self.canvas_normal or nil, self.SSR_enabled and self.canvas_reflectiness or nil, depthstencil = self.canvas_depth})
-				love.graphics.clear({0, 0, 0, 0}, {255, 255, 255, 255}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0})
-			else
-				love.graphics.setCanvas({self.canvas, depthstencil = self.canvas_depth})
-				love.graphics.clear({0, 0, 0, 0}, {255, 255, 255, 255})
-			end
+			love.graphics.setCanvas({self.canvas, self.canvas_normal, self.canvas_position, self.SSR_enabled and self.canvas_reflectiness or nil, depthstencil = self.canvas_depth})
+			love.graphics.clear({0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0})
 		end
 		
 		--sky and clouds
@@ -128,17 +118,9 @@ function lib.present(self, noDepth, noSky)
 		
 		--set canvas
 		if self.bloom_enabled then
-			if self.AO_enabled then
-				love.graphics.setCanvas({self.canvas, self.canvas_z, self.canvas_bloom, self.SSR_enabled and self.canvas_normal or nil, self.SSR_enabled and self.canvas_reflectiness or nil, depthstencil = self.canvas_depth})
-			else
-				love.graphics.setCanvas({self.canvas, self.canvas_bloom, depthstencil = self.canvas_depth})
-			end
+			love.graphics.setCanvas({self.canvas, self.canvas_normal, self.canvas_position, self.canvas_bloom, self.SSR_enabled and self.canvas_reflectiness or nil, depthstencil = self.canvas_depth})
 		else
-			if self.AO_enabled then
-				love.graphics.setCanvas({self.canvas, self.canvas_z, self.SSR_enabled and self.canvas_normal or nil, self.SSR_enabled and self.canvas_reflectiness or nil, depthstencil = self.canvas_depth})
-			else
-				love.graphics.setCanvas({self.canvas, depthstencil = self.canvas_depth})
-			end
+			love.graphics.setCanvas({self.canvas, self.canvas_normal, self.canvas_position, self.SSR_enabled and self.canvas_reflectiness or nil, depthstencil = self.canvas_depth})
 		end
 		
 		--two steps, once for solid and once for transparent objects
@@ -314,7 +296,6 @@ function lib.present(self, noDepth, noSky)
 			end
 		end
 		
-		
 		love.graphics.setDepthMode()
 		love.graphics.origin()
 		love.graphics.setColor(1, 1, 1)
@@ -322,32 +303,34 @@ function lib.present(self, noDepth, noSky)
 		--Ambient Occlusion (SSAO)
 		if self.AO_enabled then
 			love.graphics.setBlendMode("replace", "premultiplied")
-			love.graphics.setCanvas(self.canvas_blur_1)
+			love.graphics.setCanvas(self.canvas_ao_1)
 			love.graphics.clear()
-			love.graphics.setShader(self.shaders.AO)
-			love.graphics.draw(self.canvas_z, 0, 0, 0, self.AO_resolution)
+			love.graphics.setShader(self.shaders.SSAO)
+			self.shaders.SSAO:send("tex_depth", self.canvas_depth)
+			love.graphics.draw(self.canvas_normal, 0, 0, 0, self.AO_resolution)
+			
 			love.graphics.setShader(self.shaders.blur)
-			self.shaders.blur:send("size", {1/self.canvas_blur_1:getWidth(), 1/self.canvas_blur_1:getHeight()})
+			self.shaders.blur:send("size", {1/self.canvas_ao_1:getWidth(), 1/self.canvas_ao_1:getHeight()})
 			
 			for i = 1, self.AO_quality_smooth do
 				self.shaders.blur:send("vstep", 1.0)
 				self.shaders.blur:send("hstep", 0.0)
-				love.graphics.setCanvas(self.canvas_blur_2)
+				love.graphics.setCanvas(self.canvas_ao_2)
 				love.graphics.clear()
-				love.graphics.draw(self.canvas_blur_1)
+				love.graphics.draw(self.canvas_ao_1)
 				
 				self.shaders.blur:send("vstep", 0.0)
 				self.shaders.blur:send("hstep", 1.0)
-				love.graphics.setCanvas(self.canvas_blur_1)
+				love.graphics.setCanvas(self.canvas_ao_1)
 				love.graphics.clear()
-				love.graphics.draw(self.canvas_blur_2)
+				love.graphics.draw(self.canvas_ao_2)
 			end
 			
 			love.graphics.setCanvas()
 			love.graphics.setShader(self.shaders.post)
-			self.shaders.post:send("AO", self.canvas_blur_1)
+			self.shaders.post:send("AO", self.canvas_ao_1)
 			self.shaders.post:send("strength", love.keyboard.isDown("f9") and 0.0 or self.AO_strength)
-			self.shaders.post:send("depth", self.canvas_z)
+			self.shaders.post:send("depth", self.canvas_depth)
 			self.shaders.post:send("fog", self.fog)
 			love.graphics.setColor(clearColor)
 			love.graphics.setBlendMode(i == 2 and "add" or "alpha")
@@ -355,7 +338,7 @@ function lib.present(self, noDepth, noSky)
 			love.graphics.setBlendMode("alpha")
 			love.graphics.setShader()
 		else
-			love.graphics.setShader()
+			love.graphics.setShader(self.shaders.fxaa)
 			love.graphics.setCanvas()
 			love.graphics.setColor(clearColor)
 			love.graphics.setBlendMode(i == 2 and "add" or "alpha")
@@ -400,48 +383,61 @@ function lib.present(self, noDepth, noSky)
 		end
 	end
 	
-	if love.keyboard.isDown("f8") and self.shadow_enabled then
-		love.graphics.setCanvas()
-		love.graphics.setShader()
-		love.graphics.draw(self.canvas_shadow, 0, 0, 0, 256 / self.canvas_shadow_depth:getWidth())
-	end
-	
+	--screen space reflections
 	if not love.keyboard.isDown("f7") and self.SSR_enabled then
-		love.graphics.setCanvas(self.canvas_SSR_post)
-		love.graphics.clear()
-		love.graphics.setShader(self.shaders.SSR)
-		self.shaders.SSR:send("depth", self.canvas_z)
-		self.shaders.SSR:send("camTransformInverse", self.shaderVars_camTransformInverse)
-		love.graphics.draw(self.canvas_normal, 0, 0, 0, self.SSR_resolution)
 		love.graphics.setCanvas()
+		love.graphics.setShader(self.shaders.SSR)
 		
-		love.graphics.setShader(self.shaders.SSR_post)
-		self.shaders.SSR_post:send("diffuse", self.canvas)
-		self.shaders.SSR_post:send("normal", self.canvas_normal)
-		self.shaders.SSR_post:send("reflectiness", self.canvas_reflectiness)
+		self.shaders.SSR:send("tex_depth", self.canvas_depth)
+		self.shaders.SSR:send("tex_normal", self.canvas_normal)
+		self.shaders.SSR:send("tex_position", self.canvas_position)
+		self.shaders.SSR:send("tex_reflectiness", self.canvas_reflectiness)
+		self.shaders.SSR:send("transformProj", self.shaderVars_transformProj)
+		self.shaders.SSR:send("viewPos", self.shaderVars_viewPos)
 		
 		local dayTex = self.resourceLoader:getTexture(self.sky) or self.textures.default_emission
 		local nightTex = self.resourceLoader:getTexture(self.night or self.sky) or self.textures.default_emission
-		
-		self.shaders.SSR_post:send("background_day", dayTex)
-		
+		self.shaders.SSR:send("background_day", dayTex)
 		if dayTex == dayTex then
 			local timeFac = 1.0 - (math.cos(self.dayTime*math.pi*2)*0.5+0.5)
 			local color = self:getDayLight(self.dayTime, 0.25)
 			color[4] = nil
 			
-			self.shaders.SSR_post:send("background_color", color)
-			self.shaders.SSR_post:send("background_time", timeFac)
+			self.shaders.SSR:send("background_color", color)
+			self.shaders.SSR:send("background_time", timeFac)
 			
-			self.shaders.SSR_post:send("background_night", nightTex)
+			self.shaders.SSR:send("background_night", nightTex)
 		else
-			self.shaders.SSR_post:send("background_color", {1.0, 1.0, 1.0})
-			self.shaders.SSR_post:send("background_time", 1.0)
+			self.shaders.SSR:send("background_color", {1.0, 1.0, 1.0})
+			self.shaders.SSR:send("background_time", 1.0)
 			
-			self.shaders.SSR_post:send("background_night", dayTex)
+			self.shaders.SSR:send("background_night", dayTex)
 		end
 		
-		love.graphics.draw(self.canvas_SSR_post, 0, 0, 0, 1/self.SSR_resolution)
+		love.graphics.draw(self.canvas)
+		love.graphics.setShader()
+	end
+	
+	--debug
+	if love.keyboard.isDown("f8") then
+		love.graphics.setCanvas()
+		love.graphics.setShader(self.shaders.rOnly)
+		if self.canvas_shadow then
+			--love.graphics.draw(self.canvas_shadow, 0, 0, 0, 256 / self.canvas_shadow_depth:getWidth())
+		end
+		if self.canvas_ao_1 then
+			love.graphics.draw(self.canvas_ao_1, 0, 0, 0, 256 / self.canvas_ao_1:getWidth())
+		end
+		if self.canvas_bloom_1 then
+			love.graphics.draw(self.canvas_bloom_1, 256, 0, 0, 256 / self.canvas_bloom_1:getWidth())
+		end
+		love.graphics.setShader()
+		if self.canvas_normal then
+			love.graphics.draw(self.canvas_normal, 0, 256 * self.canvas:getHeight() / self.canvas:getWidth(), 0, 256 / self.canvas_normal:getWidth())
+		end
+		if self.canvas_position then
+			love.graphics.draw(self.canvas_position, 256, 256 * self.canvas:getHeight() / self.canvas:getWidth(), 0, 256 / self.canvas_position:getWidth())
+		end
 		love.graphics.setShader()
 	end
 end

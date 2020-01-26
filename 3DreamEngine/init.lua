@@ -54,10 +54,10 @@ lib.objectDir = ""
 
 --settings
 lib.AO_enabled = true
-lib.AO_strength = 0.5
-lib.AO_quality = 24
+lib.AO_strength = 0.75
+lib.AO_quality = 16
 lib.AO_quality_smooth = 1
-lib.AO_resolution = 0.5
+lib.AO_resolution = 0.75
 
 lib.bloom_enabled = true
 lib.bloom_size = 12.0
@@ -66,7 +66,6 @@ lib.bloom_resolution = 0.5
 lib.bloom_strength = 4.0
 
 lib.SSR_enabled = false
-lib.SSR_resolution = 1.0
 
 lib.textures_mipmaps = true
 lib.textures_filter = "linear"
@@ -130,25 +129,21 @@ lib.cam = lib:newCam()
 lib.currentCam = lib.cam
 
 function lib.resize(self, w, h)
-	self.canvas = love.graphics.newCanvas(w, h, {format = "normal", readable = true, msaa = self.msaa})
-	self.canvas_depth = love.graphics.newCanvas(w, h, {format = self.canvasFormats["depth32f"] and "depth32f" or self.canvasFormats["depth24"] and "depth24" or "depth16", readable = false, msaa = self.msaa})
+	self.canvas = love.graphics.newCanvas(w, h, {format = "normal", readable = true, msaa = 0})
+	self.canvas_depth = love.graphics.newCanvas(w, h, {format = self.canvasFormats["depth32f"] and "depth32f" or self.canvasFormats["depth24"] and "depth24" or "depth16", readable = true, msaa = 0})
+	self.canvas_normal = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = 0})
+	self.canvas_position = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = 0})
 	
+	--screen space ambient occlusion
 	if self.AO_enabled then
-		local ok = pcall(function()
-			self.canvas_z = love.graphics.newCanvas(w, h, {format = "r16f", readable = true, msaa = self.msaa})
-		end)
-		if ok then
-			self.canvas_blur_1 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
-			self.canvas_blur_2 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
-		else
-			self.AO_enabled = false
-			print("r16f canvas creation failed, AO deactivated")
-		end
+		self.canvas_ao_1 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
+		self.canvas_ao_2 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
 	end
 	
+	--bloom
 	if self.bloom_enabled then
 		local ok = pcall(function()
-			self.canvas_bloom = love.graphics.newCanvas(w, h, {format = "normal", readable = true, msaa = self.msaa})
+			self.canvas_bloom = love.graphics.newCanvas(w, h, {format = "normal", readable = true, msaa = 0})
 		end)
 		if ok then
 			self.canvas_bloom_1 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = "normal", readable = true, msaa = 0})
@@ -159,21 +154,23 @@ function lib.resize(self, w, h)
 		end
 	end
 	
+	--screen space reflections
 	if self.SSR_enabled then
-		self.canvas_normal = love.graphics.newCanvas(w, h, {format = self.canvasFormats["rgba16f"] and "rgba16f" or "normal", readable = true, msaa = self.msaa})
-		self.canvas_reflectiness = love.graphics.newCanvas(w, h, {format = self.canvasFormats["r8"] and "r8" or "normal", readable = true, msaa = self.msaa})
-		self.canvas_SSR_post = love.graphics.newCanvas(w * self.SSR_resolution, h * self.SSR_resolution, {format = "normal", readable = true, msaa = 0})
+		self.canvas_reflectiness = love.graphics.newCanvas(w, h, {format = self.canvasFormats["r8"] and "r8" or "normal", readable = true, msaa = 0})
 	end
 	
+	--shadows
 	if self.shadow_enabled then
 		self.canvas_shadow_depth = love.graphics.newCanvas(self.shadow_resolution, self.shadow_resolution, {format = self.canvasFormats["depth32f"] and "depth32f" or self.canvasFormats["depth24"] and "depth24" or "depth16", readable = true, msaa = 0})
 		
 		self.canvas_shadow_depth:setDepthSampleMode("greater")
 		self.canvas_shadow_depth:setFilter("linear", "linear", 1)
 		
-		--dummy canvas, need a better approach
+		--dummy canvas
 		self.canvas_shadow = love.graphics.newCanvas(self.shadow_resolution, self.shadow_resolution, {format = self.canvasFormats["r8"] and "r8" or "normal", readable = true, msaa = 0})
 	end
+	
+	self:loadShader()
 end
 
 function lib.init(self)
@@ -245,7 +242,6 @@ function lib.prepare(self, c, noDepth)
 	else
 		self.shaderVars_transformProj = projection * self.currentCam.transform
 	end
-	self.shaderVars_camTransformInverse = self.currentCam.transform:subm(1, 1, 3, 3)
 	
 	--shadow
 	if self.shadow_enabled then

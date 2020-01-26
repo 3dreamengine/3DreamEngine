@@ -217,9 +217,9 @@ void effect() {
 		highp vec3 n = reflect(viewVec, normal);
 		
 		//get UV coord
-		float u = atan(n.x, n.z) * 0.1591549430919 + 0.5;
+		float u = atan(n.x, n.z) * 0.1591549430919 - 0.25;
 		float v = n.y * 0.5 + 0.5;
-		mediump vec2 uv = 1.0 - vec2(u, v);
+		mediump vec2 uv = vec2(u, v);
 		
 		//get (optional blend) the color of the sky/background
 		#ifdef REFLECTIONS_NIGHT
@@ -290,10 +290,8 @@ void effect() {
 		discard;
 	}
 	
-	//pass depth
-	#ifdef AO_ENABLED
-		love_Canvases[DEPTH_CANVAS_ID] = vec4(depth, 0.0, 0.0, 1.0);
-	#endif
+	love_Canvases[NORMAL_CANVAS_ID] = vec4(normal, 1.0);
+	love_Canvases[POSITION_CANVAS_ID] = vec4(vertexPos, 1.0);
 
 	//pass overflow of final color to the HDR canvas
 	#ifdef BLOOM_ENABLED
@@ -302,7 +300,6 @@ void effect() {
 
 	//normal and reflectiness for normal/reflection canvas
 	#ifdef SSR_ENABLED
-		love_Canvases[NORMAL_CANVAS_ID] = vec4(reflect(viewVec, normal)*0.5+0.5, 1.0);
 		love_Canvases[REFLECTINESS_CANVAS_ID] = vec4(length(reflectiness), 1.0, 1.0, 1.0);
 	#endif
 }

@@ -1,55 +1,102 @@
 #ifdef PIXEL
-extern Image depth;
+extern Image tex_depth;
+extern Image tex_position;
+extern Image tex_reflectiness;
+extern Image tex_normal;
 
-extern highp mat3 camTransformInverse;
+extern highp mat4 transformProj;
 
-const float stepSize = 0.02;
-const float bias = 0.01;
+extern vec3 viewPos;
 
-const int steps = 64;
+const float stepSize = 0.01;
+const float bias = 0.001;
+
+const int steps = 128;
 const int precisionSteps = 8;
 
-vec4 effect(vec4 c, Image normal, vec2 tc, vec2 sc) {
-	vec4 n = Texel(normal, tc);
+extern Image background_day;
+extern Image background_night;
+
+extern float background_time;
+extern vec3 background_color;
+
+vec4 effect(vec4 c, Image tex_diffuse, vec2 tc, vec2 sc) {
+	float reflectiness = Texel(tex_reflectiness, tc).r;
 	
-	if (n.a > 0.0) {
-		float d = Texel(depth, tc).r;
-		vec3 pos = vec3((tc * 2.0 - 1.0) * d, d);
+	if (reflectiness > 0.0) {
+		vec4 n = Texel(tex_normal, tc);
+		vec4 newPos;
+		float nd;
+		vec3 pos = Texel(tex_position, tc).xyz;
 		
-		vec3 reflection = camTransformInverse * (n.xyz * 2.0 - 1.0);
+		float d = Texel(tex_depth, tc).r;
 		
-//		float ox = float(fract(love_PixelCoord.x * 0.5) > 0.25);
-//		float oy = float(fract(love_PixelCoord.y * 0.5) > 0.25);
-		vec3 normal = reflection * vec3(-1.0, 1.0, 1.0) * stepSize;
+		highp vec3 viewVec = normalize(pos - viewPos);
+		vec3 reflection = reflect(viewVec, normalize(n.xyz));
+		
+		vec3 normal = reflection * stepSize;
+		
+		//get UV coord for sky sphere
+		float u = atan(-reflection.x, -reflection.z) * 0.1591549430919 - 0.25;
+		float v = -reflection.y * 0.5 + 0.5;
+		mediump vec2 uv = vec2(u, v);
+		
+		//blend
+		mediump vec3 fallback_reflection = mix(Texel(background_day, uv), Texel(background_night, uv), background_time).rgb * background_color;
 		
 		for (int i = 0; i < steps; i++) {
 			pos += normal;
 			normal *= 1.1;
 			
-			vec2 newPos = (pos.xy / pos.z) * 0.5 + 0.5;
-			float nd = Texel(depth, newPos.xy).r;
-			if (pos.z > nd) {
+			newPos = transformProj * vec4(pos, 1.0);
+			newPos /= newPos.w;
+			newPos.xy = newPos.xy * 0.5 + 0.5;
+			nd = Texel(tex_depth, newPos.xy).r;
+			
+			//early cancel
+			if (newPos.x > 1.0 || newPos.y > 1.0 || newPos.x < 0.0 || newPos.y < 0.0) {
+				return vec4(fallback_reflection, reflectiness);
+			}
+			
+			if (newPos.z > nd) {
 				normal *= 0.5;
 				pos -= normal;
 				
 				//start binary seach
 				for (int b = 0; b < precisionSteps; b++) {
-					newPos = (pos.xy / pos.z) * 0.5 + 0.5;
-					nd = Texel(depth, newPos.xy).r;
+					newPos = transformProj * vec4(pos, 1.0);
+					newPos /= newPos.w;
+					newPos.xy = newPos.xy * 0.5 + 0.5;
+					
+					nd = Texel(tex_depth, newPos.xy).r;
+					
 					normal *= 0.5;
-					if (pos.z > nd) {
+					if (newPos.z > nd) {
 						pos -= normal;
 					} else {
 						pos += normal;
 					}
 				}
 				
-				float fade = max(0.0, 1.0 - pow(length(newPos-0.5)*2.0, 8.0)) * clamp(2.0 - abs(pos.z - nd) / bias, 0.0, 1.0) * min(1.0, pow(length(reflection.xy) * 8.0, 2.0));
-				return vec4(newPos.xy, fade, 1.0);
+				//avoid strange glitches
+				pos += reflection * distance(pos, viewPos) * 0.01;
+				newPos = transformProj * vec4(pos, 1.0);
+				newPos /= newPos.w;
+				newPos.xy = newPos.xy * 0.5 + 0.5;
+				nd = Texel(tex_depth, newPos.xy).r;
+				
+				//mix
+				float fade = 1.0;
+				if (newPos.z > nd + bias || nd >= 1.0) {
+					fade = 0.0;
+				} else {
+					fade = 1.0;
+				}
+				return vec4(mix(fallback_reflection, Texel(tex_diffuse, newPos.xy).rgb, fade), reflectiness);
 			}
 		}
 	}
 	
-	return vec4(0.0, 0.0, 0.0, 1.0);
+	return vec4(0.0, 0.0, 0.0, 0.0);
 }
 #endif
