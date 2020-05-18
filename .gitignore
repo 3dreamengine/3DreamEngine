@@ -7,6 +7,15 @@
 /default
 /todo.txt
 /examples/shaderComparision
-/examples/3DreamCreator
 /examples/shadowTest
 /examples/camera
+/examples/3DreamCreator/utils.lua
+/examples/3DreamCreator/backgrounds
+/examples/3DreamCreator/libs
+/examples/3DreamCreator/materials
+/examples/3DreamCreator/res
+/examples/3DreamCreator/gui.lua
+/examples/3DreamCreator/load.lua
+/examples/3DreamCreator/main.lua
+/examples/3DreamCreator/objects/*.blend
+/examples/3DreamCreator/objects/*.blend1

@@ -56,7 +56,7 @@ lib.materialLibrary = { }
 
 lib.sun_offset = 0.25
 lib.sun = vec3(-0.3, 0.6, 0.5)
-lib.sun_color = vec3(10.0, 10.0, 10.0)
+lib.sun_color = vec3(0.63529411764706, 0.69411764705882, 0.71764705882353)
 lib.sun_ambient = vec3(1.0, 1.0, 1.0)
 lib.sun_shadow = true
 
@@ -153,8 +153,8 @@ lib.clouds_thresholdPackets = 0.3
 lib.clouds_sharpness = 0.15
 lib.clouds_detail = 0.0
 lib.clouds_packets = 0.25
-lib.clouds_weight = 1.5
-lib.clouds_thickness = 0.1
+lib.clouds_weight = 1.25
+lib.clouds_thickness = 0.2
 
 lib.weather_rain = 0.0
 lib.weather_temperature = 0.0
@@ -333,7 +333,7 @@ function lib.init(self)
 	self.lighting = { }
 	
 	--create sun shadow if requested
-	self.sunObject = lib:newLight(1, 1, 1, 1, 1, 1, 1, 0)
+	self.sunObject = lib:newLight(1, 1, 1, 1, 1, 1, 5, 0)
 	if self.sun_shadow then
 		self.sunObject.shadow = lib:newShadow("sun")
 	else

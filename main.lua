@@ -1,4 +1,9 @@
 local examples = love.filesystem.getDirectoryItems("examples")
+for i = #examples, 1, -1 do
+	if not love.filesystem.getInfo("examples/" .. examples[i] .. "/main.lua", "file") then
+		table.remove(examples, i)
+	end
+end
 
 love.graphics.setBackgroundColor(0.35, 0.35, 0.35)
 local font = love.graphics.newFont(24)
@@ -12,7 +17,7 @@ local descriptions = {
 	["firstpersongame"] = "Not really a game, demo scene to see particle systems, outdoor lighting, daytime and rain.",
 	["particlesystem"] = "Small particle system example.",
 	["lowPolyGame"] = "Unfinished collision demo, flat phong shading.",
-	["knight"] = "MagicaVoxel demo..",
+	["knight"] = "MagicaVoxel demo.",
 }
 
 local mousereleased = false

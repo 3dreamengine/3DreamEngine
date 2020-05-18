@@ -12,8 +12,6 @@ dream:init()
 
 ground = dream:loadObject(projectDir .. "ground", {splitMaterials = true})
 
-love.graphics.setBackgroundColor(0.8, 0.8, 0.8)
-
 function love.draw()
 	dream:resetLight()
 	

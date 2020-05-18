@@ -32,9 +32,13 @@ local time = 0
 local timeAnimate = true
 
 local hideTooltips = false
+local weather = 0.25
 
 function love.draw()
 	dream:setDaytime(time)
+	
+	--weather
+	dream:setWeather(weather, 1.0 - weather)
 	
 	--update camera
 	dream.cam:reset()
@@ -186,10 +190,17 @@ function love.keypressed(key)
 	end
 	
 	if key == "r" then
-		dream.rain_isRaining = not dream.rain_isRaining
 		if not dream.rain_enabled then
 			dream.rain_enabled = true
 			dream:init()
+		end
+		
+		if weather > 0.5 then
+			weather = 0.25
+			dream.rain_isRaining = false
+		else
+			weather = 0.85
+			dream.rain_isRaining = true
 		end
 	end
 	
