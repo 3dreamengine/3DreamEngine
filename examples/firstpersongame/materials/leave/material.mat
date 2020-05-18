@@ -1,0 +1,6 @@
+return {
+	shader = "wind",
+	shaderValue = 0.15,
+	cullMode = "none",
+	alpha = false,
+}

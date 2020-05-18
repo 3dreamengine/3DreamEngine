@@ -1,0 +1,21 @@
+--3DreamEngine material properties file
+return {
+	{
+		name = "Coal",
+		metallic = 0.0,
+		tex_albedo = "textures/coal_albedo",
+		tex_emission = "textures/coal_emission",
+		update = function(m, o)
+			o.torch_id = o.torch_id or math.random()
+			local e = love.math.noise(love.timer.getTime() * 2.0 + o.torch_id) * 1.0 + 1.0
+			m.emission = {e, e, e}
+		end,
+	},
+	{
+		name = "Iron",
+		tex_albedo = "textures/iron_albedo",
+		tex_metallic = "textures/iron_metallic",
+		tex_normal = "textures/iron_normal",
+		tex_roughness = "textures/iron_roughness",
+	},
+}

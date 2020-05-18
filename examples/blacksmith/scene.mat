@@ -1,0 +1,40 @@
+--3DreamEngine material properties file
+return {
+	{
+		name = "Ivy",
+		shader = "wind",
+		shader_wind_speed = 0.5,
+		shader_wind_strength = 1.0,
+		shader_wind_scale = 3.0,
+		shaderValue = 0.02,
+		metallic = 0.0,
+		tex_albedo = "textures/ivy_albedo",
+		tex_ao = "textures/ivy_ao",
+		tex_normal = "textures/ivy_normal",
+		tex_roughness = "textures/ivy_roughness",
+	},
+	{
+		name = "Iron",
+		tex_albedo = "textures/iron_albedo",
+		tex_metallic = "textures/iron_metallic",
+		tex_normal = "textures/iron_normal",
+		tex_roughness = "textures/iron_roughness",
+	},
+	{
+		--note that this uses textures from the first person example and therefore absolute paths
+		name = "Wood",
+		metallic = 0.0,
+		tex_albedo = "examples/firstpersongame/materials/planks/albedo",
+		tex_ao = "examples/firstpersongame/materials/planks/ao",
+		tex_normal = "examples/firstpersongame/materials/planks/normal",
+		tex_roughness = "examples/firstpersongame/materials/planks/roughness",
+	},
+	{
+		name = "Bricks",
+		metallic = 0.0,
+		tex_albedo = "textures/bricks_albedo",
+		tex_ao = "textures/bricks_ao",
+		tex_normal = "textures/bricks_normal",
+		tex_roughness = "textures/bricks_roughness",
+	},
+}

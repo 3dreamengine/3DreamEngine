@@ -1,30 +1,30 @@
 --load the 3D lib
 dream = require("3DreamEngine")
 love.window.setTitle("Monkey Example")
+local projectDir = "examples/monkey/"
 
---settings
-dream.objectDir = "examples/monkey"
+--use Phong shading
+dream.lighting_engine = "Phong"
 
-dream.AO_enabled = true       --ambient occlusion?
-dream.AO_strength = 0.75      --blend strength
-dream.AO_quality = 24         --samples per pixel (8-32 recommended)
-dream.AO_quality_smooth = 2   --smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
-dream.AO_resolution = 0.5     --resolution factor
-
+--initialize engine
 dream:init()
 
-monkey = dream:loadObject("object")
+--load our object
+monkey = dream:loadObject(projectDir .. "object")
 
 love.graphics.setBackgroundColor(128/255, 218/255, 235/255)
 
 function love.draw()
 	dream:resetLight()
 	
+	--prepare scene
 	dream:prepare()
 	
+	--add (draw) objects, apply transformations
 	monkey:reset()
 	monkey:rotateY(love.timer.getTime())
 	dream:draw(monkey, 0, 0, -2.25)
-
+	
+	--render
 	dream:present()
 end

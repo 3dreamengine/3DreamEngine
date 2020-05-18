@@ -2,35 +2,15 @@
 dream = require("3DreamEngine")
 love.window.setTitle("Castle")
 
+love.mouse.setRelativeMode(true)
+
 --settings
-dream.objectDir = "examples/firstpersongame"
-
-dream.AO_enabled = true       --ambient occlusion?
-dream.AO_strength = 0.75      --blend strength
-dream.AO_quality = 24         --samples per pixel (8-32 recommended)
-dream.AO_quality_smooth = 2   --smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
-dream.AO_resolution = 0.75    --resolution factor
-
-dream.cloudDensity = 0.6
-dream.clouds = love.graphics.newImage(dream.objectDir .. "/clouds.jpg")
-dream.sky = love.graphics.newImage(dream.objectDir .. "/sky.jpg")
-dream.night = love.graphics.newImage(dream.objectDir .. "/night.jpg")
-
+local projectDir = "examples/firstpersongame/"
 dream:init()
 
---generate mipmaps from the leaves texture
---dream:generateMipMaps(dream.objectDir .. "/objects/leaves.png")
---dream:generateMipMaps(dream.objectDir .. "/objects/grass.png")
+dream:loadMaterialLibrary(projectDir .. "materials")
 
-castle = dream:loadObject("objects/scene", {splitMaterials = true, export3do = true})
-ground = dream:loadObject("objects/ground")
-
-love.graphics.setBackgroundColor(128/255, 218/255, 235/255)
-
-math.randomseed(os.time())
-io.stdout:setvbuf("no")
-
-love.mouse.setRelativeMode(true)
+castle = dream:loadObject(projectDir .. "objects/scene", {splitMaterials = true, export3do = false, skip3do = true})
 
 player = {
 	x = 8,
@@ -48,38 +28,37 @@ player = {
 dream.cam.rx = 0
 dream.cam.ry = 0
 
+local time = 0
+local timeAnimate = true
+
+local hideTooltips = false
+
 function love.draw()
-	dream.color_sun, dream.color_ambient = dream:getDayLight()
-	dream.dayTime = love.timer.getTime() * 0.05
-	dream.sun = {0.3, math.cos(dream.dayTime*math.pi*2), math.sin(dream.dayTime*math.pi*2)}
+	dream:setDaytime(time)
 	
 	--update camera
 	dream.cam:reset()
-	dream.cam:translate(-dream.cam.x, -dream.cam.y, -dream.cam.z) --note that x, y, z are usually extracted from the camera matrix in prepare(), but we use it that way.
+	dream.cam:translate(-player.x, -player.y, -player.z)
 	dream.cam:rotateY(dream.cam.ry)
 	dream.cam:rotateX(dream.cam.rx)
 	
 	--update light
 	dream:resetLight()
 	if love.mouse.isDown(1) then
-		dream:addLight(player.x, player.y, player.z, 1.0, 0.75, 0.1, 5.0 + love.math.noise(love.timer.getTime()*2, 1.0))
+		dream:addNewLight(player.x, player.y, player.z, 1.0, 0.75, 0.1, 5.0 + love.math.noise(love.timer.getTime()*2, 1.0))
 	end
 	
 	dream:prepare()
 	
 	castle:reset()
 	dream:draw(castle)
-	dream:draw(ground, 0, -2, 0)
 
 	dream:present()
 	
-	if love.keyboard.isDown(".") then
-		love.graphics.print("Stats" ..
-			"\ndifferent shaders: " .. dream.stats.shadersInUse ..
-			"\ndifferent materials: " .. dream.stats.materialDraws ..
-			"\ndraws: " .. dream.stats.draws,
-			15, 400)
-		end
+	if not hideTooltips then
+		love.graphics.setColor(1, 1, 1)
+		love.graphics.print("R to toggle rain (" .. tostring(dream.rain_isRaining) .. ")\nT to toggle daytime animation (" .. tostring(timeAnimate) .. ")\nU to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")\nG to toggle deferred shading (may be not supported by your GPU) (this demo has no visible deferred features) (" .. tostring(dream.deferred_lighting) .. ")", 10, 10)
+	end
 end
 
 function love.mousemoved(_, _, x, y)
@@ -97,6 +76,10 @@ end
 function love.update(dt)
 	local d = love.keyboard.isDown
 	local speed = 10*dt
+	
+	if timeAnimate then
+		time = time + dt * 0.05
+	end
 	
 	--gravity
 	--player.ay = player.ay - dt * 15
@@ -169,7 +152,7 @@ function love.update(dt)
 	dream.cam.z = player.z
 	
 	--load world, then if done load high res textures
-	dream.resourceLoader:update()
+	dream:update()
 end
 
 function love.keypressed(key)
@@ -192,14 +175,36 @@ function love.keypressed(key)
 			love.graphics.captureScreenshot(love.thread.getChannel("screenshots"))
 		end
 	end
-	
-	if key == "3" then
-		dream.anaglyph3D = not dream.anaglyph3D
-	end
 
 	--fullscreen
 	if key == "f11" then
 		love.window.setFullscreen(not love.window.getFullscreen())
+	end
+	
+	if key == "f1" then
+		hideTooltips = not hideTooltips
+	end
+	
+	if key == "r" then
+		dream.rain_isRaining = not dream.rain_isRaining
+		if not dream.rain_enabled then
+			dream.rain_enabled = true
+			dream:init()
+		end
+	end
+	
+	if key == "t" then
+		timeAnimate = not timeAnimate
+	end
+	
+	if key == "u" then
+		dream.autoExposure_enabled = not dream.autoExposure_enabled
+		dream:init()
+	end
+	
+	if key == "g" then
+		dream.deferred_lighting = not dream.deferred_lighting
+		dream:init()
 	end
 end
 

@@ -1,0 +1,21 @@
+return {
+	particleSystems = {
+		{
+			objects = {
+				["examples/firstpersongame/objects/grass"] = 20,
+			},
+			randomSize = {2.5, 4.0},
+			randomRotation = true,
+			normal = 0.9,
+			shader = "wind",
+			shaderValue = "grass",
+		},
+		{
+			objects = {
+				["examples/firstpersongame/objects/rocks"] = 0.2,
+			},
+			randomSize = {1.0, 1.25},
+			randomRotation = true,
+		},
+	}
+}

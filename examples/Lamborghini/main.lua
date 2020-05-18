@@ -1,33 +1,32 @@
 --load the matrix and the 3D lib
 dream = require("3DreamEngine")
 love.window.setTitle("Lamborghini Example")
+love.graphics.setBackgroundColor(0.8, 0.8, 0.8)
 
 --settings
-dream.objectDir = "examples/Lamborghini"
+local projectDir = "examples/Lamborghini/"
 
-dream.bloom_strength = 5.0
+dream.secondPass = true
+dream.deferred_lighting = false
 
-dream.nameDecoder = "none"
+dream.shadow_distance = 4
+dream.shadow_factor = 2
+dream.shadow_resolution = 4096
 
-dream.shadow_enabled = true
-dream.shadow_distance = 10
+dream.sky_hdri = love.graphics.newImage(projectDir .. "garage.hdr")
+
+dream.cam.fov = 70
 
 dream:init()
 
-car = dream:loadObject("Lamborghini Aventador")
-socket = dream:loadObject("socket")
-
---use custom reflections on this model, applies on all materials if not otherwise specified
-car.reflections_day = dream.objectDir .. "/sky.jpg"
-
-love.graphics.setBackgroundColor(0.8, 0.8, 0.8)
+car = dream:loadObject(projectDir .. "Lamborghini Aventador", {splitMaterials = true})
+socket = dream:loadObject(projectDir .. "socket")
 
 function love.draw()
-	dream.resourceLoader:update()
+	dream:update()
 	
-	dream.sun = {-1.0, 0.6, 0.7}
-	dream.color_ambient = {1, 1, 1, 0.5}
-	dream.color_sun = {1, 1, 1, 1.0}
+	dream.sun = vec3(-1.0, 1.0, 1.0)
+	dream.sun_color = vec3(5, 5, 5)
 	
 	dream:resetLight()
 	
@@ -37,13 +36,11 @@ function love.draw()
 	love.graphics.setColor(1, 1, 1)
 	car:reset()
 	car:rotateY(love.mouse.isDown(1) and (-2.25-(love.mouse.getX()/love.graphics.getWidth()-0.5)*4.0) or love.timer.getTime()*0.5)
-	dream:draw(car, 0, -1.1225, -4, 0.1)
+	dream:draw(car, 0, -1.1225, -3.5, 0.1)
 	
-	if dream.shadow_enabled then
-		dream:draw(socket, 0, -1, -4, 3, 0.1)
-	end
+	dream:draw(socket, 0, -1, -4.5, 4, 0.25, 4)
 	
-	dream:present()
+	dream:present(true)
 	
 	--stats
 	love.graphics.setColor(0.1, 0.1, 0.1)
@@ -77,6 +74,7 @@ function love.keypressed(key)
 	--fullscreen
 	if key == "f11" then
 		love.window.setFullscreen(not love.window.getFullscreen())
+		dream:init()
 	end
 end
 

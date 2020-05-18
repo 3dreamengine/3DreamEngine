@@ -3,7 +3,7 @@
 supports the vox extension
 --]]
 
-_3DreamEngine.loader["vox"] = function(self, obj, path)
+return function(self, obj, path)
 	local ffi = require("ffi")
 	local file = love.filesystem.read(path)
 	
@@ -47,7 +47,6 @@ _3DreamEngine.loader["vox"] = function(self, obj, path)
 	
 	local palette = { }
 	local materials = { }
-	local materialsID = { }
 	local default = {
 		0x00000000, 0xffffffff, 0xffccffff, 0xff99ffff, 0xff66ffff, 0xff33ffff, 0xff00ffff, 0xffffccff, 0xffccccff, 0xff99ccff, 0xff66ccff, 0xff33ccff, 0xff00ccff, 0xffff99ff, 0xffcc99ff, 0xff9999ff,
 		0xff6699ff, 0xff3399ff, 0xff0099ff, 0xffff66ff, 0xffcc66ff, 0xff9966ff, 0xff6666ff, 0xff3366ff, 0xff0066ff, 0xffff33ff, 0xffcc33ff, 0xff9933ff, 0xff6633ff, 0xff3333ff, 0xff0033ff, 0xffff00ff,
@@ -76,7 +75,6 @@ _3DreamEngine.loader["vox"] = function(self, obj, path)
 	end
 	
 	obj.materials = materials
-	obj.materialsID = materialsID
 	
 	local nodes = { }
 	local groups = { }
@@ -184,13 +182,10 @@ _3DreamEngine.loader["vox"] = function(self, obj, path)
 		elseif chunk == "MATL" then
 			local id = parseInt32(i+12)
 			local mat = parseDICT(i+16)
-			materials[id] = {
-				color = palette[id],
-				specular = mat._rough,
-				name = tostring(id),
-				ID = #materialsID+1,
-			}
-			materialsID[#materialsID+1] = materials[id]
+			materials[id] = self:newMaterial()
+			materials[id].color = palette[id]
+			materials[id].specular = mat._rough
+			materials[id].name = tostring(id)
 		else
 			print("unknown chunk " .. chunk)
 		end
@@ -206,7 +201,7 @@ _3DreamEngine.loader["vox"] = function(self, obj, path)
 			faces = { },
 			final = { },
 			name = name,
-			material = obj.materials.None,
+			material = self:newMaterial(),
 		}
 		local o = obj.objects[name]
 		
@@ -219,7 +214,7 @@ _3DreamEngine.loader["vox"] = function(self, obj, path)
 						local oy = t[3] + z
 						local oz = t[2] + y
 						
-						local mat = materials[b].ID
+						local mat = materials[b]
 						
 						--top
 						if z == 0 or m.blocks[x][y][z-1] == 0 then

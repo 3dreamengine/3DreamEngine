@@ -3,17 +3,14 @@ dream = require("3DreamEngine")
 love.window.setTitle("Particle System Example")
 
 --settings
-dream.objectDir = "examples/particlesystem"
+local projectDir = "examples/particlesystem/"
 
-dream.AO_enabled = true       --ambient occlusion?
-dream.AO_strength = 0.75      --blend strength
-dream.AO_quality = 24         --samples per pixel (8-32 recommended)
-dream.AO_quality_smooth = 2   --smoothing steps, 1 or 2 recommended, lower quality (< 12) usually requires 2 steps
-dream.AO_resolution = 0.5     --resolution factor
+dream.secondPass = false
+dream.lighting_engine = "Phong"
 
 dream:init()
 
-ground = dream:loadObject("ground")
+ground = dream:loadObject(projectDir .. "ground", {splitMaterials = true})
 
 love.graphics.setBackgroundColor(0.8, 0.8, 0.8)
 
@@ -29,7 +26,7 @@ function love.draw()
 end
 
 function love.update(dt)
-	local time = love.timer.getTime() * 0.5
+	local time = love.timer.getTime() * 0.01
 	
 	if not love.keyboard.isDown("space") then
 		dream.cam:reset()

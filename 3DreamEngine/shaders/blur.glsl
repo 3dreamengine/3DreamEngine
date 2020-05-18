@@ -1,18 +1,21 @@
-extern mediump vec2 size;
-extern float hstep;
-extern float vstep;
+//11-tap 1.6 Sigma
+
+extern vec2 dir;
 
 vec4 effect(vec4 color, Image texture, vec2 tc, vec2 sc) {
-	float o = Texel(texture, tc).r;
-	float sum = o * 0.383103;
+	vec4 sum = Texel(texture, tc) * 0.245484;
 	
-	sum += Texel(texture, tc - vec2(3.0*hstep, 3.0*vstep) * size).r * 0.00598;
-	sum += Texel(texture, tc - vec2(2.0*hstep, 2.0*vstep) * size).r * 0.060626;
-	sum += Texel(texture, tc - vec2(1.0*hstep, 1.0*vstep) * size).r * 0.241843;
+	sum += Texel(texture, tc - dir * 5.0) * 0.002166;
+	sum += Texel(texture, tc - dir * 4.0) * 0.011902;
+	sum += Texel(texture, tc - dir * 3.0) * 0.044758;
+	sum += Texel(texture, tc - dir * 2.0) * 0.115233;
+	sum += Texel(texture, tc - dir) * 0.203199;
 	
-	sum += Texel(texture, tc + vec2(1.0*hstep, tc.y + 1.0*vstep) * size).r * 0.241843;
-	sum += Texel(texture, tc + vec2(2.0*hstep, tc.y + 2.0*vstep) * size).r * 0.060626;
-	sum += Texel(texture, tc + vec2(3.0*hstep, tc.y + 3.0*vstep) * size).r * 0.00598;
+	sum += Texel(texture, tc + dir) * 0.203199;
+	sum += Texel(texture, tc + dir * 2.0) * 0.115233;
+	sum += Texel(texture, tc + dir * 3.0) * 0.044758;
+	sum += Texel(texture, tc + dir * 4.0) * 0.011902;
+	sum += Texel(texture, tc + dir * 5.0) * 0.002166;
 	
-	return vec4(sum);
+	return sum;
 }

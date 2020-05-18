@@ -1,34 +1,26 @@
-extern Image tex_depth;
+extern mediump vec3 samples[SAMPLE_COUNT];
 
-extern vec2 samples[SAMPLE_COUNT];
+const float maxDistanceInverse = 10.0;
 
-float bias = 0.025;
-float maxDistance = 64.0;
-
-extern mat4 projection;
-
-vec4 effect(vec4 c, Image tex_normal, vec2 tc, vec2 sc) {
-	vec3 normal = normalize(Texel(tex_normal, tc).xyz);
-	float depth = Texel(tex_depth, tc).r;
+vec4 effect(vec4 color, Image texture, vec2 tc, vec2 sc) {
+	float sum = 0.0;
 	
-	if (depth >= 1.0) {
+	float depth = Texel(texture, tc).r;
+	if (depth >= 250.0) {
 		return vec4(1.0);
 	}
 	
-	float occlusion = 0.0;
-	for (int i = 0; i < SAMPLE_COUNT; ++i) {
-		vec2 tc2 = tc + samples[i].xy;
+	for (int i = 0; i < SAMPLE_COUNT; i++) {
+		float sampleDepth = Texel(texture, tc + samples[i].xy / (0.25+depth)).r;
 		
-		float sampleDepth = Texel(tex_depth, tc2).r;
-		vec3 sampleNormal = normalize(Texel(tex_normal, tc2).xyz);
-		
-		float rangeCheck = clamp(1.0 + bias - abs(depth - sampleDepth) * maxDistance, 0.0, 1.0);
-		float angle = clamp(pow(1.0 - abs(dot(sampleNormal, normal)), 2.0), 0.0, 1.0);
-		
-		occlusion += angle * rangeCheck;
+		//samples differences (but clamps it)
+		if (sampleDepth < 250.0) {
+			float f = clamp(5.0 - abs(sampleDepth - depth) * maxDistanceInverse * (0.25 + depth * 0.25), 0.0, 1.0);
+			sum += clamp((depth-sampleDepth) * 8.0, -1.0, 1.0) * samples[i].z * f;
+		}
 	}
 	
-	occlusion = 1.0 - (occlusion / float(SAMPLE_COUNT));
-	
-	return vec4(occlusion, 0.0, 0.0, 1.0);
+	//strength
+	sum = min(1.0, 1.0 - max(0.0, sum) * 4.0);
+	return vec4(sum, sum, sum, 1.0);
 }

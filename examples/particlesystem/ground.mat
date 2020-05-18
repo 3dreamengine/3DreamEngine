@@ -1,0 +1,50 @@
+--3DreamEngine material properties file
+return {
+	{
+		name = "Grass",
+		particleSystems = {
+			{
+				objects = {
+					["examples/particlesystem/grass"] = 1000,
+				},
+				randomSize = {0.5, 1.0},
+				randomRotation = true,
+				normal = 0.9,
+				shader = "wind",
+				shaderValue = "grass",
+			},
+			{
+				objects = {
+					["examples/particlesystem/rock"] = 50,
+				},
+				randomSize = {0.5, 1.0},
+				randomRotation = true,
+			},
+		}
+	},
+	{
+		name = "Branch",
+		particleSystems = {
+			{
+				objects = {
+					["examples/particlesystem/leave"] = 200,
+				},
+				randomSize = {0.25, 0.35},
+				randomRotation = true,
+				normal = 0.9,
+				shader = "wind",
+				shaderValue = 0.05,
+			},
+			{
+				objects = {
+					["examples/particlesystem/leave"] = 200,
+				},
+				randomSize = {0.25, 0.35},
+				randomRotation = true,
+				normal = 0.9,
+				shader = "wind",
+				shaderValue = -0.03,
+			},
+		}
+	},
+}

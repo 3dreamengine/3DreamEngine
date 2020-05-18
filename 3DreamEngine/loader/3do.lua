@@ -3,7 +3,7 @@
 blazing fast mesh loading using pre-calculated meshes and multi-threading
 --]]
 
-_3DreamEngine.loader["3do"] = function(self, obj, path)
+return function(self, obj, path)
 	--load header
 	local file = love.filesystem.newFile(path, "r")
 	local typ = file:read(4)
@@ -17,14 +17,13 @@ _3DreamEngine.loader["3do"] = function(self, obj, path)
 	obj.objects = table.load(love.data.decompress("string", compressed:sub(1, 3), headerData))
 	
 	--relink materials
-	obj.materials = { }
 	for d,s in pairs(obj.objects) do
-		obj.materials[s.material.name] = s.material
+		s.material = obj.materials[s.material] or self.materialLibrary[s.material]
 	end
 	
 	--insert in loader
-	table.insert(self.resourceLoader.jobs, obj)
+	table.insert(self.jobs, obj)
 	for d, o in pairs(obj.objects) do
-		self.resourceLoader.channel_jobs_priority:push({"3do", #self.resourceLoader.jobs, d, path, dataOffset + o.meshDataIndex, o.meshDataSize, compressed})
+		self.channel_jobs_priority:push({"3do", #self.jobs, d, path, dataOffset + o.meshDataIndex, o.meshDataSize, compressed})
 	end
 end

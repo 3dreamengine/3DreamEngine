@@ -7,18 +7,17 @@ local lib = _3DreamEngine
 
 function lib.newCam(self)
 	local c = {
-		transform = matrix{
-			{1, 0, 0, 0},
-			{0, 1, 0, 0},
-			{0, 0, 1, 0},
-			{0, 0, 0, 1},
-		},
+		transform = mat4:getIdentity(),
 		
-		normal = {0, 0, 0},
+		normal = vec3(0, 0, 0),
 		
 		x = 0,
 		y = 0,
 		z = 0,
+		
+		fov = 90,
+		near = 0.01,
+		far = 1000,
 	}
 	
 	setmetatable(c, self.operations)
@@ -26,105 +25,156 @@ function lib.newCam(self)
 	return c
 end
 
-function lib.resetLight(self, noDayLight)
-	if noDayLight then
-		self.lighting = { }
-	else
-		local l = math.sqrt(self.sun[1]^2 + self.sun[2]^2 + self.sun[3]^2)
-		self.lighting = {
-			{
-				x = self.sun[1] / l,
-				y = self.sun[2] / l,
-				z = self.sun[3] / l,
-				r = self.color_sun[1] / math.sqrt(self.color_sun[1]^2 + self.color_sun[2]^2 + self.color_sun[3]^2) * self.color_sun[4],
-				g = self.color_sun[2] / math.sqrt(self.color_sun[1]^2 + self.color_sun[2]^2 + self.color_sun[3]^2) * self.color_sun[4],
-				b = self.color_sun[3] / math.sqrt(self.color_sun[1]^2 + self.color_sun[2]^2 + self.color_sun[3]^2) * self.color_sun[4],
-				meter = 0.0,
-				importance = math.huge,
-			},
-		}
+function lib.newReflection(self, static, priority)
+	local canvas = love.graphics.newCanvas(self.reflections_resolution, self.reflections_resolution,
+		{format = self.reflections_format, readable = true, msaa = 0, type = "cube", mipmaps = "manual"})
+	
+	return {
+		canvas = canvas,
+		static = static or false,
+		priority = priority or 1.0,
+		lastUpdate = 0,
+	}
+end
+
+function lib.newShadowCanvas(self, typ, res)
+	if typ == "sun" then
+		local canvas = love.graphics.newCanvas(res, res,
+			{format = "depth16", readable = true, msaa = 0, type = "2d"})
+		
+		canvas:setDepthSampleMode("greater")
+		canvas:setFilter("linear", "linear", 1)
+		
+		return canvas
+	elseif typ == "point" then
+		local canvas = love.graphics.newCanvas(res, res,
+			{format = "r16f", readable = true, msaa = 0, type = "cube"})
+		return canvas
 	end
 end
 
-function lib.addLight(self, posX, posY, posZ, red, green, blue, brightness, meter, importance)
-	self.lighting[#self.lighting+1] = {
-		x = posX,
-		y = posY,
-		z = posZ,
-		r = red / math.sqrt(red^2+green^2+blue^2) * (brightness or 10.0),
-		g = green / math.sqrt(red^2+green^2+blue^2) * (brightness or 10.0),
-		b = blue / math.sqrt(red^2+green^2+blue^2) * (brightness or 10.0),
-		meter = meter or 1.0,
-		importance = importance or 1.0,
+function lib.newShadow(self, typ, static, res)
+	if typ == "point" then
+		res = res or self.shadow_cube_resolution
+	else
+		res = res or self.shadow_resolution
+	end
+	
+	return {
+		typ = typ,
+		levels = 3,
+		res = res,
+		static = static or false,
+		priority = 1.0,
+		lastUpdate = 0,
+		size = 0.1,
+		lastPos = vec3(0, 0, 0)
 	}
+end
+
+local lightMetaTable = {
+	setBrightness = function(self, brightness)
+		self.brightness = brightness
+	end,
+	setColor = function(self, r, g, b)
+		if type(r) == "table" then
+			r, g, b = r[1], r[2], r[3]
+		end
+		local v = math.sqrt(r^2+g^2+b^2)
+		self.r = r / v
+		self.g = g / v
+		self.b = b / v
+	end,
+	setPosition = function(self, x, y, z)
+		if type(x) == "table" then
+			x, y, z = x[1], x[2], x[3]
+		end
+		self.x = x
+		self.y = y
+		self.z = z
+	end,
+	setMeter = function(self, meter)
+		self.meter = meter
+	end,
+}
+
+function lib.newLight(self, posX, posY, posZ, r, g, b, brightness, meter)
+	r = r or 1.0
+	g = g or 1.0
+	b = b or 1.0
+	local v = math.sqrt(r^2 + g^2 + b^2)
+	
+	local l = {
+		x = posX or 0,
+		y = posY or 0,
+		z = posZ or 0,
+		r = r / v,
+		g = g / v,
+		b = b / v,
+		brightness = brightness or 1.0,
+		meter = meter or 1.0,
+	}
+	
+	return setmetatable(l, {__index = lightMetaTable})
+end
+
+function lib.resetLight(self, noDayLight)
+	self.lighting = { }
+	
+	if not noDayLight then
+		local l = self.sun:normalize()
+		local c = self.sun_color
+		
+		self.sunObject.x = l[1]
+		self.sunObject.y = l[2]
+		self.sunObject.z = l[3]
+		self.sunObject.r = c[1]
+		self.sunObject.g = c[2]
+		self.sunObject.b = c[3]
+		
+		self:addLight(self.sunObject)
+	end
+end
+
+function lib.addLight(self, light)
+	self.lighting[#self.lighting+1] = light
+end
+
+function lib.addNewLight(self, ...)
+	self:addLight(self:newLight(...))
 end
 
 lib.operations = { }
 lib.operations.__index = lib.operations
 
 function lib.operations.reset(obj)
-	obj.transform = matrix{
-		{1, 0, 0, 0},
-		{0, 1, 0, 0},
-		{0, 0, 1, 0},
-		{0, 0, 0, 1},
-	}
+	obj.transform = mat4:getIdentity()
+	return obj
 end
 
 function lib.operations.translate(obj, x, y, z)
-	local translate = matrix{
-		{1, 0, 0, x},
-		{0, 1, 0, y},
-		{0, 0, 1, z},
-		{0, 0, 0, 1},
-	}
-	obj.transform = translate * obj.transform
+	obj.transform = obj.transform:translate(x, y, z)
+	return obj
 end
 
 function lib.operations.scale(obj, x, y, z)
-	local scale = matrix{
-		{x, 0, 0, 0},
-		{0, y or x, 0, 0},
-		{0, 0, z or x, 0},
-		{0, 0, 0, 1},
-	}
-	obj.transform = scale * obj.transform
+	obj.transform = obj.transform:scale(x, y, z)
+	return obj
 end
 
 function lib.operations.rotateX(obj, rx)
-	local c = math.cos(rx or 0)
-	local s = math.sin(rx or 0)
-	local rotX = matrix{
-		{1, 0, 0, 0},
-		{0, c, -s, 0},
-		{0, s, c, 0},
-		{0, 0, 0, 1},
-	}
-	obj.transform = rotX * obj.transform
+	obj.transform = obj.transform:rotateX(rx)
+	return obj
 end
 
 function lib.operations.rotateY(obj, ry)
-	local c = math.cos(ry or 0)
-	local s = math.sin(ry or 0)
-	local rotY = matrix{
-		{c, 0, -s, 0},
-		{0, 1, 0, 0},
-		{s, 0, c, 0},
-		{0, 0, 0, 1},
-	}
-	obj.transform = rotY * obj.transform
+	obj.transform = obj.transform:rotateY(ry)
+	return obj
 end
 
 function lib.operations.rotateZ(obj, rz)
-	local c = math.cos(rz or 0)
-	local s = math.sin(rz or 0)
-	local rotZ = matrix{
-		{c, s, 0, 0},
-		{-s, c, 0, 0},
-		{0, 0, 1, 0},
-		{0, 0, 0, 1},
-	}
-	obj.transform = rotZ * obj.transform
+	obj.transform = obj.transform:rotateZ(rz)
+	return obj
 end
 
 function lib.split(self, text, sep)
@@ -140,90 +190,21 @@ function lib.rotatePoint(self, x, y, rot)
 	return x * c - y * s, x * s + y * c
 end
 
-lib.dayLightColors = {
-	{50, 50, 253,	1},
-	{86, 86, 251,	1},
-	{134, 134, 250,	0.95},
-	{180, 180, 250,	0.9},
-	{217, 218, 252,	0.85},
-	{250, 251, 255,	0.8},
-	{254, 248, 238,	0.75},
-	{249, 228, 199,	0.7},
-	{245, 210, 161,	0.65},
-	{242, 192, 126,	0.6},
-	{238, 176, 89,	0.55},
-	{236, 156, 57,	0.5},
-	{239, 123, 42,	0.45},
-	{243, 89, 31,	0.4},
-	{247, 56, 19,	0.35},
-	{251, 39, 25,	0.3},
-}
-for i = #lib.dayLightColors, 1, -1 do
-	local c = lib.dayLightColors[i]
-	lib.dayLightColors[#lib.dayLightColors+1] = {c[1], c[2], c[3], 0.25}
-end
-for i = #lib.dayLightColors, 1, -1 do
-	local c = lib.dayLightColors[i]
-	lib.dayLightColors[#lib.dayLightColors+1] = {c[1], c[2], c[3], c[4]}
-end
-for d,s in ipairs(lib.dayLightColors) do
-	s[1] = s[1] / 255
-	s[2] = s[2] / 255
-	s[3] = s[3] / 255
-end
+function lib.lookAt(self, eye, at, up)
+	up = up or vec3(0.0, 1.0, 0.0)
+	
+	zaxis = (at - eye):normalize()
+	xaxis = zaxis:cross(up):normalize()
+	yaxis = xaxis:cross(zaxis)
 
---get the daylight color at a specific daytime, where 0 is midnight
-function lib.getDayLight(self, time, strength)
-	if not strength then
-		strength = 0.1
-	end
-	if not time then
-		time = self.dayTime
-	end
+	zaxis = -zaxis
 	
-	local c1 = self.dayLightColors[(math.floor(time*#self.dayLightColors) % #self.dayLightColors)+1]
-	local c2 = self.dayLightColors[((math.floor(time*#self.dayLightColors)+1) % #self.dayLightColors)+1]
-	local f = (time*#self.dayLightColors) % 1
-	
-	local direct = {c1[1] * (1-f) + c2[1] * f, c1[2] * (1-f) + c2[2] * f, c1[3] * (1-f) + c2[3] * f, math.min(1, c1[4] * (1-f) + c2[4] * f)}
-	direct[1] = 1.0 * (1-strength) + direct[1] * strength
-	direct[2] = 1.0 * (1-strength) + direct[2] * strength
-	direct[3] = 1.0 * (1-strength) + direct[3] * strength
-	
-	local ambient = {direct[1], direct[2], direct[3], 0.25 + direct[4]*0.25}
-	
-	return direct, ambient
-end
-
-function lib.generateMipMaps(self, path)
-	local dir, filename, filetyp = string.match(path, "(.-)([^\\/]-%.?([^%.\\/]*))$")
-	filename = filename:sub(1, #filename-#filetyp - (#filetyp > 0 and 1 or 0))
-	
-	love.filesystem.createDirectory(dir)
-	
-	love.graphics.push()
-	love.graphics.reset()
-	
-	local img = love.graphics.newImage(path)
-	local x, y = img:getWidth(), img:getHeight()
-	local i = 0
-	while x > 1 or y > 1 do
-		x = math.max(1, math.floor(x/2))
-		y = math.max(1, math.floor(y/2))
-		i = i + 1
-		
-		local canv = love.graphics.newCanvas(x, y)
-		love.graphics.setCanvas(canv)
-		img:setFilter("nearest")
-		love.graphics.draw(img, 0, 0, 0, 0.5 ^ i)
-		img:setFilter("linear")
-		love.graphics.draw(img, 0, 0, 0, 0.5 ^ i)
-		love.graphics.setCanvas()
-		
-		canv:newImageData():encode("png", dir .. filename .. "_" .. i .. ".png")
-	end
-	
-	love.graphics.pop()
+	return mat4(
+		xaxis.x, xaxis.y, xaxis.z, -xaxis:dot(eye),
+		yaxis.x, yaxis.y, yaxis.z, -yaxis:dot(eye),
+		zaxis.x, zaxis.y, zaxis.z, -zaxis:dot(eye),
+		0, 0, 0, 1
+	)
 end
 
 --add tangents to a 3Dream vertex format
@@ -308,7 +289,7 @@ function lib.calcTangents(self, finals, vertexMap)
 	end
 end
 
-function lib.HSVtoRGB(h, s, v)
+function lib.HSVtoRGB(self, h, s, v)
 	local i = math.floor(h * 6)
 	local f = h * 6 - i
 	local p = v * (1 - s)
@@ -330,7 +311,7 @@ function lib.HSVtoRGB(h, s, v)
 	end
 end
 
-function lib.RGBtoHSV(r, g, b)
+function lib.RGBtoHSV(self, r, g, b)
 	local h, s, v
 	local min = math.min(r, g, b)
 	local max = math.max(r, g, b)
@@ -374,4 +355,60 @@ function lib.decodeObjectName(self, name)
 	else
 		return name
 	end
+end
+
+function lib.transformPoint(self, p, cam, canvases)
+	cam = cam or self.cam
+	canvases = canvases or self.canvases
+	
+	local transformProj = cam.transformProj
+	
+	local p = transformProj * vec4(p[1], p[2], p[3], 1.0)
+	p = p / vec4(math.max(self.cam.near, p[4]), math.max(self.cam.near, p[4]), 1.0, 1.0)
+	
+	return vec2((p[1]+1) * canvases.width/2, (p[2]+1) * canvases.height/2), p
+end
+
+function lib.setDaytime(self, time)
+	--time, 0.0 is sunrise, 0.5 is sunset
+	self.sky_time = time % 1.0
+	self.sky_day = math.floor(time % 30.0)
+	
+	--position
+	self.sun = mat4:getRotateZ(self.sun_offset) * vec3(
+		0,
+		math.sin(self.sky_time * math.pi * 2),
+		-math.cos(self.sky_time * math.pi * 2)
+	):normalize()
+	
+	local c = #self.sunlight
+	local p = self.sky_time * c
+	self.sun_color = (
+		self.sunlight[math.max(1, math.min(c, math.ceil(p)))] * (1.0 - p % 1) +
+		self.sunlight[math.max(1, math.min(c, math.ceil(p+1)))] * (p % 1)
+	)
+end
+
+--0 is the happiest day ever and 1 the end of the world
+function lib.setWeather(self, rain, temp)
+	rain = rain or 0.0
+	temp = temp or (1.0 - rain)
+	
+	--blue-darken ambient and sun color
+	local color = rain * 0.75
+	self.sun_color = vec3(0, 50/255, 80/255) * color + self.sun_color * (1.0 - color)
+	self.sun_ambient = vec3(0, 50/255, 80/255) * color + self.sun_ambient * (1.0 - color)
+	self.sky_color = vec3(0, 50/255, 80/255) * color + vec3(1.0, 1.0, 1.0) * (1.0 - color)
+	
+	self.clouds_scale = 4.0
+	self.clouds_threshold = math.mix(0.6, 0.2, rain * (1.0 - temp * 0.5))
+	self.clouds_thresholdPackets = math.mix(0.6, 0.1, temp)
+	self.clouds_sharpness = math.mix(0.1, 0.2, temp)
+	self.clouds_detail = 0.0
+	self.clouds_packets = math.mix(0.1, 0.6, temp * (1.0 - rain))
+	self.clouds_weight = math.mix(math.mix(1.0, 1.5, temp), 0.75, rain)
+	self.clouds_thickness = math.mix(0.0, 0.4, rain^2)
+	
+	self.rain_isRaining = rain > 0.4
+	self.rain_strength = math.ceil(math.clamp((rain-0.4) / 0.6 * 5.0, 0.001, 5.0))
 end
