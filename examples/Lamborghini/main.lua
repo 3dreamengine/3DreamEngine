@@ -26,7 +26,7 @@ function love.draw()
 	dream:update()
 	
 	dream.sun = vec3(-1.0, 1.0, 1.0)
-	dream.sun_color = vec3(5, 5, 5)
+	dream.sun_color = vec3(1, 1, 1)
 	
 	dream:resetLight()
 	

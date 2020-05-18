@@ -333,7 +333,7 @@ function lib.init(self)
 	self.lighting = { }
 	
 	--create sun shadow if requested
-	self.sunObject = lib:newLight(1, 1, 1, 1, 1, 1, 5, 0)
+	self.sunObject = lib:newLight(1, 1, 1, 1, 1, 1, 10, 0)
 	if self.sun_shadow then
 		self.sunObject.shadow = lib:newShadow("sun")
 	else
