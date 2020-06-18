@@ -22,7 +22,7 @@
 * loading and rendering .obj files, supports materials and textures included in .mtl files
 * threaded texture loading with automatic thumbnail generation
 * threaded object loading using 3DreamEngine specific object files (converter included)
-* included optimized vec2, vec3, vec4, mat2, mat3 and mat3 library
+* included optimized vec2, vec3, vec4, mat2, mat3 and mat4 library
 * (experimental) 3D transformation-tree-based collision, supports all closed meshes
 
 ![screenshots](https://raw.githubusercontent.com/3dreamengine/3DreamEngine/master/screenshots.jpg)
