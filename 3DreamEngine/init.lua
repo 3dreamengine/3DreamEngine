@@ -139,9 +139,10 @@ lib.sky_hdri = false
 lib.sky_hdri_exposure = 1.0
 lib.sky_resolution = 1024
 lib.sky_format = "rgba16f"
-lib.sky_time = 0.45
+lib.sky_time = 0.3
 lib.sky_day = 0.0
 lib.sky_color = vec3(1.0, 1.0, 1.0)
+lib.sky_ambient = 0.5
 
 lib.stars_enabled = true
 lib.sunMoon_enabled = true
@@ -333,7 +334,7 @@ function lib.init(self)
 	self.lighting = { }
 	
 	--create sun shadow if requested
-	self.sunObject = lib:newLight(1, 1, 1, 1, 1, 1, 10, 0)
+	self.sunObject = lib:newLight(1, 1, 1, 1, 1, 1, 5, 0)
 	if self.sun_shadow then
 		self.sunObject.shadow = lib:newShadow("sun")
 	else

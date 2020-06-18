@@ -42,7 +42,7 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 	vec2 brdf = Texel(brdfLUT, vec2(cosTheta, roughness)).rg;
 	vec3 reflectiness = (F * brdf.x + vec3(brdf.y));
 #else
-	float roughness = material.x;
+	float roughness = 1.0 - material.x;
 	vec3 reflectiness = material.yyy * albedo.rgb;
 #endif
 	

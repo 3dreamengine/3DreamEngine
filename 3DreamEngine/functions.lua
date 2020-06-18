@@ -10,6 +10,7 @@ function lib.newCam(self)
 		transform = mat4:getIdentity(),
 		
 		normal = vec3(0, 0, 0),
+		pos = vec3(0, 0, 0),
 		
 		x = 0,
 		y = 0,

@@ -93,6 +93,7 @@ local sh_final = love.filesystem.read(lib.root .. "/shaders/final.glsl")
 function lib.getFinalShader(self, canvases, noSky)
 	local parts = { }
 	parts[#parts+1] = canvases.postEffects_enabled and self.autoExposure_enabled and "#define AUTOEXPOSURE_ENABLED" or nil
+	parts[#parts+1] = canvases.postEffects_enabled and self.exposure > 0 and not self.autoExposure_enabled and "#define EXPOSURE_ENABLED" or nil
 	parts[#parts+1] = canvases.postEffects_enabled and self.bloom_enabled and "#define BLOOM_ENABLED" or nil
 	parts[#parts+1] = self.AO_enabled and "#define AO_ENABLED" or nil
 	parts[#parts+1] = canvases.secondPass and "#define SECOND_PASS" or nil
@@ -142,9 +143,9 @@ function lib.loadShader(self)
 	if self.deferred_lighting then
 		local code = (
 			"#define SAMPLE_COUNT " .. self.AO_quality .. "\n" ..
-			love.filesystem.read(self.root .. "/shaders/SSAO_normal.glsl")
+			love.filesystem.read(self.root .. "/shaders/SSAO_def.glsl")
 		):gsub("	", "")
-		self.shaders.SSAO_normal = love.graphics.newShader(code)
+		self.shaders.SSAO_def = love.graphics.newShader(code)
 	end
 	
 	--pass samples to the shader
@@ -157,7 +158,7 @@ function lib.loadShader(self)
 	end
 	self.shaders.SSAO:send("samples", unpack(f))
 	if self.deferred_lighting then
-		self.shaders.SSAO_normal:send("samples", unpack(f))
+		self.shaders.SSAO_def:send("samples", unpack(f))
 	end
 	
 	
@@ -196,7 +197,7 @@ function lib.getShaderInfo(self, mat, shaderType, obj)
 	
 	local str = table.concat({dat.shaderType, dat.vertexShader, dat.reflection and 1 or 0}, "_")
 	
-	if shaderType == "color" or shaderType == "color_extended" or shaderType == "color_material" then
+	if shaderType == "color" or shaderType == "color_extended" or shaderType == "color_material"  or shaderType == "color_lookup" then
 	
 	elseif shaderType == "PBR" or shaderType == "Phong" then
 		dat.tex_normal = mat.tex_normal ~= nil

@@ -184,7 +184,7 @@ function lib.executeJobs(self, cam)
 				end
 			elseif s.shadow.typ == "point" then
 				local pos = vec3(s.x, s.y, s.z)
-				local dist = (pos - cam.viewPos):length() / 10.0 + 1.0
+				local dist = (pos - cam.pos):length() / 10.0 + 1.0
 				local moved = not s.shadow.lastPos or s.shadow.lastPos ~= pos
 				
 				if not s.shadow.static or moved then
@@ -206,7 +206,7 @@ function lib.executeJobs(self, cam)
 					--render reflections
 					if not s.reflection.static then
 						local pos = -vec3(v[1]:invert() * vec3(0.0, 0.0, 0.0))
-						local dist = (pos - cam.viewPos):length() / 10.0 + 1.0
+						local dist = (pos - cam.pos):length() / 10.0 + 1.0
 						local moved = not s.reflection.lastPos or s.reflection.lastPos ~= pos
 						operations[#operations+1] = {"reflections", s.reflection.priority / dist * (moved and 1.0 or priorityOnIdle), s, v[1]}
 					end
@@ -458,7 +458,7 @@ function lib.executeJobs(self, cam)
 				)
 				
 				local shadowCam = self:newCam()
-				shadowCam.transform = self:lookAt(cam.viewPos + self.sun:normalize() * f * 0.5, cam.viewPos, vec3(0.0, 1.0, 0.0))
+				shadowCam.transform = self:lookAt(cam.pos + self.sun:normalize() * f * 0.5, cam.pos, vec3(0.0, 1.0, 0.0))
 				s.shadow["transformation_" .. i] = projection * shadowCam.transform
 				
 				love.graphics.setCanvas({depthstencil = s.shadow.canvases[i]})

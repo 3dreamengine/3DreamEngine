@@ -764,6 +764,8 @@ end
 --takes an final and face table and generates the mesh and vertexMap
 --note that .3do files has it's own mesh loader
 function lib.createMesh(self, obj, o)
+	o = o or obj
+	
 	--the type of the mesh determines the data the mesh contains, if not set automatically it will choose it based on textures
 	o.meshType = o.meshType or obj.meshType
 	o.shaderType = o.shaderType or obj.shaderType

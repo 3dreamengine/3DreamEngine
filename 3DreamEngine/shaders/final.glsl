@@ -17,6 +17,7 @@ extern CubeImage canvas_sky;
 extern vec3 ambient;
 
 extern mat4 transformInverse;
+extern mat3 transformInverseSubM;
 extern mat4 transform;
 extern vec3 lookNormal;
 extern vec3 viewPos;
@@ -152,7 +153,7 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 	
 	//sky reflection
 #ifdef SKY_ENABLED
-	vec3 sky = textureLod(canvas_sky, (transformInverse * vec4(tc_final*2.0-1.0, 1.0, 1.0)).xyz * vec3(1.0, -1.0, 1.0), 0.0).rgb;
+	vec3 sky = textureLod(canvas_sky, mat3(transformInverseSubM) * vec3(tc_final*2.0-1.0, 1.0) * vec3(1.0, -1.0, 1.0), 0.0).rgb;
 #endif
 	
 	//ao
@@ -199,7 +200,9 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 #ifdef AUTOEXPOSURE_ENABLED
 	c.rgb = vec3(1.0) - exp(-c.rgb * expo);
 #else
+#ifdef EXPOSURE_ENABLED
 	c.rgb = vec3(1.0) - exp(-c.rgb * exposure);
+#endif
 #endif
 	
 	//gamma correction

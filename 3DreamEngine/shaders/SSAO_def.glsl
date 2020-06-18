@@ -5,12 +5,12 @@ const float maxDistanceInverse = 10.0;
 vec4 effect(vec4 color, Image texture, vec2 tc, vec2 sc) {
 	float sum = 0.0;
 	
-	float depth = Texel(texture, tc).r;
+	float depth = Texel(texture, tc).z;
 	if (depth >= 250.0) {
 		return vec4(1.0);
 	} else {
 		for (int i = 0; i < SAMPLE_COUNT; i++) {
-			float sampleDepth = Texel(texture, tc + samples[i].xy / (0.25+depth)).r;
+			float sampleDepth = Texel(texture, tc + samples[i].xy / (0.25+depth)).z;
 			
 			//samples differences (but clamps it)
 			if (sampleDepth < 250.0) {

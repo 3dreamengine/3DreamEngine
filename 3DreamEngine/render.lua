@@ -26,10 +26,11 @@ function lib.render(self, canvases, transformProj, pass, viewPos, lookNormal, bl
 	else
 		if deferred_lighting then
 			love.graphics.setCanvas({canvases.color, canvases.albedo, canvases.normal, canvases.position, canvases.material, depthstencil = canvases.depth_buffer})
+			love.graphics.clear({0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 255, 0})
 		else
 			love.graphics.setCanvas({canvases.color, canvases.depth, depthstencil = canvases.depth_buffer})
+			love.graphics.clear({0, 0, 0, 0}, {255, 0, 0, 0})
 		end
-		love.graphics.clear(0, 0, 0, 0)
 	end
 	
 	--set correct blendmode
@@ -195,9 +196,15 @@ function lib.render(self, canvases, transformProj, pass, viewPos, lookNormal, bl
 					shader:send("ior", 1.0 / material.ior)
 				end
 				
+				if shader:hasUniform("sky_ambient") then
+					shader:send("sky_ambient", self.sky_ambient)
+				end
+				
 				if shaderInfo.shaderType == "color" then
 					shader:send("emission", material.emission or 0.0)
 					shader:send("glossiness", material.glossiness)
+				elseif shaderInfo.shaderType == "color_lookup" then
+					shader:send("tex_lookup", material.tex_lookup)
 				elseif shaderInfo.shaderType == "color_extended" then
 					
 				elseif shaderInfo.shaderType == "color_material" then
@@ -452,20 +459,6 @@ function lib.render(self, canvases, transformProj, pass, viewPos, lookNormal, bl
 	love.graphics.pop()
 end
 
---sky
-function lib.renderSky(self, transformProj, viewPos)
-	if self.sky_enabled then
-		love.graphics.push("all")
-		love.graphics.setDepthMode()
-		love.graphics.setShader(self.shaders.sky)
-		self.shaders.sky:send("cam", transformProj)
-		self.shaders.sky:send("transform", mat4:getIdentity():translate(unpack(viewPos)))
-		self.shaders.sky:send("sky", self.canvas_sky)
-		love.graphics.draw(self.object_skybox.objects.Cube.mesh)
-		love.graphics.pop()
-	end
-end
-
 --full render, including bloom, fxaa, exposure and gamma correction
 function lib.renderFull(self, transformProj, canvases, noSky, viewPos, normal, blacklist)
 	love.graphics.push("all")
@@ -485,7 +478,7 @@ function lib.renderFull(self, transformProj, canvases, noSky, viewPos, normal, b
 		love.graphics.clear()
 		love.graphics.setBlendMode("replace", "premultiplied")
 		
-		love.graphics.setShader(canvases.deferred_lighting and self.shaders.SSAO_normal or self.shaders.SSAO)
+		love.graphics.setShader(canvases.deferred_lighting and self.shaders.SSAO_def or self.shaders.SSAO)
 		love.graphics.draw(canvases.deferred_lighting and canvases.material or canvases.depth, 0, 0, 0, self.AO_resolution)
 		
 		--blur
@@ -621,6 +614,7 @@ function lib.renderFull(self, transformProj, canvases, noSky, viewPos, normal, b
 	if shader:hasUniform("canvas_exposure") then shader:send("canvas_exposure", self.canvas_exposure_fetch) end
 	
 	if shader:hasUniform("transformInverse") then shader:send("transformInverse", transformProj:invert()) end
+	if shader:hasUniform("transformInverseSubM") then shader:send("transformInverseSubM", transformProj:subm():invert()) end
 	if shader:hasUniform("transform") then shader:send("transform", transformProj) end
 	if shader:hasUniform("lookNormal") then shader:send("lookNormal", normal) end
 	if shader:hasUniform("viewPos") then shader:send("viewPos", viewPos) end
@@ -652,7 +646,7 @@ end
 function lib.presentLite(self, noSky, c, canvases)
 	local cam = c or self.cam
 	canvases = canvases or self.canvases
-	self:renderFull(cam.transformProj, canvases, noSky, cam.viewPos, cam.normal)
+	self:renderFull(cam.transformProj, canvases, noSky, cam.pos, cam.normal)
 end
 
 function lib.present(self, noSky, c, canvases)
@@ -667,8 +661,8 @@ function lib.present(self, noSky, c, canvases)
 	local cam = c or self.cam
 	
 	--extract camera position and normal
-	cam.viewPos = cam.transform:invert() * vec3(0.0, 0.0, 0.0)
-	cam.normal = (cam.viewPos - cam.transform:invert() * vec3(0.0, 0.0, 1.0)):normalize()
+	cam.pos = cam.transform:invert() * vec3(0.0, 0.0, 0.0)
+	cam.normal = (cam.pos - cam.transform:invert() * vec3(0.0, 0.0, 1.0)):normalize()
 	
 	--perspective transform
 	local n = cam.near
@@ -694,7 +688,7 @@ function lib.present(self, noSky, c, canvases)
 	self:executeJobs(cam)
 	
 	--render
-	self:renderFull(cam.transformProj, canvases, noSky, cam.viewPos, cam.normal)
+	self:renderFull(cam.transformProj, canvases, noSky, cam.pos, cam.normal)
 	
 	--debug
 	local brightness = {
