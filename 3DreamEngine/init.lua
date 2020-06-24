@@ -178,7 +178,7 @@ if love.graphics then
 		default = love.graphics.newImage(lib.root .. "/res/default.png"),
 		default_normal = love.graphics.newImage(lib.root .. "/res/default_normal.png"),
 		
-		brdfLUT = love.graphics.newImage(lib.root .. "/res/brdfLUT.png"),
+		brdfLUT = love.graphics.newImage(lib.root .. "/res/brdfLut.png"),
 		
 		rain_1 = love.graphics.newImage(lib.root .. "/res/rain_1.png"),
 		rain_2 = love.graphics.newImage(lib.root .. "/res/rain_2.png"),
