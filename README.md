@@ -303,7 +303,7 @@ return {
 		
 		--Shared for all shading
 		color = {1.0, 1.0, 1.0, 1.0},  -- color
-		emission = {1.0, 1.0, 1.0,     -- emission color, or the multiplier if a texture is present
+		emission = {1.0, 1.0, 1.0},    -- emission color, or the multiplier if a texture is present
 		
 		--Phong
 		specular = 0.5,                -- specular component (note that specular component has the same color as the albedo texture / color)
@@ -346,7 +346,8 @@ return {
 		--m is the material, o is either the object, or the subObject. Check for .objects to find out.
 		update = function(m, o)
 			o.torch_id = o.torch_id or math.random()
-			m.emission = love.math.noise(love.timer.getTime() * 2.0 + o.torch_id) * 1.0 + 1.0
+			local strength = love.math.noise(love.timer.getTime() * 2.0 + o.torch_id) * 1.0 + 1.0
+			m.emission = {strength, strength, strength}
 		end,
 		
 		--add particleSystems
