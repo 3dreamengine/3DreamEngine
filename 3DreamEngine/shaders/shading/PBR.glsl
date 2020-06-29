@@ -13,7 +13,7 @@ float DistributionGGX(vec3 normal, vec3 halfView, float roughness) {
     float denom = NdotH2 * (a - 1.0) + 1.0;
     denom = pi * denom * denom;
 	
-    return a / max(denom, 0.0001);
+    return a / max(denom, 0.01);
 }
 
 float GeometrySchlickGGX(float NdotV, float roughness) {
