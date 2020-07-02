@@ -38,8 +38,8 @@ void effect() {
 	vec4 albedo = VaryingColor;
 	
 	//dither alpha
-	if (!second_pass && albedo.a < 1.0 && albedo.a < fract(vertexPos.x * 111.1 + vertexPos.y * 777.7 + vertexPos.z * 333.3)) {
-		discard;
+	if (!second_pass) {
+		albedo.a = step(fract(love_PixelCoord.x * 0.65 + love_PixelCoord.y * 73.73), albedo.a);
 	}
 	
 	vec3 normal = normalize(normalVec);

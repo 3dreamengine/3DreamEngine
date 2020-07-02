@@ -35,8 +35,10 @@ function love.draw()
 	--draw the car
 	love.graphics.setColor(1, 1, 1)
 	car:reset()
+	car:scale(0.1)
 	car:rotateY(love.mouse.isDown(1) and (-2.25-(love.mouse.getX()/love.graphics.getWidth()-0.5)*4.0) or love.timer.getTime()*0.5)
-	dream:draw(car, 0, -1.1225, -3.5, 0.1)
+	car:translate(0, -1.1225, -3.5)
+	dream:draw(car)
 	
 	dream:draw(socket, 0, -1, -4.5, 4, 0.25, 4)
 	

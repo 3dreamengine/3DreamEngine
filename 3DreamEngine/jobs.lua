@@ -78,6 +78,8 @@ local blurVecs = {
 	},
 }
 
+local identityMatrix = mat4:getIdentity()
+
 local blurCanvases = { }
 function lib.blurCubeMap(self, cube, level)
 	local f = cube:getFormat()
@@ -196,31 +198,30 @@ function lib.executeJobs(self, cam)
 	
 	--reflections
 	local activeReflections = { }
-	for shaderInfo, s in pairs(self.drawTable) do
-		for material, tasks in pairs(s) do
-			for i,v in pairs(tasks) do
-				local s = v[6]
-				if s.reflection and not activeReflections[s.reflection] then
-					activeReflections[s.reflection] = true
+--	for shaderInfo, s in pairs(self.drawTable) do
+--		for material, tasks in pairs(s) do
+--			for i,v in pairs(tasks) do
+--				if v.obj.reflection and not activeReflections[v.obj.reflection] then
+--					activeReflections[v.obj.reflection] = true
 					
-					--render reflections
-					if not s.reflection.static then
-						local pos = -vec3(v[1]:invert() * vec3(0.0, 0.0, 0.0))
-						local dist = (pos - cam.pos):length() / 10.0 + 1.0
-						local moved = not s.reflection.lastPos or s.reflection.lastPos ~= pos
-						operations[#operations+1] = {"reflections", s.reflection.priority / dist * (moved and 1.0 or priorityOnIdle), s, v[1]}
-					end
+--					--render reflections
+--					if not v.obj.reflection.static then
+--						local pos = v.transform and (-vec3(v.transform:invert() * vec3(0.0, 0.0, 0.0))) or vec3(0.0, 0.0, 0.0)
+--						local dist = (pos - cam.pos):length() / 10.0 + 1.0
+--						local moved = not v.obj.reflection.lastPos or v.obj.reflection.lastPos ~= pos
+--						operations[#operations+1] = {"reflections", v.obj.reflection.priority / dist * (moved and 1.0 or priorityOnIdle), v.obj, v.transform}
+--					end
 					
-					--blur mipmaps
-					for level = 2, self.reflections_levels do
-						if (times[tostring(s.reflection)] or 0) > (times[tostring(s.reflection.canvas) .. level] or 0) then
-							operations[#operations+1] = {"cubemap", level, s.reflection.canvas, level}
-						end
-					end
-				end
-			end
-		end
-	end
+--					--blur mipmaps
+--					for level = 2, self.reflections_levels do
+--						if (times[tostring(v.obj.reflection)] or 0) > (times[tostring(v.obj.reflection.canvas) .. level] or 0) then
+--							operations[#operations+1] = {"cubemap", level, v.obj.reflection.canvas, level}
+--						end
+--					end
+--				end
+--			end
+--		end
+--	end
 	activeReflections = nil
 	
 	--sort operations
@@ -435,12 +436,6 @@ function lib.executeJobs(self, cam)
 			end
 			
 			--render
-			love.graphics.push("all")
-			love.graphics.reset()
-			love.graphics.setMeshCullMode("none")
-			love.graphics.setDepthMode("less", true)
-			love.graphics.setShader(self.shaders.shadow)
-			
 			for i = 1, s.shadow.levels do
 				local r = self.shadow_distance / 2 * (self.shadow_factor ^ (i-1))
 				local t = self.shadow_distance / 2 * (self.shadow_factor ^ (i-1))
@@ -457,30 +452,15 @@ function lib.executeJobs(self, cam)
 					0, 0, 0, 1
 				)
 				
-				local shadowCam = self:newCam()
-				shadowCam.transform = self:lookAt(cam.pos + self.sun:normalize() * f * 0.5, cam.pos, vec3(0.0, 1.0, 0.0))
-				s.shadow["transformation_" .. i] = projection * shadowCam.transform
+				local cam = self:newCam()
+				cam.pos = vec3(0, 0, 0)
+				cam.normal = self.sun:normalize()
+				cam.transform = self:lookAt(self.sun:normalize() * f * 0.5, cam.pos, vec3(0.0, 1.0, 0.0))
+				cam.transformProj = projection * cam.transform
+				s.shadow["transformation_" .. i] = cam.transformProj
 				
-				love.graphics.setCanvas({depthstencil = s.shadow.canvases[i]})
-				love.graphics.clear({255, 255, 255, 255})
-				
-				self.shaders.shadow:send("transformProj", s.shadow["transformation_" .. i])
-				
-				for shaderInfo, s in pairs(self.drawTable) do
-					for material, tasks in pairs(s) do
-						if not material.alpha then
-							for i,v in pairs(tasks) do
-								self.shaders.shadow:send("transform", v[1])
-								
-								--final draw
-								love.graphics.draw(v[2].mesh)
-							end
-						end
-					end
-				end
+				self:renderShadows(cam, {depthstencil = s.shadow.canvases[i]})
 			end
-			
-			love.graphics.pop()
 		elseif o[1] == "shadow_point" then
 			local pos = vec3(s.x, s.y, s.z)
 			s.shadow.lastPos = pos
@@ -501,39 +481,14 @@ function lib.executeJobs(self, cam)
 			end
 			
 			--render
-			love.graphics.push("all")
-			love.graphics.reset()
-			love.graphics.setMeshCullMode("none")
-			love.graphics.setDepthMode("less", true)
-			love.graphics.setShader(self.shaders.shadow)
-			love.graphics.setBlendMode("darken", "premultiplied")
-			
-			self.shaders.shadow:send("viewPos", {s.x, s.y, s.z})
-			
 			for face = 1, 6 do
-				self.shaders.shadow:send("transformProj", transformations[face])
-				love.graphics.setCanvas({{s.shadow.canvas, face = face}})
-				love.graphics.clear(256.0, 256.0, 256.0, 256.0)
-				
-				for shaderInfo, s in pairs(self.drawTable) do
-					for material, tasks in pairs(s) do
-						if not material.alpha then
-							for i,v in pairs(tasks) do
-								self.shaders.shadow:send("transform", v[1])
-								
-								--final draw
-								love.graphics.draw(v[2].mesh)
-							end
-						end
-					end
-				end
+				local cam = self:newCam(transformations[face], pos, lookNormals[face])
+				self:renderShadows(cam, {{s.shadow.canvas, face = face}})
 			end
-			love.graphics.pop()
 		elseif o[1] == "reflections" then
 			local pos = -vec3(o[4]:invert() * vec3(0.0, 0.0, 0.0))
 			s.reflection.lastPos = pos
 			
-			--note that reflections.glsl has disabled lod because ldo generation is buggy too
 			local transformations = {
 				pointShadowProjectionMatrix * self:lookAt(pos, pos + lookNormals[1], vec3(0, -1, 0)),
 				pointShadowProjectionMatrix * self:lookAt(pos, pos + lookNormals[2], vec3(0, -1, 0)),
@@ -547,8 +502,9 @@ function lib.executeJobs(self, cam)
 			love.graphics.push("all")
 			love.graphics.reset()
 			for face = 1, 6 do
+				local cam = self:newCam(transformations[face], pos, lookNormals[face])
 				love.graphics.setCanvas({{s.reflection.canvas, face = face}})
-				lib:renderFull(transformations[face], self.canvases_reflections, false, pos, lookNormals[face], {[s] = true})
+				lib:renderFull(cam, self.canvases_reflections, false, {[s] = true})
 			end
 			love.graphics.pop()
 		elseif o[1] == "rain" then

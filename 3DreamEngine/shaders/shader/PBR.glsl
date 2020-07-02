@@ -32,7 +32,6 @@ extern Image brdfLUT;
 
 //material
 extern Image tex_albedo;
-extern vec4 color_albedo;
 extern Image tex_combined;
 extern vec3 color_combined;
 extern Image tex_emission;
@@ -45,16 +44,16 @@ extern Image rain_splashes;
 extern Image rain_tex_wetness;
 extern float rain_wetness;
 
-//returns a pseudo random value 0-1 from a position
-float dither(vec3 pos) {
-	return fract(pos.x * 111.1 + pos.y * 777.7 + pos.z * 333.3);
-}
-
 void effect() {
-	vec4 albedo = Texel(tex_albedo, VaryingTexCoord.xy) * color_albedo;
+	vec4 albedo = Texel(tex_albedo, VaryingTexCoord.xy) * VaryingColor;
 	
 	//dither alpha
-	if (!second_pass && albedo.a < 1.0 && albedo.a < dither(vertexPos.xyz)) {
+	if (!second_pass) {
+		albedo.a = step(fract(love_PixelCoord.x * 0.37 + love_PixelCoord.y * 73.73 + depth * 3.73), albedo.a);
+	}
+	
+	//hidden
+	if (albedo.a <= 0.0) {
 		discard;
 	}
 	
@@ -160,6 +159,8 @@ attribute highp vec3 VertexNormal;
 attribute highp vec3 VertexTangent;
 attribute highp vec3 VertexBiTangent;
 
+extern vec4 color_albedo;
+
 vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	highp vec4 pos = transform * animations(vertex_position);
 	
@@ -181,6 +182,9 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	
 	//extract and pass depth
 	depth = vPos.z;
+	
+	//color
+	VaryingColor = color_albedo * ConstantColor;
 	
 	return vPos;
 }

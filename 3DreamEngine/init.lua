@@ -165,13 +165,10 @@ lib.cam = lib:newCam()
 
 --default textures
 if love.graphics then
-	lib.object_light = lib:loadObject(lib.root .. "/objects/light")
 	lib.object_sky = lib:loadObject(lib.root .. "/objects/sky", {meshType = "textured"})
 	lib.object_cube = lib:loadObject(lib.root .. "/objects/cube", {meshType = "color"})
-	lib.object_axis = lib:loadObject(lib.root .. "/objects/axis", {meshType = "color_extended"})
 	lib.object_warning = lib:loadObject(lib.root .. "/objects/warning", {meshType = "color_extended"})
 	lib.object_plane = lib:loadObject(lib.root .. "/objects/plane", {meshType = "textured"})
-	lib.object_rainfall = lib:loadObject(lib.root .. "/objects/rainfall", {meshType = "textured"})
 	lib.object_rain = lib:loadObject(lib.root .. "/objects/rain", {meshType = "textured"})
 	
 	lib.textures = {
@@ -216,6 +213,7 @@ if love.graphics then
 	end
 end
 
+--a canvas set is used to render a scene to
 function lib.newCanvasSet(self, w, h, msaa, deferred_lighting, secondPass, postEffects_enabled)
 	local set = { }
 	
@@ -280,6 +278,7 @@ function lib.newCanvasSet(self, w, h, msaa, deferred_lighting, secondPass, postE
 	return set
 end
 
+--load canvases
 function lib.resize(self, w, h)
 	--canvases sets
 	self.canvases = self:newCanvasSet(w, h, self.msaa, self.deferred_lighting, self.secondPass, true)
@@ -291,6 +290,7 @@ function lib.resize(self, w, h)
 		self.canvas_bloom_2 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = "rgba16f", readable = true, msaa = 0})
 	end
 	
+	--screen space reflections
 	if self.SSR_enabled then
 		self.canvas_SSR_1 = love.graphics.newCanvas(w*self.SSR_resolution, h*self.SSR_resolution, {format = self.SSR_format, readable = true, msaa = 0})
 		self.canvas_SSR_2 = love.graphics.newCanvas(w*self.SSR_resolution, h*self.SSR_resolution, {format = self.SSR_format, readable = true, msaa = 0})
@@ -312,15 +312,12 @@ function lib.resize(self, w, h)
 	--sky box
 	if self.sky_enabled then
 		self.canvas_sky = love.graphics.newCanvas(self.sky_resolution, self.sky_resolution, {format = self.sky_format, readable = true, msaa = 0, type = "cube", mipmaps = "manual"})
-		
-		if self.clouds_cumulus then
-			self.canvas_clouds = love.graphics.newCanvas(self.clouds_resolution, self.clouds_resolution, {format = "normal", readable = true, msaa = 0, type = "cube", mipmaps = "none"})
-		end
 	end
 	
 	self:loadShader()
 end
 
+--applies settings and load canvases
 function lib.init(self)
 	if self.SSR_enabled and not self.deferred_lighting then
 		self.SSR_enabled = false
@@ -329,8 +326,10 @@ function lib.init(self)
 	
 	self:resize(love.graphics.getWidth(), love.graphics.getHeight())
 	
+	--reset shader
 	self:loadShader()
 	
+	--reset lighting
 	self.lighting = { }
 	
 	--create sun shadow if requested
@@ -342,58 +341,54 @@ function lib.init(self)
 	end
 end
 
+--clears the current scene
 function lib.prepare(self)
 	--clear draw table
 	self.drawTable = { }
 	self.particles = { }
 	self.particleCounter = 0
-	
-	--show light sources
-	if self.showLightSources then
-		for d,s in ipairs(self.lighting) do
-			love.graphics.setColor(s.r, s.g, s.b)
-			self:draw(self.object_light, s.x, s.y, s.z, 0.2, nil, nil)
-		end
-		love.graphics.setColor(1, 1, 1, 1)
-	end
 end
 
+--add an object to the scene
 function lib.draw(self, obj, x, y, z, sx, sy, sz)
 	local transform
 	if x then
+		--simple transform with arguments, ignores object transformation matrix
 		transform = mat4(
 			sx or 1, 0, 0, x,
 			0, sy or sx or 1, 0, y,
 			0, 0, sz or sx or 1, z,
 			0, 0, 0, 1
-		) * (obj.transform or 1)
+		)
+		
+		--also applies objects own transformation
+		if obj.transform then
+			transform = transform * obj.transform
+		end
 	else
-		transform = obj.transform or mat4:getIdentity()
+		--pre defined transform
+		transform = obj.transform
 	end
 	
-	local t = obj.objects or {obj}
-	for d,s in pairs(t) do
-		if not s.disabled then
-			if s.mesh then
-				local shaderInfo = self:getShaderInfo(s.material, s.shaderType, obj)
-				if not lib.drawTable[shaderInfo] then
-					lib.drawTable[shaderInfo] = { }
-				end
-				if not lib.drawTable[shaderInfo][s.material] then
-					lib.drawTable[shaderInfo][s.material] = { }
-				end
-				local r, g, b = love.graphics.getColor()
-				table.insert(lib.drawTable[shaderInfo][s.material], {
-					transform,
-					s,
-					r, g, b,
-					obj,
-				})
-			end
+	--add to scene
+	for d,s in pairs(obj.objects or {obj}) do
+		if not s.disabled and s.mesh then
+			--get required shader
+			s.shader = s.shader or self:getShaderInfo(s.material, s.shaderType, obj)
+			
+			--add
+			table.insert(lib.drawTable, {
+				transform = transform,                  --transformation matrix, can be nil
+				pos = transform * vec3(0, 0, 0),        --bounding box center position of object
+				s = s,                                  --drawable object
+				color = vec4(love.graphics.getColor()), --color, will affect color/albedo input
+				obj = obj,                              --the object container used to store general informations (reflections, ...)
+			})
 		end
 	end
 end
 
+--add a particle to the scene
 function lib.drawParticle(self, tex, quad, x, y, z, size, rot, emission, emissionTexture)
 	if type(quads) == "number" then
 		return self:drawParticle(tex, false, x, y, z, size, rot)

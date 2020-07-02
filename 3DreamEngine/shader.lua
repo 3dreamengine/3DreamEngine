@@ -197,7 +197,7 @@ function lib.getShaderInfo(self, mat, shaderType, obj)
 	
 	local str = table.concat({dat.shaderType, dat.vertexShader, dat.reflection and 1 or 0}, "_")
 	
-	if shaderType == "color" or shaderType == "color_extended" or shaderType == "color_material"  or shaderType == "color_lookup" then
+	if shaderType == "color" or shaderType == "color_extended" or shaderType == "color_material" or shaderType == "color_lookup" then
 	
 	elseif shaderType == "PBR" or shaderType == "Phong" then
 		dat.tex_normal = mat.tex_normal ~= nil

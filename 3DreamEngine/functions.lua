@@ -5,13 +5,16 @@ functions.lua - contains library relevant functions
 
 local lib = _3DreamEngine
 
-function lib.newCam(self)
-	local c = {
+function lib:newCam(transformProj, pos, normal)
+	return setmetatable({
 		transform = mat4:getIdentity(),
+		transformProj = transformProj,
 		
-		normal = vec3(0, 0, 0),
-		pos = vec3(0, 0, 0),
+		--extracted from transform matrix
+		normal = normal or vec3(0, 0, 0),
+		pos = pos or vec3(0, 0, 0),
 		
+		--DEPRICATED, use transform
 		x = 0,
 		y = 0,
 		z = 0,
@@ -19,14 +22,10 @@ function lib.newCam(self)
 		fov = 90,
 		near = 0.01,
 		far = 1000,
-	}
-	
-	setmetatable(c, self.operations)
-	
-	return c
+	}, self.operations)
 end
 
-function lib.newReflection(self, static, priority)
+function lib:newReflection(static, priority)
 	local canvas = love.graphics.newCanvas(self.reflections_resolution, self.reflections_resolution,
 		{format = self.reflections_format, readable = true, msaa = 0, type = "cube", mipmaps = "manual"})
 	
@@ -38,7 +37,7 @@ function lib.newReflection(self, static, priority)
 	}
 end
 
-function lib.newShadowCanvas(self, typ, res)
+function lib:newShadowCanvas(typ, res)
 	if typ == "sun" then
 		local canvas = love.graphics.newCanvas(res, res,
 			{format = "depth16", readable = true, msaa = 0, type = "2d"})
@@ -54,7 +53,7 @@ function lib.newShadowCanvas(self, typ, res)
 	end
 end
 
-function lib.newShadow(self, typ, static, res)
+function lib:newShadow(typ, static, res)
 	if typ == "point" then
 		res = res or self.shadow_cube_resolution
 	else
@@ -99,7 +98,7 @@ local lightMetaTable = {
 	end,
 }
 
-function lib.newLight(self, posX, posY, posZ, r, g, b, brightness, meter)
+function lib:newLight(posX, posY, posZ, r, g, b, brightness, meter)
 	r = r or 1.0
 	g = g or 1.0
 	b = b or 1.0
@@ -119,7 +118,7 @@ function lib.newLight(self, posX, posY, posZ, r, g, b, brightness, meter)
 	return setmetatable(l, {__index = lightMetaTable})
 end
 
-function lib.resetLight(self, noDayLight)
+function lib:resetLight(noDayLight)
 	self.lighting = { }
 	
 	if not noDayLight then
@@ -137,11 +136,11 @@ function lib.resetLight(self, noDayLight)
 	end
 end
 
-function lib.addLight(self, light)
+function lib:addLight(light)
 	self.lighting[#self.lighting+1] = light
 end
 
-function lib.addNewLight(self, ...)
+function lib:addNewLight(...)
 	self:addLight(self:newLight(...))
 end
 
@@ -178,20 +177,20 @@ function lib.operations.rotateZ(obj, rz)
 	return obj
 end
 
-function lib.split(self, text, sep)
+function lib:split(text, sep)
 	local sep, fields = sep or ":", { }
 	local pattern = string.format("([^%s]+)", sep)
 	text:gsub(pattern, function(c) fields[#fields+1] = c end)
 	return fields
 end
 
-function lib.rotatePoint(self, x, y, rot)
+function lib:rotatePoint(x, y, rot)
 	local c = math.cos(rot)
 	local s = math.sin(rot)
 	return x * c - y * s, x * s + y * c
 end
 
-function lib.lookAt(self, eye, at, up)
+function lib:lookAt(eye, at, up)
 	up = up or vec3(0.0, 1.0, 0.0)
 	
 	zaxis = (at - eye):normalize()
@@ -210,7 +209,7 @@ end
 
 --add tangents to a 3Dream vertex format
 --x, y, z, shaderData, nx, ny, nz, materialID, u, v, tx, ty, tz, btx, bty, btz
-function lib.calcTangents(self, finals, vertexMap)
+function lib:calcTangents(finals, vertexMap)
 	--expand uv if missing
 	for d,f in ipairs(finals) do
 		f[9] = f[9] or 0
@@ -290,7 +289,7 @@ function lib.calcTangents(self, finals, vertexMap)
 	end
 end
 
-function lib.HSVtoRGB(self, h, s, v)
+function lib:HSVtoRGB(h, s, v)
 	local i = math.floor(h * 6)
 	local f = h * 6 - i
 	local p = v * (1 - s)
@@ -312,7 +311,7 @@ function lib.HSVtoRGB(self, h, s, v)
 	end
 end
 
-function lib.RGBtoHSV(self, r, g, b)
+function lib:RGBtoHSV(r, g, b)
 	local h, s, v
 	local min = math.min(r, g, b)
 	local max = math.max(r, g, b)
@@ -346,7 +345,7 @@ function lib.RGBtoHSV(self, r, g, b)
 	return h, s, v
 end
 
-function lib.decodeObjectName(self, name)
+function lib:decodeObjectName(name)
 	if self.nameDecoder == "blender" then
 		local last, f = 0, false
 		while last and string.find(name, "_", last+1) do
@@ -358,7 +357,7 @@ function lib.decodeObjectName(self, name)
 	end
 end
 
-function lib.transformPoint(self, p, cam, canvases)
+function lib:transformPoint(p, cam, canvases)
 	cam = cam or self.cam
 	canvases = canvases or self.canvases
 	
@@ -370,7 +369,7 @@ function lib.transformPoint(self, p, cam, canvases)
 	return vec2((p[1]+1) * canvases.width/2, (p[2]+1) * canvases.height/2), p
 end
 
-function lib.setDaytime(self, time)
+function lib:setDaytime(time)
 	--time, 0.0 is sunrise, 0.5 is sunset
 	self.sky_time = time % 1.0
 	self.sky_day = math.floor(time % 30.0)
@@ -391,7 +390,7 @@ function lib.setDaytime(self, time)
 end
 
 --0 is the happiest day ever and 1 the end of the world
-function lib.setWeather(self, rain, temp)
+function lib:setWeather(rain, temp)
 	rain = rain or 0.0
 	temp = temp or (1.0 - rain)
 	
@@ -412,4 +411,8 @@ function lib.setWeather(self, rain, temp)
 	
 	self.rain_isRaining = rain > 0.4
 	self.rain_strength = math.ceil(math.clamp((rain-0.4) / 0.6 * 5.0, 0.001, 5.0))
+end
+
+function lib:inFrustum(viewPos, normal, pos)
+	return true
 end
