@@ -6,24 +6,31 @@ love.mouse.setRelativeMode(true)
 --settings
 local projectDir = "examples/blacksmith/"
 
-dream.sky_hdri = love.graphics.newImage(projectDir .. "textures/background.jpg")
+dream.sky_enabled = false
+dream.lighting_engine = "PBR"
 
 dream:init()
 
 local scene = dream:loadObject(projectDir .. "scene", {splitMaterials = true})
 local torch = dream:loadObject(projectDir .. "torch", {splitMaterials = true})
 
+--create a reflection in the middle of the room 
+local reflection = dream:newReflection(false, 1.0, vec3(0, 0, 0))
+scene.reflection = reflection
+torch.reflection = reflection
+
 --particle texture
 local texture_candle = love.graphics.newImage(projectDir .. "textures/candle.png")
 local factor = texture_candle:getHeight() / texture_candle:getWidth()
-quads = { }
+
+local quads = { }
 for y = 1, 5 do
 	for x = 1, 5 do
 		quads[#quads+1] = love.graphics.newQuad(x-1, (y-1)*factor, 1, factor, 5, 5*factor)
 	end
 end
 
-player = {
+local player = {
 	x = 0,
 	y = 0,
 	z = 0,
@@ -36,11 +43,11 @@ player = {
 dream.cam.rx = 0
 dream.cam.ry = 0
 
-particles = { }
-lastParticleID = 0
+local particles = { }
+local lastParticleID = 0
 
 --create three light sources and assign shadows
-lights = { }
+local lights = { }
 for i = 1, 3 do
 	lights[i] = dream:newLight(0, 0, 0, 1.0, 0.75, 0.5)
 	lights[i].shadow = dream:newShadow("point")

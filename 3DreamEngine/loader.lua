@@ -37,6 +37,16 @@ local meshTypeForShaderTypes = {
 	["color_material"] = "color_extended",
 }
 
+local function newBoundaryBox()
+	return {
+		first = vec3(math.huge, math.huge, math.huge),
+		second = vec3(-math.huge, -math.huge, -math.huge),
+		dimensions = vec3(0.0, 0.0, 0.0),
+		center = vec3(0.0, 0.0, 0.0),
+		size = 0
+	}
+end
+
 --updates active resource tasks (mesh loading, texture loading, ...)
 function lib.update(self, time)
 	if fastLoadingJob then
@@ -408,7 +418,7 @@ function lib.loadObject(self, path, args)
 			found = true
 			
 			--load object
-			self.loader[typ](self, obj, obj.path .. "." .. typ)
+			local failed = self.loader[typ](self, obj, obj.path .. "." .. typ)
 			
 			--look for collision
 			if typ == "obj" then
@@ -419,7 +429,7 @@ function lib.loadObject(self, path, args)
 			
 			--skip furhter modifying and exporting if already packed as 3do
 			--also skips mesh loading since it is done manually
-			if typ == "3do" then
+			if typ == "3do" and not failed then
 				obj.noParticleSystem = true
 				obj.noMesh = true
 				obj.export3do = false
@@ -629,42 +639,40 @@ function lib.loadObject(self, path, args)
 	
 	
 	--calculate bounding box
-	if obj.boundingBox then
-		obj.boundingBox = {first = vec3(math.huge, math.huge, math.huge), second = vec3(-math.huge, -math.huge, -math.huge), dimensions = vec3(0.0, 0.0, 0.0), center = vec3(0.0, 0.0, 0.0), size = 0}
-		
-		local total = 0
-		for d,s in pairs(obj.objects) do
-			total = total + 1
-			if s.boundingBox then
-				s.boundingBox.first = vec3(s.boundingBox.first)
-				s.boundingBox.second = vec3(s.boundingBox.first)
-				s.boundingBox.dimensions = vec3(s.boundingBox.first)
-				s.boundingBox.center = vec3(s.boundingBox.first)
-			else
-				s.boundingBox = {first = vec3(math.huge, math.huge, math.huge), second = vec3(-math.huge, -math.huge, -math.huge), dimensions = vec3(0.0, 0.0, 0.0), center = vec3(0.0, 0.0, 0.0), size = 0}
-				
-				for i,v in ipairs(s.final) do
-					local pos = vec3(v)
-					s.boundingBox.first = s.boundingBox.first:min(pos)
-					s.boundingBox.second = s.boundingBox.second:max(pos)
-					s.boundingBox.center = s.boundingBox.center + pos
-				end
-				
-				s.boundingBox.center = s.boundingBox.center / #s.final
-				s.boundingBox.dimensions = s.boundingBox.second - s.boundingBox.first
-				s.boundingBox.size = math.max(s.boundingBox.dimensions.x, s.boundingBox.dimensions.y, s.boundingBox.dimensions.z)
+	obj.boundingBox = newBoundaryBox()
+	local total = 0
+	for d,s in pairs(obj.objects) do
+		total = total + 1
+		if s.boundingBox then
+			--convert loaded boundaries (e.g. .3do files)
+			s.boundingBox.first = vec3(s.boundingBox.first)
+			s.boundingBox.second = vec3(s.boundingBox.first)
+			s.boundingBox.dimensions = vec3(s.boundingBox.first)
+			s.boundingBox.center = vec3(s.boundingBox.first)
+		else
+			s.boundingBox = newBoundaryBox()
+			
+			--scan all vertices
+			for i,v in ipairs(s.final) do
+				local pos = vec3(v)
+				s.boundingBox.first = s.boundingBox.first:min(pos)
+				s.boundingBox.second = s.boundingBox.second:max(pos)
+				s.boundingBox.center = s.boundingBox.center + pos
 			end
 			
-			obj.boundingBox.first = s.boundingBox.first:min(obj.boundingBox.first)
-			obj.boundingBox.second = s.boundingBox.second:max(obj.boundingBox.second)
-			obj.boundingBox.center = s.boundingBox.center + obj.boundingBox.center
-			
-			obj.boundingBox.size = math.max(obj.boundingBox.size, s.boundingBox.size)
+			s.boundingBox.center = s.boundingBox.center / #s.final
+			s.boundingBox.dimensions = s.boundingBox.second - s.boundingBox.first
+			s.boundingBox.size = math.max(s.boundingBox.dimensions:length(), s.boundingBox.size)
 		end
 		
-		obj.boundingBox.center = obj.boundingBox.center / total
-		obj.boundingBox.dimensions = obj.boundingBox.second - obj.boundingBox.first
+		obj.boundingBox.first = s.boundingBox.first:min(obj.boundingBox.first)
+		obj.boundingBox.second = s.boundingBox.second:max(obj.boundingBox.second)
+		obj.boundingBox.center = s.boundingBox.center + obj.boundingBox.center
+		
+		obj.boundingBox.size = math.max(obj.boundingBox.size, s.boundingBox.size)
 	end
+	obj.boundingBox.center = obj.boundingBox.center / total
+	obj.boundingBox.dimensions = obj.boundingBox.second - obj.boundingBox.first
 	
 	
 	--cleaning up
@@ -753,7 +761,7 @@ function lib.loadObject(self, path, args)
 		
 		--export
 		local headerData = love.data.compress("string", compressed, table.save(meshHeaderData), compressedLevel)
-		local final = "3DO " .. compressed .. " " .. string.format("%08d", #headerData) .. headerData .. table.concat(meshDataStrings, "")
+		local final = "3DO1" .. compressed .. " " .. string.format("%08d", #headerData) .. headerData .. table.concat(meshDataStrings, "")
 		love.filesystem.createDirectory(obj.dir)
 		love.filesystem.write(obj.dir .. "/" .. obj.name .. ".3do", final)
 	end

@@ -91,7 +91,7 @@ lib.textures_generateThumbnails = true
 lib.msaa = 4
 lib.fxaa = false
 lib.deferred_lighting = false
-lib.lighting_engine = "PBR"
+lib.lighting_engine = "Phong"
 lib.secondPass = true
 lib.renderToFinalCanvas = false
 lib.max_lights = 16
@@ -171,6 +171,7 @@ if love.graphics then
 	lib.object_plane = lib:loadObject(lib.root .. "/objects/plane", {meshType = "textured"})
 	lib.object_rain = lib:loadObject(lib.root .. "/objects/rain", {meshType = "textured"})
 	
+	local pix = love.image.newImageData(2, 2)
 	lib.textures = {
 		default = love.graphics.newImage(lib.root .. "/res/default.png"),
 		default_normal = love.graphics.newImage(lib.root .. "/res/default_normal.png"),
@@ -185,6 +186,8 @@ if love.graphics then
 		
 		splash = love.graphics.newImage(lib.root .. "/res/splash.png"),
 		wetness = love.graphics.newImage(lib.root .. "/res/wetness.png"),
+		
+		sky_fallback = love.graphics.newCubeImage({pix, pix, pix, pix, pix, pix}),
 		
 		sky = love.graphics.newImage(lib.root .. "/res/sky.png"),
 		stars_hdri = lib.root .. "/res/stars_hdri.png",
@@ -346,6 +349,8 @@ function lib.prepare(self)
 	--clear draw table
 	self.drawTable = { }
 	self.particles = { }
+	self.reflections_last = self.reflections or { }
+	self.reflections = { }
 	self.particleCounter = 0
 end
 
@@ -374,12 +379,15 @@ function lib.draw(self, obj, x, y, z, sx, sy, sz)
 	for d,s in pairs(obj.objects or {obj}) do
 		if not s.disabled and s.mesh then
 			--get required shader
-			s.shader = s.shader or self:getShaderInfo(s.material, s.shaderType, obj)
+			s.shader = s.shader or self:getShaderInfo(s.material, s.shaderType, s.reflection or obj.reflection)
+			
+			local pos = s.boundingBox and s.boundingBox.center or vec3(0, 0, 0)
+			pos = transform and (transform * pos) or pos
 			
 			--add
 			table.insert(lib.drawTable, {
 				transform = transform,                  --transformation matrix, can be nil
-				pos = transform * vec3(0, 0, 0),        --bounding box center position of object
+				pos = pos,                              --bounding box center position of object
 				s = s,                                  --drawable object
 				color = vec4(love.graphics.getColor()), --color, will affect color/albedo input
 				obj = obj,                              --the object container used to store general informations (reflections, ...)

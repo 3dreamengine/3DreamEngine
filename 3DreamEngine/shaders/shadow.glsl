@@ -20,7 +20,7 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	//depth required for shadows
 	vertexPos = pos.xyz;
 	
-	//projective transform and depth extracting
+	//projective transform
 	highp vec4 vPos = transformProj * pos;
 	
 	return vPos;

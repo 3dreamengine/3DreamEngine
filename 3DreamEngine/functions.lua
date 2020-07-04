@@ -25,15 +25,18 @@ function lib:newCam(transformProj, pos, normal)
 	}, self.operations)
 end
 
-function lib:newReflection(static, priority)
+function lib:newReflection(static, priority, pos)
 	local canvas = love.graphics.newCanvas(self.reflections_resolution, self.reflections_resolution,
 		{format = self.reflections_format, readable = true, msaa = 0, type = "cube", mipmaps = "manual"})
 	
 	return {
 		canvas = canvas,
 		static = static or false,
+		done = { },
 		priority = priority or 1.0,
 		lastUpdate = 0,
+		pos = pos,
+		id = math.random(), --used for the job render
 	}
 end
 
@@ -62,9 +65,9 @@ function lib:newShadow(typ, static, res)
 	
 	return {
 		typ = typ,
-		levels = 3,
 		res = res,
 		static = static or false,
+		done = { },
 		priority = 1.0,
 		lastUpdate = 0,
 		size = 0.1,

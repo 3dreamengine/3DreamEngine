@@ -1,9 +1,7 @@
 /examples/first person game/scene.blend
 /examples/first person game/*.blend1
 /debugEnabled
-/examples/bones
 /examples/blocks
-/screenshots.png
 /default
 /todo.txt
 /examples/shaderComparision
@@ -19,3 +17,8 @@
 /examples/3DreamCreator/main.lua
 /examples/3DreamCreator/objects/*.blend
 /examples/3DreamCreator/objects/*.blend1
+/examples/FrustumAndLoDs
+/examples/HolyPoly
+/examples/test
+/examples/3DreamCreator/objects/room_2.obj
+/examples/3DreamCreator/objects/world_1.obj

@@ -8,6 +8,7 @@ local projectDir = "examples/Tavern/"
 dream.nameDecoder = false
 dream.sky_enabled = false
 dream.sun_ambient = {0.1, 0.1, 0.1}
+dream.lighting_engine = "PBR"
 
 dream:loadMaterialLibrary(projectDir .. "materials")
 

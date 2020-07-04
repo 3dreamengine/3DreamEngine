@@ -8,9 +8,6 @@ local lib = _3DreamEngine
 local timeRequirement = { }
 local executionsPerSecond = { }
 local executions = { }
-local executionTimeFrame = 4
-local executionTimer = 4
-local lastCall = false
 local times = { }
 
 local pointShadowProjectionMatrix
@@ -124,34 +121,11 @@ end
 
 local drops = { }
 
-local function getID(s)
-	if s[3] then
-		return tostring(s[1]) .. tostring(s[3])
-	else
-		return tostring(s[1])
-	end
-end
-
 function lib.executeJobs(self, cam)
-	--debug and delta
 	local t = love.timer.getTime()
-	local dt = t - (lastCall or t)
-	executionTimer = executionTimer - dt
-	if executionTimer < 0 then
-		executionTimer = executionTimer + executionTimeFrame
-		executionsPerSecond = executions
-		executions = { }
-		for d,s in pairs(executionsPerSecond) do
-			executionsPerSecond[d] = s / executionTimeFrame
-		end
-	end
-	lastCall = t
-	
-	--gather all open jobs
-	local percentage = 0.25
-	local timeAvailable = math.min(dt * percentage, 3.0 / 1000)
+	local dt = love.timer.getDelta()
+	local timeAvailable = 5.0 / 1000
 	local operations = { }
-	local priorityOnIdle = 0.25
 	
 	--re render sky cube
 	if self.sky_enabled then
@@ -159,9 +133,10 @@ function lib.executeJobs(self, cam)
 		
 		--blur sky reflection cubemap
 		for level = 2, self.reflections_levels do
-			local time = times[tostring(self.canvas_sky) .. level]
+			local id = "cubemap_sky" .. level
+			local time = times[id]
 			if (times["sky"] or 0) > (time or 0) then
-				operations[#operations+1] = {"cubemap", time and (1.0 / level) or 1.0, self.canvas_sky, level}
+				operations[#operations+1] = {"cubemap", time and (1.0 / level) or 1.0, id, self.canvas_sky, level}
 			end
 		end
 	end
@@ -179,64 +154,56 @@ function lib.executeJobs(self, cam)
 		if s.shadow and s.active then
 			if s.shadow.typ == "sun" then
 				local pos = vec3(s.x, s.y, s.z):normalize()
-				local moved = not s.shadow.lastPos or s.shadow.lastPos ~= pos
-				
-				if not s.shadow.static or moved then
-					operations[#operations+1] = {"shadow_sun", moved and 1.0 or priorityOnIdle, s}
+				for cascade = 1, 3 do
+					if not s.shadow.static or not s.shadow.done[cascade] then
+						local id = "shadow_sun_" .. tostring(s.shadow) .. tostring(cascade)
+						operations[#operations+1] = {"shadow_sun", 1.0 / 2^cascade, id, s, pos, cascade}
+					end
 				end
 			elseif s.shadow.typ == "point" then
 				local pos = vec3(s.x, s.y, s.z)
 				local dist = (pos - cam.pos):length() / 10.0 + 1.0
-				local moved = not s.shadow.lastPos or s.shadow.lastPos ~= pos
 				
-				if not s.shadow.static or moved then
-					operations[#operations+1] = {"shadow_point", s.shadow.priority / dist * (moved and 1.0 or priorityOnIdle), s}
+				if not s.shadow.static or not s.shadow.done[1] then
+					local id = "shadow_point_" .. tostring(s.shadow)
+					operations[#operations+1] = {"shadow_point", s.shadow.priority / dist, id, s, pos}
 				end
 			end
 		end
 	end
 	
 	--reflections
-	local activeReflections = { }
---	for shaderInfo, s in pairs(self.drawTable) do
---		for material, tasks in pairs(s) do
---			for i,v in pairs(tasks) do
---				if v.obj.reflection and not activeReflections[v.obj.reflection] then
---					activeReflections[v.obj.reflection] = true
-					
---					--render reflections
---					if not v.obj.reflection.static then
---						local pos = v.transform and (-vec3(v.transform:invert() * vec3(0.0, 0.0, 0.0))) or vec3(0.0, 0.0, 0.0)
---						local dist = (pos - cam.pos):length() / 10.0 + 1.0
---						local moved = not v.obj.reflection.lastPos or v.obj.reflection.lastPos ~= pos
---						operations[#operations+1] = {"reflections", v.obj.reflection.priority / dist * (moved and 1.0 or priorityOnIdle), v.obj, v.transform}
---					end
-					
---					--blur mipmaps
---					for level = 2, self.reflections_levels do
---						if (times[tostring(v.obj.reflection)] or 0) > (times[tostring(v.obj.reflection.canvas) .. level] or 0) then
---							operations[#operations+1] = {"cubemap", level, v.obj.reflection.canvas, level}
---						end
---					end
---				end
---			end
---		end
---	end
-	activeReflections = nil
+	for reflection, task in pairs(self.reflections_last) do
+		--render reflections
+		for face = 1, 6 do
+			if not reflection.static or not reflection.done[face] then
+				local id = "reflections_" .. (reflection.id + face)
+				operations[#operations+1] = {"reflections", reflection.priority / (task.dist / 10 + 1), id, task.obj, task.pos, face}
+			end
+		end
+		
+		--blur mipmaps
+		for level = 2, self.reflections_levels do
+			local id_blur = "cubemap_" .. (reflection.id + level)
+			if (times[id] or 0) > (times[id_blur] or 0) then
+				operations[#operations+1] = {"cubemap", times[id_blur] and (1.0 / level) or 1.0, id_blur, reflection.canvas, level}
+			end
+		end
+	end
 	
-	--sort operations
-	table.sort(operations, function(a, b) return a[2] * (t - (times[getID(a)] or 0)) > b[2] * (t - (times[getID(b)] or 0)) end)
+	--sort operations based on priority and time since last execution
+	table.sort(operations, function(a, b) return a[2] * (t - (times[a[3] or a[1]] or 0)) > b[2] * (t - (times[b[3] or b[1]] or 0)) end)
 	
 	--debug
 	if love.keyboard.isDown("-") then
 		--measure the total priority, this is an approximation for the outstanding work
 		local total = 0
 		for d,s in ipairs(operations) do
-			total = total + s[2]
+			total = total + (t - (times[s[3] or s[1]] or t))
 		end
 		
 		--print approximate time requirement
-		print(string.format("%.2f ms behind, %d operations in queue.", total / math.max(#operations, 1) * 1000, #operations))
+		print(string.format("%.2f ms behind, %d operations in queue, %.2f ms per step available", total * 1000, #operations, timeAvailable * 1000))
 		for d,s in pairs(timeRequirement) do
 			print(string.format("\t%s: %0.2f ms", d, s*1000))
 		end
@@ -244,25 +211,32 @@ function lib.executeJobs(self, cam)
 		--print execution per second
 		print("e/s:")
 		for d,s in pairs(executionsPerSecond) do
-			print(string.format("\t%s: %d/s", d, s))
+			print(string.format("\t%s: %.2f/s", d, s))
+		end
+		
+		--print execution per second
+		print("e total:")
+		for d,s in pairs(executions) do
+			print(string.format("\t%s: %d", d, s))
 		end
 		
 		print("queue:")
 		for d,s in ipairs(operations) do
-			print(string.format("\t%s\tpriority: %.2f\tdelta: %.2f ms", s[1], s[2], (t - (times[getID(s)] or 0)) * 1000))
+			print(string.format("\t%s\tpriority: %.2f\tdelta: %.2f ms", s[1], s[2], (t - (times[s[3] or s[1]] or 0)) * 1000))
 		end
 		print()
+		
+		os.exit()
 	end
 	
 	--execute operations
 	while operations[1] do
 		local o = operations[1]
 		table.remove(operations, 1)
-		local s = o[3]
 		
 		--remember time stamp
-		local delta = t - (times[getID(o)] or t)
-		times[getID(o)] = t
+		local delta = t - (times[o[3] or o[1]] or t)
+		times[o[3] or o[1]] = t
 		
 		local time = love.timer.getTime()
 		if o[1] == "sky" then
@@ -402,7 +376,7 @@ function lib.executeJobs(self, cam)
 			
 			love.graphics.pop()
 		elseif o[1] == "cubemap" then
-			self:blurCubeMap(o[3], o[4])
+			self:blurCubeMap(o[4], o[5])
 		elseif o[1] == "autoExposure" then
 			love.graphics.push("all")
 			love.graphics.reset()
@@ -424,46 +398,43 @@ function lib.executeJobs(self, cam)
 			love.graphics.draw(self.canvas_exposure, 0, 0, 0, 1 / self.autoExposure_resolution)
 			love.graphics.pop()
 		elseif o[1] == "shadow_sun" then
-			s.shadow.lastPos = vec3(s.x, s.y, s.z)
+			local cascade = o[6]
+			o[4].shadow.lastPos = o[5]
 			
 			--create new canvases if necessary
-			if not s.shadow.canvases then
-				time = love.timer.getTime()
-				s.shadow.canvases = { }
-				for i = 1, s.shadow.levels do
-					s.shadow.canvases[i] = self:newShadowCanvas("sun", s.shadow.res)
-				end
+			if not o[4].shadow.canvases then
+				o[4].shadow.canvases = { }
 			end
 			
 			--render
-			for i = 1, s.shadow.levels do
-				local r = self.shadow_distance / 2 * (self.shadow_factor ^ (i-1))
-				local t = self.shadow_distance / 2 * (self.shadow_factor ^ (i-1))
-				local l = -r
-				local b = -t
-				
-				local n = 1.0
-				local f = 100
-				
-				local projection = mat4(
-					2 / (r - l),	0,	0,	-(r + l) / (r - l),
-					0, -2 / (t - b), 0, -(t + b) / (t - b),
-					0, 0, -2 / (f - n), -(f + n) / (f - n),
-					0, 0, 0, 1
-				)
-				
-				local cam = self:newCam()
-				cam.pos = vec3(0, 0, 0)
-				cam.normal = self.sun:normalize()
-				cam.transform = self:lookAt(self.sun:normalize() * f * 0.5, cam.pos, vec3(0.0, 1.0, 0.0))
-				cam.transformProj = projection * cam.transform
-				s.shadow["transformation_" .. i] = cam.transformProj
-				
-				self:renderShadows(cam, {depthstencil = s.shadow.canvases[i]})
-			end
+			local r = self.shadow_distance / 2 * (self.shadow_factor ^ (cascade-1))
+			local t = self.shadow_distance / 2 * (self.shadow_factor ^ (cascade-1))
+			local l = -r
+			local b = -t
+			
+			local n = 1.0
+			local f = 100
+			
+			local projection = mat4(
+				2 / (r - l),	0,	0,	-(r + l) / (r - l),
+				0, -2 / (t - b), 0, -(t + b) / (t - b),
+				0, 0, -2 / (f - n), -(f + n) / (f - n),
+				0, 0, 0, 1
+			)
+			
+			local shadowCam = self:newCam()
+			shadowCam.pos = cam.pos
+			shadowCam.normal = o[5]
+			shadowCam.transform = self:lookAt(cam.pos + shadowCam.normal * f * 0.5, cam.pos, vec3(0.0, 1.0, 0.0))
+			shadowCam.transformProj = projection * shadowCam.transform
+			o[4].shadow["transformation_" .. cascade] = shadowCam.transformProj
+			o[4].shadow.canvases[cascade] = o[4].shadow.canvases[cascade] or self:newShadowCanvas("sun", o[4].shadow.res)
+			self:renderShadows(shadowCam, {depthstencil = o[4].shadow.canvases[cascade]})
+			
+			o[4].shadow.done[cascade] = true
 		elseif o[1] == "shadow_point" then
-			local pos = vec3(s.x, s.y, s.z)
-			s.shadow.lastPos = pos
+			local pos = o[5]
+			o[4].shadow.lastPos = pos
 			
 			local transformations = {
 				pointShadowProjectionMatrix * self:lookAt(pos, pos + lookNormals[1], vec3(0, -1, 0)),
@@ -475,19 +446,21 @@ function lib.executeJobs(self, cam)
 			}
 			
 			--create new canvases if necessary
-			if not s.shadow.canvas then
+			if not o[4].shadow.canvas then
 				time = love.timer.getTime()
-				s.shadow.canvas = self:newShadowCanvas("point", s.shadow.res)
+				o[4].shadow.canvas = self:newShadowCanvas("point", o[4].shadow.res)
 			end
 			
 			--render
 			for face = 1, 6 do
 				local cam = self:newCam(transformations[face], pos, lookNormals[face])
-				self:renderShadows(cam, {{s.shadow.canvas, face = face}})
+				self:renderShadows(cam, {{o[4].shadow.canvas, face = face}})
 			end
+			
+			o[4].shadow.done[1] = true
 		elseif o[1] == "reflections" then
-			local pos = -vec3(o[4]:invert() * vec3(0.0, 0.0, 0.0))
-			s.reflection.lastPos = pos
+			local pos = o[5]
+			local face = o[6]
 			
 			local transformations = {
 				pointShadowProjectionMatrix * self:lookAt(pos, pos + lookNormals[1], vec3(0, -1, 0)),
@@ -501,12 +474,15 @@ function lib.executeJobs(self, cam)
 			--render
 			love.graphics.push("all")
 			love.graphics.reset()
-			for face = 1, 6 do
-				local cam = self:newCam(transformations[face], pos, lookNormals[face])
-				love.graphics.setCanvas({{s.reflection.canvas, face = face}})
-				lib:renderFull(cam, self.canvases_reflections, false, {[s] = true})
-			end
+			local cam = self:newCam(transformations[face], pos, lookNormals[face])
+			local canvas = o[4].reflection.canvas
+			love.graphics.setCanvas({{canvas, face = face}})
+			o[4].reflection.canvas = nil
+			lib:renderFull(cam, self.canvases_reflections, false, o[7])
+			o[4].reflection.canvas = canvas
 			love.graphics.pop()
+			
+			o[4].reflection.done[face] = true
 		elseif o[1] == "rain" then
 			local lastRender = self.rain_rain > 0
 			if self.rain_isRaining then
@@ -563,14 +539,20 @@ function lib.executeJobs(self, cam)
 			end
 		end
 		
+		--executions per second
+		if delta > 0 then
+			local eps = 1 / delta
+			executionsPerSecond[o[1]] = (executionsPerSecond[o[1]] or eps) * 0.9 + eps * 0.1
+		end
+		
 		--measure time to adjust
 		local delta = math.min(love.timer.getTime() - time, 1 / 10)
 		timeRequirement[o[1]] = (timeRequirement[o[1]] or delta) * 0.9 + delta * 0.1
 		executions[o[1]] = (executions[o[1]] or 0) + 1
 		
 		--limit processing time
-		timeAvailable = timeAvailable - (timeRequirement[o[1]] or 5 / 1000)
-		if timeAvailable <= 0 and not first then
+		timeAvailable = timeAvailable - (timeRequirement[o[1]] or 1 / 1000)
+		if timeAvailable <= 0 then
 			break
 		end
 	end

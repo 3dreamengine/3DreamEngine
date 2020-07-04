@@ -28,6 +28,7 @@ function lib:buildScene(cam, pass)
 	for d,s in ipairs(self.drawTable) do
 		local mat = s.s.material
 		if pass == 3 or not mat.alpha and pass == 1 or mat.alpha and pass == 2 then
+			local dist = (s.pos - cam.pos):length()
 			if self:inFrustum(cam.pos, cam.normal, s.pos) then
 				--group shader and materials together to reduce shader switches
 				if not scene[s.s.shader] then
@@ -39,6 +40,16 @@ function lib:buildScene(cam, pass)
 				
 				--add
 				table.insert(scene[s.s.shader][mat], s)
+				
+				--reflections
+				local reflection = s.s.reflection or s.obj.reflection
+				if reflection then
+					self.reflections[s.s.reflection or s.obj.reflection] = {
+						dist = dist,
+						obj = s.s.reflection and s.s or s.obj,
+						pos = reflection.pos or s.pos,
+					}
+				end
 			end
 		end
 	end
@@ -171,7 +182,7 @@ function lib:render(canvases, cam, pass, blacklist)
 			for d,s in ipairs(lighting) do
 				if s.shadow and s.shadow.typ == "sun" then
 					local enable = 0.0
-					if s.shadow.canvases then
+					if s.shadow.canvases and s.shadow.canvases[3] then
 						shader:send("transformProjShadow_" .. count .. "_1", s.shadow.transformation_1)
 						shader:send("transformProjShadow_" .. count .. "_2", s.shadow.transformation_2)
 						shader:send("transformProjShadow_" .. count .. "_3", s.shadow.transformation_3)
@@ -288,8 +299,8 @@ function lib:render(canvases, cam, pass, blacklist)
 				if not blacklist or not blacklist[task.obj] then
 					--sky texture
 					if shaderInfo.reflection then
-						local ref = task.obj.reflection and task.obj.reflection.canvas or self.canvas_sky
-						shader:send("tex_background", ref)
+						local ref = task.s.reflection and task.s.reflection.canvas or task.obj.reflection and task.obj.reflection.canvas or self.canvas_sky
+						shader:send("tex_background", ref or self.textures.sky_fallback)
 						shader:send("reflections_levels", self.reflections_levels-1)
 					else
 						shader:send("ambient", self.sun_ambient)
@@ -532,7 +543,7 @@ function lib:renderShadows(cam, canvas)
 	for shaderInfo, shaderGroup in pairs(scene) do
 		for material, materialGroup in pairs(shaderGroup) do
 			for _,task in pairs(materialGroup) do
-				self.shaders.shadow:send("transform", task.transform)
+				self.shaders.shadow:send("transform", task.transform or identityMatrix)
 				love.graphics.draw(task.s.mesh)
 			end
 		end

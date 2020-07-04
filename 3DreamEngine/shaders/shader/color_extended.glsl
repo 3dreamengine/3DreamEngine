@@ -101,7 +101,7 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	highp vec4 vPos = transformProj * pos;
 	
 	//extract normal vector
-	normalVec = (transform * vec4(VertexTexCoord.xyz, 0.0)).xyz;
+	normalVec = mat3(transform) * VertexTexCoord.xyz;
 	
 	//extract and pass depth
 	depth = vPos.z;

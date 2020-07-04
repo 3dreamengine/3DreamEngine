@@ -17,7 +17,6 @@ return {
 		name = "Iron",
 		tex_albedo = "textures/iron_albedo",
 		tex_metallic = "textures/iron_metallic",
-		tex_normal = "textures/iron_normal",
 		tex_roughness = "textures/iron_roughness",
 	},
 	{

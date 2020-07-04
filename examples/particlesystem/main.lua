@@ -24,11 +24,11 @@ function love.draw()
 end
 
 function love.update(dt)
-	local time = love.timer.getTime() * 0.01
+	local time = love.timer.getTime() * 0.05
 	
 	if not love.keyboard.isDown("space") then
 		dream.cam:reset()
-		dream.cam:translate(math.cos(time) * 2.0, -0.5, math.sin(time) * 2.0)
+		dream.cam:translate(math.cos(time) * 1.75, -0.5, math.sin(time) * 1.75)
 		dream.cam:rotateY(-math.pi/2-time)
 	end
 end

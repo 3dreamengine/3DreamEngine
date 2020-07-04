@@ -144,15 +144,16 @@ extern vec4 color_albedo;
 vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	highp vec4 pos = transform * animations(vertex_position);
 	
-	//transform into tangential space
+	//transform from tangential space into world space
+	mat3 normalTransform = mat3(transform);
 	#ifdef TEX_NORMAL
-		vec3 T = normalize(vec3(transform * vec4((VertexTangent*2.0-1.0), 0.0)));
-		vec3 N = normalize(vec3(transform * vec4((VertexNormal*2.0-1.0), 0.0)));
-		vec3 B = normalize(vec3(transform * vec4((VertexBiTangent*2.0-1.0), 0.0)));
+		vec3 T = normalize(normalTransform * (VertexTangent*2.0-1.0));
+		vec3 N = normalize(normalTransform * (VertexNormal*2.0-1.0));
+		vec3 B = normalize(normalTransform * (VertexBiTangent*2.0-1.0));
 		
 		objToWorldSpace = mat3(T, B, N);
 	#else
-		normal = normalize(vec3(transform * vec4((VertexNormal*2.0-1.0), 0.0)));;
+		normal = normalize(normalTransform * (VertexNormal*2.0-1.0));
 	#endif
 	
 	vertexPos = pos.xyz;

@@ -7,6 +7,13 @@ return function(self, obj, path)
 	--load header
 	local file = love.filesystem.newFile(path, "r")
 	local typ = file:read(4)
+	
+	--check if up to date
+	if typ ~= "3DO1" then
+		print("3DO file " .. path .. " seems to be outdated and will be skipped")
+		return true
+	end
+	
 	local compressed = file:read(4)
 	local headerLength = file:read(8)
 	local headerData = file:read(tonumber(headerLength))

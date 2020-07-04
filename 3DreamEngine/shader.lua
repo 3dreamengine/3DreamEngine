@@ -185,12 +185,12 @@ function lib.loadShader(self)
 end
 
 --returns a fitting shader for the current material and meshtype
-function lib.getShaderInfo(self, mat, shaderType, obj)
+function lib.getShaderInfo(self, mat, shaderType, reflection)
 	local dat = {
 		shaderType = shaderType,
 		vertexShader = mat.shader or "default",
-		reflection = obj.reflection or self.sky_enabled,
-		SSR = not obj.reflection and self.SSR_enabled,
+		reflection = reflection or self.sky_enabled,
+		SSR = not reflection and self.SSR_enabled,
 		
 		shaders = { },
 	}
