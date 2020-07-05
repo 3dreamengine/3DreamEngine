@@ -12,14 +12,7 @@ if love.filesystem.read("debugEnabled") == "true" then
 	_DEBUGMODE = true
 end
 
-function math.mix(a, b, f)
-	return a * (1.0 - f) + b * f 
-end
-
-function math.clamp(v, a, b)
-	return math.max(math.min(v, b or 1.0), a or 0.0)
-end
-
+--load libraries
 mat2 = require((...) .. "/libs/luaMatrices/mat2")
 mat3 = require((...) .. "/libs/luaMatrices/mat3")
 mat4 = require((...) .. "/libs/luaMatrices/mat4")
@@ -28,15 +21,17 @@ vec2 = require((...) .. "/libs/luaVectors/vec2")
 vec3 = require((...) .. "/libs/luaVectors/vec3")
 vec4 = require((...) .. "/libs/luaVectors/vec4")
 
-mimg = require((...) .. "/libs/mimg")
+--mimg = require((...) .. "/libs/mimg")
 lib.ffi = require("ffi")
 
+--load sub modules
 _3DreamEngine = lib
 lib.root = (...)
 require((...) .. "/functions")
 require((...) .. "/shader")
 require((...) .. "/loader")
 require((...) .. "/render")
+require((...) .. "/renderLight")
 require((...) .. "/jobs")
 require((...) .. "/particlesystem")
 require((...) .. "/libs/saveTable")
@@ -90,9 +85,9 @@ lib.textures_generateThumbnails = true
 
 lib.msaa = 4
 lib.fxaa = false
-lib.deferred_lighting = false
 lib.lighting_engine = "Phong"
-lib.secondPass = true
+lib.deferred_lighting = false
+lib.average_alpha = true
 lib.renderToFinalCanvas = false
 lib.max_lights = 16
 lib.nameDecoder = "blender"
@@ -104,12 +99,11 @@ lib.shadow_factor = 4
 lib.shadow_smooth = true
 lib.shadow_smoother = true
 lib.shadow_smooth_downScale = 0.5
-lib.shadow_quality = "low"
 
 lib.reflections_resolution = 512
 lib.reflections_format = "rgba16f"
 lib.reflections_deferred_lighting = false
-lib.reflections_secondPass = true
+lib.reflections_average_alpha = true
 lib.reflections_msaa = 4
 lib.reflections_levels = 5
 lib.reflection_downsample = 2
@@ -142,7 +136,6 @@ lib.sky_format = "rgba16f"
 lib.sky_time = 0.3
 lib.sky_day = 0.0
 lib.sky_color = vec3(1.0, 1.0, 1.0)
-lib.sky_ambient = 0.5
 
 lib.stars_enabled = true
 lib.sunMoon_enabled = true
@@ -217,44 +210,42 @@ if love.graphics then
 end
 
 --a canvas set is used to render a scene to
-function lib.newCanvasSet(self, w, h, msaa, deferred_lighting, secondPass, postEffects_enabled)
+function lib.newCanvasSet(self, w, h, msaa, deferred_lighting, average_alpha, postEffects_enabled)
 	local set = { }
 	
 	set.width = w
 	set.height = h
 	set.msaa = msaa
 	set.deferred_lighting = deferred_lighting
-	set.secondPass = secondPass
+	set.average_alpha = average_alpha
 	set.postEffects_enabled = postEffects_enabled
-	
-	--temporary HDR color
-	set.color = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa})
-	
-	--normal
-	if deferred_lighting or secondPass then
-		set.normal = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa}) -- normal + depth
-	end
-	
-	--layer count and seperate color canvas for second pass
-	if secondPass then
-		set.color_pass2 = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa})
-		set.data_pass2 = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa})
-		if self.refraction_enabled then
-			set.normal_pass2 = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa})
-		end
-	end
-	
-	--depth
-	set.depth = love.graphics.newCanvas(w, h, {format = "r16f", readable = true, msaa = msaa})
 	
 	--depth
 	set.depth_buffer = love.graphics.newCanvas(w, h, {format = self.canvasFormats["depth32f"] and "depth32f" or self.canvasFormats["depth24"] and "depth24" or "depth16", readable = false, msaa = msaa})
 	
+	--temporary HDR color
+	set.color = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa})
+	
 	--data, albedo and position only for deferred lighting
 	if deferred_lighting then
-		set.albedo = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa})    -- albedo color
+		set.albedo = love.graphics.newCanvas(w, h, {format = "normal", readable = true, msaa = msaa})    -- albedo color
 		set.position = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa})  -- xyz position
 		set.material = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa})  -- roughness, metallic, depth
+		set.normal = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa}) -- normal + depth
+	end
+	
+	--normal
+	if not deferred_lighting then
+		set.depth = love.graphics.newCanvas(w, h, {format = "r16f", readable = true, msaa = msaa})
+	end
+	
+	--layer count and seperate color canvas for average alpha blending
+	if average_alpha then
+		set.color_pass2 = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa}) --r, g, b
+		set.data_pass2 = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa})  --steps, alpha, ior
+		if self.refraction_enabled then
+			set.normal_pass2 = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa}) --xyz normal
+		end
 	end
 	
 	--screen space ambient occlusion blurring canvases
@@ -262,6 +253,35 @@ function lib.newCanvasSet(self, w, h, msaa, deferred_lighting, secondPass, postE
 		set.AO_1 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
 		set.AO_2 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
 	end
+	
+	--post effects
+	if postEffects_enabled then
+		--final
+		if (self.renderToFinalCanvas or self.autoExposure_enabled) then
+			set.final = love.graphics.newCanvas(w, h, {format = "normal", readable = true, msaa = 0})
+		end
+		
+		--bloom blurring canvases
+		if self.bloom_enabled then
+			set.canvas_bloom_1 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = "rgba16f", readable = true, msaa = 0})
+			set.canvas_bloom_2 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = "rgba16f", readable = true, msaa = 0})
+		end
+		
+		--screen space reflections
+		if self.SSR_enabled then
+			set.canvas_SSR_1 = love.graphics.newCanvas(w*self.SSR_resolution, h*self.SSR_resolution, {format = self.SSR_format, readable = true, msaa = 0})
+			set.canvas_SSR_2 = love.graphics.newCanvas(w*self.SSR_resolution, h*self.SSR_resolution, {format = self.SSR_format, readable = true, msaa = 0})
+		end
+	end
+	
+	return set
+end
+
+--load canvases
+function lib.resize(self, w, h)
+	--canvases sets
+	self.canvases = self:newCanvasSet(w, h, self.msaa, self.deferred_lighting, self.average_alpha, true)
+	self.canvases_reflections = self:newCanvasSet(self.reflections_resolution, self.reflections_resolution, self.reflections_msaa, self.reflections_deferred_lighting, self.reflections_average_alpha, false)
 	
 	--rain
 	if self.rain_enabled then
@@ -271,32 +291,6 @@ function lib.newCanvasSet(self, w, h, msaa, deferred_lighting, secondPass, postE
 		love.graphics.setCanvas(self.canvas_rain)
 		love.graphics.clear(0.0, 0.0, 1.0)
 		love.graphics.setCanvas()
-	end
-	
-	--final
-	if postEffects_enabled and (self.renderToFinalCanvas or self.autoExposure_enabled) then
-		set.final = love.graphics.newCanvas(w, h, {format = "normal", readable = true, msaa = 0})
-	end
-	
-	return set
-end
-
---load canvases
-function lib.resize(self, w, h)
-	--canvases sets
-	self.canvases = self:newCanvasSet(w, h, self.msaa, self.deferred_lighting, self.secondPass, true)
-	self.canvases_reflections = self:newCanvasSet(self.reflections_resolution, self.reflections_resolution, self.reflections_msaa, self.reflections_deferred_lighting, self.reflections_secondPass)
-	
-	--bloom blurring canvases
-	if self.bloom_enabled then
-		self.canvas_bloom_1 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = "rgba16f", readable = true, msaa = 0})
-		self.canvas_bloom_2 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = "rgba16f", readable = true, msaa = 0})
-	end
-	
-	--screen space reflections
-	if self.SSR_enabled then
-		self.canvas_SSR_1 = love.graphics.newCanvas(w*self.SSR_resolution, h*self.SSR_resolution, {format = self.SSR_format, readable = true, msaa = 0})
-		self.canvas_SSR_2 = love.graphics.newCanvas(w*self.SSR_resolution, h*self.SSR_resolution, {format = self.SSR_format, readable = true, msaa = 0})
 	end
 	
 	--auto exposure scaling canvas

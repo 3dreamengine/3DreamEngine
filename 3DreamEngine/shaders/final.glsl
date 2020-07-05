@@ -100,7 +100,7 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 	vec2 tc_final = tc;
 	
 	//pass 2 data
-#ifdef SECOND_PASS
+#ifdef AVERAGE_ALPHA
 	vec3 dat = Texel(canvas_data_pass2, tc).xyz;
 	float ior, alpha;
 	vec4 c2;
@@ -146,7 +146,7 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 #endif
 
 	//merge passes
-#ifdef SECOND_PASS
+#ifdef AVERAGE_ALPHA
 	c.rgb = mix(c2.rgb, c.rgb, alpha);
 	c.a = min(1.0, c.a + c2.a);
 #endif

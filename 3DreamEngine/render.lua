@@ -80,22 +80,26 @@ function lib:render(canvases, cam, pass, blacklist)
 	--clear and set canvases
 	love.graphics.push("all")
 	love.graphics.reset()
-	if pass == 2 then
+	if pass == 2 and canvases.average_alpha then
 		love.graphics.setCanvas({canvases.color_pass2, canvases.data_pass2, self.refraction_enabled and canvases.normal_pass2 or nil})
 		love.graphics.clear(0, 0, 0, 0)
 		love.graphics.setCanvas({canvases.color_pass2, canvases.data_pass2, self.refraction_enabled and canvases.normal_pass2 or nil, depthstencil = canvases.depth_buffer})
 	else
 		if deferred_lighting then
 			love.graphics.setCanvas({canvases.color, canvases.albedo, canvases.normal, canvases.position, canvases.material, depthstencil = canvases.depth_buffer})
-			love.graphics.clear({0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 255, 0})
+			if pass == 1 then
+				love.graphics.clear({0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 255, 0})
+			end
 		else
 			love.graphics.setCanvas({canvases.color, canvases.depth, depthstencil = canvases.depth_buffer})
-			love.graphics.clear({0, 0, 0, 0}, {255, 0, 0, 0})
+			if pass == 1 then
+				love.graphics.clear({0, 0, 0, 0}, {255, 0, 0, 0})
+			end
 		end
 	end
 	
 	--set correct blendmode
-	if pass == 2 then
+	if pass == 2 and canvases.average_alpha then
 		love.graphics.setBlendMode("add", "premultiplied")
 	else
 		love.graphics.setBlendMode("alpha")
@@ -103,64 +107,18 @@ function lib:render(canvases, cam, pass, blacklist)
 	love.graphics.setDepthMode("less", pass ~= 2)
 	
 	--prepare lighting
-	local lighting
-	local lightRequirements = {
-		simple = 0,
-		point_shadow = 0,
-		sun_shadow = 0,
-	}
-	if deferred_lighting then
-		lighting = self.lighting
-		for d,s in ipairs(lighting) do
-			s.active = true
-		end
-	else
-		for d,s in ipairs(self.lighting) do
-			s.active = false
-			s.priority = s.brightness * (s.meter == 0 and 100.0 or 1.0) * (s.shadow and 2.0 or 1.0)
-		end
-		table.sort(self.lighting, function(a, b) return a.priority > b.priority end)
-		
-		lighting = { }
-		for d,s in ipairs(self.lighting) do
-			s.active = true
-			if not s.shadow then
-				lighting[#lighting+1] = s
-				lightRequirements.simple = lightRequirements.simple + 1
-			elseif s.shadow and s.shadow.typ == "point" then
-				lighting[#lighting+1] = s
-				lightRequirements.point_shadow = lightRequirements.point_shadow + 1
-			elseif s.shadow and s.shadow.typ == "sun" then
-				lighting[#lighting+1] = s
-				lightRequirements.sun_shadow = lightRequirements.sun_shadow + 1
-			end
-			
-			if #lighting == self.max_lights then
-				break
-			end
-		end
-	end
-	
-	--fill light buffers if required
-	local lightColor = { }
-	local lightPos = { }
-	local lightMeter = { }
-	if not deferred_lighting then
-		for i = 1, self.max_lights do
-			lightColor[i] = {0, 0, 0}
-			lightPos[i] = {0, 0, 0}
-			lightMeter[i] = 0
-		end
-	end
+	local lighting, lightRequirements = self:getLightOverview(cam, deferred_lighting)
 	
 	--final draw
 	for shaderInfo, shaderGroup in pairs(scene) do
-		local shader = self:getShader(shaderInfo, not deferred_lighting and lightRequirements)
+		local shader = self:getShader(shaderInfo, lightRequirements)
 		
+		--output settings
 		love.graphics.setShader(shader)
 		shader:send("deferred_lighting", deferred_lighting)
-		shader:send("second_pass", pass == 2)
+		shader:send("average_alpha", pass == 2 and canvases.average_alpha)
 		
+		--lookup texture for PBR
 		if shader:hasUniform("brdfLUT") then
 			shader:send("brdfLUT", self.textures.brdfLUT)
 		end
@@ -174,67 +132,7 @@ function lib:render(canvases, cam, pass, blacklist)
 		
 		--light if using forward lighting
 		if not deferred_lighting and #lighting > 0 then
-			if lightRequirements.simple > 0 then
-				shader:send("lightCount", #lighting)
-			end
-			local count = 0
-			
-			for d,s in ipairs(lighting) do
-				if s.shadow and s.shadow.typ == "sun" then
-					local enable = 0.0
-					if s.shadow.canvases and s.shadow.canvases[3] then
-						shader:send("transformProjShadow_" .. count .. "_1", s.shadow.transformation_1)
-						shader:send("transformProjShadow_" .. count .. "_2", s.shadow.transformation_2)
-						shader:send("transformProjShadow_" .. count .. "_3", s.shadow.transformation_3)
-						shader:send("tex_shadow_1_" .. count, s.shadow.canvases[1])
-						shader:send("tex_shadow_2_" .. count, s.shadow.canvases[2])
-						shader:send("tex_shadow_3_" .. count, s.shadow.canvases[3])
-						enable = 1.0
-					end
-					
-					count = count + 1
-					
-					lightColor[count] = {s.r * s.brightness * enable, s.g * s.brightness * enable, s.b * s.brightness * enable}
-					lightPos[count] = {s.shadow.lastPos.x, s.shadow.lastPos.y, s.shadow.lastPos.z}
-					lightMeter[count] = s.meter
-				end
-			end
-			
-			for d,s in ipairs(lighting) do
-				if s.shadow and s.shadow.typ == "point" then
-					local enable = 0.0
-					if self.shadow_quality ~= "low" then
-						shader:send("size_" .. count, s.shadow.size)
-					end
-					if s.shadow.canvas then
-						shader:send("tex_shadow_" .. count, s.shadow.canvas)
-						enable = 1.0
-					end
-					
-					count = count + 1
-					
-					lightColor[count] = {s.r * s.brightness * enable, s.g * s.brightness * enable, s.b * s.brightness * enable}
-					lightPos[count] = {s.shadow.lastPos.x, s.shadow.lastPos.y, s.shadow.lastPos.z}
-					lightMeter[count] = s.meter
-				end
-			end
-			
-			for d,s in ipairs(lighting) do
-				if not s.shadow then
-					count = count + 1
-					
-					lightColor[count] = {s.r * s.brightness, s.g * s.brightness, s.b * s.brightness}
-					lightPos[count] = {s.x, s.y, s.z}
-					lightMeter[count] = s.meter
-				end
-			end
-			
-			shader:send("lightColor", unpack(lightColor))
-			shader:send("lightPos", unpack(lightPos))
-			
-			if lightRequirements.simple > 0 or lightRequirements.point_shadow > 0 then
-				shader:send("lightMeter", unpack(lightMeter))
-			end
+			self:sendLightUniforms(lighting, lightRequirements, shader, lighting)
 		end
 		
 		--camera
@@ -243,25 +141,16 @@ function lib:render(canvases, cam, pass, blacklist)
 			shader:send("viewPos", viewPos)
 		end
 		
-		if lightRequirements.sun_shadow > 0 then
-			shader:send("factor", self.shadow_factor)
-			shader:send("shadowDistance", self.shadow_distance / 2)
-			shader:send("texelSize", 1.0 / self.shadow_resolution)
-		end
-		
 		--for each material
 		for material, materialGroup in pairs(shaderGroup) do
 			local tex = shaderInfo.arrayImage and self.textures_array or self.textures
 			
-			--set textures
-			if pass == 2 then
+			--ior
+			if shader:hasUniform("ior") then
 				shader:send("ior", 1.0 / material.ior)
 			end
 			
-			if shader:hasUniform("sky_ambient") then
-				shader:send("sky_ambient", self.sky_ambient)
-			end
-			
+			--set material data dependend on shader
 			if shaderInfo.shaderType == "color" then
 				shader:send("emission", material.emission or 0.0)
 				shader:send("glossiness", material.glossiness)
@@ -279,18 +168,15 @@ function lib:render(canvases, cam, pass, blacklist)
 				shader:send("color_combined", {material.tex_glossiness and 1.0 or material.glossiness or 0.5, material.tex_specular and 1.0 or material.specular or 0.5, 1.0})
 			end
 			
-			--shared resources
+			--additional, shared resources
 			if shaderInfo.shaderType == "PBR" or shaderInfo.shaderType == "Phong" then
 				shader:send("tex_albedo", self:getTexture(material.tex_albedo) or tex.default)
-				
 				if shaderInfo.tex_normal then
 					shader:send("tex_normal", self:getTexture(material.tex_normal) or tex.default_normal)
 				end
-				
 				if shaderInfo.tex_emission then
 					shader:send("tex_emission", self:getTexture(material.tex_emission) or tex.default)
 				end
-				
 				shader:send("color_emission", material.emission or (shaderInfo.tex_emission and {5.0, 5.0, 5.0}) or {0.0, 0.0, 0.0})
 			end
 			
@@ -323,15 +209,19 @@ function lib:render(canvases, cam, pass, blacklist)
 						shader:send("color_albedo", (material.tex_albedo and {1.0, 1.0, 1.0, 1.0} or material.color and {material.color[1], material.color[2], material.color[3], material.color[4] or 1.0} or {1.0, 1.0, 1.0, 1.0}) * task.color)
 					end
 					
+					--object transformation
 					shader:send("transform", task.transform or identityMatrix)
 					
+					--culling
 					love.graphics.setMeshCullMode(canvases.cullMode or material.cullMode or (material.alpha and self.refraction_disableCulling) and "none" or "back")
+					
+					--render
 					love.graphics.draw(task.s.mesh)
 					
 					self.stats.draws = self.stats.draws + 1
 				end
-				self.stats.materialDraws = self.stats.materialDraws + 1
 			end
+			self.stats.materialDraws = self.stats.materialDraws + 1
 		end
 		self.stats.shadersInUse = self.stats.shadersInUse + 1
 	end
@@ -339,152 +229,8 @@ function lib:render(canvases, cam, pass, blacklist)
 	
 	--lighting
 	if deferred_lighting then
-		love.graphics.setCanvas(canvases.color)
-		love.graphics.setBlendMode("add")
-		
-		--batched point source, no shadow
-		love.graphics.setShader(self.shaders.light)
-		self.shaders.light:send("viewPos", viewPos)
-		self.shaders.light:send("tex_normal", canvases.normal)
-		self.shaders.light:send("tex_position", canvases.position)
-		self.shaders.light:send("tex_material", canvases.material)
-		
-		local n = {0, 0, 0}
-		local pos = { }
-		local color = { }
-		local meter = { }
-		for i = 1, self.max_lights do
-			color[i] = n
-			pos[i] = n
-			meter[i] = 0
-		end
-		
-		local i = 0
-		for d,s in ipairs(lighting) do
-			if not s.shadow then
-				i = i + 1
-				
-				color[i] = {s.r * s.brightness, s.g * s.brightness, s.b * s.brightness}
-				pos[i] = {s.x, s.y, s.z}
-				meter[i] = s.meter
-				
-				if i == self.max_lights or d == #self.lighting then
-					self.shaders.light:send("lightColor", unpack(color))
-					self.shaders.light:send("lightPos", unpack(pos))
-					self.shaders.light:send("lightMeter", unpack(meter))
-					self.shaders.light:send("lightCount", i)
-					love.graphics.draw(canvases.albedo)
-					i = 0
-				end
-			end
-		end
-		
-		--sun, with shadow
-		love.graphics.setShader(self.shaders.shadow_sun)
-		self.shaders.shadow_sun:send("viewPos", viewPos)
-		self.shaders.shadow_sun:send("tex_normal", canvases.normal)
-		self.shaders.shadow_sun:send("tex_position", canvases.position)
-		self.shaders.shadow_sun:send("tex_material", canvases.material)
-		
-		self.shaders.shadow_sun:send("factor", self.shadow_factor)
-		self.shaders.shadow_sun:send("shadowDistance", self.shadow_distance / 2)
-		self.shaders.shadow_sun:send("texelSize", 1.0 / self.shadow_resolution)
-		
-		for d,s in ipairs(lighting) do
-			if s.shadow and s.shadow.typ == "sun" and s.shadow.canvases then
-				self.shaders.shadow_sun:send("transformProjShadow_1", s.shadow.transformation_1)
-				self.shaders.shadow_sun:send("transformProjShadow_2", s.shadow.transformation_2)
-				self.shaders.shadow_sun:send("transformProjShadow_3", s.shadow.transformation_3)
-				self.shaders.shadow_sun:send("tex_shadow_1", s.shadow.canvases[1])
-				self.shaders.shadow_sun:send("tex_shadow_2", s.shadow.canvases[2])
-				self.shaders.shadow_sun:send("tex_shadow_3", s.shadow.canvases[3])
-				
-				self.shaders.shadow_sun:send("lightColor", {s.r * s.brightness, s.g * s.brightness, s.b * s.brightness})
-				self.shaders.shadow_sun:send("lightPos", {s.shadow.lastPos.x, s.shadow.lastPos.y, s.shadow.lastPos.z})
-				love.graphics.draw(canvases.albedo)
-			end
-		end
-		
-		--point, with shadow
-		if self.shadow_smooth then
-			--smooth shadows
-			canvases.shadow_temp = canvases.shadow_temp or love.graphics.newCanvas(math.floor(canvases.width * self.shadow_smooth_downScale), math.floor(canvases.height * self.shadow_smooth_downScale), {format = "r8", mipmaps = "manual"})
-			
-			--pre smoothing
-			if self.shadow_smoother then
-				canvases.shadow_temp_blur = canvases.shadow_temp_blur or love.graphics.newCanvas(math.floor(canvases.width * self.shadow_smooth_downScale), math.floor(canvases.height * self.shadow_smooth_downScale), {format = "r8", mipmaps = "none"})
-			end
-			
-			for d,s in ipairs(lighting) do
-				if s.shadow and s.shadow.typ == "point" and s.shadow.canvas then
-					--render shadow
-					love.graphics.setCanvas(canvases.shadow_temp)
-					love.graphics.setBlendMode("replace")
-					love.graphics.setShader(self.shaders.shadow_point_smooth_pre)
-					self.shaders.shadow_point_smooth_pre:send("tex_position", canvases.position)
-					self.shaders.shadow_point_smooth_pre:send("tex_shadow", s.shadow.canvas)
-					self.shaders.shadow_point_smooth_pre:send("lightPos", {s.shadow.lastPos.x, s.shadow.lastPos.y, s.shadow.lastPos.z})
-					love.graphics.draw(canvases.albedo, 0, 0, 0, self.shadow_smooth_downScale)
-					love.graphics.setCanvas()
-					
-					--blur
-					if self.shadow_smoother then
-						love.graphics.setShader(self.shaders.blur_shadow)
-						self.shaders.blur_shadow:send("tex_depth", canvases.normal)
-						self.shaders.blur_shadow:send("size", s.shadow.size * 4.0)
-						
-						love.graphics.setCanvas(canvases.shadow_temp_blur)
-						self.shaders.blur_shadow:send("dir", {2 / canvases.width / self.shadow_smooth_downScale, 0})
-						love.graphics.draw(canvases.shadow_temp)
-						
-						love.graphics.setCanvas(canvases.shadow_temp)
-						self.shaders.blur_shadow:send("dir", {0, 2 / canvases.height / self.shadow_smooth_downScale})
-						love.graphics.draw(canvases.shadow_temp_blur)
-						love.graphics.setCanvas()
-					end
-					canvases.shadow_temp:generateMipmaps()
-					
-					--lighten
-					love.graphics.setCanvas(canvases.color)
-					love.graphics.setBlendMode("add")
-					love.graphics.setShader(self.shaders.shadow_point_smooth)
-					self.shaders.shadow_point_smooth:send("viewPos", viewPos)
-					self.shaders.shadow_point_smooth:send("tex_normal", canvases.normal)
-					self.shaders.shadow_point_smooth:send("tex_position", canvases.position)
-					self.shaders.shadow_point_smooth:send("tex_material", canvases.material)
-					self.shaders.shadow_point_smooth:send("tex_shadow", canvases.shadow_temp)
-					self.shaders.shadow_point_smooth:send("lightColor", {s.r * s.brightness, s.g * s.brightness, s.b * s.brightness})
-					self.shaders.shadow_point_smooth:send("lightPos", {s.shadow.lastPos.x, s.shadow.lastPos.y, s.shadow.lastPos.z})
-					self.shaders.shadow_point_smooth:send("lightMeter", s.meter)
-					self.shaders.shadow_point_smooth:send("size", s.shadow.size * 16.0)
-					self.shaders.shadow_point_smooth:send("baseSize", self.shadow_smoother and 0.0 or (s.shadow.size * 4.0))
-					love.graphics.draw(canvases.albedo)
-				end
-			end
-		else
-			love.graphics.setShader(self.shaders.shadow_point)
-			self.shaders.shadow_point:send("viewPos", viewPos)
-			self.shaders.shadow_point:send("tex_normal", canvases.normal)
-			self.shaders.shadow_point:send("tex_position", canvases.position)
-			self.shaders.shadow_point:send("tex_material", canvases.material)
-			
-			for d,s in ipairs(lighting) do
-				if s.shadow and s.shadow.typ == "point" and s.shadow.canvas then
-					self.shaders.shadow_point:send("tex_shadow", s.shadow.canvas)
-					
-					self.shaders.shadow_point:send("lightColor", {s.r * s.brightness, s.g * s.brightness, s.b * s.brightness})
-					self.shaders.shadow_point:send("lightPos", {s.shadow.lastPos.x, s.shadow.lastPos.y, s.shadow.lastPos.z})
-					self.shaders.shadow_point:send("lightMeter", s.meter)
-					
-					if self.shadow_quality ~= "low" then
-						self.shaders.shadow_point:send("size", s.shadow.size)
-					end
-					love.graphics.draw(canvases.albedo)
-				end
-			end
-		end
+		self:renderDeferredLight(lighting, lightRequirements, canvases, cam)
 	end
-	
 	
 	--particles
 	if pass ~= 2 then
@@ -558,12 +304,27 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 	love.graphics.reset()
 	
 	--first pass
-	self:render(canvases, cam, canvases.secondPass and 1 or 3, blacklist)
+	self:render(canvases, cam, 1, blacklist)
 	
-	--second pass
-	if canvases.secondPass then
-		self:render(canvases, cam, 2, blacklist)
-	end
+	--second (alpha) pass
+	--self:render(canvases, cam, 2, blacklist)
+	
+	--weather
+	love.graphics.setBlendMode("alpha")
+	love.graphics.setCanvas({canvases.color, depthstencil = canvases.depth_buffer})
+	love.graphics.setDepthMode("less", false)
+	local t = self.textures["rain_" .. self.rain_strength]
+	t:setWrap("repeat")
+	self.object_rain.objects.Plane.mesh:setTexture(t)
+	love.graphics.setShader(self.shaders.rain)
+	
+	local translate = vec3(math.floor(cam.pos.x), math.floor(cam.pos.y), math.floor(cam.pos.z))
+	
+	self.shaders.rain:send("time", love.timer.getTime() * 5.0)
+	self.shaders.rain:send("transformProj", cam.transformProj)
+	self.shaders.rain:send("transform", mat4:getIdentity():translate(translate))
+	self.shaders.rain:send("rain", self.rain_rain)
+	love.graphics.draw(self.object_rain.objects.Plane.mesh)
 	
 	--Ambient Occlusion (SSAO)
 	if self.AO_enabled then
@@ -591,7 +352,7 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 	--bloom
 	if canvases.postEffects_enabled and self.bloom_enabled then
 		--down sample
-		love.graphics.setCanvas(self.canvas_bloom_1)
+		love.graphics.setCanvas(canvases.canvas_bloom_1)
 		love.graphics.clear()
 		love.graphics.setShader(self.shaders.bloom)
 		self.shaders.bloom:send("strength", self.bloom_strength)
@@ -603,21 +364,21 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 		for i = 1, 0, -1 do
 			local size = (self.bloom_size * self.bloom_resolution) * 5 ^ i
 			
-			self.shaders.blur:send("dir", {size / self.canvas_bloom_1:getWidth(), 0})
-			love.graphics.setCanvas(self.canvas_bloom_2)
+			self.shaders.blur:send("dir", {size / canvases.canvas_bloom_1:getWidth(), 0})
+			love.graphics.setCanvas(canvases.canvas_bloom_2)
 			love.graphics.clear()
-			love.graphics.draw(self.canvas_bloom_1)
+			love.graphics.draw(canvases.canvas_bloom_1)
 			
-			self.shaders.blur:send("dir", {0, size / self.canvas_bloom_1:getHeight()})
-			love.graphics.setCanvas(self.canvas_bloom_1)
+			self.shaders.blur:send("dir", {0, size / canvases.canvas_bloom_1:getHeight()})
+			love.graphics.setCanvas(canvases.canvas_bloom_1)
 			love.graphics.clear()
-			love.graphics.draw(self.canvas_bloom_2)
+			love.graphics.draw(canvases.canvas_bloom_2)
 		end
 	end
 	
 	--SSR
 	if self.SSR_enabled and canvases.deferred_lighting then
-		love.graphics.setCanvas(self.canvas_SSR_1)
+		love.graphics.setCanvas(canvases.canvas_SSR_1)
 		love.graphics.setBlendMode("replace", "premultiplied")
 		
 		local shader = self:getSSRShader(canvases)
@@ -628,7 +389,7 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 		if shader:hasUniform("canvas_position") then shader:send("canvas_position", canvases.position) end
 		if shader:hasUniform("canvas_material") then shader:send("canvas_material", canvases.material) end
 		
-		if shader:hasUniform("canvas_bloom") then shader:send("canvas_bloom", self.canvas_bloom_1) end
+		if shader:hasUniform("canvas_bloom") then shader:send("canvas_bloom", canvases.canvas_bloom_1) end
 		if shader:hasUniform("canvas_ao") then shader:send("canvas_ao", canvases.AO_1) end
 		if shader:hasUniform("canvas_SSR") then shader:send("canvas_SSR", self.canvas_SSR) end
 		
@@ -650,33 +411,15 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 		for i = 1, 0, -1 do
 			local size = 5 ^ i
 			
-			love.graphics.setCanvas(self.canvas_SSR_2)
+			love.graphics.setCanvas(canvases.canvas_SSR_2)
 			self.shaders.blur_SSR:send("dir", {size / canvases.width / self.SSR_resolution, 0.0})
-			love.graphics.draw(self.canvas_SSR_1)
+			love.graphics.draw(canvases.canvas_SSR_1)
 			
-			love.graphics.setCanvas(self.canvas_SSR_1)
+			love.graphics.setCanvas(canvases.canvas_SSR_1)
 			self.shaders.blur_SSR:send("dir", {0.0, size / canvases.height / self.SSR_resolution})
-			love.graphics.draw(self.canvas_SSR_2)
+			love.graphics.draw(canvases.canvas_SSR_2)
 		end
 	end
-	
-	--weather
-	love.graphics.setBlendMode("alpha")
-	love.graphics.setCanvas({canvases.color, depthstencil = canvases.depth_buffer})
-	love.graphics.setDepthMode("less", false)
-	local t = self.textures["rain_" .. self.rain_strength]
-	t:setWrap("repeat")
-	self.object_rain.objects.Plane.mesh:setTexture(t)
-	love.graphics.setShader(self.shaders.rain)
-	
-	local translate = vec3(math.floor(cam.pos.x), math.floor(cam.pos.y), math.floor(cam.pos.z))
-	
-	self.shaders.rain:send("time", love.timer.getTime() * 5.0)
-	self.shaders.rain:send("transformProj", cam.transformProj)
-	self.shaders.rain:send("transform", mat4:getIdentity():translate(translate))
-	self.shaders.rain:send("rain", self.rain_rain)
-	love.graphics.draw(self.object_rain.objects.Plane.mesh)
-	
 	
 	--final
 	local shader = self:getFinalShader(canvases, noSky)
@@ -700,9 +443,9 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 	if shader:hasUniform("canvas_data_pass2") then shader:send("canvas_data_pass2", canvases.data_pass2) end
 	if shader:hasUniform("canvas_material") then shader:send("canvas_material", canvases.material) end
 	
-	if shader:hasUniform("canvas_bloom") then shader:send("canvas_bloom", self.canvas_bloom_1) end
+	if shader:hasUniform("canvas_bloom") then shader:send("canvas_bloom", canvases.canvas_bloom_1) end
 	if shader:hasUniform("canvas_ao") then shader:send("canvas_ao", canvases.AO_1) end
-	if shader:hasUniform("canvas_SSR") then shader:send("canvas_SSR", self.canvas_SSR_1) end
+	if shader:hasUniform("canvas_SSR") then shader:send("canvas_SSR", canvases.canvas_SSR_1) end
 	
 	if shader:hasUniform("canvas_exposure") then shader:send("canvas_exposure", self.canvas_exposure_fetch) end
 	

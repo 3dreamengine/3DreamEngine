@@ -16,7 +16,7 @@ varying highp vec3 vertexPos;             //vertex position for pixel shader
 
 //shader settings
 extern bool deferred_lighting;
-extern bool second_pass;
+extern bool average_alpha;
 extern int lightCount;
 
 varying vec3 normalVec;
@@ -38,7 +38,7 @@ void effect() {
 	vec4 albedo = VaryingColor;
 	
 	//dither alpha
-	if (!second_pass) {
+	if (!average_alpha) {
 		albedo.a = step(fract(love_PixelCoord.x * 0.65 + love_PixelCoord.y * 73.73), albedo.a);
 	}
 	
@@ -70,7 +70,7 @@ void effect() {
 		love_Canvases[3] = vec4(vertexPos, 1.0);
 		love_Canvases[4] = vec4(glossiness, specular, depth, 1.0);
 	} else {
-		if (second_pass) {
+		if (average_alpha) {
 			love_Canvases[0] = vec4(col * albedo.a + emission * 8.0, 1.0);
 			love_Canvases[1] = vec4(1.0, albedo.a, ior, 1.0);
 			#ifdef REFRACTION_ENABLED

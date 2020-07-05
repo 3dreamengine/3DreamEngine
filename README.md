@@ -100,10 +100,10 @@ dream.textures_generateThumbnails = true  -- thumbnails are described in its own
 
 dream.msaa = 4                            -- multi sample anti aliasing, slightly more expensive but good results
 dream.fxaa = false                        -- fast approximated anti aliasing, fast but less good results
+dream.lighting_engine = "Phong"           -- the shading engine (PBR or Phong), should match the shaders (see own section below) used
 dream.deferred_lighting = false           -- toggles the deferred lighting pipeline, see advantages in its own section below
-dream.lighting_engine = "PBR"             -- the shading engine (PBR or Phong), should match the shaders (see own section below) used
-dream.secondPass = true                   -- two passes allows simulated alpha blending, disable it when no transparent materials exist
-dream.renderToFinalCanvas = false         -- instead of directly rendering it it renders to canvases.final (default dream.canvases.final)
+dream.average_alpha = false               -- if enabled it uses an average alpha blending method, else it uses z sorting and alpha blending. Use appropiate method based on scene.
+dream.renderToFinalCanvas = false         -- instead of directly rendering it it renders to canvases.final (dream.canvases.final). Auto exposure semi enables this.
 dream.max_lights = 16                     -- max lights when using non defered shadng
 dream.nameDecoder = "blender"             -- imported objects often contain mesh data names appended to the actual name,, blender decoder removes them
 
@@ -119,7 +119,7 @@ dream.shadow_quality = "low"              -- quality when using non defered ligh
 dream.reflections_resolution = 512        -- cubemap reflection resolution
 dream.reflections_format = "rgba16f"      -- reflection format, normal or rgba16f, where rgba16f preserves more detail in brightness
 dream.reflections_deferred_lighting = false --wether the defered pipeline should be used for reflection rendering
-dream.reflections_secondPass = true       -- enable the second pass for reflections
+dream.reflections_average_alpha = true    --//--
 dream.reflections_msaa = 4                -- multi sample antialiasing for reflections, else use fxaa if enabled
 dream.reflections_levels = 5              -- the count of mipmaps used, lower values cause incorrect blending between roughnesses, high values cause low quality on high roughnesses
 dream.reflection_downsample = 2           -- the factor of downsampling when bluring the cubemap. Should not be changed since the blur is calibrated.

@@ -13,7 +13,7 @@ varying float depth;                      //depth
 
 //shader settings
 extern bool deferred_lighting;
-extern bool second_pass;
+extern bool average_alpha;
 extern int lightCount;
 
 #ifdef TEX_NORMAL
@@ -48,7 +48,7 @@ void effect() {
 	vec4 albedo = Texel(tex_albedo, VaryingTexCoord.xy) * VaryingColor;
 	
 	//dither alpha
-	if (!second_pass) {
+	if (!average_alpha) {
 		albedo.a = step(fract(love_PixelCoord.x * 0.37 + love_PixelCoord.y * 73.73 + depth * 3.73), albedo.a);
 	}
 	
@@ -135,7 +135,7 @@ void effect() {
 		love_Canvases[3] = vec4(vertexPos, 1.0);
 		love_Canvases[4] = vec4(roughness, metallic, depth, 1.0);
 	} else {
-		if (second_pass) {
+		if (average_alpha) {
 			love_Canvases[0] = vec4(col * albedo.a, 1.0);
 			love_Canvases[1] = vec4(1.0, albedo.a, ior, 1.0);
 			#ifdef REFRACTION_ENABLED

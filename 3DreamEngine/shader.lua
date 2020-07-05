@@ -96,7 +96,7 @@ function lib.getFinalShader(self, canvases, noSky)
 	parts[#parts+1] = canvases.postEffects_enabled and self.exposure > 0 and not self.autoExposure_enabled and "#define EXPOSURE_ENABLED" or nil
 	parts[#parts+1] = canvases.postEffects_enabled and self.bloom_enabled and "#define BLOOM_ENABLED" or nil
 	parts[#parts+1] = self.AO_enabled and "#define AO_ENABLED" or nil
-	parts[#parts+1] = canvases.secondPass and "#define SECOND_PASS" or nil
+	parts[#parts+1] = canvases.average_alpha and "#define AVERAGE_ALPHA" or nil
 	parts[#parts+1] = canvases.deferred_lighting and "#define DEFERRED_LIGHTING" or nil
 	parts[#parts+1] = (self.fxaa and canvases.msaa == 0) and "#define FXAA_ENABLED" or nil
 	parts[#parts+1] = self.SSR_enabled and "#define SSR_ENABLED" or nil
@@ -161,14 +161,13 @@ function lib.loadShader(self)
 		self.shaders.SSAO_def:send("samples", unpack(f))
 	end
 	
-	
 	--assemble and compile lighting shader
 	if self.deferred_lighting then
-		local code = "#define MAX_LIGHTS " .. self.max_lights .. "\n" .. "#define quality_" .. self.shadow_quality .. "\n" ..
+		local code = "#define MAX_LIGHTS " .. self.max_lights .. "\n" ..
 			love.filesystem.read(self.root .. "/shaders/light/light.glsl"):gsub("#import lightEngine", codes.shading[self.lighting_engine])
 		self.shaders.light = love.graphics.newShader(code)
 		
-		local code = "#pragma language glsl3\n" .. "#define quality_" .. self.shadow_quality .. "\n" ..
+		local code = "#pragma language glsl3\n" ..
 			love.filesystem.read(self.root .. "/shaders/light/shadow_sun.glsl"):gsub("#import lightEngine", codes.shading[self.lighting_engine]):gsub("#import shadowEngine", codes.shadow["sun"])
 		self.shaders.shadow_sun = love.graphics.newShader(code)
 		
@@ -176,7 +175,7 @@ function lib.loadShader(self)
 			love.filesystem.read(self.root .. "/shaders/light/shadow_point_smooth.glsl"):gsub("#import lightEngine", codes.shading[self.lighting_engine])
 		self.shaders.shadow_point_smooth = love.graphics.newShader(code)
 		
-		local code = "#pragma language glsl3\n" .. "#define quality_" .. self.shadow_quality .. "\n" ..
+		local code = "#pragma language glsl3\n" ..
 			love.filesystem.read(self.root .. "/shaders/light/shadow_point.glsl"):gsub("#import lightEngine", codes.shading[self.lighting_engine]):gsub("#import shadowEngine", codes.shadow["point"])
 		self.shaders.shadow_point = love.graphics.newShader(code)
 		
@@ -185,59 +184,76 @@ function lib.loadShader(self)
 end
 
 --returns a fitting shader for the current material and meshtype
-function lib.getShaderInfo(self, mat, shaderType, reflection)
-	local dat = {
-		shaderType = shaderType,
-		vertexShader = mat.shader or "default",
-		reflection = reflection or self.sky_enabled,
-		SSR = not reflection and self.SSR_enabled,
-		
-		shaders = { },
-	}
+function lib:getShaderInfo(mat, shaderType, reflection)
+	local vertexShader = mat.shader or "default"
 	
-	local str = table.concat({dat.shaderType, dat.vertexShader, dat.reflection and 1 or 0}, "_")
+	--group shader and vertex shader
+	if not self.mainShaders[shaderType] then
+		self.mainShaders[shaderType] = { }
+	end
+	if not self.mainShaders[shaderType][vertexShader] then
+		self.mainShaders[shaderType][vertexShader] = { }
+	end
 	
-	if shaderType == "color" or shaderType == "color_extended" or shaderType == "color_material" or shaderType == "color_lookup" then
-	
-	elseif shaderType == "PBR" or shaderType == "Phong" then
-		dat.tex_normal = mat.tex_normal ~= nil
-		dat.tex_emission = mat.tex_emission ~= nil
-		
-		local ID = (dat.tex_normal and 0 or 1) + (dat.tex_emission and 0 or 2)
-		str = str .. "_" .. ID
+	--add new type of shader to list
+	local shs = self.mainShaders[shaderType][vertexShader]
+	if shaderType == "PBR" or shaderType == "Phong" then
+		local ID = ((reflection or self.sky_enabled) and 0 or 1) + (mat.tex_normal and 0 or 2) + (mat.tex_emission and 0 or 4)
+		shs[ID] = shs[ID] or {
+			tex_normal = mat.tex_normal ~= nil,
+			tex_emission = mat.tex_emission ~= nil,
+			
+			shaderType = shaderType,
+			vertexShader = vertexShader,
+			reflection = reflection or self.sky_enabled,
+			SSR = not reflection and self.SSR_enabled,
+			
+			shaders = { },
+		}
+		return shs[ID]
 	else
-		error("unknown shader type: " .. tostring(shaderType))
+		local ID = (reflection or self.sky_enabled) and 0 or 1
+		shs[ID] = shs[ID] or {
+			shaderType = shaderType,
+			vertexShader = vertexShader,
+			reflection = reflection or self.sky_enabled,
+			SSR = not reflection and self.SSR_enabled,
+			
+			shaders = { },
+		}
+		return shs[ID]
 	end
-	
-	if not self.mainShaders[str] then
-		self.mainShaders[str] = dat
-	end
-	return self.mainShaders[str]
 end
 
---returns a shader based on the shaderInfo (assembles from code fragments)
-local shaderCreated = 0
-function lib.getShader(self, info, lightRequirements)
+--returns a shader based on the shaderInfo and given light circumstances (assembles from code fragments)
+function lib:getShader(info, lightRequirements)
 	local ID = lightRequirements and ((lightRequirements.simple > 0 and 2 or 1) + lightRequirements.sun_shadow * 256^2 + lightRequirements.point_shadow * 256) or 0
 	
-	info.shaders[ID] = info.shaders[ID] or { }
-	if not info.shaders[ID][self.lighting_engine] then
+	if not info.shaders[ID] then
 		--construct shader
-		local code = ""
+		local code = { }
 		
-		--base shader specific
-		if info.shaderType == "PBR" then
-			code = code ..
-				(info.tex_normal and "#define TEX_NORMAL\n" or "") ..
-				(info.tex_emission and "#define TEX_EMISSION\n" or "") .. "\n"
-		elseif info.shaderType == "Phong" then
-			code = code ..
-				(info.tex_normal and "#define TEX_NORMAL\n" or "") ..
-				(info.tex_emission and "#define TEX_EMISSION\n" or "") .. "\n"
+		code[#code+1] = "#pragma language glsl3"
+		
+		--additional features
+		if info.tex_normal then
+			code[#code+1] = "#define TEX_NORMAL"
+		end
+		if info.tex_emission then
+			code[#code+1] = "#define TEX_EMISSION"
+		end
+		if self.rain_enabled then
+			code[#code+1] = "#define RAIN_ENABLED"
+		end
+		if info.SSR then
+			code[#code+1] = "#define SSR_ENABLED"
 		end
 		
 		--actual shader
-		code = code .. love.filesystem.read(self.root .. "/shaders/shader/" .. info.shaderType .. ".glsl")
+		code[#code+1] = love.filesystem.read(self.root .. "/shaders/shader/" .. info.shaderType .. ".glsl")
+		
+		--concat
+		code = table.concat(code, "\n")
 		
 		--import code snipsets
 		if info.vertexShader then
@@ -329,36 +345,17 @@ function lib.getShader(self, info, lightRequirements)
 			code = code:gsub("#import lightEngine", "")
 		end
 		
-		code = "#define quality_" .. self.shadow_quality .. "\n" .. code
-		
-		if self.refraction_enabled then
-			code = "#define REFRACTION_ENABLED\n" .. code
-		end
-		
-		if self.rain_enabled then
-			code = "#define RAIN_ENABLED\n" .. code
-		end
-		
-		if info.SSR then
-			code = "#define SSR_ENABLED\n" .. code
-		end
-		
-		code = "#pragma language glsl3\n" .. code
-		
 		--compile
 		local ok, shader = pcall(love.graphics.newShader, code:gsub("	", ""))
 		if ok then
-			info.shaders[ID][self.lighting_engine] = shader
+			info.shaders[ID] = shader
 			
 			--debug
 			if _DEBUGMODE then
-				love.filesystem.write("shader_" .. (lightRequirements and "forward" or "def") .. "_" ..  self.lighting_engine .. ".glsl", code)
+				--love.filesystem.write("shader_" .. (lightRequirements and "forward" or "def") .. ".glsl", code)
 			end
-			
-			shaderCreated = shaderCreated + 1
-			print(shaderCreated .. " shaders loaded")
 		end
 	end
 	
-	return info.shaders[ID][self.lighting_engine]
+	return info.shaders[ID]
 end

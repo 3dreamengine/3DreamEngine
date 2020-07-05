@@ -633,6 +633,7 @@ function lib.loadObject(self, path, args)
 	--create meshes
 	if not obj.noMesh then
 		for d,o in pairs(obj.objects) do
+			o.shaderType = nil
 			self:createMesh(obj, o)
 		end
 	end

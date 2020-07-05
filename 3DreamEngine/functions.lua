@@ -5,6 +5,14 @@ functions.lua - contains library relevant functions
 
 local lib = _3DreamEngine
 
+function math.mix(a, b, f)
+	return a * (1.0 - f) + b * f 
+end
+
+function math.clamp(v, a, b)
+	return math.max(math.min(v, b or 1.0), a or 0.0)
+end
+
 function lib:newCam(transformProj, pos, normal)
 	return setmetatable({
 		transform = mat4:getIdentity(),

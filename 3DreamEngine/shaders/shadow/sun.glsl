@@ -22,7 +22,7 @@ float sampleShadowSun(vec3 vertexPos, mat4 transformProjShadow_1, mat4 transform
 	float bias = 0.0005;
 	vec4 vertexPosShadow;
 	vec3 shadowUV;
-	float dist = distance(vertexPos, viewPos) / shadowDistance;
+	float dist = distance(vertexPos, viewPos) * shadowDistance;
 	
 	if (dist < 1.0) {
 		vertexPosShadow = transformProjShadow_1 * vec4(vertexPos.xyz, 1.0);
