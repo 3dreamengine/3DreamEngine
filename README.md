@@ -120,7 +120,7 @@ dream.shadow_quality = "low"              -- quality when using non defered ligh
 dream.reflections_resolution = 512        -- cubemap reflection resolution
 dream.reflections_format = "rgba16f"      -- reflection format, normal or rgba16f, where rgba16f preserves more detail in brightness
 dream.reflections_deferred_lighting = false --wether the defered pipeline should be used for reflection rendering
-dream.reflections_alphaBlendMode = true   --//--
+dream.reflections_alphaBlendMode = "average" --//--
 dream.reflections_msaa = 4                -- multi sample antialiasing for reflections, else use fxaa if enabled
 dream.reflections_levels = 5              -- the count of mipmaps used, lower values cause incorrect blending between roughnesses, high values cause low quality on high roughnesses
 dream.reflection_downsample = 2           -- the factor of downsampling when bluring the cubemap. Should not be changed since the blur is calibrated.
@@ -291,6 +291,19 @@ dream.alphaBlendMode = "dither"
 --uses a threshold and avoid alpha at all
 --known issues are linear interpolated mipmaps and alpha, since the interpolated parts are cut away.
 dream.alphaBlendMode = "disabled"
+```
+
+## Level of Detail
+To define the level of detail, add a boolean array with size 9 to the object or subobject, index 1 is nearest. False prevents this object from rendering.
+```
+--set reference distance (max render distance if 9th index is false)
+dream.LoDDistance = 100
+
+--set objects LoD
+yourObject.LoD = {true, true, true, false, false, false, false, false, false} --allow rendering 1/3 of the max LoD distance
+
+--overwrite the LoD of one sub object
+yourObject.objects.subObject.LoD = {true, true, true, true, true, true, false, false, false} --allow rendering 2/3 of the max LoD distance
 ```
 
 ## textures

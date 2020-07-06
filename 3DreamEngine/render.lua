@@ -28,26 +28,30 @@ function lib:buildScene(cam)
 	for d,s in ipairs(self.drawTable) do
 		local mat = s.s.material
 		local dist = (s.pos - cam.pos):length()
-		if self:inFrustum(cam.pos, cam.normal, s.pos) then
-			--group shader and materials together to reduce shader switches
-			if not scene[s.s.shader] then
-				scene[s.s.shader] = { }
-			end
-			if not scene[s.s.shader][mat] then
-				scene[s.s.shader][mat] = { }
-			end
-			
-			--add
-			table.insert(scene[s.s.shader][mat], s)
-			
-			--reflections
-			local reflection = s.s.reflection or s.obj.reflection
-			if reflection then
-				self.reflections[s.s.reflection or s.obj.reflection] = {
-					dist = dist,
-					obj = s.s.reflection and s.s or s.obj,
-					pos = reflection.pos or s.pos,
-				}
+		local LoD = s.s.LoD or s.obj.LoD
+		local level = LoD and math.min(math.floor(dist / dream.LoDDistance * 10)+1, 9)
+		if not LoD or LoD[level] then
+			if not self.frustumCheck or not s.s.boundingBox or self:inFrustum(cam, s.pos, s.s.boundingBox) then
+				--group shader and materials together to reduce shader switches
+				if not scene[s.s.shader] then
+					scene[s.s.shader] = { }
+				end
+				if not scene[s.s.shader][mat] then
+					scene[s.s.shader][mat] = { }
+				end
+				
+				--add
+				table.insert(scene[s.s.shader][mat], s)
+				
+				--reflections
+				local reflection = s.s.reflection or s.obj.reflection
+				if reflection then
+					self.reflections[s.s.reflection or s.obj.reflection] = {
+						dist = dist,
+						obj = s.s.reflection and s.s or s.obj,
+						pos = reflection.pos or s.pos,
+					}
+				end
 			end
 		end
 	end
@@ -287,7 +291,7 @@ function lib:renderShadows(scene, cam, canvas, blacklist)
 	
 	for shaderInfo, shaderGroup in pairs(scene) do
 		for material, materialGroup in pairs(shaderGroup) do
-			if material.color[4] > 0.75 and material.shadow ~= false then
+			if (material.color[4] or 1.0) > 0.75 and material.shadow ~= false then
 				for _,task in pairs(materialGroup) do
 					if not blacklist or not (blacklist[task.obj] or blacklist[task.s]) then
 						self.shaders.shadow:send("transform", task.transform or identityMatrix)

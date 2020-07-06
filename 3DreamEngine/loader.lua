@@ -675,7 +675,7 @@ function lib.loadObject(self, path, args)
 			
 			s.boundingBox.center = s.boundingBox.center / #s.final
 			s.boundingBox.dimensions = s.boundingBox.second - s.boundingBox.first
-			s.boundingBox.size = math.max(s.boundingBox.dimensions:length(), s.boundingBox.size)
+			s.boundingBox.size = math.max((s.boundingBox.dimensions * 0.5):length(), s.boundingBox.size)
 		end
 		
 		obj.boundingBox.first = s.boundingBox.first:min(obj.boundingBox.first)

@@ -91,6 +91,8 @@ lib.alphaBlendMode = "average"
 lib.renderToFinalCanvas = false
 lib.max_lights = 16
 lib.nameDecoder = "blender"
+lib.frustumCheck = true
+lib.LoDDistance = 100
 
 lib.shadow_resolution = 1024
 lib.shadow_cube_resolution = 512

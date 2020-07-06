@@ -1,7 +1,7 @@
 return {
+	shadow = false,
 	color = {0.1, 0.6, 0.2},
 	roughness = 0.1,
 	metallic = 0.0,
 	cullMode = "none",
-	alpha = false,
 }

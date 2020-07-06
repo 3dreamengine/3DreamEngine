@@ -53,6 +53,11 @@ void effect() {
 	} else if (albedo.a < 0.99 && pass < 0.0 || albedo.a >= 0.99 && pass > 0.0) {
 		discard;
 	}
+	
+	//hidden
+	if (albedo.a <= 0.0) {
+		discard;
+	}
 
 	//transform normal to world space
 	#ifdef TEX_NORMAL
