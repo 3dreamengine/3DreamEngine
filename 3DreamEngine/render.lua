@@ -21,45 +21,45 @@ end
 
 --use the filled drawTable to build a scene
 --a scene is a subset of the draw table, ordered and prepared for rendering
-function lib:buildScene(cam, pass)
+function lib:buildScene(cam)
 	local scene = { }
 	
 	--add to scene
 	for d,s in ipairs(self.drawTable) do
 		local mat = s.s.material
-		if pass == 3 or not mat.alpha and pass == 1 or mat.alpha and pass == 2 then
-			local dist = (s.pos - cam.pos):length()
-			if self:inFrustum(cam.pos, cam.normal, s.pos) then
-				--group shader and materials together to reduce shader switches
-				if not scene[s.s.shader] then
-					scene[s.s.shader] = { }
-				end
-				if not scene[s.s.shader][mat] then
-					scene[s.s.shader][mat] = { }
-				end
-				
-				--add
-				table.insert(scene[s.s.shader][mat], s)
-				
-				--reflections
-				local reflection = s.s.reflection or s.obj.reflection
-				if reflection then
-					self.reflections[s.s.reflection or s.obj.reflection] = {
-						dist = dist,
-						obj = s.s.reflection and s.s or s.obj,
-						pos = reflection.pos or s.pos,
-					}
-				end
+		local dist = (s.pos - cam.pos):length()
+		if self:inFrustum(cam.pos, cam.normal, s.pos) then
+			--group shader and materials together to reduce shader switches
+			if not scene[s.s.shader] then
+				scene[s.s.shader] = { }
+			end
+			if not scene[s.s.shader][mat] then
+				scene[s.s.shader][mat] = { }
+			end
+			
+			--add
+			table.insert(scene[s.s.shader][mat], s)
+			
+			--reflections
+			local reflection = s.s.reflection or s.obj.reflection
+			if reflection then
+				self.reflections[s.s.reflection or s.obj.reflection] = {
+					dist = dist,
+					obj = s.s.reflection and s.s or s.obj,
+					pos = reflection.pos or s.pos,
+				}
 			end
 		end
 	end
 	
 	--sort tables for materials requiring sorting
 	--note that no sorting among same meshes occur, since alpha blending between identical objects do not matter anyways
-	sortPosition = cam.pos
-	for shader, shaderGroup in pairs(scene) do
-		for material, materialGroup in pairs(shaderGroup) do
-			table.sort(materialGroup, sortFunction)
+	if dream.alphaBlendMode == "alpha" then
+		sortPosition = cam.pos
+		for shader, shaderGroup in pairs(scene) do
+			for material, materialGroup in pairs(shaderGroup) do
+				table.sort(materialGroup, sortFunction)
+			end
 		end
 	end
 	
@@ -67,44 +67,43 @@ function lib:buildScene(cam, pass)
 end
 
 --render the scene onto a canvas set using a specific view camera
-function lib:render(canvases, cam, pass, blacklist)
-	local deferred_lighting = canvases.deferred_lighting and pass ~= 2
+function lib:render(scene, canvases, cam, pass, blacklist)
+	local deferred_lighting = canvases.deferred_lighting and pass == 1
 	
 	--love shader friendly
 	local viewPos = {cam.pos:unpack()}
 	local normal = {cam.normal:unpack()}
 	
-	--generate scene
-	local scene = self:buildScene(cam, pass)
-	
 	--clear and set canvases
 	love.graphics.push("all")
 	love.graphics.reset()
-	if pass == 2 and canvases.average_alpha then
+	
+	if pass == 2 and canvases.alphaBlendMode == "average" then
+		--average blende mode
 		love.graphics.setCanvas({canvases.color_pass2, canvases.data_pass2, self.refraction_enabled and canvases.normal_pass2 or nil})
 		love.graphics.clear(0, 0, 0, 0)
 		love.graphics.setCanvas({canvases.color_pass2, canvases.data_pass2, self.refraction_enabled and canvases.normal_pass2 or nil, depthstencil = canvases.depth_buffer})
+	elseif deferred_lighting then
+		--deferred lighting
+		love.graphics.setCanvas({canvases.color, canvases.albedo, canvases.normal, canvases.position, canvases.material, depthstencil = canvases.depth_buffer})
+		love.graphics.clear({0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 255, 0})
 	else
-		if deferred_lighting then
-			love.graphics.setCanvas({canvases.color, canvases.albedo, canvases.normal, canvases.position, canvases.material, depthstencil = canvases.depth_buffer})
-			if pass == 1 then
-				love.graphics.clear({0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 255, 0})
-			end
-		else
-			love.graphics.setCanvas({canvases.color, canvases.depth, depthstencil = canvases.depth_buffer})
-			if pass == 1 then
-				love.graphics.clear({0, 0, 0, 0}, {255, 0, 0, 0})
-			end
+		--classic forward rendering
+		love.graphics.setCanvas({canvases.color, canvases.depth, depthstencil = canvases.depth_buffer})
+		if pass == 1 then
+			love.graphics.clear({0, 0, 0, 0}, {255, 0, 0, 0})
 		end
 	end
 	
 	--set correct blendmode
-	if pass == 2 and canvases.average_alpha then
+	if pass == 2 and canvases.alphaBlendMode == "average" then
 		love.graphics.setBlendMode("add", "premultiplied")
 	else
 		love.graphics.setBlendMode("alpha")
 	end
-	love.graphics.setDepthMode("less", pass ~= 2)
+	
+	--only first pass writes depth
+	love.graphics.setDepthMode("less", pass == 1)
 	
 	--prepare lighting
 	local lighting, lightRequirements = self:getLightOverview(cam, deferred_lighting)
@@ -116,7 +115,9 @@ function lib:render(canvases, cam, pass, blacklist)
 		--output settings
 		love.graphics.setShader(shader)
 		shader:send("deferred_lighting", deferred_lighting)
-		shader:send("average_alpha", pass == 2 and canvases.average_alpha)
+		shader:send("average_alpha", pass == 2 and canvases.alphaBlendMode == "average")
+		shader:send("useAlphaDither", canvases.alphaBlendMode == "dither")
+		shader:send("pass", canvases.alphaBlendMode == "disabled" and 0 or pass == 1 and -1 or 1)
 		
 		--lookup texture for PBR
 		if shader:hasUniform("brdfLUT") then
@@ -182,7 +183,7 @@ function lib:render(canvases, cam, pass, blacklist)
 			
 			--draw objects
 			for _,task in pairs(materialGroup) do
-				if not blacklist or not blacklist[task.obj] then
+				if not blacklist or not (blacklist[task.obj] or blacklist[task.s]) then
 					--sky texture
 					if shaderInfo.reflection then
 						local ref = task.s.reflection and task.s.reflection.canvas or task.obj.reflection and task.obj.reflection.canvas or self.canvas_sky
@@ -270,7 +271,7 @@ function lib:render(canvases, cam, pass, blacklist)
 end
 
 --only renders a depth variant
-function lib:renderShadows(cam, canvas)
+function lib:renderShadows(scene, cam, canvas, blacklist)
 	love.graphics.push("all")
 	love.graphics.reset()
 	love.graphics.setMeshCullMode("none")
@@ -284,13 +285,15 @@ function lib:renderShadows(cam, canvas)
 	self.shaders.shadow:send("viewPos", {cam.pos:unpack()})
 	self.shaders.shadow:send("transformProj", cam.transformProj)
 	
-	local scene = self:buildScene(cam, 3)
-	
 	for shaderInfo, shaderGroup in pairs(scene) do
 		for material, materialGroup in pairs(shaderGroup) do
-			for _,task in pairs(materialGroup) do
-				self.shaders.shadow:send("transform", task.transform or identityMatrix)
-				love.graphics.draw(task.s.mesh)
+			if material.color[4] > 0.75 and material.shadow ~= false then
+				for _,task in pairs(materialGroup) do
+					if not blacklist or not (blacklist[task.obj] or blacklist[task.s]) then
+						self.shaders.shadow:send("transform", task.transform or identityMatrix)
+						love.graphics.draw(task.s.mesh)
+					end
+				end
 			end
 		end
 	end
@@ -303,11 +306,16 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 	love.graphics.push("all")
 	love.graphics.reset()
 	
+	--generate scene
+	local scene = self:buildScene(cam, pass)
+	
 	--first pass
-	self:render(canvases, cam, 1, blacklist)
+	self:render(scene, canvases, cam, 1, blacklist)
 	
 	--second (alpha) pass
-	--self:render(canvases, cam, 2, blacklist)
+	if canvases.alphaBlendMode == "average" or canvases.alphaBlendMode == "alpha" then
+		self:render(scene, canvases, cam, 2, blacklist)
+	end
 	
 	--weather
 	love.graphics.setBlendMode("alpha")
@@ -541,11 +549,11 @@ function lib:present(noSky, cam, canvases)
 				maxHeight = math.max(maxHeight, h)
 				
 				love.graphics.setColor(0, 0, 0)
-				love.graphics.rectangle("fill", x * w, y * w, w, h)
+				love.graphics.rectangle("fill", x * w, y, w, h)
 				love.graphics.setShader(self.shaders.replaceAlpha)
 				self.shaders.replaceAlpha:send("alpha", b)
 				love.graphics.setBlendMode("add")
-				love.graphics.draw(s, x * w, y * w, 0, w / s:getWidth())
+				love.graphics.draw(s, x * w, y, 0, w / s:getWidth())
 				love.graphics.setShader()
 				love.graphics.setBlendMode("alpha")
 				love.graphics.setColor(1, 1, 1)

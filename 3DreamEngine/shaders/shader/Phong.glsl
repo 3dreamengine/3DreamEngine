@@ -14,6 +14,8 @@ varying float depth;                      //depth
 //shader settings
 extern bool deferred_lighting;
 extern bool average_alpha;
+extern bool useAlphaDither;
+extern float pass;
 extern int lightCount;
 
 #ifdef TEX_NORMAL
@@ -46,8 +48,10 @@ void effect() {
 	vec4 albedo = Texel(tex_albedo, VaryingTexCoord.xy) * VaryingColor;
 	
 	//dither alpha
-	if (!average_alpha) {
+	if (useAlphaDither) {
 		albedo.a = step(fract(love_PixelCoord.x * 0.37 + love_PixelCoord.y * 73.73 + depth * 3.73), albedo.a);
+	} else if (albedo.a < 0.99 && pass < 0.0 || albedo.a >= 0.99 && pass > 0.0) {
+		discard;
 	}
 
 	//transform normal to world space

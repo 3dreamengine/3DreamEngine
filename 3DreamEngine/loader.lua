@@ -92,6 +92,7 @@ function lib.update(self, time)
 				s.y = s.y + 1
 				if s.y >= math.ceil(s.height / bufferSize) then
 					self.texturesLoaded[s.path] = s.canvas
+					s.canvas:generateMipmaps()
 					fastLoadingJob = false
 				end
 			end
@@ -115,7 +116,7 @@ function lib.update(self, time)
 			--image
 			local width, height = msg[3]:getDimensions()
 			if lib.textures_fastLoading and math.max(width, height) >= bufferSize * 2 then
-				local canvas = love.graphics.newCanvas(width, height)
+				local canvas = love.graphics.newCanvas(width, height, {mipmaps = "manual"})
 				canvas:setWrap("repeat", "repeat")
 				canvas:setFilter(lib.textures_filter, lib.textures_filter)
 				fastLoadingJob = {
@@ -478,6 +479,15 @@ function lib.loadObject(self, path, args)
 		end
 	end
 	
+	
+	--disable objects
+	for d,o in pairs(obj.objects) do
+		local pos = o.name:find("DISABLED")
+		if pos then
+			o.disabled = true
+		end
+	end
+	
 	--grid moves all vertices in a way that 0, 0, 0 is the floored origin with an maximal overhang of 0.25 units.
 	if obj.grid then
 		for d,o in pairs(obj.objects) do
@@ -633,8 +643,10 @@ function lib.loadObject(self, path, args)
 	--create meshes
 	if not obj.noMesh then
 		for d,o in pairs(obj.objects) do
-			o.shaderType = nil
-			self:createMesh(obj, o)
+			if not o.disabled then
+				o.shaderType = nil
+				self:createMesh(obj, o)
+			end
 		end
 	end
 	

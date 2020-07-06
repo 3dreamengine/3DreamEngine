@@ -29,18 +29,8 @@ return function(self, obj, path)
 			material.color[3] = b
 		elseif v[1] == "d" then
 			material.color[4] = tonumber(v[2])
-			if material.color[4] == 1.0 then
-				material.alpha = false
-			else
-				material.alpha = true
-			end
 		elseif v[1] == "Tr" then
 			material.color[4] = 1.0 - tonumber(v[2])
-			if material.color[4] == 1.0 then
-				material.alpha = false
-			else
-				material.alpha = true
-			end
 		elseif v[1] == "ior" then
 			material.ior = tonumber(v[2])
 		elseif v[1] == "shaderValue" then

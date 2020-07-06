@@ -17,6 +17,8 @@ varying highp vec3 vertexPos;             //vertex position for pixel shader
 //shader settings
 extern bool deferred_lighting;
 extern bool average_alpha;
+extern bool useAlphaDither;
+extern float pass;
 extern int lightCount;
 
 varying vec3 normalVec;
@@ -38,8 +40,10 @@ void effect() {
 	vec4 albedo = VaryingColor;
 	
 	//dither alpha
-	if (!average_alpha) {
-		albedo.a = step(fract(love_PixelCoord.x * 0.65 + love_PixelCoord.y * 73.73), albedo.a);
+	if (useAlphaDither) {
+		albedo.a = step(fract(love_PixelCoord.x * 0.37 + love_PixelCoord.y * 73.73 + depth * 3.73), albedo.a);
+	} else if (albedo.a < 0.99 && pass < 0.0 || albedo.a >= 0.99 && pass > 0.0) {
+		discard;
 	}
 	
 	vec3 normal = normalize(normalVec);

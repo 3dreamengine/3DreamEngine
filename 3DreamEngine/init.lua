@@ -87,7 +87,7 @@ lib.msaa = 4
 lib.fxaa = false
 lib.lighting_engine = "Phong"
 lib.deferred_lighting = false
-lib.average_alpha = true
+lib.alphaBlendMode = "average"
 lib.renderToFinalCanvas = false
 lib.max_lights = 16
 lib.nameDecoder = "blender"
@@ -103,7 +103,7 @@ lib.shadow_smooth_downScale = 0.5
 lib.reflections_resolution = 512
 lib.reflections_format = "rgba16f"
 lib.reflections_deferred_lighting = false
-lib.reflections_average_alpha = true
+lib.reflections_alphaBlendMode = "dither"
 lib.reflections_msaa = 4
 lib.reflections_levels = 5
 lib.reflection_downsample = 2
@@ -210,14 +210,14 @@ if love.graphics then
 end
 
 --a canvas set is used to render a scene to
-function lib.newCanvasSet(self, w, h, msaa, deferred_lighting, average_alpha, postEffects_enabled)
+function lib.newCanvasSet(self, w, h, msaa, deferred_lighting, alphaBlendMode, postEffects_enabled)
 	local set = { }
 	
 	set.width = w
 	set.height = h
 	set.msaa = msaa
 	set.deferred_lighting = deferred_lighting
-	set.average_alpha = average_alpha
+	set.alphaBlendMode = alphaBlendMode
 	set.postEffects_enabled = postEffects_enabled
 	
 	--depth
@@ -240,7 +240,7 @@ function lib.newCanvasSet(self, w, h, msaa, deferred_lighting, average_alpha, po
 	end
 	
 	--layer count and seperate color canvas for average alpha blending
-	if average_alpha then
+	if alphaBlendMode == "average" then
 		set.color_pass2 = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa}) --r, g, b
 		set.data_pass2 = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa})  --steps, alpha, ior
 		if self.refraction_enabled then
@@ -280,8 +280,8 @@ end
 --load canvases
 function lib.resize(self, w, h)
 	--canvases sets
-	self.canvases = self:newCanvasSet(w, h, self.msaa, self.deferred_lighting, self.average_alpha, true)
-	self.canvases_reflections = self:newCanvasSet(self.reflections_resolution, self.reflections_resolution, self.reflections_msaa, self.reflections_deferred_lighting, self.reflections_average_alpha, false)
+	self.canvases = self:newCanvasSet(w, h, self.msaa, self.deferred_lighting, self.alphaBlendMode, true)
+	self.canvases_reflections = self:newCanvasSet(self.reflections_resolution, self.reflections_resolution, self.reflections_msaa, self.reflections_deferred_lighting, self.reflections_alphaBlendMode, false)
 	
 	--rain
 	if self.rain_enabled then

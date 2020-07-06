@@ -1,0 +1,15 @@
+return {
+	particleSystems = {
+		{
+			objects = {
+				["examples/AlphaBlending/grass"] = 500,
+			},
+			randomSize = {0.15, 0.2},
+			randomRotation = true,
+			normal = 0.9,
+			shader = "wind",
+			shaderValue = "grass",
+			shaderValueGrass = 0.1,
+		},
+	}
+}

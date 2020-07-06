@@ -8,6 +8,7 @@ local projectDir = "examples/Lamborghini/"
 
 dream.deferred_lighting = false
 dream.lighting_engine = "PBR"
+dream.alphaBlendMode = "disabled"
 
 dream.shadow_distance = 4
 dream.shadow_factor = 2

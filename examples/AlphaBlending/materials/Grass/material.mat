@@ -1,0 +1,7 @@
+return {
+	shader = "wind",
+	shader_wind_speed = 0.5,
+	shader_wind_strength = 1.0,
+	shader_wind_scale = 3.0,
+	shaderValue = 0.02,
+}

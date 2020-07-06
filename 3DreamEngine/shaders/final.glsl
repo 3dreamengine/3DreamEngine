@@ -109,14 +109,15 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 		alpha = 1.0;
 		c2 = vec4(0.0);
 	} else {
-		float f = 1.0 / dat.r;
-		ior = dat.b * f;
-		alpha = pow(1.0 - dat.g * f, dat.r);
 #ifdef FXAA_ENABLED
 		c2 = fxaa(canvas_color_pass2, tc) / dat.g;
 #else
 		c2 = Texel(canvas_color_pass2, tc) / dat.g;
 #endif
+		float f = 1.0 / dat.r;
+		ior = dat.b * f;
+		c2.a = dat.g * f;
+		alpha = pow(1.0 - c2.a, dat.r);
 		
 		//refraction
 #ifdef REFRACTION_ENABLED
@@ -144,12 +145,6 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 #else
 	float depth = Texel(canvas_depth, tc_final).r;
 #endif
-
-	//merge passes
-#ifdef AVERAGE_ALPHA
-	c.rgb = mix(c2.rgb, c.rgb, alpha);
-	c.a = min(1.0, c.a + c2.a);
-#endif
 	
 	//sky reflection
 #ifdef SKY_ENABLED
@@ -172,6 +167,12 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 #ifdef SSR_ENABLED
 	vec3 ref = Texel(canvas_SSR, tc_final).rgb;
 	c.rgb += ref;
+#endif
+
+	//merge passes
+#ifdef AVERAGE_ALPHA
+	c.rgb = mix(c2.rgb, c.rgb, alpha);
+	c.a = min(1.0, c.a + c2.a);
 #endif
 
 	//fog

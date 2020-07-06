@@ -429,7 +429,9 @@ function lib.executeJobs(self, cam)
 			shadowCam.transformProj = projection * shadowCam.transform
 			o[4].shadow["transformation_" .. cascade] = shadowCam.transformProj
 			o[4].shadow.canvases[cascade] = o[4].shadow.canvases[cascade] or self:newShadowCanvas("sun", o[4].shadow.res)
-			self:renderShadows(shadowCam, {depthstencil = o[4].shadow.canvases[cascade]})
+			
+			local scene = self:buildScene(shadowCam)
+			self:renderShadows(scene, shadowCam, {depthstencil = o[4].shadow.canvases[cascade]}, o[4].blacklist)
 			
 			o[4].shadow.done[cascade] = true
 		elseif o[1] == "shadow_point" then
@@ -453,8 +455,9 @@ function lib.executeJobs(self, cam)
 			
 			--render
 			for face = 1, 6 do
-				local cam = self:newCam(transformations[face], pos, lookNormals[face])
-				self:renderShadows(cam, {{o[4].shadow.canvas, face = face}})
+				local shadowCam = self:newCam(transformations[face], pos, lookNormals[face])
+				local scene = self:buildScene(shadowCam)
+				self:renderShadows(scene, shadowCam, {{o[4].shadow.canvas, face = face}}, o[4].blacklist)
 			end
 			
 			o[4].shadow.done[1] = true
@@ -471,14 +474,17 @@ function lib.executeJobs(self, cam)
 				pointShadowProjectionMatrix * self:lookAt(pos, pos + lookNormals[6], vec3(0, -1, 0)),
 			}
 			
-			--render
+			--prepare
 			love.graphics.push("all")
 			love.graphics.reset()
 			local cam = self:newCam(transformations[face], pos, lookNormals[face])
 			local canvas = o[4].reflection.canvas
 			love.graphics.setCanvas({{canvas, face = face}})
 			o[4].reflection.canvas = nil
-			lib:renderFull(cam, self.canvases_reflections, false, o[7])
+			
+			--render
+			lib:renderFull(cam, self.canvases_reflections, false, {[o[4]] = true})
+			
 			o[4].reflection.canvas = canvas
 			love.graphics.pop()
 			

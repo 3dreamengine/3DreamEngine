@@ -96,7 +96,7 @@ function lib.getFinalShader(self, canvases, noSky)
 	parts[#parts+1] = canvases.postEffects_enabled and self.exposure > 0 and not self.autoExposure_enabled and "#define EXPOSURE_ENABLED" or nil
 	parts[#parts+1] = canvases.postEffects_enabled and self.bloom_enabled and "#define BLOOM_ENABLED" or nil
 	parts[#parts+1] = self.AO_enabled and "#define AO_ENABLED" or nil
-	parts[#parts+1] = canvases.average_alpha and "#define AVERAGE_ALPHA" or nil
+	parts[#parts+1] = canvases.alphaBlendMode == "average" and "#define AVERAGE_ALPHA" or nil
 	parts[#parts+1] = canvases.deferred_lighting and "#define DEFERRED_LIGHTING" or nil
 	parts[#parts+1] = (self.fxaa and canvases.msaa == 0) and "#define FXAA_ENABLED" or nil
 	parts[#parts+1] = self.SSR_enabled and "#define SSR_ENABLED" or nil
@@ -247,6 +247,9 @@ function lib:getShader(info, lightRequirements)
 		end
 		if info.SSR then
 			code[#code+1] = "#define SSR_ENABLED"
+		end
+		if self.refraction_enabled then
+			code[#code+1] = "#define REFRACTION_ENABLED"
 		end
 		
 		--actual shader

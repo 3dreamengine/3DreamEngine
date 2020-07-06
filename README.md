@@ -102,7 +102,8 @@ dream.msaa = 4                            -- multi sample anti aliasing, slightl
 dream.fxaa = false                        -- fast approximated anti aliasing, fast but less good results
 dream.lighting_engine = "Phong"           -- the shading engine (PBR or Phong), should match the shaders (see own section below) used
 dream.deferred_lighting = false           -- toggles the deferred lighting pipeline, see advantages in its own section below
-dream.average_alpha = false               -- if enabled it uses an average alpha blending method, else it uses z sorting and alpha blending. Use appropiate method based on scene.
+dream.alphaBlendMode = "average"          -- average is slowest with order independent blending, "alpha" uses alpha blending with possible order-artefacts,
+                                          -- "dither" dithers between full and zero based on alpha and "disabled" only renders 100% alpha. "dither" and "disabled" only require one pass.
 dream.renderToFinalCanvas = false         -- instead of directly rendering it it renders to canvases.final (dream.canvases.final). Auto exposure semi enables this.
 dream.max_lights = 16                     -- max lights when using non defered shadng
 dream.nameDecoder = "blender"             -- imported objects often contain mesh data names appended to the actual name,, blender decoder removes them
@@ -119,7 +120,7 @@ dream.shadow_quality = "low"              -- quality when using non defered ligh
 dream.reflections_resolution = 512        -- cubemap reflection resolution
 dream.reflections_format = "rgba16f"      -- reflection format, normal or rgba16f, where rgba16f preserves more detail in brightness
 dream.reflections_deferred_lighting = false --wether the defered pipeline should be used for reflection rendering
-dream.reflections_average_alpha = true    --//--
+dream.reflections_alphaBlendMode = true   --//--
 dream.reflections_msaa = 4                -- multi sample antialiasing for reflections, else use fxaa if enabled
 dream.reflections_levels = 5              -- the count of mipmaps used, lower values cause incorrect blending between roughnesses, high values cause low quality on high roughnesses
 dream.reflection_downsample = 2           -- the factor of downsampling when bluring the cubemap. Should not be changed since the blur is calibrated.
@@ -269,6 +270,28 @@ Materials can be either per model by providing a .mtl or .mat file with the same
 dream:loadMaterialLibrary("materialsDirectory")
 ```
 A material library looks for material files (.mat) or for directory containing material.mat or at least an image.
+
+## alpha blend mode
+Alpha blending can be quite tricky, therefore 3Dream offers 4 different approaches, depending on your scene.
+There is a AlphaBlending demo to see those modes in action.
+Currently its only possible to use one method at a time.
+Dream.init() has to be called after changing.
+```
+--uses a second render step and a set of canvases to perform an order independent average alpha
+--this also allows refractions, if enabled
+dream.alphaBlendMode = "average"
+
+--sort the objects and render in a second step using alpha blending
+--works mostly, but can screw up render order, especially within the same object
+dream.alphaBlendMode = "alpha"
+
+--does not require a second step, but perform dithering based on alpha
+dream.alphaBlendMode = "dither"
+
+--uses a threshold and avoid alpha at all
+--known issues are linear interpolated mipmaps and alpha, since the interpolated parts are cut away.
+dream.alphaBlendMode = "disabled"
+```
 
 ## textures
 To add textures to the model ...

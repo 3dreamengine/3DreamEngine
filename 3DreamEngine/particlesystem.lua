@@ -151,7 +151,7 @@ function lib.addParticlesystems(self, obj)
 									local extra = 1.0
 									if particleSystem.shader == "wind" then
 										if particleSystem.shaderValue == "grass" then
-											extra = math.min(1.0, math.max(0.0, s[2] * 0.25))
+											extra = math.min(1.0, math.max(0.0, s[2] * 0.25)) * (particleSystem.shaderValueGrass or 1.0)
 										else
 											extra = tonumber(particleSystem.shaderValue) or 0.15
 										end
