@@ -284,15 +284,19 @@ function lib.finishMaterial(self, mat, obj)
 		local custom = mat["tex_" .. typ]
 		mat["tex_" .. typ] = nil
 		if custom then
-			--path specified
-			custom = custom and custom:match("(.+)%..+") or custom
-			for _,p in pairs({
-				custom,
-				(mat.dir and (mat.dir .. "/") or "") .. custom,
-			}) do
-				if self.images[p] then
-					mat["tex_" .. typ] = self.images[p]
-					break
+			if type(custom) == "userdata" then
+				mat["tex_" .. typ] = custom
+			else
+				--path specified
+				custom = custom and custom:match("(.+)%..+") or custom
+				for _,p in pairs({
+					custom,
+					(mat.dir and (mat.dir .. "/") or "") .. custom,
+				}) do
+					if self.images[p] then
+						mat["tex_" .. typ] = self.images[p]
+						break
+					end
 				end
 			end
 		elseif not obj then

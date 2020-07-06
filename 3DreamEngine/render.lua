@@ -31,7 +31,7 @@ function lib:buildScene(cam)
 		local LoD = s.s.LoD or s.obj.LoD
 		local level = LoD and math.min(math.floor(dist / dream.LoDDistance * 10)+1, 9)
 		if not LoD or LoD[level] then
-			if not self.frustumCheck or not s.s.boundingBox or self:inFrustum(cam, s.pos, s.s.boundingBox) then
+			if not self.frustumCheck or not s.s.boundingBox or self:inFrustum(cam, s.pos, s.s.boundingBox.size) then
 				--group shader and materials together to reduce shader switches
 				if not scene[s.s.shader] then
 					scene[s.s.shader] = { }

@@ -424,12 +424,12 @@ function lib:setWeather(rain, temp)
 	self.rain_strength = math.ceil(math.clamp((rain-0.4) / 0.6 * 5.0, 0.001, 5.0))
 end
 
-function lib:inFrustum(cam, pos, boundingBox)
+function lib:inFrustum(cam, pos, size)
 	local dir = pos - cam.pos
 	local dist = dir:length()
 	
 	--check if within bounding box
-	if dist < boundingBox.size * 2 then
+	if dist < size * 2 then
 		return true
 	end
 	
