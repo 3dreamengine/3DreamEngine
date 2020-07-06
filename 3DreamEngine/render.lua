@@ -442,6 +442,7 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 		love.graphics.push("all")
 		love.graphics.origin()
 		love.graphics.setCanvas(canvases.final)
+		love.graphics.clear()
 	end
 	
 	love.graphics.setShader(shader)

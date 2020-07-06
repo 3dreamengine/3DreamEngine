@@ -317,13 +317,13 @@ function lib.resize(self, w, h)
 end
 
 --applies settings and load canvases
-function lib.init(self)
+function lib.init(self, w, h)
 	if self.SSR_enabled and not self.deferred_lighting then
 		self.SSR_enabled = false
 		print("SSR can only be used with deferred lighting! SSR has been disabled.")
 	end
 	
-	self:resize(love.graphics.getWidth(), love.graphics.getHeight())
+	self:resize(w or love.graphics.getWidth(), h or love.graphics.getHeight())
 	
 	--reset shader
 	self:loadShader()
