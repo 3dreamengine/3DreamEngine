@@ -230,10 +230,10 @@ function lib.newCanvasSet(self, w, h, msaa, deferred_lighting, alphaBlendMode, p
 	
 	--data, albedo and position only for deferred lighting
 	if deferred_lighting then
-		set.albedo = love.graphics.newCanvas(w, h, {format = "normal", readable = true, msaa = msaa})    -- albedo color
-		set.position = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa})  -- xyz position
-		set.material = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa})  -- roughness, metallic, depth
-		set.normal = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa}) -- normal + depth
+		set.albedo = love.graphics.newCanvas(w, h, {format = "normal", readable = true, msaa = msaa})         -- albedo color
+		set.position = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa})      -- xyz position
+		set.normal = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa})        -- normal
+		set.material = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa})      -- roughness, metallic, depth
 	end
 	
 	--normal
