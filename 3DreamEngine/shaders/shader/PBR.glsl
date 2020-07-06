@@ -82,11 +82,11 @@ void effect() {
 	//PBR model data
 	vec3 viewVec = normalize(viewPos - vertexPos);
 	vec3 reflectVec = reflect(-viewVec, normal); 
-	float cosTheta = max(dot(normal, viewVec), 0.0);
+	float cosTheta = clamp(dot(normal, viewVec), 0.0, 1.0);
 	vec3 F0 = mix(vec3(0.04), albedo.rgb, metallic);
 	
 	//fresnel
-    vec3 F = F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
+    vec3 F = F0 + (vec3(1.0) - F0) * pow(1.0 - cosTheta, 5.0);
     
 	//specular and diffuse component
     vec3 kS = F;
