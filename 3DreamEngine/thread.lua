@@ -57,11 +57,12 @@ while true do
 			assert(info, "Image " .. msg[2] .. " does not exist!")
 			
 			--load image
-			local imageData = love.image.newImageData(msg[2])
-			channel_results:push({"image", msg[2], imageData})
+			local isCompressed = love.image.isCompressed(msg[2])
+			local imageData = isCompressed and love.image.newCompressedData(msg[2]) or love.image.newImageData(msg[2])
+			channel_results:push({"image", msg[2], imageData, isCompressed})
 			
 			--generate thumbnail
-			if msg[3] then
+			if msg[3] and not isCompressed then
 				generateThumbnail(msg[2], imageData, info)
 			end
 		elseif msg[1] == "combine" then

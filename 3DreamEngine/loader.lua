@@ -115,7 +115,7 @@ function lib.update(self, time)
 		else
 			--image
 			local width, height = msg[3]:getDimensions()
-			if lib.textures_fastLoading and math.max(width, height) >= bufferSize * 2 then
+			if lib.textures_fastLoading and math.max(width, height) >= bufferSize * 2 and not msg[4] then
 				local canvas = love.graphics.newCanvas(width, height, {mipmaps = "manual"})
 				canvas:setWrap("repeat", "repeat")
 				canvas:setFilter(lib.textures_filter, lib.textures_filter)
@@ -191,7 +191,7 @@ function lib.getTexture(self, path)
 end
 
 --scan for image files and adds path to image library
-lib.imageFormats = {"tga", "png", "gif", "bmp", "exr", "hdr", "jpg", "jpe", "jpeg", "jp2"}
+lib.imageFormats = {"tga", "png", "gif", "bmp", "exr", "hdr", "dds", "dxt", "jpg", "jpe", "jpeg", "jp2"}
 lib.imageFormat = { }
 for d,s in ipairs(lib.imageFormats) do
 	lib.imageFormat["." .. s] = d
