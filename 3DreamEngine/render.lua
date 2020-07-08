@@ -93,7 +93,7 @@ function lib:render(scene, canvases, cam, pass, blacklist)
 		love.graphics.clear({0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 255, 0})
 	else
 		--classic forward rendering
-		love.graphics.setCanvas({canvases.color, canvases.depth, depthstencil = canvases.depth_buffer})
+		love.graphics.setCanvas({canvases.color, pass == 1 and canvases.depth or nil, depthstencil = canvases.depth_buffer})
 		if pass == 1 then
 			love.graphics.clear({0, 0, 0, 0}, {255, 0, 0, 0})
 		end

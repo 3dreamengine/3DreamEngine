@@ -61,6 +61,10 @@ void effect() {
 		discard;
 	}
 	
+	if (pass == 0.0) {
+		albedo.a = 1.0;
+	}
+	
 	//transform normal to world space
 	#ifdef TEX_NORMAL
 		vec3 normal = normalize(objToWorldSpace * normalize(Texel(tex_normal, VaryingTexCoord.xy).rgb - 0.5));

@@ -58,6 +58,10 @@ void effect() {
 	if (albedo.a <= 0.0) {
 		discard;
 	}
+	
+	if (pass == 0.0) {
+		albedo.a = 1.0;
+	}
 
 	//transform normal to world space
 	#ifdef TEX_NORMAL

@@ -46,6 +46,10 @@ void effect() {
 		discard;
 	}
 	
+	if (pass == 0.0) {
+		albedo.a = 1.0;
+	}
+	
 	vec3 normal = normalize(normalVec);
 	float specular = VaryingTexCoord.a;
 	
