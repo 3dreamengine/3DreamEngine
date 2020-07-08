@@ -81,7 +81,7 @@ function lib.update(self, time)
 			performanceSamples = performanceSamples + 1
 			time = time - delta
 			
-			if lib.textures_fastLoadingProgress then
+			if self.textures_fastLoadingProgress then
 				self.texturesLoaded[s.path] = s.canvas
 			end
 			
@@ -92,7 +92,9 @@ function lib.update(self, time)
 				s.y = s.y + 1
 				if s.y >= math.ceil(s.height / bufferSize) then
 					self.texturesLoaded[s.path] = s.canvas
-					s.canvas:generateMipmaps()
+					if s.canvas:getMipmapCount() > 1 then
+						s.canvas:generateMipmaps()
+					end
 					fastLoadingJob = false
 				end
 			end
@@ -115,10 +117,17 @@ function lib.update(self, time)
 		else
 			--image
 			local width, height = msg[3]:getDimensions()
-			if lib.textures_fastLoading and math.max(width, height) >= bufferSize * 2 and not msg[4] then
-				local canvas = love.graphics.newCanvas(width, height, {mipmaps = "manual"})
+			if self.textures_fastLoading and math.max(width, height) >= bufferSize * 2 and not msg[4] then
+				local canvas = love.graphics.newCanvas(width, height, {mipmaps = self.textures_mipmaps and "manual" or "none"})
+				
+				--settings
 				canvas:setWrap("repeat", "repeat")
-				canvas:setFilter(lib.textures_filter, lib.textures_filter)
+				canvas:setFilter(self.textures_filter, self.textures_filter)
+				if canvas:getMipmapCount() > 1 then
+					canvas:setMipmapFilter(self.textures_filter)
+				end
+				
+				--prepare loading job
 				fastLoadingJob = {
 					path = msg[2],
 					canvas = canvas,
@@ -129,9 +138,16 @@ function lib.update(self, time)
 					height = height,
 				}
 			else
-				local tex = love.graphics.newImage(msg[3], {mipmaps = lib.textures_mipmaps})
+				local tex = love.graphics.newImage(msg[3], {mipmaps = self.textures_mipmaps})
+				
+				--settings
 				tex:setWrap("repeat", "repeat")
-				tex:setFilter(lib.textures_filter, lib.textures_filter)
+				tex:setFilter(self.textures_filter, self.textures_filter)
+				if tex:getMipmapCount() > 1 then
+					tex:setMipmapFilter(self.textures_filter)
+				end
+				
+				--store
 				self.texturesLoaded[msg[2]] = tex
 			end
 		end
