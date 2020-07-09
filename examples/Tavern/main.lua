@@ -1,5 +1,6 @@
 --load the 3D lib
 dream = require("3DreamEngine")
+collision = require("3DreamEngine/collision")
 love.window.setTitle("PBR Tavern")
 love.mouse.setRelativeMode(true)
 
@@ -14,7 +15,13 @@ dream:loadMaterialLibrary(projectDir .. "materials")
 
 dream:init()
 
-local scene = dream:loadObject(projectDir .. "scene", {shaderType = "PBR"})
+local scene = dream:loadObject(projectDir .. "scene", {shaderType = "PBR", noCleanup = true})
+
+--create mesh collisions for all sub objects
+local colls = { }
+for d,s in pairs(scene.objects) do
+	colls[d] = collision:newMesh(s)
+end
 
 local player = {
 	x = 4,
@@ -54,6 +61,7 @@ for d,s in ipairs(scene.positions) do
 end
 
 local hideTooltips = false
+local lookingAtCheck = false
 
 function love.draw()
 	--update camera
@@ -88,7 +96,22 @@ function love.draw()
 	
 	if not hideTooltips then
 		love.graphics.setColor(1, 1, 1)
-		love.graphics.print("R to toggle rain (" .. tostring(dream.rain_isRaining) .. ")\nU to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")\nG to toggle deferred shading (note the shadows) (may be not supported by your GPU) (" .. tostring(dream.deferred_lighting) .. ")\nH to toggle SSR (required deferred) (" .. tostring(dream.SSR_enabled) .. ")", 10, 10)
+		love.graphics.print("R to toggle rain (" .. tostring(dream.rain_isRaining) .. ")\nU to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")\nG to toggle deferred shading (note the shadows) (may be not supported by your GPU) (" .. tostring(dream.deferred_lighting) .. ")\nH to toggle SSR (required deferred) (" .. tostring(dream.SSR_enabled) .. ")\nL to toggle looking at check (" .. tostring(lookingAtCheck) .. ")", 10, 10)
+	end
+	
+	--check which object you are looking at
+	if lookingAtCheck then
+		local coll = false
+		for d,s in pairs(colls) do
+			local segment = collision:newSegment(vec3(player.x, player.y, player.z), vec3(player.x, player.y, player.z) + dream.cam.normal * 5)
+			if collision:collide(segment, s) then
+				coll = d
+			end
+		end
+		
+		if coll then
+			love.graphics.printf("you are looking at " .. coll, 0, love.graphics.getHeight() - 20, love.graphics.getWidth(), "center")
+		end
 	end
 end
 
@@ -205,6 +228,10 @@ function love.keypressed(key)
 	if key == "h" then
 		dream.SSR_enabled = not dream.SSR_enabled
 		dream:init()
+	end
+	
+	if key == "l" then
+		lookingAtCheck = not lookingAtCheck
 	end
 end
 

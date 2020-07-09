@@ -207,7 +207,7 @@ function lib.getTexture(self, path)
 end
 
 --scan for image files and adds path to image library
-lib.imageFormats = {"tga", "png", "gif", "bmp", "exr", "hdr", "dds", "dxt", "jpg", "jpe", "jpeg", "jp2"}
+lib.imageFormats = {"tga", "png", "gif", "bmp", "exr", "hdr", "dds", "dxt", "pkm", "jpg", "jpe", "jpeg", "jp2"}
 lib.imageFormat = { }
 for d,s in ipairs(lib.imageFormats) do
 	lib.imageFormat["." .. s] = d

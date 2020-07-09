@@ -152,6 +152,19 @@ function c:newPoint(transform)
 	return setmetatable(n, {__index = c.meta_basic})
 end
 
+--segment node
+function c:newSegment(a, b)
+	local n = { }
+	
+	n.typ = "segment"
+	n.transform = (a + b) / 2
+	n.boundary = (a - b):lengthSquared() / 2
+	n.a = a
+	n.b = b
+	
+	return setmetatable(n, {__index = c.meta_basic})
+end
+
 --mesh node
 function c:newMesh(object, subObject, transform)
 	if not object then
@@ -172,6 +185,7 @@ function c:newMesh(object, subObject, transform)
 		
 		return n
 	elseif object.collisions then
+		--collision already loaded via loader.lua
 		if subObject then
 			return self:newMesh(object.collisions[subObject], subObject, transform)
 		else
@@ -188,6 +202,7 @@ function c:newMesh(object, subObject, transform)
 			end
 		end
 	elseif object.objects then
+		--this is an object (not subobject with mesh)
 		if subObject then
 			return self:newMesh(object.objects[subObject], subObject, transform)
 		else
@@ -209,6 +224,7 @@ function c:newMesh(object, subObject, transform)
 			end
 		end
 	else
+		--its a subobject
 		local n = { }
 		
 		n.typ = "mesh"
@@ -407,7 +423,15 @@ local colliders = {
 		mesh = false,
 	},
 	segment = {
-		
+		mesh = function(a, b, transform, transformInverse)
+			local va = transformVec(a.a, transformInverse)
+			local vb = transformVec(a.b, transformInverse)
+			for d,s in ipairs(b.faces) do
+				if c:intersectTriangle({va, vb}, s) then
+					return b.normals[d]
+				end
+			end
+		end,
 	},
 	mesh = {
 		mesh = function(a, b, transform, transformInverse)
@@ -463,9 +487,11 @@ function c:collide(a, b, transform, transformInverse)
 	transformInverse = transformInverse and (t:invert() * transformInverse) or t:invert()
 	
 	--boundary skip
-	local pos = transformVec(a.transform, transformInverse)
-	if pos:lengthSquared() > (a.boundary + b.boundary)^2 then
-		return false
+	if a.boundary and b.boundary then
+		local pos = transformVec(a.transform, transformInverse)
+		if pos:lengthSquared() > (a.boundary + b.boundary)^2 then
+			return false
+		end
 	end
 	
 	--collide
