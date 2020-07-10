@@ -21,7 +21,7 @@ extern int lightCount;
 #ifdef TEX_NORMAL
 	varying mat3 objToWorldSpace;
 #else
-	varying vec3 normal;
+	varying vec3 normalV;
 #endif
 
 
@@ -62,10 +62,12 @@ void effect() {
 	if (pass == 0.0) {
 		albedo.a = 1.0;
 	}
-
+	
 	//transform normal to world space
 	#ifdef TEX_NORMAL
 		vec3 normal = normalize(objToWorldSpace * normalize(Texel(tex_normal, VaryingTexCoord.xy).rgb - 0.5));
+	#else
+		vec3 normal = normalize(normalV);
 	#endif
 	
 	//fetch material data
@@ -166,7 +168,7 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 		
 		objToWorldSpace = mat3(T, B, N);
 	#else
-		normal = normalize(normalTransform * (VertexNormal*2.0-1.0));
+		normalV = normalTransform * (VertexNormal*2.0-1.0);
 	#endif
 	
 	vertexPos = pos.xyz;
