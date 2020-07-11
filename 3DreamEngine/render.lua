@@ -543,7 +543,7 @@ function lib:present(noSky, cam, canvases)
 	local brightness = {
 		data_pass2 = 0.25,
 	}
-	if love.keyboard.isDown(",") then
+	if _DEBUGMODE and love.keyboard.isDown(",") then
 		local w = 400
 		local x = 0
 		local y = 0
