@@ -1,5 +1,15 @@
 local c = { }
 
+local dream = _3DreamEngine
+
+--get the vec3 offset of a transform object (which can be a mat4 or vec3)
+local function getTranslate(s)
+	return s.type == "mat4" and vec3(s[4], s[8], s[12]) or s
+end
+local function getTransform(s)
+	return s.type == "mat4" and s or mat4:getTranslate(s)
+end
+
 --group meta
 c.meta_group = {
 	--add object to group
@@ -32,13 +42,22 @@ c.meta_group = {
 	
 	--reconstruct boundary
 	apply = function(self)
+		--get center of group, only relevant for in-boundary checks
+		self.center = vec3(0, 0, 0)
+		for d,s in ipairs(self.children) do
+			self.center = self.center + getTranslate(s.transform)
+		end
+		self.center = self.center / #self.children
+		
+		--get max boundary size
 		self.boundary = 0
 		for d,s in ipairs(self.children) do
-			local transform = c:gettransform(s.transform)
-			local size = s.transform == "mat4" and (s.transform * vec3(0, 0, s.boundary) - transform):length() or s.boundary
-			self.boundary = math.max(self.boundary, transform:length() + size)
+			local transform = getTranslate(s.transform)
+			local size = (transform - self.center):length()
+			self.boundary = math.max(self.boundary, size + s.boundary)
 		end
 		
+		--pass updates to parent
 		if self.parent then
 			self.parent:apply()
 		end
@@ -105,12 +124,13 @@ c.meta_basic = {
 }
 
 --group node
-function c:newGroup(transform, transform)
+function c:newGroup(transform)
 	local n = { }
 	
 	n.typ = "group"
 	n.transform = transform or vec3(0, 0, 0)
 	n.boundary = 0
+	n.center = vec3(0, 0, 0)
 	
 	n.children = { }
 	
@@ -159,133 +179,65 @@ function c:newSegment(a, b)
 	n.typ = "segment"
 	n.transform = (a + b) / 2
 	n.boundary = (a - b):lengthSquared() / 2
-	n.a = a
-	n.b = b
+	n.a = a - n.transform
+	n.b = b - n.transform
 	
 	return setmetatable(n, {__index = c.meta_basic})
 end
 
 --mesh node
-function c:newMesh(object, subObject, transform)
+function c:newMesh(object, transform)
 	if not object then
 		return nil
 	elseif object.edges then
-		local n = { }
-		
-		n.typ = "mesh"
-		n.name = object.name
-		n.transform = transform or vec3(0, 0, 0)
-		n.boundary = object.boundary
-		
-		n.faces = object.faces
-		n.normals = object.normals
-		n.edges = object.edges
-		n.vertices = object.vertices
-		n.point = object.point
-		
-		return n
+		--this is a collision object, wrap it into a group
+		setmetatable(object, {__index = c.meta_basic})
+		local g = self:newGroup(transform)
+		g:add(object)
+		return g
 	elseif object.collisions then
-		--collision already loaded via loader.lua
-		if subObject then
-			return self:newMesh(object.collisions[subObject], subObject, transform)
-		else
-			if object.collisionCount == 1 then
-				for d,c in pairs(object.collisions) do
-					return self:newMesh(c, subObject, transform)
-				end
-			else
-				local o = self:newGroup(transform)
-				for d,c in pairs(object.collisions) do
-					o:add(self:newMesh(c, subObject))
-				end
-				return o
+		--object, but with defined collisions
+		if object.collisionCount == 1 then
+			--only one collision, skip group
+			for d,c in pairs(object.collisions) do
+				return self:newMesh(c, transform)
 			end
+		else
+			--pack those into a group
+			local o = self:newGroup(transform)
+			for d,c in pairs(object.collisions) do
+				o:add(self:newMesh(c))
+			end
+			return o
 		end
 	elseif object.objects then
-		--this is an object (not subobject with mesh)
-		if subObject then
-			return self:newMesh(object.objects[subObject], subObject, transform)
-		else
-			local count = 0
+		--this is an object (with several subobjects)
+		local count = 0
+		for d,s in pairs(object.objects) do
+			count = count + 1
+		end
+		
+		if count == 1 then
+			--only one collision, skip group
 			for d,s in pairs(object.objects) do
-				count = count + 1
+				return self:newMesh(s, transform)
 			end
-			
-			if count == 1 then
-				for d,s in pairs(object.objects) do
-					return self:newMesh(s, subObject, transform)
-				end
-			else
-				local o = self:newGroup(transform)
-				for d,s in pairs(object.objects) do
-					o:add(self:newMesh(s, subObject))
-				end
-				return o
+		else
+			--pack those into a group
+			local o = self:newGroup(transform)
+			for d,s in pairs(object.objects) do
+				o:add(self:newMesh(s))
 			end
+			return o
 		end
 	else
-		--its a subobject
-		local n = { }
+		assert(object.faces, "Object has been cleaned up, collision can not be constructed. Use noCleanup = true argument in object loader!")
 		
-		n.typ = "mesh"
-		n.name = object.name
-		n.transform = transform or vec3(0, 0, 0)
-		n.boundary = 0
+		--this is a sub object and needs to be converted first
+		local n = dream:getCollisionData(object)
 		
-		assert(object.faces, "Object has been cleaned up, collision can be reconstructed. Use noCleanup = true argument in object loader!")
-		
-		n.faces = { }
-		n.normals = { }
-		n.edges = { }
-		n.point = vec3(0, 0, 0)
-		
-		local function hash(a, b)
-			return math.min(a, b) * 9999 + math.max(a, b)
-		end
-		
-		local hashes = { }
-		local f = object.final
-		
-		for d,s in ipairs(object.faces) do
-			local a, b, c = f[s[1]], f[s[2]], f[s[3]]
-			
-			n.point = a
-			
-			--face normal
-			table.insert(n.normals, vec3(a[5]+b[5]+c[5], a[6]+b[6]+c[6], a[7]+b[7]+c[7]):normalize())
-			
-			a = vec3(a[1], a[2], a[3])
-			b = vec3(b[1], b[2], b[3])
-			c = vec3(c[1], c[2], c[3])
-			
-			--boundary
-			n.boundary = math.max(n.boundary, a:length(), b:length(), c:length())
-			
-			--face
-			table.insert(n.faces, {a, b, c})
-			
-			--edges
-			local id
-			id = hash(s[1], s[2])
-			if not hashes[id] then
-				table.insert(n.edges, {a, b})
-				hashes[id] = true
-			end
-			
-			id = hash(s[1], s[3])
-			if not hashes[id] then
-				table.insert(n.edges, {a,c })
-				hashes[id] = true
-			end
-			
-			id = hash(s[2], s[3])
-			if not hashes[id] then
-				table.insert(n.edges, {b, c})
-				hashes[id] = true
-			end
-		end
-		
-		return setmetatable(n, {__index = c.meta_basic})
+		--then use the collision to continue
+		return self:newMesh(n, transform)
 	end
 end
 
@@ -302,24 +254,16 @@ local function getBoxNormal(vec)
 	end
 end
 
-local function transformVec(v, transform)
-	local v2 = transform and (transform * v) or v
-	return v2.type == "mat4" and (v2 * vec3(0, 0, 0)) or v2
-end
-
 --first collides with second
 local colliders = {
 	point = {
-		point = function(a, b, transform, transformInverse)
-			local pos = transformVec(a.transform, transformInverse)
+		point = function(a, b, aToB, pos)
 			return pos:lengthSquared() < 0.001
 		end,
-		sphere = function(a, b, transform, transformInverse)
-			local vec = transformVec(a.transform, transformInverse)
-			return vec:length() < b.size and vec:normalize() or false
+		sphere = function(a, b, aToB, pos)
+			return pos:length() < b.size and pos:normalize() or false
 		end,
-		box = function(a, b, transform, transformInverse)
-			local pos = transformVec(a.transform, transformInverse)
+		box = function(a, b, aToB, pos)
 			if pos[1] > -b.size[1] / 2 and pos[1] < b.size[1] / 2 and pos[2] > -b.size[2] / 2 and pos[2] < b.size[2] / 2 and pos[3] > -b.size[3] / 2 and pos[3] < b.size[3] / 2 then
 				return getBoxNormal(pos)
 			else
@@ -327,8 +271,7 @@ local colliders = {
 			end
 		end,
 		segment = false,
-		mesh = function(a, b, transform, transformInverse)
-			local pos = transformVec(a.transform, transformInverse)
+		mesh = function(a, b, aToB, pos)
 			local segment = {pos:normalize() * 10000.0, pos}
 			local count = 0
 			local normal = vec3(0, 0, 0)
@@ -342,16 +285,10 @@ local colliders = {
 		end,
 	},
 	sphere = {
-		point = function(a, b, transform, transformInverse)
-			local vec = transformVec(a.transform, transformInverse)
-			return vec:length() < a.size and vec:normalize() or false
+		sphere = function(a, b, aToB, pos)
+			return pos:length() < (a.size + b.size) and pos:normalize() or false
 		end,
-		sphere = function(a, b, transform, transformInverse)
-			local vec = transformVec(a.transform, transformInverse)
-			return vec:length() < (a.size + b.size) and vec:normalize() or false
-		end,
-		box = function(a, b, transform, transformInverse)
-			local pos = transformVec(a.transform, transformInverse)
+		box = function(a, b, aToB, pos)
 			local v = (-b.size/2):max((b.size/2):min(pos))
 			if (v - pos):lengthSquared() < a.size * a.size then
 				return getBoxNormal(v)
@@ -359,9 +296,14 @@ local colliders = {
 				return false
 			end
 		end,
-		segment = false,
-		mesh = function(a, b, transform, transformInverse)
-			local pos = transformVec(a.transform, transformInverse)
+		segment = function(a, b, aToB, pos)
+			local nearest, val = c:nearestPointToLine(b.a, b.b, pos)
+			local length = (b.a - b.b):lengthSquared()
+			if (nearest - pos):lengthSquared() < a.size * a.size and val > 0 and val < 1 then
+				return (pos - nearest):normalize()
+			end
+		end,
+		mesh = function(a, b, aToB, pos)
 			local count = 0
 			
 			--faces
@@ -386,46 +328,23 @@ local colliders = {
 		end,
 	},
 	box = {
-		point = function(a, b, transform, transformInverse)
-			--using inverse approach and transform point into axis aligned coords
-			local pos = transformVec(b.transform, transformInverse, transform)
-			if pos[1] > -a.size[1] / 2 and pos[1] < a.size[1] / 2 and pos[2] > -a.size[2] / 2 and pos[2] < a.size[2] / 2 and pos[3] > -a.size[3] / 2 and pos[3] < a.size[3] / 2 then
+		--incompatible with rotations
+		box = function(a, b, aToB, pos)
+			if pos[1] + a.size[1] / 2 > -b.size[1] / 2 and pos[1] - a.size[1] / 2 < b.size[1] / 2 and
+				pos[2] + a.size[2] / 2 > -b.size[2] / 2 and pos[2] - a.size[2] / 2 < b.size[2] / 2 and
+				pos[3] + a.size[3] / 2 > -b.size[3] / 2 and pos[3] - a.size[3] / 2 < b.size[3] / 2 then
 				return getBoxNormal(pos)
 			else
 				return false
-			end
-		end,
-		sphere = function(a, b, transform, transformInverse)
-			--using inverse approach and transform point into axis aligned coords
-			local pos = transformVec(b.transform, transformInverse, transform)
-			local v = (-a.size/2):max((a.size/2):min(pos))
-			if (v - pos):lengthSquared() < b.size * b.size then
-				return -v:normalize()
-			else
-				return false
-			end
-		end,
-		box = function(a, b, transform, transformInverse)
-			if transform then
-				--transformation not possible and will be skipped
-			else
-				local pos = a.transform - b.transform + transform
-				if pos[1] + a.size[1] / 2 > -b.size[1] / 2 and pos[1] - a.size[1] / 2 < b.size[1] / 2 and
-					pos[2] + a.size[2] / 2 > -b.size[2] / 2 and pos[2] - a.size[2] / 2 < b.size[2] / 2 and
-					pos[3] + a.size[3] / 2 > -b.size[3] / 2 and pos[3] - a.size[3] / 2 < b.size[3] / 2 then
-					return getBoxNormal(pos)
-				else
-					return false
-				end
 			end
 		end,
 		segment = false,
 		mesh = false,
 	},
 	segment = {
-		mesh = function(a, b, transform, transformInverse)
-			local va = transformVec(a.a, transformInverse)
-			local vb = transformVec(a.b, transformInverse)
+		mesh = function(a, b, aToB, pos)
+			local va = aToB * a.a
+			local vb = aToB * a.b
 			for d,s in ipairs(b.faces) do
 				if c:intersectTriangle({va, vb}, s) then
 					return b.normals[d]
@@ -434,20 +353,11 @@ local colliders = {
 		end,
 	},
 	mesh = {
-		mesh = function(a, b, transform, transformInverse)
+		mesh = function(a, b, aToB, pos)
 			--edge check
 			for _, edge in ipairs(a.edges) do
-				local e1, e2
-				if a.transform.type == "mat4" then
-					e1 = a.transform * edge[1]
-					e2 = a.transform * edge[2]
-				else
-					e1 = edge[1] + a.transform
-					e2 = edge[2] + a.transform
-				end
-				
-				local va = transformVec(e1, transformInverse)
-				local vb = transformVec(e2, transformInverse)
+				local va = aToB * edge[1]
+				local vb = aToB * edge[2]
 				for d,s in ipairs(b.faces) do
 					if c:intersectTriangle({va, vb}, s) then
 						return b.normals[d]
@@ -456,14 +366,7 @@ local colliders = {
 			end
 			
 			--random sample
-			local r
-			if a.transform.type == "mat4" then
-				r = a.transform * a.point
-			else
-				r = a.point + a.transform
-			end
-			
-			local v = transformVec(r, transformInverse)
+			local v = aToB * a.point
 			local segment = {v:normalize() * 10000.0, v}
 			local count = 0
 			local normal = vec3(0, 0, 0)
@@ -480,31 +383,43 @@ local colliders = {
 	},
 }
 
-function c:collide(a, b, transform, transformInverse)
-	--transform
-	local t = b.transform.type == "mat4" and b.transform or mat4:getTranslate(b.transform)
-	transform = transform and (t * transform) or t
-	transformInverse = transformInverse and (t:invert() * transformInverse) or t:invert()
+function c:collide(a, b, bToA, toGlobal)
+	--for the sake of performance we keep all return values in A space and only the top call transforms it back into global space
+	local root = not bToA
 	
-	--boundary skip
-	if a.boundary and b.boundary then
-		local pos = transformVec(a.transform, transformInverse)
-		if pos:lengthSquared() > (a.boundary + b.boundary)^2 then
-			return false
+	--transform (of b, recursive. TransformInverse therefore transforms "a" into the space of b)
+	bToA = bToA and (bToA * getTransform(b.transform)) or (getTransform(b.transform) * getTransform(a.transform):invert())
+	aToB = bToA:invert()
+	
+	--the origin of a in the space of b
+	local originOfAInBSpace = vec3(aToB[4], aToB[8], aToB[12])
+	
+	--boundary check for groups
+	if b.center then
+		if a.typ == "segment" then
+			local b = self:newSphere(b.boundary, b.center)
+			if not self:collide(a, b, bToA) then
+				return false
+			end
+		else
+			--basic bounding sphere overlap check
+			if (originOfAInBSpace - b.center):lengthSquared() > (a.boundary + b.boundary)^2 then
+				return false
+			end
 		end
 	end
 	
 	--collide
 	local n
 	if colliders[a.typ] and colliders[a.typ][b.typ] then
-		local nn = colliders[a.typ][b.typ](a, b, transform, transformInverse)
+		local nn = colliders[a.typ][b.typ](a, b, aToB, originOfAInBSpace)
 		if nn then
-			n = n and (n + nn) or nn
+			n = bToA:subm() * nn
 		end
 	elseif colliders[b.typ] and colliders[b.typ][a.typ] then
-		local nn = colliders[b.typ][a.typ](b, a, transformInverse, transform)
+		local nn = colliders[b.typ][a.typ](b, a, bToA, vec3(bToA[4], bToA[8], bToA[12]))
 		if nn then
-			n = n and (n + nn) or nn
+			n = aToB:subm() * nn
 		end
 	else
 		--print("unknown", a.typ, b.typ)
@@ -513,48 +428,33 @@ function c:collide(a, b, transform, transformInverse)
 	--children
 	if b.children then
 		for d,s in ipairs(b.children) do
-			local nn = self:collide(a, s, transform, transformInverse)
+			local nn = self:collide(a, s, bToA)
 			if nn then
 				n = n and (n + nn) or nn
 			end
 		end
 	end
 	
-	return n and (transform:subm() * n):normalize() or false
+	--return normal vector
+	if n then
+		if root then
+			--from A space into global space
+			return (getTransform(a.transform):subm() * n):normalize()
+		else
+			return n:normalize()
+		end
+	end
 end
 
-function c:gettransform(s)
-	return s.type == "mat4" and (s * vec3(0, 0, 0)) or s
-end
-
+--returns the point which has the shortest distance to p and lies on the line v, w
 function c:nearestPointToLine(v, w, p)
 	local wv = w - v
 	local l2 = wv:lengthSquared()
 	local t = math.max(0, math.min(1, (p - v):dot(wv) / l2))
-	return v + t * wv
+	return v + t * wv, t
 end
 
-function c:calculateImpact(velocity, normal, elastic, friction)
-	local dir = velocity:normalize()
-	local speed = velocity:length()
-	
-	--reflect
-	local reflect = dir:reflect(normal)
-	
-	--slide
-	local slide = reflect - (reflect * normal) * normal
-	slide = slide:lengthSquared() > 0 and slide:normalize() or slide
-	slide = slide * math.max(0, 1.0 - math.abs(dir:dot(normal)))
-	
-	--final
-	local v = reflect * elastic * speed + slide * (1.0 - elastic) * (1.0 - friction) * speed
-	
-	--impact
-	local impact = (velocity - v):length()
-	
-	return v, impact, reflect, slide
-end
-
+--take a ray R and test if it intersects with triangle T
 function c:intersectTriangle(R, T)
 	--plane normal
 	local u = T[2] - T[1]
@@ -593,15 +493,38 @@ function c:intersectTriangle(R, T)
 	return intersectPoint
 end
 
+--returns physic relevant info
+function c:calculateImpact(velocity, normal, elastic, friction)
+	local dir = velocity:normalize()
+	local speed = velocity:length()
+	
+	--reflect
+	local reflect = dir:reflect(normal)
+	
+	--slide
+	local slide = reflect - (reflect * normal) * normal
+	slide = slide:lengthSquared() > 0 and slide:normalize() or slide
+	slide = slide * math.max(0, 1.0 - math.abs(dir:dot(normal)))
+	
+	--final
+	local v = reflect * elastic * speed + slide * (1.0 - elastic) * (1.0 - friction) * speed
+	
+	--impact
+	local impact = (velocity - v):length()
+	
+	return v, impact, reflect, slide
+end
+
+--recursively prints a collision tree, its typ, boundary and typ specific extra information
 function c:print(o, indent)
 	indent = indent or 0
 	
 	local extra
 	if o.typ == "mesh" then
-		extra = tostring(o.name) .. " with " .. tostring(#o.faces) .. " faces"
+		extra = "mesh with " .. tostring(#o.faces) .. " faces"
 	end
 	
-	print(string.rep("\t", indent) .. o.typ .. (extra and (" (" .. extra .. ")") or ""))
+	print(string.rep("\t", indent) .. o.typ .. " " .. tostring(getTranslate(o.transform)) .. " " .. math.floor(o.boundary*100)/100 ..  (extra and (" (" .. extra .. ")") or ""))
 	
 	if o.children then
 		for d,s in ipairs(o.children) do

@@ -21,6 +21,7 @@ local scene = dream:loadObject(projectDir .. "scene", {shaderType = "PBR", noCle
 local colls = { }
 for d,s in pairs(scene.objects) do
 	colls[d] = collision:newMesh(s)
+	collision:print(colls[d])
 end
 
 local player = {
@@ -103,9 +104,11 @@ function love.draw()
 	if lookingAtCheck then
 		local coll = false
 		for d,s in pairs(colls) do
-			local segment = collision:newSegment(vec3(player.x, player.y, player.z), vec3(player.x, player.y, player.z) + dream.cam.normal * 5)
-			if collision:collide(segment, s) then
-				coll = d
+			if s.boundary < 5 then
+				local segment = collision:newSegment(vec3(player.x, player.y, player.z), vec3(player.x, player.y, player.z) + dream.cam.normal * 3)
+				if collision:collide(segment, s) then
+					coll = d
+				end
 			end
 		end
 		

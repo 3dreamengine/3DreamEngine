@@ -30,6 +30,7 @@ function lib:newCam(transformProj, pos, normal)
 		fov = 90,
 		near = 0.01,
 		far = 1000,
+		aspect = 1.0,
 	}, self.operations)
 end
 
@@ -424,15 +425,88 @@ function lib:setWeather(rain, temp)
 	self.rain_strength = math.ceil(math.clamp((rain-0.4) / 0.6 * 5.0, 0.001, 5.0))
 end
 
-function lib:inFrustum(cam, pos, size)
+function lib:inFrustum(cam, pos, radius)
 	local dir = pos - cam.pos
 	local dist = dir:length()
 	
-	--check if within bounding box
-	if dist < size * 2 then
+	--check if within bounding sphere as the angle check fails on close distance
+	if dist < radius * 2 then
 		return true
 	end
 	
-	local angle = cam.fov / 360 * math.pi * (0.6 - 2 / dist)
-	return (dir / dist):dot(cam.normal) > angle
+	--the additional margin visible due to its size
+	local margin = radius / dist / math.pi
+	
+	--the visible angle based on fov
+	local angle = cam.fov / 180 * (1.0 + (cam.aspect - 1.0) * 0.25)
+	
+	--if it is within this threshold
+	return (dir / dist):dot(cam.normal) > 1.0 - angle - margin
+end
+
+local hashes = { }
+local function hash(a, b)
+	return math.min(a, b) * 9999 + math.max(a, b)
+end
+
+--get the collision data from a mesh
+--it moves the collider to its bounding box center, transform therefore should not be changed directly
+function lib:getCollisionData(object)
+	--its a subobject
+	local n = { }
+	
+	--data required by the collision extension
+	n.typ = "mesh"
+	n.transform = object.boundingBox and object.boundingBox.center or vec3(0, 0, 0)
+	n.boundary = 0
+	
+	--data
+	n.faces = { }
+	n.normals = { }
+	n.edges = { }
+	n.point = vec3(0, 0, 0)
+
+	hashes = { }
+	local f = object.final
+
+	for d,s in ipairs(object.faces) do
+		local a, b, c = f[s[1]], f[s[2]], f[s[3]]
+		
+		n.point = a
+		
+		--face normal
+		table.insert(n.normals, vec3(a[5]+b[5]+c[5], a[6]+b[6]+c[6], a[7]+b[7]+c[7]):normalize())
+		
+		a = vec3(a[1], a[2], a[3]) - n.transform
+		b = vec3(b[1], b[2], b[3]) - n.transform
+		c = vec3(c[1], c[2], c[3]) - n.transform
+		
+		--boundary
+		n.boundary = math.max(n.boundary, a:length(), b:length(), c:length())
+		
+		--face
+		table.insert(n.faces, {a, b, c})
+		
+		--edges
+		local id
+		id = hash(s[1], s[2])
+		if not hashes[id] then
+			table.insert(n.edges, {a, b})
+			hashes[id] = true
+		end
+		
+		id = hash(s[1], s[3])
+		if not hashes[id] then
+			table.insert(n.edges, {a, c})
+			hashes[id] = true
+		end
+		
+		id = hash(s[2], s[3])
+		if not hashes[id] then
+			table.insert(n.edges, {b, c})
+			hashes[id] = true
+		end
+	end
+	
+	return n
 end

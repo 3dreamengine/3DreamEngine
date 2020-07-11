@@ -586,91 +586,6 @@ function lib.loadObject(self, path, args)
 	end
 	
 	
-	--extract collisions
-	for dd,s in pairs(obj.objects) do
-		local pos = s.name:find("COLLISION")
-		if pos then
-			local d = #s.name:sub(pos + 10) == 0 and "collision" or s.name:sub(pos + 10)
-			obj.collisions = obj.collisions or { }
-			obj.collisionCount = (obj.collisionCount or 0) + 1
-			obj.collisions[d] = {
-				name = obj.name,
-				faces = { },
-				normals = { },
-				edges = { },
-				point = vec3(0, 0, 0),
-				boundary = 0,
-			}
-			local n = obj.collisions[d]
-			
-			local function hash(a, b)
-				return math.min(a, b) * 9999 + math.max(a, b)
-			end
-			
-			local hashes = { }
-			local f = s.final
-			
-			for d,s in ipairs(s.faces) do
-				local a, b, c = f[s[1]], f[s[2]], f[s[3]]
-				
-				n.point = a
-				
-				--face normal
-				table.insert(n.normals, vec3(a[5]+b[5]+c[5], a[6]+b[6]+c[6], a[7]+b[7]+c[7]):normalize())
-				
-				a = vec3(a[1], a[2], a[3])
-				b = vec3(b[1], b[2], b[3])
-				c = vec3(c[1], c[2], c[3])
-				
-				--boundary
-				n.boundary = math.max(n.boundary, a:length(), b:length(), c:length())
-				
-				--face
-				table.insert(n.faces, {a, b, c})
-				
-				--edges
-				local id
-				id = hash(s[1], s[2])
-				if not hashes[id] then
-					table.insert(n.edges, {a, b})
-					hashes[id] = true
-				end
-				
-				id = hash(s[1], s[3])
-				if not hashes[id] then
-					table.insert(n.edges, {a,c })
-					hashes[id] = true
-				end
-				
-				id = hash(s[2], s[3])
-				if not hashes[id] then
-					table.insert(n.edges, {b, c})
-					hashes[id] = true
-				end
-			end
-			obj.objects[dd] = nil
-		end
-	end
-	
-	
-	--post load materials
-	for d,s in pairs(obj.materials) do
-		s.dir = s.dir or obj.textures or dir
-		self:finishMaterial(s, obj)
-	end
-	
-	
-	--create meshes
-	if not obj.noMesh then
-		for d,o in pairs(obj.objects) do
-			if not o.disabled then
-				o.shaderType = nil
-				self:createMesh(obj, o)
-			end
-		end
-	end
-	
-	
 	--calculate bounding box
 	obj.boundingBox = newBoundaryBox()
 	local total = 0
@@ -706,6 +621,37 @@ function lib.loadObject(self, path, args)
 	end
 	obj.boundingBox.center = obj.boundingBox.center / total
 	obj.boundingBox.dimensions = obj.boundingBox.second - obj.boundingBox.first
+	
+	
+	--extract collisions
+	for dd,s in pairs(obj.objects) do
+		local pos = s.name:find("COLLISION")
+		if pos then
+			local d = #s.name:sub(pos + 10) == 0 and "collision" or s.name:sub(pos + 10)
+			obj.collisions = obj.collisions or { }
+			obj.collisionCount = (obj.collisionCount or 0) + 1
+			obj.collisions[d] = self:getCollisionData(s)
+			obj.objects[dd] = nil
+		end
+	end
+	
+	
+	--post load materials
+	for d,s in pairs(obj.materials) do
+		s.dir = s.dir or obj.textures or dir
+		self:finishMaterial(s, obj)
+	end
+	
+	
+	--create meshes
+	if not obj.noMesh then
+		for d,o in pairs(obj.objects) do
+			if not o.disabled then
+				o.shaderType = nil
+				self:createMesh(obj, o)
+			end
+		end
+	end
 	
 	
 	--cleaning up

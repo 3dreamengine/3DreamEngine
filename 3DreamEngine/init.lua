@@ -35,7 +35,6 @@ require((...) .. "/renderLight")
 require((...) .. "/jobs")
 require((...) .. "/particlesystem")
 require((...) .. "/libs/saveTable")
-_3DreamEngine = nil
 
 --loader
 lib.loader = { }

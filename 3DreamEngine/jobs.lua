@@ -423,6 +423,7 @@ function lib.executeJobs(self, cam)
 			)
 			
 			local shadowCam = self:newCam()
+			shadowCam.noFrustumCheck = true
 			shadowCam.pos = cam.pos
 			shadowCam.normal = o[5]
 			shadowCam.transform = self:lookAt(cam.pos + shadowCam.normal * f * 0.5, cam.pos, vec3(0.0, 1.0, 0.0))

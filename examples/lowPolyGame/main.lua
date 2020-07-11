@@ -58,8 +58,16 @@ bullets = { }
 --setup collision and world
 world = collision:newGroup()
 for d,s in ipairs(map.objects) do
-	--world:add(collision:newMesh(objects[s.path], s.subObject, s.transform * vec3(0, 0, 0)))
-	world:add(collision:newMesh(objects[s.path], s.subObject, s.transform))
+	local o = objects[s.path]
+	if s.subObject then
+		if o.collisions then
+			world:add(collision:newMesh(o.collisions[s.subObject], s.transform))
+		else
+			world:add(collision:newMesh(o.objects[s.subObject], s.transform))
+		end
+	else
+		world:add(collision:newMesh(o, s.transform))
+	end
 end
 
 collision:print(world)
