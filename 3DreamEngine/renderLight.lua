@@ -187,7 +187,7 @@ function lib:renderDeferredLight(lighting, lightRequirements, canvases, cam)
 	self.shaders.shadow_sun:send("texelSize", 1.0 / self.shadow_resolution)
 	
 	for d,s in ipairs(lighting) do
-		if s.shadow and s.shadow.typ == "sun" and s.shadow.canvases then
+		if s.shadow and s.shadow.typ == "sun" and s.shadow.canvases and s.shadow.canvases[3] then
 			self.shaders.shadow_sun:send("transformProjShadow_1", s.shadow.transformation_1)
 			self.shaders.shadow_sun:send("transformProjShadow_2", s.shadow.transformation_2)
 			self.shaders.shadow_sun:send("transformProjShadow_3", s.shadow.transformation_3)

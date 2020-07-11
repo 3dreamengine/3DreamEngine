@@ -29,7 +29,7 @@ function lib:buildScene(cam)
 		local mat = s.s.material
 		local dist = (s.pos - cam.pos):length()
 		local LoD = s.s.LoD or s.obj.LoD
-		local level = LoD and math.min(math.floor(dist / dream.LoDDistance * 10)+1, 9)
+		local level = LoD and math.min(math.floor(dist / self.LoDDistance * 10)+1, 9)
 		if not LoD or LoD[level] then
 			if cam.noFrustumCheck or not self.frustumCheck or not s.s.boundingBox or self:inFrustum(cam, s.pos, s.s.boundingBox.size) then
 				--group shader and materials together to reduce shader switches
@@ -58,7 +58,7 @@ function lib:buildScene(cam)
 	
 	--sort tables for materials requiring sorting
 	--note that no sorting among same meshes occur, since alpha blending between identical objects do not matter anyways
-	if dream.alphaBlendMode == "alpha" then
+	if self.alphaBlendMode == "alpha" then
 		sortPosition = cam.pos
 		for shader, shaderGroup in pairs(scene) do
 			for material, materialGroup in pairs(shaderGroup) do
