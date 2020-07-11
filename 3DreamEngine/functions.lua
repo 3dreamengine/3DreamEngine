@@ -458,7 +458,7 @@ function lib:inFrustum(cam, pos, radius)
 	end
 	
 	--the additional margin visible due to its size
-	local margin = radius / dist / math.pi
+	local margin = radius / dist / math.pi * 2
 	
 	--the visible angle based on fov
 	local angle = cam.fov / 180 * (1.0 + (cam.aspect - 1.0) * 0.25)
