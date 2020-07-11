@@ -241,6 +241,53 @@ function c:newMesh(object, transform)
 	end
 end
 
+--returns the point which has the shortest distance to p and lies on the line v, w
+local function nearestPointToLine(v, w, p)
+	local wv = w - v
+	local l2 = wv:lengthSquared()
+	local t = math.max(0, math.min(1, (p - v):dot(wv) / l2))
+	return v + t * wv
+end
+
+--take a ray R and test if it intersects with triangle T
+local function intersectTriangle(R, T)
+	--plane normal
+	local u = T[2] - T[1]
+	local v = T[3] - T[1]
+	local n = u:cross(v)
+	local dir = R[2] - R[1]
+	local b = n:dot(dir)
+	
+	--check if segment is parallel to plane, only returns true if on it
+	if math.abs(b) < 0.000001 then
+		return a == 0
+	end
+	
+	local d = n:dot(T[1])
+	local r = (d - n:dot(R[1])) / b
+	
+	--segment to short
+	if r < 0.0 or r > 1.0 then
+		return false
+	end
+	
+	--get intersect point of segment with triangle plane
+	local intersectPoint = R[1] + r * dir;
+	
+	--is the intersect point inside T?
+	if (T[2] - T[1]):cross(intersectPoint - T[1]):dot(n) < 0 then
+		return false
+	end
+	if (T[3] - T[2]):cross(intersectPoint - T[2]):dot(n) < 0 then
+		return false
+	end
+	if (T[1] - T[3]):cross(intersectPoint - T[3]):dot(n) < 0 then
+		return false
+	end
+	
+	return intersectPoint
+end
+
 --returns the axis aligned normal
 local function getBoxNormal(vec)
 	local x, y, z = math.abs(vec.x), math.abs(vec.y), math.abs(vec.z)
@@ -279,7 +326,7 @@ local colliders = {
 			local normal = vec3(0, 0, 0)
 			local avgPos = vec3(0, 0, 0)
 			for d,s in ipairs(b.faces) do
-				local p = c:intersectTriangle(segment, s)
+				local p = intersectTriangle(segment, s)
 				if p then
 					if fast then
 						return b.normals[d], p
@@ -307,7 +354,7 @@ local colliders = {
 			end
 		end,
 		segment = function(a, b, aToB, pos, fast)
-			local nearest = c:nearestPointToLine(b.a, b.b, pos)
+			local nearest = nearestPointToLine(b.a, b.b, pos)
 			local length = (b.a - b.b):lengthSquared()
 			if (nearest - pos):lengthSquared() < a.size * a.size then
 				return (pos - nearest):normalize(), nearest
@@ -319,7 +366,7 @@ local colliders = {
 			local normal = vec3(0, 0, 0)
 			local avgPos = vec3(0, 0, 0)
 			for d,s in ipairs(b.faces) do
-				local p = c:intersectTriangle({pos - b.normals[d] * a.size, pos}, s)
+				local p = intersectTriangle({pos - b.normals[d] * a.size, pos}, s)
 				if p then
 					if fast then
 						return b.normals[d], p
@@ -335,7 +382,7 @@ local colliders = {
 			
 			--edges
 			for d,s in ipairs(b.edges) do
-				local nearest = c:nearestPointToLine(s[1], s[2], pos)
+				local nearest = nearestPointToLine(s[1], s[2], pos)
 				if (nearest - pos):lengthSquared() < a.size * a.size then
 					if fast then
 						return pos - nearest, nearest
@@ -370,7 +417,7 @@ local colliders = {
 			local normal, pos
 			
 			for d,s in ipairs(b.faces) do
-				local p = c:intersectTriangle({va, vb}, s)
+				local p = intersectTriangle({va, vb}, s)
 				if p then
 					if fast then
 						return b.normals[d], p
@@ -396,7 +443,7 @@ local colliders = {
 				local va = aToB * edge[1]
 				local vb = aToB * edge[2]
 				for d,s in ipairs(b.faces) do
-					if c:intersectTriangle({va, vb}, s) then
+					if intersectTriangle({va, vb}, s) then
 						return b.normals[d]
 					end
 				end
@@ -409,7 +456,7 @@ local colliders = {
 			local normal = vec3(0, 0, 0)
 			local avgPos = vec3(0, 0, 0)
 			for d,s in ipairs(b.faces) do
-				local p = c:intersectTriangle(segment, s)
+				local p = intersectTriangle(segment, s)
 				if p then
 					count = count + 1
 					normal = normal + b.normals[d]
@@ -526,53 +573,6 @@ function c:collide(a, b, fast, bToA)
 	end
 end
 
---returns the point which has the shortest distance to p and lies on the line v, w
-function c:nearestPointToLine(v, w, p)
-	local wv = w - v
-	local l2 = wv:lengthSquared()
-	local t = math.max(0, math.min(1, (p - v):dot(wv) / l2))
-	return v + t * wv
-end
-
---take a ray R and test if it intersects with triangle T
-function c:intersectTriangle(R, T)
-	--plane normal
-	local u = T[2] - T[1]
-	local v = T[3] - T[1]
-	local n = u:cross(v)
-	local dir = R[2] - R[1]
-	local b = n:dot(dir)
-	
-	--check if segment is parallel to plane, only returns true if on it
-	if math.abs(b) < 0.000001 then
-		return a == 0
-	end
-	
-	local d = n:dot(T[1])
-	local r = (d - n:dot(R[1])) / b
-	
-	--segment to short
-	if r < 0.0 or r > 1.0 then
-		return false
-	end
-	
-	--get intersect point of segment with triangle plane
-	local intersectPoint = R[1] + r * dir;
-	
-	--is the intersect point inside T?
-	if (T[2] - T[1]):cross(intersectPoint - T[1]):dot(n) < 0 then
-		return false
-	end
-	if (T[3] - T[2]):cross(intersectPoint - T[2]):dot(n) < 0 then
-		return false
-	end
-	if (T[1] - T[3]):cross(intersectPoint - T[3]):dot(n) < 0 then
-		return false
-	end
-	
-	return intersectPoint
-end
-
 --returns physic relevant info
 function c:calculateImpact(velocity, normal, elastic, friction)
 	local dir = velocity:normalize()
@@ -604,7 +604,7 @@ function c:print(o, indent)
 		extra = "mesh with " .. tostring(#o.faces) .. " faces"
 	end
 	
-	print(string.rep("\t", indent) .. o.typ .. " " .. tostring(getTranslate(o.transform)) .. " " .. math.floor(o.boundary*100)/100 ..  (extra and (" (" .. extra .. ")") or ""))
+	print(string.rep("\t", indent) .. o.typ .. " size: " .. math.floor(o.boundary*100)/100 ..  (extra and (" (" .. extra .. ")") or ""))
 	
 	if o.children then
 		for d,s in ipairs(o.children) do
