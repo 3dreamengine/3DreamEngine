@@ -199,6 +199,24 @@ yourObject = dream:loadObject("objectName", args)
 --required for loading textures, 3do files, ...
 dream:update()
 
+--prepare for rendering
+--if cam is nil, it uses the default cam (dream.cam)
+dream:prepare(cam)
+
+--draw
+--obj can be either the entire object, or an object inside the file (yourOject.objects.yourSubObject)
+dream:draw(obj, x, y, z, sx, sy, sz)
+
+--finish render session, it is possible to render several times per frame but then use presentLite() since present() also renders sub tasks
+--noSky disables the sky
+--cam specifies its own camera
+--canvases its own canvas set, default is dream.canvases
+dream:present(noSky, cam, canvases)
+dream:presentLite(noSky, cam, canvases)
+```
+
+### Object/Camera functions
+```lua
 --transform the object
 yourObject:reset()
 yourObject:translate(x, y, z)
@@ -206,20 +224,21 @@ yourObject:scale(x, y, z)
 yourObject:rotateX(angle)
 yourObject:rotateY(angle)
 yourObject:rotateZ(angle)
+yourObject:setDirection(normal, [up]) --rotate the object to face into the given direction, up is default vec3(0, 1, 0)
+```
 
---add reflections to the object
---reflections are rather slow, use static if the scene does not change or the reflection should not reflect changes
---priority is used to priorisize the sub task render queue
-yourObject.reflection = dream:newReflection(static, priority)
-
---update camera postion (transformations as yourObject)
+### Camera
+```lua
+--default camera (with functions as defined in chapter above)
 dream.cam:reset()
-dream.cam:translate(x, y, z)
 
 --if you want an own camera use
 yourCam = dream:newCam()
 --and pass it to dream:prepare()
+```
 
+### Light
+```lua
 --update time and weather
 dream:setDaytime(time)
 dream:setWeather(rain, temp)
@@ -246,23 +265,33 @@ light:setMeter(m)
 --add light to scene, note that in case of exceeding the max light sources it only uses the most relevant sources, based on distance and brightness
 dream:addLight(light)
 
---or create a new light source and add it at one
+--or create a new light source and add it at once
 dream:addNewLight(posX, posY, posZ, red, green, blue, brightness, meter)
+```
 
---prepare for rendering
---if cam is nil, it uses the default cam (dream.cam)
-dream:prepare(cam)
+### Reflections
+Reflections are updated automatically if in use and can be assigned to several objects without issues. Note that reflections are cubemap based and are physically incorrect the more far away the pixel from the reflection center is.
+```lua
+--add reflections to the object
+--reflections are rather slow, use static if the scene does not change or the reflection should not reflect changes
+--priority is used to priorisize the sub task render queue
+--pos is an alternative position, else taken from the boundary center
+yourObject.reflection = dream:newReflection(static, priority, pos)
+yourObject.objects.yourSubObject.reflection = dream:newReflection(static, priority, pos)
+```
 
---draw
---obj can be either the entire object, or an object inside the file (yourOject.objects.yourSubObject)
-dream:draw(obj, x, y, z, sx, sy, sz)
+### Utils
+This is a collection of helpful utils.
+```lua
+local m = dream:lookAt(eye, at, up)               --returns a transformation matrix at point 'eye' looking at 'at' with upwards vector 'up' (default vec3(0, 1, 0))
+dream:pointToPixel(point, cam, canvases)          --converts a 3D point with given camera (default dream.cam) and canvas set (default dream.canvases) to a vec3 2D screen coord + depth
+dream:pixelToPoint(point, cam, canvases)          --converts a 2D screen coord + depth to a 3D point
 
---finish render session, it is possible to render several times per frame but then use presentLite() since present() also renders sub tasks
---noSky disables the sky
---cam specifies its own camera
---canvases its own canvas set, default is dream.canvases
-dream:present(noSky, cam, canvases)
-dream:presentLite(noSky, cam, canvases)
+local r, g, b = dream:HSVtoRGB(h, s, v)           --converts hsv to rgb
+local h, s, v = dream:RGBtoHSV(r, g, b)           --converts rgb to hsv
+
+dream:inFrustum(cam, pos, radius)                 --checks if the position with given radius is visible with the current (projection matrix) camera
+dream:getCollisionData(object)                    --returns a raw collision object used in the collision extensions newMesh function from an subObject
 ```
 
 ## materials
@@ -486,7 +515,7 @@ The collision extension is rather slow and relies on proper optimisation of the 
 
 There will not be a physics engine.
 
-```
+```lua
 --load the extension
 collision = require("3DreamEngine/collision")
 
@@ -518,7 +547,7 @@ collider:add(o)                   --add an object to its children
 collider:remove(o)                --remove an object from its children
 ```
 
-### collisions
+### collisions in objects
 Naming a subobject "COLLISION..." will load it as a collision mesh and removes it from the regular meshes.
 Use them to define an abstract representation of your object to save CPU power.
 Those collisions are stored in 'object.collisions[name]' similar as regular subObjects.

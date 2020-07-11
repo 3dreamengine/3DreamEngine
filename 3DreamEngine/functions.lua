@@ -189,17 +189,18 @@ function lib.operations.rotateZ(obj, rz)
 	return obj
 end
 
+function lib.operations.setDirection(obj, normal, up)
+	local i = obj.transform:invert()
+	local pos = vec3(i[4], i[8], i[12])
+	obj.transform = lib:lookAt(pos, pos + normal, up)
+	return obj
+end
+
 function lib:split(text, sep)
 	local sep, fields = sep or ":", { }
 	local pattern = string.format("([^%s]+)", sep)
 	text:gsub(pattern, function(c) fields[#fields+1] = c end)
 	return fields
-end
-
-function lib:rotatePoint(x, y, rot)
-	local c = math.cos(rot)
-	local s = math.sin(rot)
-	return x * c - y * s, x * s + y * c
 end
 
 function lib:lookAt(eye, at, up)
@@ -369,16 +370,38 @@ function lib:decodeObjectName(name)
 	end
 end
 
-function lib:transformPoint(p, cam, canvases)
+function lib:pointToPixel(point, cam, canvases)
 	cam = cam or self.cam
 	canvases = canvases or self.canvases
 	
-	local transformProj = cam.transformProj
+	local p = cam.transformProj * vec4(point[1], point[2], point[3], 1.0)
 	
-	local p = transformProj * vec4(p[1], p[2], p[3], 1.0)
-	p = p / vec4(math.max(self.cam.near, p[4]), math.max(self.cam.near, p[4]), 1.0, 1.0)
+	return vec3((p[1] / p[4] + 1) * canvases.width/2, (p[2] / p[4] + 1) * canvases.height/2, p[3])
+end
+
+function lib:pixelToPoint(point, cam, canvases)
+	cam = cam or self.cam
+	canvases = canvases or self.canvases
 	
-	return vec2((p[1]+1) * canvases.width/2, (p[2]+1) * canvases.height/2), p
+	local inv = cam.transformProj:invert()
+	
+	--(-1, 1) normalized coords
+	local x = (point[1] * 2 / canvases.width - 1)
+	local y = (point[2] * 2 / canvases.height - 1)
+	
+	--projection onto the far and near plane
+	local near = inv * vec4(x, y, -1, 1)
+	local far = inv * vec4(x, y, 1, 1)
+	
+	--perspective divice
+	near = near / near.w
+	far = far / far.w
+	
+	--normalized depth
+	local depth = (point[3] - cam.near) / (cam.far - cam.near)
+	
+	--interpolate between planes based on depth
+	return vec3(near) * (1.0 - depth) + vec3(far) * depth
 end
 
 function lib:setDaytime(time)
@@ -444,13 +467,12 @@ function lib:inFrustum(cam, pos, radius)
 	return (dir / dist):dot(cam.normal) > 1.0 - angle - margin
 end
 
+--get the collision data from a mesh
+--it moves the collider to its bounding box center, transform therefore should not be changed directly
 local hashes = { }
 local function hash(a, b)
 	return math.min(a, b) * 9999 + math.max(a, b)
 end
-
---get the collision data from a mesh
---it moves the collider to its bounding box center, transform therefore should not be changed directly
 function lib:getCollisionData(object)
 	--its a subobject
 	local n = { }

@@ -2,7 +2,6 @@
 dream = require("3DreamEngine")
 collision = require("3DreamEngine/collision")
 love.window.setTitle("PBR Tavern")
-love.mouse.setRelativeMode(true)
 
 --settings
 local projectDir = "examples/Tavern/"
@@ -67,6 +66,7 @@ end
 
 local hideTooltips = false
 local lookingAtCheck = false
+local rotateCamera = true
 
 function love.draw()
 	--update camera
@@ -101,7 +101,7 @@ function love.draw()
 	
 	if not hideTooltips then
 		love.graphics.setColor(1, 1, 1)
-		love.graphics.print("R to toggle rain (" .. tostring(dream.rain_isRaining) .. ")\nU to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")\nG to toggle deferred shading (note the shadows) (may be not supported by your GPU) (" .. tostring(dream.deferred_lighting) .. ")\nH to toggle SSR (required deferred) (" .. tostring(dream.SSR_enabled) .. ")\nL to toggle looking at check (" .. tostring(lookingAtCheck) .. ")", 10, 10)
+		love.graphics.print("R to toggle rain (" .. tostring(dream.rain_isRaining) .. ")\nU to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")\nG to toggle deferred shading (note the shadows) (may be not supported by your GPU) (" .. tostring(dream.deferred_lighting) .. ")\nH to toggle SSR (required deferred) (" .. tostring(dream.SSR_enabled) .. ")\nL to toggle looking at check (" .. tostring(lookingAtCheck) .. ")\nK to toggle relative mode (" .. tostring(rotateCamera) .. ")", 10, 10)
 	end
 	
 	--check which object you are looking at
@@ -109,7 +109,15 @@ function love.draw()
 		local t = love.timer.getTime()
 		local coll = false
 		local pos = vec3(player.x, player.y, player.z)
-		local segment = collision:newSegment(pos, pos + dream.cam.normal * 10)
+		
+		local segment
+		if rotateCamera then
+			segment = collision:newSegment(pos, pos + dream.cam.normal * 10)
+		else
+			local x, y = love.mouse.getPosition()
+			local point = dream:pixelToPoint(vec3(x, y, 10))
+			segment = collision:newSegment(pos, point)
+		end
 		
 		--check
 		if collision:collide(segment, colls) then
@@ -125,9 +133,11 @@ function love.draw()
 		end
 		
 		--cursor
-		local size = 8
-		love.graphics.line(love.graphics.getWidth()/2, love.graphics.getHeight()/2-size, love.graphics.getWidth()/2, love.graphics.getHeight()/2+size)
-		love.graphics.line(love.graphics.getWidth()/2-size, love.graphics.getHeight()/2, love.graphics.getWidth()/2+size, love.graphics.getHeight()/2)
+		if rotateCamera then
+			local size = 8
+			love.graphics.line(love.graphics.getWidth()/2, love.graphics.getHeight()/2-size, love.graphics.getWidth()/2, love.graphics.getHeight()/2+size)
+			love.graphics.line(love.graphics.getWidth()/2-size, love.graphics.getHeight()/2, love.graphics.getWidth()/2+size, love.graphics.getHeight()/2)
+		end
 		
 		--debug
 		if coll then
@@ -138,15 +148,18 @@ function love.draw()
 end
 
 function love.mousemoved(_, _, x, y)
-	local speedH = 0.005
-	local speedV = 0.005
-	dream.cam.ry = dream.cam.ry - x * speedH
-	dream.cam.rx = math.max(-math.pi/2, math.min(math.pi/2, dream.cam.rx + y * speedV))
+	if rotateCamera then
+		local speedH = 0.005
+		local speedV = 0.005
+		dream.cam.ry = dream.cam.ry - x * speedH
+		dream.cam.rx = math.max(-math.pi/2, math.min(math.pi/2, dream.cam.rx + y * speedV))
+	end
 end
 
 function love.update(dt)
 	local d = love.keyboard.isDown
 	local speed = 7.5*dt
+	love.mouse.setRelativeMode(rotateCamera)
 	
 	--particles
 	for d,s in pairs(particles) do
@@ -254,6 +267,10 @@ function love.keypressed(key)
 	
 	if key == "l" then
 		lookingAtCheck = not lookingAtCheck
+	end
+	
+	if key == "k" then
+		rotateCamera = not rotateCamera
 	end
 end
 
