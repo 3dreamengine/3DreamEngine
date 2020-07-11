@@ -18,10 +18,14 @@ dream:init()
 local scene = dream:loadObject(projectDir .. "scene", {shaderType = "PBR", noCleanup = true})
 
 --create mesh collisions for all sub objects
-local colls = { }
+local colls = collision:newGroup()
 for d,s in pairs(scene.objects) do
-	colls[d] = collision:newMesh(s)
-	collision:print(colls[d])
+	local c = collision:newMesh(s)
+	
+	--the first children is the actual mesh data which will be returned in the collider, we give it a name so we can recognise it later
+	c.children[1].name = d
+	
+	colls:add(c)
 end
 
 local player = {
@@ -102,19 +106,34 @@ function love.draw()
 	
 	--check which object you are looking at
 	if lookingAtCheck then
+		local t = love.timer.getTime()
 		local coll = false
-		for d,s in pairs(colls) do
-			if s.boundary < 5 then
-				local segment = collision:newSegment(vec3(player.x, player.y, player.z), vec3(player.x, player.y, player.z) + dream.cam.normal * 3)
-				if collision:collide(segment, s) then
-					coll = d
+		local pos = vec3(player.x, player.y, player.z)
+		local segment = collision:newSegment(pos, pos + dream.cam.normal * 10)
+		
+		--check
+		if collision:collide(segment, colls) then
+			--fetch the collision of the last check
+			local best = math.huge
+			for d,s in ipairs(collision:getCollisions()) do
+				local dist = (s[2] - pos):lengthSquared()
+				if dist < best then
+					best = dist
+					coll = s[3].name or "?"
 				end
 			end
 		end
 		
+		--cursor
+		local size = 8
+		love.graphics.line(love.graphics.getWidth()/2, love.graphics.getHeight()/2-size, love.graphics.getWidth()/2, love.graphics.getHeight()/2+size)
+		love.graphics.line(love.graphics.getWidth()/2-size, love.graphics.getHeight()/2, love.graphics.getWidth()/2+size, love.graphics.getHeight()/2)
+		
+		--debug
 		if coll then
 			love.graphics.printf("you are looking at " .. coll, 0, love.graphics.getHeight() - 20, love.graphics.getWidth(), "center")
 		end
+		love.graphics.printf(math.floor((love.timer.getTime() - t)*1000*10)/10 .. " ms", 0, love.graphics.getHeight() - 50, love.graphics.getWidth(), "center")
 	end
 end
 

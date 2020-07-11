@@ -257,104 +257,141 @@ end
 --first collides with second
 local colliders = {
 	point = {
-		point = function(a, b, aToB, pos)
-			return pos:lengthSquared() < 0.001
+		point = function(a, b, aToB, pos, fast)
+			if pos:lengthSquared() < 0.001 then
+				return pos
+			end
 		end,
-		sphere = function(a, b, aToB, pos)
-			return pos:length() < b.size and pos:normalize() or false
+		sphere = function(a, b, aToB, pos, fast)
+			if pos:length() < b.size then
+				return pos
+			end
 		end,
-		box = function(a, b, aToB, pos)
+		box = function(a, b, aToB, pos, fast)
 			if pos[1] > -b.size[1] / 2 and pos[1] < b.size[1] / 2 and pos[2] > -b.size[2] / 2 and pos[2] < b.size[2] / 2 and pos[3] > -b.size[3] / 2 and pos[3] < b.size[3] / 2 then
 				return getBoxNormal(pos)
-			else
-				return false
 			end
 		end,
 		segment = false,
-		mesh = function(a, b, aToB, pos)
+		mesh = function(a, b, aToB, pos, fast)
 			local segment = {pos:normalize() * 10000.0, pos}
 			local count = 0
 			local normal = vec3(0, 0, 0)
+			local avgPos = vec3(0, 0, 0)
 			for d,s in ipairs(b.faces) do
-				if c:intersectTriangle(segment, s) then
+				local p = c:intersectTriangle(segment, s)
+				if p then
+					if fast then
+						return b.normals[d], p
+					end
 					count = count + 1
 					normal = normal + b.normals[d]
-				end
-			end
-			return count % 2 == 1 and normal:normalize() or false
-		end,
-	},
-	sphere = {
-		sphere = function(a, b, aToB, pos)
-			return pos:length() < (a.size + b.size) and pos:normalize() or false
-		end,
-		box = function(a, b, aToB, pos)
-			local v = (-b.size/2):max((b.size/2):min(pos))
-			if (v - pos):lengthSquared() < a.size * a.size then
-				return getBoxNormal(v)
-			else
-				return false
-			end
-		end,
-		segment = function(a, b, aToB, pos)
-			local nearest, val = c:nearestPointToLine(b.a, b.b, pos)
-			local length = (b.a - b.b):lengthSquared()
-			if (nearest - pos):lengthSquared() < a.size * a.size and val > 0 and val < 1 then
-				return (pos - nearest):normalize()
-			end
-		end,
-		mesh = function(a, b, aToB, pos)
-			local count = 0
-			
-			--faces
-			local normal = vec3(0, 0, 0)
-			for d,s in ipairs(b.faces) do
-				if c:intersectTriangle({pos - b.normals[d] * a.size, pos}, s) then
-					count = count + 1
-					normal = normal + b.normals[d]
+					avgPos = avgPos + p
 				end
 			end
 			if count % 2 == 1 then
-				return normal:normalize()
+				return normal, avgPos / count
+			end
+		end,
+	},
+	sphere = {
+		sphere = function(a, b, aToB, pos, fast)
+			if pos:length() < a.size + b.size then
+				return pos
+			end
+		end,
+		box = function(a, b, aToB, pos, fast)
+			local v = (-b.size/2):max((b.size/2):min(pos))
+			if (v - pos):lengthSquared() < a.size * a.size then
+				return getBoxNormal(v), v
+			end
+		end,
+		segment = function(a, b, aToB, pos, fast)
+			local nearest = c:nearestPointToLine(b.a, b.b, pos)
+			local length = (b.a - b.b):lengthSquared()
+			if (nearest - pos):lengthSquared() < a.size * a.size then
+				return (pos - nearest):normalize(), nearest
+			end
+		end,
+		mesh = function(a, b, aToB, pos, fast)
+			--faces
+			local count = 0
+			local normal = vec3(0, 0, 0)
+			local avgPos = vec3(0, 0, 0)
+			for d,s in ipairs(b.faces) do
+				local p = c:intersectTriangle({pos - b.normals[d] * a.size, pos}, s)
+				if p then
+					if fast then
+						return b.normals[d], p
+					end
+					count = count + 1
+					normal = normal + b.normals[d]
+					avgPos = avgPos + p
+				end
+			end
+			if count % 2 == 1 then
+				return normal, avgPos / count
 			end
 			
 			--edges
 			for d,s in ipairs(b.edges) do
 				local nearest = c:nearestPointToLine(s[1], s[2], pos)
 				if (nearest - pos):lengthSquared() < a.size * a.size then
-					return (pos - nearest):normalize()
+					if fast then
+						return pos - nearest, nearest
+					end
+					count = count + 1
+					normal = normal + (pos - nearest)
+					avgPos = avgPos + nearest
 				end
+			end
+			if count > 1 then
+				return normal, avgPos / count
 			end
 		end,
 	},
 	box = {
 		--incompatible with rotations
-		box = function(a, b, aToB, pos)
+		box = function(a, b, aToB, pos, fast)
 			if pos[1] + a.size[1] / 2 > -b.size[1] / 2 and pos[1] - a.size[1] / 2 < b.size[1] / 2 and
 				pos[2] + a.size[2] / 2 > -b.size[2] / 2 and pos[2] - a.size[2] / 2 < b.size[2] / 2 and
 				pos[3] + a.size[3] / 2 > -b.size[3] / 2 and pos[3] - a.size[3] / 2 < b.size[3] / 2 then
 				return getBoxNormal(pos)
-			else
-				return false
 			end
 		end,
-		segment = false,
-		mesh = false,
 	},
 	segment = {
-		mesh = function(a, b, aToB, pos)
+		mesh = function(a, b, aToB, pos, fast)
 			local va = aToB * a.a
 			local vb = aToB * a.b
+			
+			--other than usual segment-mesh collisions returns nearest point to a
+			local best = math.huge
+			local normal, pos
+			
 			for d,s in ipairs(b.faces) do
-				if c:intersectTriangle({va, vb}, s) then
-					return b.normals[d]
+				local p = c:intersectTriangle({va, vb}, s)
+				if p then
+					if fast then
+						return b.normals[d], p
+					else
+						local dist = (p - va):lengthSquared()
+						if dist < best then
+							best = dist
+							normal = b.normals[d]
+							pos = p
+						end
+					end
 				end
 			end
+			
+			return normal, pos
 		end,
 	},
 	mesh = {
-		mesh = function(a, b, aToB, pos)
+		mesh = function(a, b, aToB, pos, fast)
 			--edge check
+			--because of quadratic complexity fast mode is always used
 			for _, edge in ipairs(a.edges) do
 				local va = aToB * edge[1]
 				local vb = aToB * edge[2]
@@ -365,27 +402,39 @@ local colliders = {
 				end
 			end
 			
-			--random sample
+			--random sample in case mesh a is in mesh b (or vice verta)
 			local v = aToB * a.point
 			local segment = {v:normalize() * 10000.0, v}
 			local count = 0
 			local normal = vec3(0, 0, 0)
+			local avgPos = vec3(0, 0, 0)
 			for d,s in ipairs(b.faces) do
-				if c:intersectTriangle(segment, s) then
+				local p = c:intersectTriangle(segment, s)
+				if p then
 					count = count + 1
 					normal = normal + b.normals[d]
+					avgPos = avgPos + p
 				end
 			end
 			if count % 2 == 1 then
-				return normal:normalize()
+				return normal, avgPos / count
 			end
 		end,
 	},
 }
 
-function c:collide(a, b, bToA, toGlobal)
+--returns the collisions of the last check
+local collisions = { }
+function c:getCollisions()
+	return collisions
+end
+
+function c:collide(a, b, fast, bToA)
 	--for the sake of performance we keep all return values in A space and only the top call transforms it back into global space
 	local root = not bToA
+	if root then
+		collisions = { }
+	end
 	
 	--transform (of b, recursive. TransformInverse therefore transforms "a" into the space of b)
 	bToA = bToA and (bToA * getTransform(b.transform)) or (getTransform(b.transform) * getTransform(a.transform):invert())
@@ -398,7 +447,8 @@ function c:collide(a, b, bToA, toGlobal)
 	if b.center then
 		if a.typ == "segment" then
 			local b = self:newSphere(b.boundary, b.center)
-			if not self:collide(a, b, bToA) then
+			local bToA_new = bToA * getTransform(b.transform)
+			if not colliders[b.typ][a.typ](b, a, bToA_new, vec3(bToA_new[4], bToA_new[8], bToA_new[12]), true) then
 				return false
 			end
 		else
@@ -410,16 +460,27 @@ function c:collide(a, b, bToA, toGlobal)
 	end
 	
 	--collide
-	local n
+	local normal, pos
 	if colliders[a.typ] and colliders[a.typ][b.typ] then
-		local nn = colliders[a.typ][b.typ](a, b, aToB, originOfAInBSpace)
-		if nn then
-			n = bToA:subm() * nn
+		local normal, pos = colliders[a.typ][b.typ](a, b, aToB, originOfAInBSpace, fast)
+		if normal then
+			if fast then
+				return true
+			end
+			normal = (bToA:subm() * normal):normalize()
+			pos = bToA * (pos or originOfAInBSpace)
+			table.insert(collisions, {normal, pos, b})
 		end
 	elseif colliders[b.typ] and colliders[b.typ][a.typ] then
-		local nn = colliders[b.typ][a.typ](b, a, bToA, vec3(bToA[4], bToA[8], bToA[12]))
-		if nn then
-			n = aToB:subm() * nn
+		local originOfBInASpace = vec3(bToA[4], bToA[8], bToA[12])
+		local normal, pos = colliders[b.typ][a.typ](b, a, bToA, originOfBInASpace, fast)
+		if normal then
+			if fast then
+				return true
+			end
+			normal = (aToB:subm() * normal):normalize()
+			pos = aToB * (pos or originOfBInASpace)
+			table.insert(collisions, {normal, pos, b})
 		end
 	else
 		--print("unknown", a.typ, b.typ)
@@ -428,20 +489,39 @@ function c:collide(a, b, bToA, toGlobal)
 	--children
 	if b.children then
 		for d,s in ipairs(b.children) do
-			local nn = self:collide(a, s, bToA)
-			if nn then
-				n = n and (n + nn) or nn
+			local done = self:collide(a, s, fast, bToA)
+			if done then
+				return true
 			end
 		end
 	end
 	
-	--return normal vector
-	if n then
-		if root then
-			--from A space into global space
-			return (getTransform(a.transform):subm() * n):normalize()
+	--return false in fast mode because at this point no collision has occured
+	if fast then
+		return false
+	end
+	
+	--root, transform all collisions to global space and calculate average normal and position
+	if root then
+		if collisions[1] then
+			local normal = vec3(0, 0, 0)
+			local pos = vec3(0, 0, 0)
+			
+			--transform from A to global
+			local m = getTransform(a.transform)
+			local subm = m:subm()
+			
+			--transform and average values
+			for d,s in ipairs(collisions) do
+				s[1] = subm * s[1]
+				s[2] = m * s[2]
+				normal = normal + s[1]
+				pos = pos + s[2]
+			end
+			
+			return normal:normalize(), pos / #collisions
 		else
-			return n:normalize()
+			return false
 		end
 	end
 end
@@ -451,7 +531,7 @@ function c:nearestPointToLine(v, w, p)
 	local wv = w - v
 	local l2 = wv:lengthSquared()
 	local t = math.max(0, math.min(1, (p - v):dot(wv) / l2))
-	return v + t * wv, t
+	return v + t * wv
 end
 
 --take a ray R and test if it intersects with triangle T
