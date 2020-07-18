@@ -190,9 +190,7 @@ function lib.operations.rotateZ(obj, rz)
 end
 
 function lib.operations.setDirection(obj, normal, up)
-	local i = obj.transform:invert()
-	local pos = vec3(i[4], i[8], i[12])
-	obj.transform = lib:lookAt(pos, pos + normal, up)
+	obj.transform = obj.transform * lib:lookAt(vec3(0, 0, 0), normal, up):invert()
 	return obj
 end
 
@@ -487,10 +485,10 @@ function lib:getCollisionData(object)
 	n.normals = { }
 	n.edges = { }
 	n.point = vec3(0, 0, 0)
-
+	
 	hashes = { }
 	local f = object.final
-
+	
 	for d,s in ipairs(object.faces) do
 		local a, b, c = f[s[1]], f[s[2]], f[s[3]]
 		

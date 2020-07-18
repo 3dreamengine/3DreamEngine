@@ -483,8 +483,19 @@ function c:collide(a, b, fast, bToA)
 		collisions = { }
 	end
 	
+	--unpack a in case its a group
+	local transformA
+	if root then
+		if a.children then
+			transformA = getTransform(a.transform) * getTransform(a.children[1])
+			a = a.children[1]
+		else
+			transformA = getTransform(a.transform)
+		end
+	end
+	
 	--transform (of b, recursive. TransformInverse therefore transforms "a" into the space of b)
-	bToA = bToA and (bToA * getTransform(b.transform)) or (getTransform(b.transform) * getTransform(a.transform):invert())
+	bToA = bToA and (bToA * getTransform(b.transform)) or (getTransform(b.transform) * transformA:invert())
 	aToB = bToA:invert()
 	
 	--the origin of a in the space of b
@@ -584,10 +595,10 @@ function c:calculateImpact(velocity, normal, elastic, friction)
 	--slide
 	local slide = reflect - (reflect * normal) * normal
 	slide = slide:lengthSquared() > 0 and slide:normalize() or slide
-	slide = slide * math.max(0, 1.0 - math.abs(dir:dot(normal)))
+	local directImpact = math.max(0, dir:dot(-normal))
 	
 	--final
-	local v = reflect * elastic * speed + slide * (1.0 - elastic) * (1.0 - friction) * speed
+	local v = (reflect * elastic + slide * (1.0 - elastic) * (1.0 - friction) * (1.0 - directImpact)) * speed
 	
 	--impact
 	local impact = (velocity - v):length()

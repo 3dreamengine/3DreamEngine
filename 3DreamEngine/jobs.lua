@@ -195,7 +195,7 @@ function lib.executeJobs(self, cam)
 	table.sort(operations, function(a, b) return a[2] * (t - (times[a[3] or a[1]] or 0)) > b[2] * (t - (times[b[3] or b[1]] or 0)) end)
 	
 	--debug
-	if _DEBUGMODE and love.keyboard.isDown("-") then
+	if _DEBUGMODE and love.keyboard.isDown("#") then
 		--measure the total priority, this is an approximation for the outstanding work
 		local total = 0
 		for d,s in ipairs(operations) do

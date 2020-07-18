@@ -35,8 +35,8 @@ for d,s in pairs(map.objects) do
 end
 
 --bullet
-objects.sphere = dream:loadObject(projectDir .. "models/sphere")
-collisions.sphere = collision:newPoint()
+objects.sphere = dream:loadObject(projectDir .. "objects/sphere")
+objects.crate = dream:loadObject(projectDir .. "objects/crate")
 
 --prepare lights
 for d,s in pairs(map.lights) do
@@ -48,12 +48,24 @@ end
 player = {
 	position = vec3(0, 10, 0),
 	velocity = vec3(0, 0, 0),
-	collision = {collision:newSphere(1, vec3(0, -1, 0))},
+	collision = collision:newSphere(1, vec3(0, -1, 0)),
 	rot = vec2(0, 0);
 }
 
 --bullets
 bullets = { }
+
+--crates
+crates  = { }
+
+function addCrate(pos)
+	crates[#crates+1] = {
+		position = pos,
+		velocity = vec3(0, 0, 0),
+		collision = collision:newMesh(objects.crate),
+	}
+end
+addCrate(player.position + vec3(3, 0, 0))
 
 --setup collision and world
 world = collision:newGroup()
@@ -107,6 +119,11 @@ function love.draw()
 		dream:draw(objects.sphere, s.position.x, s.position.y, s.position.z, 0.2)
 	end
 	
+	--render crates
+	for d,s in ipairs(crates) do
+		dream:draw(objects.crate, s.position.x, s.position.y, s.position.z)
+	end
+	
 	dream:present()
 end
 
@@ -124,58 +141,52 @@ function love.update(dt)
 	--gravity
 	player.velocity.y = player.velocity.y - 10 * dt
 	
+--	--push crates
+--	local found = false
+--	for d,s in ipairs(crates) do
+--		local c = s.collision
+--		c:moveTo(s.position)
+		
+--		if collision:collide(c, player.collision, true) then
+--			s.velocity = player.velocity:normalize()*5 + vec3(0, 1, 0)
+--			player.velocity = vec3(0, 0, 0)
+--			player.position = old
+--			found = true
+--		end
+--	end
+	
 	--remember old position
 	local onGround = false
-	local oldVel = player.velocity:length()
-	
-	local old = player.position
+	local oldPos = player.position:clone()
+	local oldVel = player.velocity:clone()
 	player.position = player.position + player.velocity * dt
+	player.collision:moveTo(player.position)
 	
-	--collision check
-	local normal
-	for _,c in ipairs(player.collision) do
-		c.initPos = c.initPos or c.transform:clone()
-		c:moveTo(player.position + c.initPos)
-		normal = collision:collide(c, world)
+	--collision
+	local final = player.velocity
+	for step = 1, 10 do
+		local normal = collision:collide(player.collision, world)
+		
+		if normal then
+			local impact, reflect, slide
+			final, impact, reflect, slide = collision:calculateImpact(player.velocity, normal, 0.0, 0.0)
+			if normal.y > 0.5 and player.velocity.y < 0.0 then
+				onGround = true
+			end
+			
+			--retry with adjusted vectors
+			player.velocity = slide * player.velocity:length()
+			player.position = oldPos + player.velocity * dt
+			player.collision:moveTo(player.position)
+			break
+		end
 	end
 	
-	if normal then
-		local final, impact = collision:calculateImpact(player.velocity, normal, 0.0, 0.0)
-		if normal.y > 0.5 and player.velocity.y < 0.0 then
-			onGround  = true
-		end
-		
-		--retry with adjusted vectors
-		player.position = old
+	if final:dot(oldVel) < 0 then
+		player.position = oldPos
+		player.velocity = vec3(0, 0, 0)
+	else
 		player.velocity = final
-		
-		local stepSize = 0.5
-		for i = 0, 1, stepSize do
-			old = player.position:clone()
-			player.position = old + final * stepSize * dt
-			
-			local normal
-			for _,c in ipairs(player.collision) do
-				c.initPos = c.initPos or c.transform:clone()
-				c:moveTo(player.position + c.initPos)
-				normal = collision:collide(c, world)
-				if normal then
-					break
-				end
-			end
-			
-			if normal then
-				player.position = old
-				break
-			else
-				impact = 0
-			end
-		end
-		
-		--foot step sound
-		if impact > 1 then
-			soundManager:play("collision/glass_impact/" .. math.random(1, 7), player.position.x, player.position.y, player.position.z, math.sqrt(impact) / 10, 1)
-		end
 	end
 	
 	--jump
@@ -229,12 +240,9 @@ function love.update(dt)
 			s.position = s.position + s.velocity * dt
 			
 			--collision
-			local normal
-			for _,c in ipairs(s.collision) do
-				c.initPos = c.initPos or c.transform:clone()
-				c:moveTo(s.position + c.initPos)
-				normal = collision:collide(c, world)
-			end
+			local c = s.collision
+			c:moveTo(s.position)
+			local normal = collision:collide(c, world)
 			
 			if normal then
 				local final, impact = collision:calculateImpact(s.velocity, normal, 0.75, 0.0)
@@ -254,14 +262,37 @@ function love.update(dt)
 		end
 	end
 	
+	--crates
+	for d,s in ipairs(crates) do
+		s.velocity.y = s.velocity.y - 10 * dt
+		
+		local old = s.position:clone()
+		s.position = s.position + s.velocity * dt
+		
+		--collision
+		local c = s.collision
+		c:moveTo(s.position)
+		local normal = collision:collide(c, world)
+		
+		if normal then
+			local final, impact = collision:calculateImpact(s.velocity, normal, 0.0, 0.25)
+			s.position = old
+			s.velocity = final
+			if impact > 1 then
+				soundManager:play("collision/glass_impact/" .. math.random(1, 7), s.position.x, s.position.y, s.position.z, math.sqrt(impact) / 10, 1)
+			end
+		end
+	end
+	
 	dream:update()
+	soundManager:update(dt)
 end
 
 function love.mousepressed(x, y, b)
 	bullets[#bullets+1] = {
 		position = player.position:clone(),
 		velocity = dream.cam.normal:clone() * 10,
-		collision = {collision:newSphere(0.2)},
+		collision = collision:newSphere(0.2),
 	}
 end
 
