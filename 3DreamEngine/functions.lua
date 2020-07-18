@@ -190,7 +190,7 @@ function lib.operations.rotateZ(obj, rz)
 end
 
 function lib.operations.setDirection(obj, normal, up)
-	obj.transform = obj.transform * lib:lookAt(vec3(0, 0, 0), normal, up):invert()
+	obj.transform = lib:lookAt(vec3(0, 0, 0), normal, up):invert() * obj.transform
 	return obj
 end
 
