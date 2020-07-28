@@ -157,6 +157,8 @@ lib.weather_temperature = 0.0
 --default camera
 lib.cam = lib:newCam()
 
+lib.delton = require((...) .. "/libs/delton"):new()
+
 --default textures
 if love.graphics then
 	lib.object_sky = lib:loadObject(lib.root .. "/objects/sky", {meshType = "textured"})
@@ -351,6 +353,9 @@ end
 
 --add an object to the scene
 function lib.draw(self, obj, x, y, z, sx, sy, sz)
+	self.delton:start("draw")
+	
+	self.delton:start("transform")
 	local transform
 	if x then
 		--simple transform with arguments, ignores object transformation matrix
@@ -369,17 +374,24 @@ function lib.draw(self, obj, x, y, z, sx, sy, sz)
 		--pre defined transform
 		transform = obj.transform
 	end
+	self.delton:stop()
 	
 	--add to scene
+	self.delton:start("add")
 	for d,s in pairs(obj.objects or {obj}) do
 		if not s.disabled and s.mesh then
 			--get required shader
+			self.delton:start("shader")
 			s.shader = s.shader or self:getShaderInfo(s.material, s.shaderType, s.reflection or obj.reflection)
+			self.delton:stop()
 			
+			self.delton:start("transform")
 			local pos = s.boundingBox and s.boundingBox.center or vec3(0, 0, 0)
 			pos = transform and (transform * pos) or pos
+			self.delton:stop()
 			
 			--add
+			self.delton:start("insert")
 			table.insert(lib.drawTable, {
 				transform = transform,                  --transformation matrix, can be nil
 				pos = pos,                              --bounding box center position of object
@@ -387,8 +399,11 @@ function lib.draw(self, obj, x, y, z, sx, sy, sz)
 				color = vec4(love.graphics.getColor()), --color, will affect color/albedo input
 				obj = obj,                              --the object container used to store general informations (reflections, ...)
 			})
+			self.delton:stop()
 		end
 	end
+	self.delton:stop()
+	self.delton:stop()
 end
 
 --add a particle to the scene

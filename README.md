@@ -408,15 +408,6 @@ return {
 		shader_wind_strength = 1.0,    -- the multiplier of animation
 		shader_wind_scale = 3.0,       -- the scale of wind waves
 		
-		--a function called every object before rendering
-		--while you can change any values, do NOT remove values (like textures). Only switch them if necessary. Removing values may cause crashes.
-		--m is the material, o is either the object, or the subObject. Check for .objects to find out.
-		update = function(m, o)
-			o.torch_id = o.torch_id or math.random()
-			local strength = love.math.noise(love.timer.getTime() * 2.0 + o.torch_id) * 1.0 + 1.0
-			m.emission = {strength, strength, strength}
-		end,
-		
 		--add particleSystems
 		particleSystems = {
 			{ --first system
@@ -556,7 +547,6 @@ Theoretically one can pass a specific collision directly.
 
 ## 3D sounds
 3D sounds with related features like effects (echo, muffled, ...), environmental sounds (birds, river, ...) and similar is a WIP.
-
 
 # Examples
 We have examples in the examples folder. The provided main.lua contains a demo selection.

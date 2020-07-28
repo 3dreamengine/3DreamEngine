@@ -147,7 +147,9 @@ function lib.executeJobs(self, cam)
 	end
 	
 	--rain
-	operations[#operations+1] = {"rain", 1.0}
+	if self.rain_enabled then
+		operations[#operations+1] = {"rain", 1.0}
+	end
 	
 	--shadows
 	for d,s in ipairs(self.lighting) do
@@ -500,49 +502,47 @@ function lib.executeJobs(self, cam)
 				self.rain_wetness = math.max(0.0, self.rain_wetness - delta * self.rain_wetness_decrease * (0.5 + self.rain_wetness))
 			end
 			
-			if self.rain_enabled then
-				--add drops
-				if math.random() < delta * 10 * self.rain_strength * self.rain_rain then
-					drops[#drops+1] = {
-						x = math.random(),
-						y = math.random(),
-						size = 0.5 + math.random(),
-						time = -0.5,
-					}
+			--add drops
+			if math.random() < delta * 10 * self.rain_strength * self.rain_rain then
+				drops[#drops+1] = {
+					x = math.random(),
+					y = math.random(),
+					size = 0.5 + math.random(),
+					time = -0.5,
+				}
+			end
+			
+			--update drops
+			for i = #drops, 1, -1 do
+				local s = drops[i]
+				s.time = s.time + dt * 2.0
+				if s.time > 2.0 then
+					table.remove(drops, i)
 				end
-				
-				--update drops
-				for i = #drops, 1, -1 do
-					local s = drops[i]
-					s.time = s.time + dt * 2.0
-					if s.time > 2.0 then
-						table.remove(drops, i)
+			end
+			
+			--splash texture
+			if self.rain_rain > 0 or lastRender then
+				love.graphics.push("all")
+				love.graphics.setCanvas(self.canvas_rain)
+				love.graphics.setBlendMode("add", "premultiplied")
+				love.graphics.clear(0.0, 0.0, 1.0)
+				if self.rain_rain > 0 then
+					love.graphics.setShader(self.shaders.rain_splashes)
+					local w, h = self.canvas_rain:getDimensions()
+					for d,s in ipairs(drops) do
+						self.shaders.rain_splashes:send("time", s.time)
+						
+						local wx = (s.x > 0.5 and (s.x - 1.0) or (s.x + 1.0))
+						local wy = (s.y > 0.5 and (s.y - 1.0) or (s.y + 1.0))
+						
+						love.graphics.draw(self.textures.splash, s.x * w, s.y * h, 0, s.size * (1.0 + s.time), nil, 32, 32)
+						love.graphics.draw(self.textures.splash, s.x * w, wy * h, 0, s.size * (1.0 + s.time), nil, 32, 32)
+						love.graphics.draw(self.textures.splash, wx * w, s.y * h, 0, s.size * (1.0 + s.time), nil, 32, 32)
+						love.graphics.draw(self.textures.splash, wx * w, wy * h, 0, s.size * (1.0 + s.time), nil, 32, 32)
 					end
 				end
-				
-				--splash texture
-				if self.rain_rain > 0 or lastRender then
-					love.graphics.push("all")
-					love.graphics.setCanvas(self.canvas_rain)
-					love.graphics.setBlendMode("add", "premultiplied")
-					love.graphics.clear(0.0, 0.0, 1.0)
-					if self.rain_rain > 0 then
-						love.graphics.setShader(self.shaders.rain_splashes)
-						local w, h = self.canvas_rain:getDimensions()
-						for d,s in ipairs(drops) do
-							self.shaders.rain_splashes:send("time", s.time)
-							
-							local wx = (s.x > 0.5 and (s.x - 1.0) or (s.x + 1.0))
-							local wy = (s.y > 0.5 and (s.y - 1.0) or (s.y + 1.0))
-							
-							love.graphics.draw(self.textures.splash, s.x * w, s.y * h, 0, s.size * (1.0 + s.time), nil, 32, 32)
-							love.graphics.draw(self.textures.splash, s.x * w, wy * h, 0, s.size * (1.0 + s.time), nil, 32, 32)
-							love.graphics.draw(self.textures.splash, wx * w, s.y * h, 0, s.size * (1.0 + s.time), nil, 32, 32)
-							love.graphics.draw(self.textures.splash, wx * w, wy * h, 0, s.size * (1.0 + s.time), nil, 32, 32)
-						end
-					end
-					love.graphics.pop()
-				end
+				love.graphics.pop()
 			end
 		end
 		

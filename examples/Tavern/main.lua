@@ -2,6 +2,7 @@
 dream = require("3DreamEngine")
 collision = require("3DreamEngine/collision")
 love.window.setTitle("PBR Tavern")
+love.window.setVSync(false)
 
 --settings
 local projectDir = "examples/Tavern/"
@@ -10,10 +11,13 @@ dream.sky_enabled = false
 dream.sun_ambient = {0.1, 0.1, 0.1}
 dream.lighting_engine = "PBR"
 
+--load materials
 dream:loadMaterialLibrary(projectDir .. "materials")
 
+--initilize engine
 dream:init()
 
+--load scene
 local scene = dream:loadObject(projectDir .. "scene", {shaderType = "PBR", noCleanup = true})
 
 --create mesh collisions for all sub objects
@@ -95,13 +99,17 @@ function love.draw()
 		end
 	end
 	
-	dream:draw(scene)
+	scene:reset()
+	for i = 1, 100 do
+		scene:rotateY(0.01)
+		dream:draw(scene)
+	end
 
 	dream:present()
 	
 	if not hideTooltips then
 		love.graphics.setColor(1, 1, 1)
-		love.graphics.print("R to toggle rain (" .. tostring(dream.rain_isRaining) .. ")\nU to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")\nG to toggle deferred shading (note the shadows) (may be not supported by your GPU) (" .. tostring(dream.deferred_lighting) .. ")\nH to toggle SSR (required deferred) (" .. tostring(dream.SSR_enabled) .. ")\nL to toggle looking at check (" .. tostring(lookingAtCheck) .. ")\nK to toggle relative mode (" .. tostring(rotateCamera) .. ")", 10, 10)
+		love.graphics.print("R to toggle rain (" .. tostring(dream.rain_isRaining) .. ")\nU to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")\nG to toggle deferred shading (note the shadows) (may be not supported by your GPU) (" .. tostring(dream.deferred_lighting) .. ")\nH to toggle SSR (required deferred) (" .. tostring(dream.SSR_enabled) .. ")\nL to toggle looking at check (" .. tostring(lookingAtCheck) .. ")\nK to toggle relative mode (" .. tostring(rotateCamera) .. ")\n" .. love.timer.getFPS() .. " FPS", 10, 10)
 	end
 	
 	--check which object you are looking at

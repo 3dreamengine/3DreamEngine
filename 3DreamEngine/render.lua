@@ -72,6 +72,7 @@ end
 
 --render the scene onto a canvas set using a specific view camera
 function lib:render(scene, canvases, cam, pass, blacklist)
+	self.delton:start("prepare")
 	local deferred_lighting = canvases.deferred_lighting and pass == 1
 	
 	--love shader friendly
@@ -111,9 +112,11 @@ function lib:render(scene, canvases, cam, pass, blacklist)
 	
 	--prepare lighting
 	local lighting, lightRequirements = self:getLightOverview(cam, deferred_lighting)
+	self.delton:stop()
 	
 	--final draw
 	for shaderInfo, shaderGroup in pairs(scene) do
+		self.delton:start("shader")
 		local shader = self:getShader(shaderInfo, lightRequirements)
 		
 		--output settings
@@ -148,6 +151,7 @@ function lib:render(scene, canvases, cam, pass, blacklist)
 		
 		--for each material
 		for material, materialGroup in pairs(shaderGroup) do
+			self.delton:start("material")
 			local tex = shaderInfo.arrayImage and self.textures_array or self.textures
 			
 			--ior
@@ -185,9 +189,21 @@ function lib:render(scene, canvases, cam, pass, blacklist)
 				shader:send("color_emission", material.emission or (shaderInfo.tex_emission and {5.0, 5.0, 5.0}) or {0.0, 0.0, 0.0})
 			end
 			
+			--optional vertex shader information
+			if shaderInfo.vertexShader == "wind" then
+				shader:send("shader_wind_strength", material.shader_wind_strength or 1.0)
+				shader:send("shader_wind_scale", material.shader_wind_scale or 1.0)
+				shader:send("shader_wind", love.timer.getTime() * (material.shader_wind_speed or 1.0))
+			end
+			
+			--culling
+			love.graphics.setMeshCullMode(canvases.cullMode or material.cullMode or (material.alpha and self.refraction_disableCulling) and "none" or "back")
+			
 			--draw objects
 			for _,task in pairs(materialGroup) do
 				if not blacklist or not (blacklist[task.obj] or blacklist[task.s]) then
+					self.delton:start("object")
+					
 					--sky texture
 					if shaderInfo.reflection then
 						local ref = task.s.reflection and task.s.reflection.canvas or task.obj.reflection and task.obj.reflection.canvas or self.canvas_sky
@@ -195,18 +211,6 @@ function lib:render(scene, canvases, cam, pass, blacklist)
 						shader:send("reflections_levels", self.reflections_levels-1)
 					else
 						shader:send("ambient", self.sun_ambient)
-					end
-					
-					--update object if required
-					if material.update then
-						material:update(task.s, task.obj)
-					end
-					
-					--optional vertex shader information
-					if shaderInfo.vertexShader == "wind" then
-						shader:send("shader_wind_strength", material.shader_wind_strength or 1.0)
-						shader:send("shader_wind_scale", material.shader_wind_scale or 1.0)
-						shader:send("shader_wind", love.timer.getTime() * (material.shader_wind_speed or 1.0))
 					end
 					
 					--color
@@ -217,28 +221,33 @@ function lib:render(scene, canvases, cam, pass, blacklist)
 					--object transformation
 					shader:send("transform", task.transform or identityMatrix)
 					
-					--culling
-					love.graphics.setMeshCullMode(canvases.cullMode or material.cullMode or (material.alpha and self.refraction_disableCulling) and "none" or "back")
-					
 					--render
+					self.delton:start("draw")
 					love.graphics.draw(task.s.mesh)
+					self.delton:stop()
 					
 					self.stats.draws = self.stats.draws + 1
+					self.delton:stop()
 				end
 			end
 			self.stats.materialDraws = self.stats.materialDraws + 1
+			self.delton:stop()
 		end
 		self.stats.shadersInUse = self.stats.shadersInUse + 1
+		self.delton:stop()
 	end
 	love.graphics.setColor(1.0, 1.0, 1.0)
 	
 	--lighting
+	self.delton:start("deffered")
 	if deferred_lighting then
 		self:renderDeferredLight(lighting, lightRequirements, canvases, cam)
 	end
+	self.delton:stop()
 	
 	--particles
 	if pass ~= 2 then
+		self.delton:start("particles")
 		love.graphics.setCanvas({canvases.color, depthstencil = canvases.depth_buffer})
 		love.graphics.setDepthMode("less", false)
 		love.graphics.setBlendMode("alpha")
@@ -269,6 +278,7 @@ function lib:render(scene, canvases, cam, pass, blacklist)
 		end
 		
 		love.graphics.setDepthMode()
+		self.delton:stop()
 	end
 	
 	love.graphics.pop()
@@ -311,15 +321,21 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 	love.graphics.reset()
 	
 	--generate scene
+	self.delton:start("scene")
 	local scene = self:buildScene(cam, pass)
+	self.delton:stop()
 	
 	--first pass
+	self.delton:start("first")
 	self:render(scene, canvases, cam, 1, blacklist)
+	self.delton:stop()
 	
 	--second (alpha) pass
+	self.delton:start("second")
 	if canvases.alphaBlendMode == "average" or canvases.alphaBlendMode == "alpha" then
 		self:render(scene, canvases, cam, 2, blacklist)
 	end
+	self.delton:stop()
 	
 	--weather
 	love.graphics.setBlendMode("alpha")
@@ -331,7 +347,6 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 	love.graphics.setShader(self.shaders.rain)
 	
 	local translate = vec3(math.floor(cam.pos.x), math.floor(cam.pos.y), math.floor(cam.pos.z))
-	
 	self.shaders.rain:send("time", love.timer.getTime() * 5.0)
 	self.shaders.rain:send("transformProj", cam.transformProj)
 	self.shaders.rain:send("transform", mat4:getIdentity():translate(translate))
@@ -499,6 +514,7 @@ function lib:presentLite(noSky, cam, canvases)
 end
 
 function lib:present(noSky, cam, canvases)
+	self.delton:start("present")
 	self.stats.shadersInUse = 0
 	self.stats.materialDraws = 0
 	self.stats.draws = 0
@@ -534,10 +550,15 @@ function lib:present(noSky, cam, canvases)
 	cam.aspect = aspect
 	
 	--process render jobs
+	self.delton:start("jobs")
 	self:executeJobs(cam)
+	self.delton:stop()
 	
 	--render
+	self.delton:start("renderFull")
 	self:renderFull(cam, canvases, noSky)
+	self.delton:stop()
+	self.delton:stop()
 	
 	--debug
 	local brightness = {
@@ -574,4 +595,9 @@ function lib:present(noSky, cam, canvases)
 			end
 		end
 	end
+	
+	if _DEBUGMODE and love.keyboard.isDown(".") then
+		self.delton:present()
+	end
+	self.delton:step()
 end
