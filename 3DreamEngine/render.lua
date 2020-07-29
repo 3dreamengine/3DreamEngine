@@ -192,32 +192,23 @@ function lib:render(scene, canvases, cam, pass, blacklist)
 		love.graphics.setCanvas({canvases.color, depthstencil = canvases.depth_buffer})
 		love.graphics.setDepthMode("less", false)
 		love.graphics.setBlendMode("alpha")
+		
 		love.graphics.setShader(self.shaders.particle)
-		table.sort(self.particles, function(a, b) return a[5] > b[5] end)
+		self.shaders.particle:send("transform", cam.transformProj)
 		
-		local sz = (canvases.width + canvases.height) / 2
+		local right = vec3(cam.transform[1], cam.transform[2], cam.transform[3])
+		local up = vec3(cam.transform[5], cam.transform[6], cam.transform[7])
 		
-		for d,s in ipairs(self.particles) do
-			local p = cam.transformProj * vec4(s[3], s[4], s[5], 1.0)
-			if p[3] > 0 then
-				p[1] = p[1] / p[4]
-				p[2] = p[2] / p[4]
-				
-				self.shaders.particle:send("depth", p[3] / p[4])
-				self.shaders.particle:send("emission", s[8])
-				self.shaders.particle:send("tex_emission", s[9] or s[1])
-				
-				p[3] = p[3] + self.cam.near
-				if s[2] then
-					local _, _, w, h = s[2]:getViewport()
-					love.graphics.draw(s[1], s[2], (p[1]+1)*canvases.width/2, (p[2]+1)*canvases.height/2, s[7], s[6] * sz / p[3], s[6] * sz / p[3], w/2, h/2)
-				else
-					love.graphics.draw(s[1], (p[1]+1)*canvases.width/2, (p[2]+1)*canvases.height/2, s[7], s[6] * sz / p[3], s[6] * sz / p[3], s[1]:getWidth()/2, s[1]:getHeight()/2)
-				end
-			end
+		up = vec3(0, 1, 0)
+		right = vec3(right.x, 0, right.z):normalize()
+		
+		self.shaders.particle:send("up", {up:unpack()})
+		self.shaders.particle:send("right", {right:unpack()})
+		
+		for d,s in pairs(self.particles) do
+			d:present(cam.pos)
 		end
 		
-		love.graphics.setDepthMode()
 		self.delton:stop()
 	end
 	

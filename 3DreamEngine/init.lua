@@ -34,6 +34,7 @@ require((...) .. "/render")
 require((...) .. "/renderLight")
 require((...) .. "/jobs")
 require((...) .. "/particlesystem")
+require((...) .. "/particles")
 require((...) .. "/libs/saveTable")
 
 --loader
@@ -331,14 +332,14 @@ function lib.prepare(self)
 	--clear draw table
 	self.drawTable = { }
 	self.particles = { }
+	self.particlePresence = { }
 	self.reflections_last = self.reflections or { }
 	self.reflections = { }
-	self.particleCounter = 0
 end
 
 --add an object to the scene
 local identityMatrix = mat4:getIdentity()
-function lib.draw(self, obj, x, y, z, sx, sy, sz)
+function lib:draw(obj, x, y, z, sx, sy, sz)
 	self.delton:start("draw")
 	
 	self.delton:start("transform")
@@ -387,11 +388,11 @@ function lib.draw(self, obj, x, y, z, sx, sy, sz)
 			
 			--add
 			table.insert(lib.drawTable, {
-				transform = transform,                  --transformation matrix, can be nil
-				pos = pos,                              --bounding box center position of object
-				s = s,                                  --drawable object
-				color = col,                            --color, will affect color/albedo input
-				obj = obj,                              --the object container used to store general informations (reflections, ...)
+				transform = transform, --transformation matrix, can be nil
+				pos = pos,             --bounding box center position of object
+				s = s,                 --drawable object
+				color = col,           --color, will affect color/albedo input
+				obj = obj,             --the object container used to store general informations (reflections, ...)
 			})
 		end
 	end
@@ -399,14 +400,12 @@ function lib.draw(self, obj, x, y, z, sx, sy, sz)
 	self.delton:stop()
 end
 
---add a particle to the scene
-function lib.drawParticle(self, tex, quad, x, y, z, size, rot, emission, emissionTexture)
-	if type(quads) == "number" then
-		return self:drawParticle(tex, false, x, y, z, size, rot)
-	end
+function lib:drawParticleBatch(batch)
+	--register as to-draw
+	self.particles[batch] = true
 	
-	self.particleCounter = self.particleCounter + 1
-	self.particles[self.particleCounter] = {tex, quad, x, y, z, (size or 1.0), rot or 0.0, emission or 0.0, emissionTexture}
+	--enable particle rendering
+	self.particlePresence.pass_2 = true
 end
 
 return lib

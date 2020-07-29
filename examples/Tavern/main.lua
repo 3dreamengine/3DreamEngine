@@ -55,6 +55,8 @@ end
 local particles = { }
 local lastParticleID = 0
 
+local particleBatch = dream:newParticleBatch(texture_candle, 32)
+
 local lights = { }
 for d,s in ipairs(scene.positions) do
 	if s.name == "LIGHT" then
@@ -81,6 +83,8 @@ function love.draw()
 	
 	dream:prepare()
 	
+	particleBatch:clear()
+	
 	--update lights
 	dream:resetLight(true)
 	for d,s in ipairs(scene.positions) do
@@ -88,10 +92,10 @@ function love.draw()
 			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 200.0
 			lights[d]:setBrightness(power)
 			dream:addLight(lights[d])
-			dream:drawParticle(texture_candle, quads[math.ceil(d + love.timer.getTime() * 24) % 25 + 1], s.x, s.y + 0.02, s.z, power * 0.003, 0.0, 5.0)
+			particleBatch:add(s.x, s.y + 0.02, s.z, power * 0.015, 2.0, quads[math.ceil(d + love.timer.getTime() * 24) % 25 + 1])
 		elseif s.name == "CANDLE" then
 			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 200.0
-			dream:drawParticle(texture_candle, quads[math.ceil(d + love.timer.getTime() * 24) % 25 + 1], s.x, s.y + 0.02, s.z, power * 0.003, 0.0, 5.0)
+			particleBatch:add(s.x, s.y + 0.02, s.z, power * 0.015, 2.0, quads[math.ceil(d + love.timer.getTime() * 24) % 25 + 1])
 		elseif s.name == "FIRE" then
 			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 200.0
 			lights[d]:setBrightness(power)
@@ -101,6 +105,8 @@ function love.draw()
 	
 	scene:reset()
 	dream:draw(scene)
+	
+	dream:drawParticleBatch(particleBatch)
 
 	dream:present()
 	
