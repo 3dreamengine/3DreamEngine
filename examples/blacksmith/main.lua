@@ -102,7 +102,7 @@ function love.draw()
 	
 	if not hideTooltips then
 		love.graphics.setColor(1, 1, 1)
-		love.graphics.print("R to toggle rain (" .. tostring(dream.rain_isRaining) .. ")\nU to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")\nG to toggle deferred shading (note the shadows) (may be not supported by your GPU) (" .. tostring(dream.deferred_lighting) .. ")\nH to toggle SSR (required deferred) (" .. tostring(dream.SSR_enabled) .. ")", 10, 10)
+		love.graphics.print("R to toggle rain (" .. tostring(dream.rain_isRaining) .. ")\nU to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")", 10, 10)
 	end
 end
 
@@ -208,16 +208,6 @@ function love.keypressed(key)
 	
 	if key == "u" then
 		dream.autoExposure_enabled = not dream.autoExposure_enabled
-		dream:init()
-	end
-	
-	if key == "g" then
-		dream.deferred_lighting = not dream.deferred_lighting
-		dream:init()
-	end
-	
-	if key == "h" then
-		dream.SSR_enabled = not dream.SSR_enabled
 		dream:init()
 	end
 end

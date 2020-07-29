@@ -1,11 +1,7 @@
 extern Image canvas_color_pass2;
-extern Image canvas_albedo;
-extern Image canvas_normal;
-extern Image canvas_normal_pass2;
-extern Image canvas_position;
-extern Image canvas_depth;
 extern Image canvas_data_pass2;
-extern Image canvas_material;
+extern Image canvas_normal_pass2;
+extern Image canvas_depth;
 
 extern Image canvas_bloom;
 extern Image canvas_ao;
@@ -136,15 +132,7 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 #endif
 	
 	//data
-#ifdef DEFERRED_LIGHTING
-	vec3 albedo = Texel(canvas_albedo, tc_final).xyz;
-	vec3 position = Texel(canvas_position, tc_final).xyz;
-	vec3 normal = Texel(canvas_normal, tc_final).xyz;
-	vec3 material = Texel(canvas_material, tc_final).xyz;
-	float depth = material.z;
-#else
 	float depth = Texel(canvas_depth, tc_final).r;
-#endif
 	
 	//sky reflection
 #ifdef SKY_ENABLED
@@ -179,11 +167,7 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 #ifdef FOG_ENABLED
 	float actualDepth = depth * mix(1.0, 2.0, length(tc - vec2(0.5)));
 	float heightDensity_1 = 1.0 - clamp((viewPos.y - fog_baseline) * fog_height, 0.0, 1.0);
-#ifdef DEFERRED_LIGHTING
-	float heightDensity_2 = 1.0 - clamp((position.y - fog_baseline) * fog_height, 0.0, 1.0);
-#else
 	float heightDensity_2 = 1.0 - clamp((viewPos.y + lookNormal.y * actualDepth - fog_baseline) * fog_height, 0.0, 1.0);
-#endif
 	c.rgb = mix(c.rgb, fog_color, min(1.0, (heightDensity_1 + heightDensity_2) * 0.5 * fog_density * actualDepth));
 #ifdef SKY_ENABLED
 	sky.rgb = fog_color;

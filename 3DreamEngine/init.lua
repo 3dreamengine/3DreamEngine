@@ -69,6 +69,7 @@ lib.bloom_size = 1.5
 lib.bloom_resolution = 0.5
 lib.bloom_strength = 1.0
 
+--currently unavailable
 lib.SSR_enabled = false
 lib.SSR_resolution = 1.0
 lib.SSR_format = "normal"
@@ -85,9 +86,7 @@ lib.textures_generateThumbnails = true
 lib.msaa = 4
 lib.fxaa = false
 lib.lighting_engine = "Phong"
-lib.deferred_lighting = false
 lib.alphaBlendMode = "average"
-lib.renderToFinalCanvas = false
 lib.max_lights = 16
 lib.nameDecoder = "blender"
 lib.frustumCheck = true
@@ -103,7 +102,6 @@ lib.shadow_smooth_downScale = 0.5
 
 lib.reflections_resolution = 512
 lib.reflections_format = "rgba16f"
-lib.reflections_deferred_lighting = false
 lib.reflections_alphaBlendMode = "dither"
 lib.reflections_msaa = 4
 lib.reflections_levels = 5
@@ -159,6 +157,12 @@ lib.cam = lib:newCam()
 
 lib.delton = require((...) .. "/libs/delton"):new()
 
+if not _DEBUGMODE then
+	lib.delton.start = function() end
+	lib.delton.stop = lib.delton.start
+	lib.delton.step = lib.delton.start
+end
+
 --default textures
 if love.graphics then
 	lib.object_sky = lib:loadObject(lib.root .. "/objects/sky", {meshType = "textured"})
@@ -213,13 +217,12 @@ if love.graphics then
 end
 
 --a canvas set is used to render a scene to
-function lib.newCanvasSet(self, w, h, msaa, deferred_lighting, alphaBlendMode, postEffects_enabled)
+function lib.newCanvasSet(self, w, h, msaa, alphaBlendMode, postEffects_enabled)
 	local set = { }
 	
 	set.width = w
 	set.height = h
 	set.msaa = msaa
-	set.deferred_lighting = deferred_lighting
 	set.alphaBlendMode = alphaBlendMode
 	set.postEffects_enabled = postEffects_enabled
 	
@@ -229,18 +232,8 @@ function lib.newCanvasSet(self, w, h, msaa, deferred_lighting, alphaBlendMode, p
 	--temporary HDR color
 	set.color = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa})
 	
-	--data, albedo and position only for deferred lighting
-	if deferred_lighting then
-		set.albedo = love.graphics.newCanvas(w, h, {format = "normal", readable = true, msaa = msaa})         -- albedo color
-		set.position = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa})      -- xyz position
-		set.normal = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa})        -- normal
-		set.material = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa})      -- roughness, metallic, depth
-	end
-	
-	--normal
-	if not deferred_lighting then
-		set.depth = love.graphics.newCanvas(w, h, {format = "r16f", readable = true, msaa = msaa})
-	end
+	--depth
+	set.depth = love.graphics.newCanvas(w, h, {format = "r16f", readable = true, msaa = msaa})
 	
 	--layer count and seperate color canvas for average alpha blending
 	if alphaBlendMode == "average" then
@@ -259,11 +252,6 @@ function lib.newCanvasSet(self, w, h, msaa, deferred_lighting, alphaBlendMode, p
 	
 	--post effects
 	if postEffects_enabled then
-		--final
-		if (self.renderToFinalCanvas or self.autoExposure_enabled) then
-			set.final = love.graphics.newCanvas(w, h, {format = "normal", readable = true, msaa = 0})
-		end
-		
 		--bloom blurring canvases
 		if self.bloom_enabled then
 			set.canvas_bloom_1 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = "rgba16f", readable = true, msaa = 0})
@@ -283,8 +271,8 @@ end
 --load canvases
 function lib.resize(self, w, h)
 	--canvases sets
-	self.canvases = self:newCanvasSet(w, h, self.msaa, self.deferred_lighting, self.alphaBlendMode, true)
-	self.canvases_reflections = self:newCanvasSet(self.reflections_resolution, self.reflections_resolution, self.reflections_msaa, self.reflections_deferred_lighting, self.reflections_alphaBlendMode, false)
+	self.canvases = self:newCanvasSet(w, h, self.msaa, self.alphaBlendMode, true)
+	self.canvases_reflections = self:newCanvasSet(self.reflections_resolution, self.reflections_resolution, self.reflections_msaa, self.reflections_alphaBlendMode, false)
 	
 	--rain
 	if self.rain_enabled then
@@ -319,10 +307,7 @@ end
 
 --applies settings and load canvases
 function lib.init(self, w, h)
-	if self.SSR_enabled and not self.deferred_lighting then
-		self.SSR_enabled = false
-		print("SSR can only be used with deferred lighting! SSR has been disabled.")
-	end
+	assert(not self.SSR_enabled, "screen space reflections are currently unavailable and have to be disabled!")
 	
 	self:resize(w or love.graphics.getWidth(), h or love.graphics.getHeight())
 	
@@ -352,6 +337,7 @@ function lib.prepare(self)
 end
 
 --add an object to the scene
+local identityMatrix = mat4:getIdentity()
 function lib.draw(self, obj, x, y, z, sx, sy, sz)
 	self.delton:start("draw")
 	
@@ -372,34 +358,41 @@ function lib.draw(self, obj, x, y, z, sx, sy, sz)
 		end
 	else
 		--pre defined transform
-		transform = obj.transform
+		transform = obj.transform or identityMatrix
 	end
 	self.delton:stop()
+	
+	local col = vec4(love.graphics.getColor())
 	
 	--add to scene
 	self.delton:start("add")
 	for d,s in pairs(obj.objects or {obj}) do
-		if not s.disabled and s.mesh then
+		if s.mesh and not s.disabled then
 			--get required shader
-			self.delton:start("shader")
-			s.shader = s.shader or self:getShaderInfo(s.material, s.shaderType, s.reflection or obj.reflection)
-			self.delton:stop()
+			if not s.shader then
+				s.shader = self:getShaderInfo(s.material, s.shaderType, s.reflection or obj.reflection)
+			end
 			
-			self.delton:start("transform")
-			local pos = s.boundingBox and s.boundingBox.center or vec3(0, 0, 0)
-			pos = transform and (transform * pos) or pos
-			self.delton:stop()
+			local pos
+			local bb = s.boundingBox
+			if bb then
+				--mat4 * vec3 multiplication, for performance reasons hardcoded
+				local a = bb.center
+				pos = vec3(transform[1] * a[1] + transform[2] * a[2] + transform[3] * a[3] + transform[4],
+					transform[5] * a[1] + transform[6] * a[2] + transform[7] * a[3] + transform[8],
+					transform[9] * a[1] + transform[10] * a[2] + transform[11] * a[3] + transform[12])
+			else
+				pos = vec3(transform[4], transform[8], transform[12])
+			end
 			
 			--add
-			self.delton:start("insert")
 			table.insert(lib.drawTable, {
 				transform = transform,                  --transformation matrix, can be nil
 				pos = pos,                              --bounding box center position of object
 				s = s,                                  --drawable object
-				color = vec4(love.graphics.getColor()), --color, will affect color/albedo input
+				color = col,                            --color, will affect color/albedo input
 				obj = obj,                              --the object container used to store general informations (reflections, ...)
 			})
-			self.delton:stop()
 		end
 	end
 	self.delton:stop()

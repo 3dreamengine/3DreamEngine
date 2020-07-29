@@ -5,11 +5,9 @@
 * fast rendering with z-buffer and shaders
 * PBR rendering (albedo, normal, roughness, metallic, ao, emission)
 * Phong shading (color, normal, glossiness, specular, ao, emission)
-* optional defered rendering pipeline with technically infinite (shadowed) light sources
 * screen space ambient occlusion (ssao)
 * full HDR with bloom and (optional automatic) exposure
 * average alpha blending with approximated refraction
-* screen space reflections
 * cubemap reflections
 * proper blurred reflections on rough surfaces
 * dynamic clouds, sun, moon and stars
@@ -101,10 +99,8 @@ dream.textures_generateThumbnails = true  -- thumbnails are described in its own
 dream.msaa = 4                            -- multi sample anti aliasing, slightly more expensive but good results
 dream.fxaa = false                        -- fast approximated anti aliasing, fast but less good results
 dream.lighting_engine = "Phong"           -- the shading engine (PBR or Phong), should match the shaders (see own section below) used
-dream.deferred_lighting = false           -- toggles the deferred lighting pipeline, see advantages in its own section below
 dream.alphaBlendMode = "average"          -- average is slowest with order independent blending, "alpha" uses alpha blending with possible order-artefacts,
                                           -- "dither" dithers between full and zero based on alpha and "disabled" only renders 100% alpha. "dither" and "disabled" only require one pass.
-dream.renderToFinalCanvas = false         -- instead of directly rendering it it renders to canvases.final (dream.canvases.final). Auto exposure semi enables this.
 dream.max_lights = 16                     -- max lights when using non defered shadng
 dream.nameDecoder = "blender"             -- imported objects often contain mesh data names appended to the actual name,, blender decoder removes them
 dream.frustumCheck = true                 -- enable automatic frustum check
@@ -114,14 +110,13 @@ dream.shadow_resolution = 1024            -- cascade shadow resolution
 dream.shadow_cube_resolution = 512        -- cube map shadow resolution
 dream.shadow_distance = 8                 -- distance from player for the cascade shadow
 dream.shadow_factor = 4                   -- cascade shadow has 3 layers, each with size factor times bigger
-dream.shadow_smooth = true                -- smooth shadowing uses post effect mipmap blurring (smooth shadows require deferred lighting)
+dream.shadow_smooth = true                -- smooth shadowing
 dream.shadow_smoother = true              -- smoother also applies gaussian blur to achieve best results
 dream.shadow_smooth_downScale = 0.5       -- downscaling the shadow results in better performance and more blur
 dream.shadow_quality = "low"              -- quality when using non defered lighting. WIP, produces slightly incorrect results.
 
 dream.reflections_resolution = 512        -- cubemap reflection resolution
 dream.reflections_format = "rgba16f"      -- reflection format, normal or rgba16f, where rgba16f preserves more detail in brightness
-dream.reflections_deferred_lighting = false --wether the defered pipeline should be used for reflection rendering
 dream.reflections_alphaBlendMode = "average" --//--
 dream.reflections_msaa = 4                -- multi sample antialiasing for reflections, else use fxaa if enabled
 dream.reflections_levels = 5              -- the count of mipmaps used, lower values cause incorrect blending between roughnesses, high values cause low quality on high roughnesses
@@ -489,11 +484,9 @@ object = {
 ```
 
 ## deferred rendering
-If enabled, it will use 5 output canvases (note that 5 are not supported on every system) to store position, normal and material.
-Lights, shadows, SSR etc are then calculated as post effects. More overhead but slightly faster, and more importantly unlimited, light calculation.
-
-Features, which are only supported on deferred, are: screen space reflections, smooth shadows, more than ~16 light sources, no initial lag when changing light counts caused by shader reload.
-Disadvantages: may be unsuported, overhead in terms of memory and performance, 16bit instead of 32bit, causing minimal disortion on close surfaces lighting.
+REMOVED
+After thinking about pro and cons I came to the conclusion that deferred rendering was a nice experiment, but exceeds the use cases for this 3D engine.
+The currently implemented forward-shading technique supports nearly the same amount of features and is in most cases faster.
 
 ## collisions
 The collision extension supports exact collision detection between a collider and another collider or (nested) group.

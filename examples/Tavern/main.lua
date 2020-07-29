@@ -100,16 +100,13 @@ function love.draw()
 	end
 	
 	scene:reset()
-	for i = 1, 100 do
-		scene:rotateY(0.01)
-		dream:draw(scene)
-	end
+	dream:draw(scene)
 
 	dream:present()
 	
 	if not hideTooltips then
 		love.graphics.setColor(1, 1, 1)
-		love.graphics.print("R to toggle rain (" .. tostring(dream.rain_isRaining) .. ")\nU to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")\nG to toggle deferred shading (note the shadows) (may be not supported by your GPU) (" .. tostring(dream.deferred_lighting) .. ")\nH to toggle SSR (required deferred) (" .. tostring(dream.SSR_enabled) .. ")\nL to toggle looking at check (" .. tostring(lookingAtCheck) .. ")\nK to toggle relative mode (" .. tostring(rotateCamera) .. ")\n" .. love.timer.getFPS() .. " FPS", 10, 10)
+		love.graphics.print("R to toggle rain (" .. tostring(dream.rain_isRaining) .. ")\nU to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")\nL to toggle looking at check (" .. tostring(lookingAtCheck) .. ")\nK to toggle relative mode (" .. tostring(rotateCamera) .. ")\n" .. love.timer.getFPS() .. " FPS", 10, 10)
 	end
 	
 	--check which object you are looking at
@@ -260,16 +257,6 @@ function love.keypressed(key)
 	
 	if key == "u" then
 		dream.autoExposure_enabled = not dream.autoExposure_enabled
-		dream:init()
-	end
-	
-	if key == "g" then
-		dream.deferred_lighting = not dream.deferred_lighting
-		dream:init()
-	end
-	
-	if key == "h" then
-		dream.SSR_enabled = not dream.SSR_enabled
 		dream:init()
 	end
 	

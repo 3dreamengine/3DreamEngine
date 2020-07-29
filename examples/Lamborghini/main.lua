@@ -6,7 +6,6 @@ love.graphics.setBackgroundColor(0.8, 0.8, 0.8)
 --settings
 local projectDir = "examples/Lamborghini/"
 
-dream.deferred_lighting = false
 dream.lighting_engine = "PBR"
 dream.alphaBlendMode = "disabled"
 

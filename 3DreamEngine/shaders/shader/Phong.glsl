@@ -12,7 +12,6 @@ varying highp vec3 vertexPos;             //vertex position for pixel shader
 varying float depth;                      //depth
 
 //shader settings
-extern bool deferred_lighting;
 extern bool average_alpha;
 extern bool useAlphaDither;
 extern float pass;
@@ -123,23 +122,15 @@ void effect() {
 	#import lightingSystem
 	
 	//render
-	if (deferred_lighting) {
-		love_Canvases[0] = vec4(col, albedo.a);
-		love_Canvases[1] = vec4(albedo.rgb, 1.0);
-		love_Canvases[2] = vec4(normal, 1.0);
-		love_Canvases[3] = vec4(vertexPos, 1.0);
-		love_Canvases[4] = vec4(glossiness, specular, depth, 1.0);
+	if (average_alpha) {
+		love_Canvases[0] = vec4(col * albedo.a, 1.0);
+		love_Canvases[1] = vec4(1.0, albedo.a, ior, 1.0);
+		#ifdef REFRACTION_ENABLED
+			love_Canvases[2] = vec4(normal, 1.0);
+		#endif
 	} else {
-		if (average_alpha) {
-			love_Canvases[0] = vec4(col * albedo.a, 1.0);
-			love_Canvases[1] = vec4(1.0, albedo.a, ior, 1.0);
-			#ifdef REFRACTION_ENABLED
-				love_Canvases[2] = vec4(normal, 1.0);
-			#endif
-		} else {
-			love_Canvases[0] = vec4(col, albedo.a);
-			love_Canvases[1] = vec4(depth, 1.0, 1.0, 1.0);
-		}
+		love_Canvases[0] = vec4(col, albedo.a);
+		love_Canvases[1] = vec4(depth, 1.0, 1.0, 1.0);
 	}
 }
 #endif

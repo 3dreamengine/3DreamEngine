@@ -12,8 +12,6 @@ lib.stats = {
 	averageFPS = 60,
 }
 
-local identityMatrix = mat4:getIdentity()
-
 local sortPosition = vec3(0, 0, 0)
 local function sortFunction(a, b)
 	return (a.pos - sortPosition):lengthSquared() > (b.pos - sortPosition):lengthSquared()
@@ -21,44 +19,47 @@ end
 
 --use the filled drawTable to build a scene
 --a scene is a subset of the draw table, ordered and prepared for rendering
-function lib:buildScene(cam)
+--pass can be 0 (include all), 1 (includes solid or semi transparent materials), 2 (include semi and full transparent materials)
+function lib:buildScene(cam, pass)
 	local scene = { }
+	local noFrustumCheck = cam.noFrustumCheck or not self.frustumCheck
 	
 	--add to scene
-	for d,s in ipairs(self.drawTable) do
-		local mat = s.s.material
-		local dist = (s.pos - cam.pos):length()
-		local LoD = s.s.LoD or s.obj.LoD
-		local level = LoD and math.min(math.floor(dist / self.LoDDistance * 10)+1, 9)
-		if not LoD or LoD[level] then
-			if cam.noFrustumCheck or not self.frustumCheck or not s.s.boundingBox or self:inFrustum(cam, s.pos, s.s.boundingBox.size) then
-				--group shader and materials together to reduce shader switches
-				if not scene[s.s.shader] then
-					scene[s.s.shader] = { }
-				end
-				if not scene[s.s.shader][mat] then
-					scene[s.s.shader][mat] = { }
-				end
-				
-				--add
-				table.insert(scene[s.s.shader][mat], s)
-				
-				--reflections
-				local reflection = s.s.reflection or s.obj.reflection
-				if reflection then
-					self.reflections[s.s.reflection or s.obj.reflection] = {
-						dist = dist,
-						obj = s.s.reflection and s.s or s.obj,
-						pos = reflection.pos or s.pos,
-					}
+	for d,task in ipairs(self.drawTable) do
+		local mat = task.s.material
+		local alpha = mat.alpha or 0
+		if pass == 0 or pass == 1 and alpha ~= 2 or pass == 2 and alpha ~= 0 then
+			local dist = (task.pos - cam.pos):length()
+			local LoD = task.s.LoD or task.obj.LoD
+			if not LoD or LoD[ math.min(math.floor(dist / self.LoDDistance * 10)+1, 9) ] then
+				if noFrustumCheck or not task.s.boundingBox or self:inFrustum(cam, task.pos, task.s.boundingBox.size) then
+					--group shader and materials together to reduce shader switches
+					if not scene[task.s.shader] then
+						scene[task.s.shader] = { }
+					end
+					if not scene[task.s.shader][mat] then
+						scene[task.s.shader][mat] = { }
+					end
+					
+					--add
+					table.insert(scene[task.s.shader][mat], task)
+					
+					--reflections
+					local reflection = task.s.reflection or task.obj.reflection
+					if reflection then
+						self.reflections[task.s.reflection or task.obj.reflection] = {
+							dist = dist,
+							obj = task.s.reflection and task.s or task.obj,
+							pos = reflection.pos or task.pos,
+						}
+					end
 				end
 			end
 		end
 	end
 	
 	--sort tables for materials requiring sorting
-	--note that no sorting among same meshes occur, since alpha blending between identical objects do not matter anyways
-	if self.alphaBlendMode == "alpha" then
+	if self.alphaBlendMode == "alpha" and pass ~= 1 then
 		sortPosition = cam.pos
 		for shader, shaderGroup in pairs(scene) do
 			for material, materialGroup in pairs(shaderGroup) do
@@ -73,11 +74,9 @@ end
 --render the scene onto a canvas set using a specific view camera
 function lib:render(scene, canvases, cam, pass, blacklist)
 	self.delton:start("prepare")
-	local deferred_lighting = canvases.deferred_lighting and pass == 1
 	
 	--love shader friendly
 	local viewPos = {cam.pos:unpack()}
-	local normal = {cam.normal:unpack()}
 	
 	--clear and set canvases
 	love.graphics.push("all")
@@ -88,10 +87,6 @@ function lib:render(scene, canvases, cam, pass, blacklist)
 		love.graphics.setCanvas({canvases.color_pass2, canvases.data_pass2, self.refraction_enabled and canvases.normal_pass2 or nil})
 		love.graphics.clear(0, 0, 0, 0)
 		love.graphics.setCanvas({canvases.color_pass2, canvases.data_pass2, self.refraction_enabled and canvases.normal_pass2 or nil, depthstencil = canvases.depth_buffer})
-	elseif deferred_lighting then
-		--deferred lighting
-		love.graphics.setCanvas({canvases.color, canvases.albedo, canvases.normal, canvases.position, canvases.material, depthstencil = canvases.depth_buffer})
-		love.graphics.clear({0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 255, 0})
 	else
 		--classic forward rendering
 		love.graphics.setCanvas({canvases.color, pass == 1 and canvases.depth or nil, depthstencil = canvases.depth_buffer})
@@ -111,7 +106,7 @@ function lib:render(scene, canvases, cam, pass, blacklist)
 	love.graphics.setDepthMode("less", pass == 1)
 	
 	--prepare lighting
-	local lighting, lightRequirements = self:getLightOverview(cam, deferred_lighting)
+	local lighting, lightRequirements = self:getLightOverview(cam)
 	self.delton:stop()
 	
 	--final draw
@@ -121,25 +116,16 @@ function lib:render(scene, canvases, cam, pass, blacklist)
 		
 		--output settings
 		love.graphics.setShader(shader)
-		shader:send("deferred_lighting", deferred_lighting)
 		shader:send("average_alpha", pass == 2 and canvases.alphaBlendMode == "average")
 		shader:send("useAlphaDither", canvases.alphaBlendMode == "dither")
 		shader:send("pass", canvases.alphaBlendMode == "disabled" and 0 or pass == 1 and -1 or 1)
 		
-		--lookup texture for PBR
-		if shader:hasUniform("brdfLUT") then
-			shader:send("brdfLUT", self.textures.brdfLUT)
-		end
-		
-		--rain resources
-		if shader:hasUniform("rain_splashes") then
-			shader:send("rain_splashes", self.canvas_rain)
-			shader:send("rain_tex_wetness", self.textures.wetness)
-			shader:send("rain_wetness", self.rain_wetness)
-		end
+		--shader
+		local shaderEntry = self.shaderLibrary.base[shaderInfo.shaderType]
+		shaderEntry:perShader(self, shader, shaderInfo)
 		
 		--light if using forward lighting
-		if not deferred_lighting and #lighting > 0 then
+		if #lighting > 0 then
 			self:sendLightUniforms(lighting, lightRequirements, shader, lighting)
 		end
 		
@@ -149,52 +135,23 @@ function lib:render(scene, canvases, cam, pass, blacklist)
 			shader:send("viewPos", viewPos)
 		end
 		
+		if shaderInfo.reflection then
+			shader:send("reflections_levels", self.reflections_levels-1)
+		else
+			shader:send("ambient", self.sun_ambient)
+		end
+		
 		--for each material
 		for material, materialGroup in pairs(shaderGroup) do
 			self.delton:start("material")
-			local tex = shaderInfo.arrayImage and self.textures_array or self.textures
 			
 			--ior
 			if shader:hasUniform("ior") then
 				shader:send("ior", 1.0 / material.ior)
 			end
 			
-			--set material data dependend on shader
-			if shaderInfo.shaderType == "color" then
-				shader:send("emission", material.emission or 0.0)
-				shader:send("glossiness", material.glossiness)
-			elseif shaderInfo.shaderType == "color_lookup" then
-				shader:send("tex_lookup", material.tex_lookup)
-			elseif shaderInfo.shaderType == "color_extended" then
-				
-			elseif shaderInfo.shaderType == "color_material" then
-				shader:send("tex_material", self:getTexture(material.tex_material) or self:getTexture("examples/3DreamCreator/materials/3Dmaterials/rock.png") or tex.default)
-			elseif shaderInfo.shaderType == "PBR" then
-				shader:send("tex_combined", self:getTexture(material.tex_combined) or tex.default)
-				shader:send("color_combined", {material.tex_roughness and 1.0 or material.roughness or 0.5, material.tex_metallic and 1.0 or material.metallic or 0.5, 1.0})
-			elseif shaderInfo.shaderType == "Phong" then
-				shader:send("tex_combined", self:getTexture(material.tex_combined) or tex.default)
-				shader:send("color_combined", {material.tex_glossiness and 1.0 or material.glossiness or 0.5, material.tex_specular and 1.0 or material.specular or 0.5, 1.0})
-			end
-			
-			--additional, shared resources
-			if shaderInfo.shaderType == "PBR" or shaderInfo.shaderType == "Phong" then
-				shader:send("tex_albedo", self:getTexture(material.tex_albedo) or tex.default)
-				if shaderInfo.tex_normal then
-					shader:send("tex_normal", self:getTexture(material.tex_normal) or tex.default_normal)
-				end
-				if shaderInfo.tex_emission then
-					shader:send("tex_emission", self:getTexture(material.tex_emission) or tex.default)
-				end
-				shader:send("color_emission", material.emission or (shaderInfo.tex_emission and {5.0, 5.0, 5.0}) or {0.0, 0.0, 0.0})
-			end
-			
-			--optional vertex shader information
-			if shaderInfo.vertexShader == "wind" then
-				shader:send("shader_wind_strength", material.shader_wind_strength or 1.0)
-				shader:send("shader_wind_scale", material.shader_wind_scale or 1.0)
-				shader:send("shader_wind", love.timer.getTime() * (material.shader_wind_speed or 1.0))
-			end
+			--shader
+			shaderEntry:perMaterial(self, shader, shaderInfo, material)
 			
 			--culling
 			love.graphics.setMeshCullMode(canvases.cullMode or material.cullMode or (material.alpha and self.refraction_disableCulling) and "none" or "back")
@@ -202,32 +159,23 @@ function lib:render(scene, canvases, cam, pass, blacklist)
 			--draw objects
 			for _,task in pairs(materialGroup) do
 				if not blacklist or not (blacklist[task.obj] or blacklist[task.s]) then
-					self.delton:start("object")
-					
 					--sky texture
 					if shaderInfo.reflection then
 						local ref = task.s.reflection and task.s.reflection.canvas or task.obj.reflection and task.obj.reflection.canvas or self.canvas_sky
 						shader:send("tex_background", ref or self.textures.sky_fallback)
-						shader:send("reflections_levels", self.reflections_levels-1)
-					else
-						shader:send("ambient", self.sun_ambient)
-					end
-					
-					--color
-					if shader:hasUniform("color_albedo") then
-						shader:send("color_albedo", (material.tex_albedo and {1.0, 1.0, 1.0, 1.0} or material.color and {material.color[1], material.color[2], material.color[3], material.color[4] or 1.0} or {1.0, 1.0, 1.0, 1.0}) * task.color)
 					end
 					
 					--object transformation
-					shader:send("transform", task.transform or identityMatrix)
+					shader:send("transform", task.transform)
+					
+					--shader
+					shaderEntry:perObject(self, shader, shaderInfo, task)
 					
 					--render
-					self.delton:start("draw")
+					love.graphics.setColor(task.color)
 					love.graphics.draw(task.s.mesh)
-					self.delton:stop()
 					
 					self.stats.draws = self.stats.draws + 1
-					self.delton:stop()
 				end
 			end
 			self.stats.materialDraws = self.stats.materialDraws + 1
@@ -238,13 +186,6 @@ function lib:render(scene, canvases, cam, pass, blacklist)
 	end
 	love.graphics.setColor(1.0, 1.0, 1.0)
 	
-	--lighting
-	self.delton:start("deffered")
-	if deferred_lighting then
-		self:renderDeferredLight(lighting, lightRequirements, canvases, cam)
-	end
-	self.delton:stop()
-	
 	--particles
 	if pass ~= 2 then
 		self.delton:start("particles")
@@ -252,7 +193,6 @@ function lib:render(scene, canvases, cam, pass, blacklist)
 		love.graphics.setDepthMode("less", false)
 		love.graphics.setBlendMode("alpha")
 		love.graphics.setShader(self.shaders.particle)
-		
 		table.sort(self.particles, function(a, b) return a[5] > b[5] end)
 		
 		local sz = (canvases.width + canvases.height) / 2
@@ -304,7 +244,7 @@ function lib:renderShadows(scene, cam, canvas, blacklist)
 			if (material.color[4] or 1.0) > 0.75 and material.shadow ~= false then
 				for _,task in pairs(materialGroup) do
 					if not blacklist or not (blacklist[task.obj] or blacklist[task.s]) then
-						self.shaders.shadow:send("transform", task.transform or identityMatrix)
+						self.shaders.shadow:send("transform", task.transform)
 						love.graphics.draw(task.s.mesh)
 					end
 				end
@@ -320,9 +260,11 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 	love.graphics.push("all")
 	love.graphics.reset()
 	
+	local secondPass = canvases.alphaBlendMode == "average" or canvases.alphaBlendMode == "alpha"
+	
 	--generate scene
 	self.delton:start("scene")
-	local scene = self:buildScene(cam, pass)
+	local scene = self:buildScene(cam, secondPass and 1 or 0)
 	self.delton:stop()
 	
 	--first pass
@@ -332,26 +274,14 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 	
 	--second (alpha) pass
 	self.delton:start("second")
-	if canvases.alphaBlendMode == "average" or canvases.alphaBlendMode == "alpha" then
+	if secondPass then
+		self.delton:start("scene")
+		local scene = self:buildScene(cam, 2)
+		self.delton:stop()
+		
 		self:render(scene, canvases, cam, 2, blacklist)
 	end
 	self.delton:stop()
-	
-	--weather
-	love.graphics.setBlendMode("alpha")
-	love.graphics.setCanvas({canvases.color, depthstencil = canvases.depth_buffer})
-	love.graphics.setDepthMode("less", false)
-	local t = self.textures["rain_" .. self.rain_strength]
-	t:setWrap("repeat")
-	self.object_rain.objects.Plane.mesh:setTexture(t)
-	love.graphics.setShader(self.shaders.rain)
-	
-	local translate = vec3(math.floor(cam.pos.x), math.floor(cam.pos.y), math.floor(cam.pos.z))
-	self.shaders.rain:send("time", love.timer.getTime() * 5.0)
-	self.shaders.rain:send("transformProj", cam.transformProj)
-	self.shaders.rain:send("transform", mat4:getIdentity():translate(translate))
-	self.shaders.rain:send("rain", self.rain_rain)
-	love.graphics.draw(self.object_rain.objects.Plane.mesh)
 	
 	--Ambient Occlusion (SSAO)
 	if self.AO_enabled then
@@ -359,8 +289,8 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 		love.graphics.clear()
 		love.graphics.setBlendMode("replace", "premultiplied")
 		
-		love.graphics.setShader(canvases.deferred_lighting and self.shaders.SSAO_def or self.shaders.SSAO)
-		love.graphics.draw(canvases.deferred_lighting and canvases.material or canvases.depth, 0, 0, 0, self.AO_resolution)
+		love.graphics.setShader(self.shaders.SSAO)
+		love.graphics.draw(canvases.depth, 0, 0, 0, self.AO_resolution)
 		
 		--blur
 		love.graphics.setShader(self.shaders.blur)
@@ -403,73 +333,16 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 		end
 	end
 	
-	--SSR
-	if self.SSR_enabled and canvases.deferred_lighting then
-		love.graphics.setCanvas(canvases.canvas_SSR_1)
-		love.graphics.setBlendMode("replace", "premultiplied")
-		
-		local shader = self:getSSRShader(canvases)
-		love.graphics.setShader(shader)
-		
-		if shader:hasUniform("canvas_albedo") then shader:send("canvas_albedo", canvases.albedo) end
-		if shader:hasUniform("canvas_normal") then shader:send("canvas_normal", canvases.normal) end
-		if shader:hasUniform("canvas_position") then shader:send("canvas_position", canvases.position) end
-		if shader:hasUniform("canvas_material") then shader:send("canvas_material", canvases.material) end
-		
-		if shader:hasUniform("canvas_bloom") then shader:send("canvas_bloom", canvases.canvas_bloom_1) end
-		if shader:hasUniform("canvas_ao") then shader:send("canvas_ao", canvases.AO_1) end
-		if shader:hasUniform("canvas_SSR") then shader:send("canvas_SSR", self.canvas_SSR) end
-		
-		if shader:hasUniform("transformInverse") then shader:send("transformInverse", cam.transformProj:invert()) end
-		if shader:hasUniform("transform") then shader:send("transform", cam.transformProj) end
-		if shader:hasUniform("viewPos") then shader:send("viewPos", cam.pos) end
-		
-		if shader:hasUniform("canvas_sky") then shader:send("canvas_sky", self.canvas_sky) end
-		if shader:hasUniform("ambient") then shader:send("ambient", self.sun_ambient) end
-		
-		if shader:hasUniform("brdfLUT") then shader:send("brdfLUT", self.textures.brdfLUT) end
-		
-		love.graphics.draw(canvases.color, 0, 0, 0, self.SSR_resolution)
-		
-		--blur
-		love.graphics.setShader(self.shaders.blur_SSR)
-		self.shaders.blur_SSR:send("roughness", canvases.material)
-		
-		for i = 1, 0, -1 do
-			local size = 5 ^ i
-			
-			love.graphics.setCanvas(canvases.canvas_SSR_2)
-			self.shaders.blur_SSR:send("dir", {size / canvases.width / self.SSR_resolution, 0.0})
-			love.graphics.draw(canvases.canvas_SSR_1)
-			
-			love.graphics.setCanvas(canvases.canvas_SSR_1)
-			self.shaders.blur_SSR:send("dir", {0.0, size / canvases.height / self.SSR_resolution})
-			love.graphics.draw(canvases.canvas_SSR_2)
-		end
-	end
-	
 	--final
 	local shader = self:getFinalShader(canvases, noSky)
 	love.graphics.pop()
 	
-	--render to final canvas instead
-	if canvases.final then
-		love.graphics.push("all")
-		love.graphics.origin()
-		love.graphics.setCanvas(canvases.final)
-		love.graphics.clear()
-	end
-	
 	love.graphics.setShader(shader)
 	
 	if shader:hasUniform("canvas_color_pass2") then shader:send("canvas_color_pass2", canvases.color_pass2) end
-	if shader:hasUniform("canvas_albedo") then shader:send("canvas_albedo", canvases.albedo) end
-	if shader:hasUniform("canvas_normal") then shader:send("canvas_normal", canvases.normal) end
-	if shader:hasUniform("canvas_normal_pass2") then shader:send("canvas_normal_pass2", canvases.normal_pass2) end
-	if shader:hasUniform("canvas_position") then shader:send("canvas_position", canvases.position) end
-	if shader:hasUniform("canvas_depth") then shader:send("canvas_depth", canvases.depth) end
 	if shader:hasUniform("canvas_data_pass2") then shader:send("canvas_data_pass2", canvases.data_pass2) end
-	if shader:hasUniform("canvas_material") then shader:send("canvas_material", canvases.material) end
+	if shader:hasUniform("canvas_normal_pass2") then shader:send("canvas_normal_pass2", canvases.normal_pass2) end
+	if shader:hasUniform("canvas_depth") then shader:send("canvas_depth", canvases.depth) end
 	
 	if shader:hasUniform("canvas_bloom") then shader:send("canvas_bloom", canvases.canvas_bloom_1) end
 	if shader:hasUniform("canvas_ao") then shader:send("canvas_ao", canvases.AO_1) end
@@ -498,13 +371,6 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 	
 	love.graphics.draw(canvases.color)
 	love.graphics.setShader()
-	
-	if canvases.final then
-		love.graphics.pop()
-		if not self.renderToFinalCanvas then
-			love.graphics.draw(canvases.final)
-		end
-	end
 end
 
 function lib:presentLite(noSky, cam, canvases)
@@ -596,8 +462,8 @@ function lib:present(noSky, cam, canvases)
 		end
 	end
 	
+	self.delton:step()
 	if _DEBUGMODE and love.keyboard.isDown(".") then
 		self.delton:present()
 	end
-	self.delton:step()
 end

@@ -389,7 +389,7 @@ function lib.executeJobs(self, cam)
 			self.shaders.autoExposure:send("targetBrightness", self.autoExposureTargetBrightness)
 			self.shaders.autoExposure:send("adaptionFactor", self.autoExposureAdaptionFactor)
 			love.graphics.setShader(self.shaders.autoExposure)
-			love.graphics.draw(self.canvases.final, 0, 0, 0, c:getWidth() / self.canvases.width, c:getHeight() / self.canvases.height)
+			love.graphics.draw(self.canvases.color, 0, 0, 0, c:getWidth() / self.canvases.width, c:getHeight() / self.canvases.height)
 			love.graphics.setShader()
 			
 			--fetch
@@ -433,7 +433,7 @@ function lib.executeJobs(self, cam)
 			o[4].shadow["transformation_" .. cascade] = shadowCam.transformProj
 			o[4].shadow.canvases[cascade] = o[4].shadow.canvases[cascade] or self:newShadowCanvas("sun", o[4].shadow.res)
 			
-			local scene = self:buildScene(shadowCam)
+			local scene = self:buildScene(shadowCam, 1)
 			self:renderShadows(scene, shadowCam, {depthstencil = o[4].shadow.canvases[cascade]}, o[4].blacklist)
 			
 			o[4].shadow.done[cascade] = true
@@ -459,7 +459,7 @@ function lib.executeJobs(self, cam)
 			--render
 			for face = 1, 6 do
 				local shadowCam = self:newCam(transformations[face], pos, lookNormals[face])
-				local scene = self:buildScene(shadowCam)
+				local scene = self:buildScene(shadowCam, 1)
 				self:renderShadows(scene, shadowCam, {{o[4].shadow.canvas, face = face}}, o[4].blacklist)
 			end
 			
