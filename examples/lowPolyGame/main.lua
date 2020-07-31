@@ -40,7 +40,7 @@ objects.crate = dream:loadObject(projectDir .. "objects/crate")
 
 --prepare lights
 for d,s in pairs(map.lights) do
-	s.light = dream:newLight(s.pos[1], s.pos[2], s.pos[3], s.color[1], s.color[2], s.color[3], s.brightness, s.meter)
+	s.light = dream:newLight(s.pos[1], s.pos[2], s.pos[3], s.color[1], s.color[2], s.color[3], s.brightness)
 	s.light.shadow = dream:newShadow(s.meter == 0 and "sun" or "point")
 end
 

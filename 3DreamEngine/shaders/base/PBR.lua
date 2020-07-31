@@ -1,17 +1,15 @@
 local sh = { }
 
-function sh:getShaderInfoID(dream, mat, shaderType, reflection)
-	return ((reflection or dream.sky_enabled) and 0 or 1) + (mat.tex_normal and 0 or 2) + (mat.tex_emission and 0 or 4)
+sh.type = "base"
+
+function sh:getShaderInfoID(dream, mat, shaderType)
+	return (mat.tex_normal and 0 or 1) + (mat.tex_emission and 0 or 2)
 end
 
-function sh:getShaderInfo(dream, mat, shaderType, reflection)
+function sh:getShaderInfo(dream, mat, shaderType)
 	return {
 		tex_normal = mat.tex_normal ~= nil,
 		tex_emission = mat.tex_emission ~= nil,
-		
-		shaderType = shaderType,
-		vertexShader = vertexShader,
-		reflection = reflection or dream.sky_enabled,
 	}
 end
 
@@ -97,17 +95,13 @@ function sh:constructPixel(dream, info)
 	//use the reflection texture as irradiance map approximation
     vec3 diffuse = reflection(normal, 1.0) * albedo.rgb;
 	
-	//final ambient color, screen space reflection disables reflections
-	#ifdef SSR_ENABLED
-		vec3 col = (kD * diffuse) * ao;
-	#else
-		//approximate the specular part with brdf lookup table
-		vec3 ref = reflection(reflectVec, roughness);
-		vec2 brdf = Texel(brdfLUT, vec2(cosTheta, roughness)).rg;
-		vec3 specular = ref * (F * brdf.x + vec3(brdf.y));
-		
-		vec3 col = (kD * diffuse + specular) * ao;
-	#endif
+	//final ambient color with reflection
+	//approximate the specular part with brdf lookup table
+	vec3 ref = reflection(reflectVec, roughness);
+	vec2 brdf = Texel(brdfLUT, vec2(cosTheta, roughness)).rg;
+	vec3 specular = ref * (F * brdf.x + vec3(brdf.y));
+	
+	vec3 col = (kD * diffuse + specular) * ao;
 	
 	//emission
 	col += emission;

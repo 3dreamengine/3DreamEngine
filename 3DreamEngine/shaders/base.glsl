@@ -18,7 +18,8 @@ extern float pass;
 #import globalDefines
 
 //shader specific defines
-#import shaderDefines
+#import vertexDefines
+#import mainDefines
 
 #ifdef PIXEL
 
@@ -54,11 +55,13 @@ void effect() {
 		alpha = 1.0;
 	}
 	
+#import vertexPixel
 #import mainPixel
 	
 	//forward lighting
-	//requires col
-	#import lightingSystem
+	vec3 light = vec3(0.0);
+#import lightingSystem
+	col += light * albedo.a;
 	
 	//returns color
 	//requires alpha, col and normal
@@ -81,10 +84,10 @@ void effect() {
 #import animations
 
 vec4 position(mat4 transform_projection, vec4 vertex_position) {
-	highp vec4 pos = transform * animations(vertex_position);
-	vertexPos = pos.xyz;
-	
+#import vertexVertex
 #import mainVertex
+	
+	vertexPos = pos.xyz;
 	
 	//projection transform for the vertex
 	highp vec4 vPos = transformProj * pos;

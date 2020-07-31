@@ -10,7 +10,6 @@ extern Image canvas_SSR;
 extern Image canvas_exposure;
 
 extern CubeImage canvas_sky;
-extern vec3 ambient;
 
 extern mat4 transformInverse;
 extern mat3 transformInverseSubM;

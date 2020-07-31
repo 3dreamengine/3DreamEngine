@@ -55,7 +55,9 @@ end
 local particles = { }
 local lastParticleID = 0
 
+--create new particle batch
 local particleBatch = dream:newParticleBatch(texture_candle, 32)
+particleBatch.vertical = true
 
 local lights = { }
 for d,s in ipairs(scene.positions) do

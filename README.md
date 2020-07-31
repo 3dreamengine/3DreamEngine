@@ -242,8 +242,8 @@ dream:setWeather(rain, temp)
 dream:resetLight(noDayLight)
 
 --creates a new light
---meter controls distance attenuation, 0 disables it
-local light = dream:newLight(posX, posY, posZ, red, green, blue, brightness, meter)
+--typ is the light type, "point" and "sun" is inbuild, further types can be added via the shader library
+local light = dream:newLight(posX, posY, posZ, red, green, blue, brightness, typ)
 
 --add a shadow to the light
 --typ is either point or sun
@@ -255,13 +255,12 @@ light.shadow = dream:newShadow(typ, static, res)
 light:setBrightness(b)
 light:setColor(r, g, b)
 light:setPosition(x, y, z)
-light:setMeter(m)
 
 --add light to scene, note that in case of exceeding the max light sources it only uses the most relevant sources, based on distance and brightness
 dream:addLight(light)
 
 --or create a new light source and add it at once
-dream:addNewLight(posX, posY, posZ, red, green, blue, brightness, meter)
+dream:addNewLight(posX, posY, posZ, red, green, blue, brightness, typ)
 ```
 
 ### Reflections
@@ -456,8 +455,8 @@ object = {
 			
 			name = "yourSubObjectBaseName",   --the name, without material postfixes
 			
-			meshType = "textured",            --color, color_extended, textured, textured_array - determines the data the mesh contains
-			shaderType = "PBR",               --and its corresponding shader, PBR and Phong requires textured, color and color_extended the same as meshType
+			shaderType = "PBR",               --the used shader (PBR, Phong, simple or a custom one)
+			meshType = "textured",            --simple, textured, textured_array - determines the data the mesh contains, if nil it will be guessed based on the shaderType
 			mesh = love.graphics.newMesh(),   --a static, triangles-mesh, may be nil when using 3do, loads automatically
 			
 			transform = mat4(),               --default is nil, overwrites global object transformation

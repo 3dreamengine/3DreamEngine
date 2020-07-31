@@ -5,10 +5,11 @@ particles.lua - particle spritebatches
 
 local lib = _3DreamEngine
 
-local maxCount = 512
+local minIncreaseStep = 16
+local maxCount = 1024 * 32
 
 --instancemesh
-local f = {
+local instanceFormat = {
 	{"InstanceCenter", "float", 3},    -- x, y, z
 	{"InstanceSize", "float", 2},      -- size
 	{"InstanceTexOffset", "float", 2}, -- uv offset
@@ -16,7 +17,6 @@ local f = {
 	{"InstanceEmission", "float", 1},  -- emission
 	{"InstanceColor", "byte", 4},      -- color
 }
-local instanceMesh = love.graphics.newMesh(f, maxCount, "triangles", "dynamic")
 
 
 --quad
@@ -33,15 +33,6 @@ local mesh = love.graphics.newMesh(f, {
 mesh:setVertexMap(1, 2, 3, 1, 3, 4)
 
 
---attach instance mesh
-mesh:attachAttribute("InstanceCenter", instanceMesh, "perinstance")
-mesh:attachAttribute("InstanceSize", instanceMesh, "perinstance")
-mesh:attachAttribute("InstanceTexScale", instanceMesh, "perinstance")
-mesh:attachAttribute("InstanceTexOffset", instanceMesh, "perinstance")
-mesh:attachAttribute("InstanceEmission", instanceMesh, "perinstance")
-mesh:attachAttribute("InstanceColor", instanceMesh, "perinstance")
-
-
 --sorter
 local sortingCamPos
 local sortFunction = function(a, b)
@@ -51,26 +42,43 @@ local sortFunction = function(a, b)
 end
 
 local meta = {
+	--clear the batch
 	clear = function(self)
 		self.instances = { }
 	end,
 	
+	--add a new particle to this batch
 	add = function(self, px, py, pz, size, emission, quad)
-		local r, g, b, a = love.graphics.getColor()
-		if quad then
-			local x, y, w, h = quad:getViewport()
-			local sw, sh = quad:getTextureDimensions()
-			local ratio = h / w
-			self.instances[#self.instances+1] = {px, py, pz, size, size * ratio, x / sw, y / sh, w / sw, h / sh, emission or 0, r, g, b, a}
-		else
-			self.instances[#self.instances+1] = {px, py, pz, size, size * ratio, 0, 0, 1, 1, emission or 0, r, g, b, a}
+		local n = #self.instances
+		if n < maxCount then
+			local r, g, b, a = love.graphics.getColor()
+			if quad then
+				local x, y, w, h = quad:getViewport()
+				local sw, sh = quad:getTextureDimensions()
+				local ratio = h / w
+				self.instances[n+1] = {px, py, pz, size, size * ratio, x / sw, y / sh, w / sw, h / sh, emission or 0, r, g, b, a}
+			else
+				self.instances[n+1] = {px, py, pz, size, size * ratio, 0, 0, 1, 1, emission or 0, r, g, b, a}
+			end
 		end
 	end,
 	
+	--present the batch
 	present = function(self, camPos)
 		if self.pass == 2 then
 			sortingCamPos = camPos
 			table.sort(self.instances, sortFunction)
+		end
+		
+		--increase mesh data if required
+		if not instanceMesh or instanceMesh:getVertexCount() < #self.instances then
+			instanceMesh = love.graphics.newMesh(instanceFormat, math.ceil(#self.instances / minIncreaseStep) * minIncreaseStep, "triangles", "dynamic")
+			
+			--attach instance mesh
+			for d,s in pairs({"InstanceCenter", "InstanceSize", "InstanceTexScale", "InstanceTexOffset", "InstanceEmission", "InstanceColor"}) do
+				mesh:detachAttribute(s)
+				mesh:attachAttribute(s, instanceMesh, "perinstance")
+			end
 		end
 		
 		--fill instance buffer

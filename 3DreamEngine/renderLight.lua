@@ -5,6 +5,8 @@ a collection of lighting helper functions for the rendering process
 
 local lib = _3DreamEngine
 
+local lightTypes = { }
+local lastLightTyp = 0
 function lib:getLightOverview(cam)
 	--select the most important lights
 	for d,s in ipairs(self.lighting) do
@@ -15,110 +17,57 @@ function lib:getLightOverview(cam)
 	
 	--keep track of light count per type to construct shader
 	local lighting = { }
-	local lightRequirements = {
-		simple = 0,
-		point_shadow = 0,
-		sun_shadow = 0,
-	}
+	local lightRequirements = { }
 	for d,s in ipairs(self.lighting) do
-		s.active = true
-		if not s.shadow then
-			lighting[#lighting+1] = s
-			lightRequirements.simple = lightRequirements.simple + 1
-		elseif s.shadow and s.shadow.typ == "point" then
-			lighting[#lighting+1] = s
-			lightRequirements.point_shadow = lightRequirements.point_shadow + 1
-		elseif s.shadow and s.shadow.typ == "sun" then
-			lighting[#lighting+1] = s
-			lightRequirements.sun_shadow = lightRequirements.sun_shadow + 1
+		local typ = s.typ .. "_" .. (s.shadow and "shadow" or "simple")
+		if not lightTypes[typ] then
+			lightTypes[typ] = lastLightTyp
+			lastLightTyp = lastLightTyp + 1
 		end
 		
+		s.light_typ = typ
+		s.light_typ_id = lightTypes[typ]
+		
+		lightRequirements[typ] = (lightRequirements[typ] or 0) + 1
+		lighting[#lighting+1] = s
+		
+		s.active = true
 		if #lighting == self.max_lights then
 			break
 		end
 	end
+	
+	table.sort(lighting, function(a, b) return a.light_typ_id > b.light_typ_id end)
+	
 	return lighting, lightRequirements
 end
 
-function lib:sendLightUniforms(lighting, lightRequirements, shader, lighting)
-	if lightRequirements.simple > 0 then
-		shader:send("lightCount", #lighting)
-	end
-	
-	--current light id
-	local count = 0
-	
-	--fill light buffers
+function lib:sendLightUniforms(lighting, lightRequirements, shader)
+	--general settings
 	local lightColor = { }
 	local lightPos = { }
-	local lightMeter = { }
-	for i = 1, self.max_lights do
-		lightColor[i] = {0, 0, 0}
-		lightPos[i] = {0, 0, 0}
-		lightMeter[i] = 0
+	
+	--global uniforms
+	for d,s in pairs(lightRequirements) do
+		self.shaderLibrary.light[d]:sendGlobalUniforms(self, shader, info)
 	end
 	
-	--sun lighting
+	--uniforms
 	for d,s in ipairs(lighting) do
-		if s.shadow and s.shadow.typ == "sun" then
-			local enable = 0.0
-			if s.shadow.canvases and s.shadow.canvases[3] then
-				shader:send("transformProjShadow_" .. count .. "_1", s.shadow.transformation_1)
-				shader:send("transformProjShadow_" .. count .. "_2", s.shadow.transformation_2)
-				shader:send("transformProjShadow_" .. count .. "_3", s.shadow.transformation_3)
-				shader:send("tex_shadow_1_" .. count, s.shadow.canvases[1])
-				shader:send("tex_shadow_2_" .. count, s.shadow.canvases[2])
-				shader:send("tex_shadow_3_" .. count, s.shadow.canvases[3])
-				enable = 1.0
+		local hide = self.shaderLibrary.light[s.light_typ]:sendUniforms(self, shader, info, s, d-1)
+		if hide then
+			lightColor[d] = {0, 0, 0}
+			lightPos[d] = {0, 0, 0}
+		else
+			lightColor[d] = {s.r * s.brightness, s.g * s.brightness, s.b * s.brightness}
+			if s.shadow then
+				lightPos[d] = {s.shadow.lastPos.x, s.shadow.lastPos.y, s.shadow.lastPos.z}
+			else
+				lightPos[d] = {s.x, s.y, s.z}
 			end
-			
-			count = count + 1
-			
-			lightColor[count] = {s.r * s.brightness * enable, s.g * s.brightness * enable, s.b * s.brightness * enable}
-			lightPos[count] = {s.shadow.lastPos.x, s.shadow.lastPos.y, s.shadow.lastPos.z}
-			lightMeter[count] = s.meter
 		end
 	end
 	
-	--sun lighting settings
-	if lightRequirements.sun_shadow > 0 then
-		shader:send("factor", self.shadow_factor)
-		shader:send("shadowDistance", 2 / self.shadow_distance)
-		shader:send("texelSize", 1.0 / self.shadow_resolution)
-	end
-	
-	--point lighting
-	for d,s in ipairs(lighting) do
-		if s.shadow and s.shadow.typ == "point" then
-			local enable = 0.0
-			if s.shadow.canvas then
-				shader:send("tex_shadow_" .. count, s.shadow.canvas)
-				enable = 1.0
-			end
-			
-			count = count + 1
-			
-			lightColor[count] = {s.r * s.brightness * enable, s.g * s.brightness * enable, s.b * s.brightness * enable}
-			lightPos[count] = {s.shadow.lastPos.x, s.shadow.lastPos.y, s.shadow.lastPos.z}
-			lightMeter[count] = s.meter
-		end
-	end
-	
-	--point lighting without shadow
-	for d,s in ipairs(lighting) do
-		if not s.shadow then
-			count = count + 1
-			
-			lightColor[count] = {s.r * s.brightness, s.g * s.brightness, s.b * s.brightness}
-			lightPos[count] = {s.x, s.y, s.z}
-			lightMeter[count] = s.meter
-		end
-	end
-	
-	--general settings
 	shader:send("lightColor", unpack(lightColor))
 	shader:send("lightPos", unpack(lightPos))
-	if lightRequirements.simple > 0 or lightRequirements.point_shadow > 0 then
-		shader:send("lightMeter", unpack(lightMeter))
-	end
 end

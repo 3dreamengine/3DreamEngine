@@ -156,7 +156,7 @@ lib.weather_temperature = 0.0
 --default camera
 lib.cam = lib:newCam()
 
-lib.delton = require((...) .. "/libs/delton"):new()
+lib.delton = require((...) .. "/libs/delton"):new(512)
 
 if not _DEBUGMODE then
 	lib.delton.start = function() end
@@ -167,8 +167,8 @@ end
 --default textures
 if love.graphics then
 	lib.object_sky = lib:loadObject(lib.root .. "/objects/sky", {meshType = "textured"})
-	lib.object_cube = lib:loadObject(lib.root .. "/objects/cube", {meshType = "color"})
-	lib.object_warning = lib:loadObject(lib.root .. "/objects/warning", {meshType = "color_extended"})
+	lib.object_cube = lib:loadObject(lib.root .. "/objects/cube", {meshType = "simple"})
+	lib.object_warning = lib:loadObject(lib.root .. "/objects/warning", {meshType = "simple"})
 	lib.object_plane = lib:loadObject(lib.root .. "/objects/plane", {meshType = "textured"})
 	lib.object_rain = lib:loadObject(lib.root .. "/objects/rain", {meshType = "textured"})
 	
@@ -319,7 +319,7 @@ function lib.init(self, w, h)
 	self.lighting = { }
 	
 	--create sun shadow if requested
-	self.sunObject = lib:newLight(1, 1, 1, 1, 1, 1, 5, 0)
+	self.sunObject = lib:newLight(1, 1, 1, 1, 1, 1, 5, "sun")
 	if self.sun_shadow then
 		self.sunObject.shadow = lib:newShadow("sun")
 	else

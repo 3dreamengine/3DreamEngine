@@ -105,18 +105,16 @@ local lightMetaTable = {
 		self.y = y
 		self.z = z
 	end,
-	setMeter = function(self, meter)
-		self.meter = meter
-	end,
 }
 
-function lib:newLight(posX, posY, posZ, r, g, b, brightness, meter)
+function lib:newLight(posX, posY, posZ, r, g, b, brightness, typ)
 	r = r or 1.0
 	g = g or 1.0
 	b = b or 1.0
 	local v = math.sqrt(r^2 + g^2 + b^2)
 	
 	local l = {
+		typ = typ or "point",
 		x = posX or 0,
 		y = posY or 0,
 		z = posZ or 0,
@@ -124,7 +122,6 @@ function lib:newLight(posX, posY, posZ, r, g, b, brightness, meter)
 		g = g / v,
 		b = b / v,
 		brightness = brightness or 1.0,
-		meter = meter or 1.0,
 	}
 	
 	return setmetatable(l, {__index = lightMetaTable})

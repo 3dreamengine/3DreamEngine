@@ -32,9 +32,8 @@ local performanceSamples = 1
 local meshTypeForShaderTypes = {
 	["PBR"] = "textured",
 	["Phong"] = "textured",
-	["color"] = "color",
-	["color_extended"] = "color_extended",
-	["color_material"] = "color_extended",
+	["simple"] = "simple",
+	["material"] = "simple",
 }
 
 local function newBoundaryBox()
@@ -748,6 +747,34 @@ function lib.loadObject(self, path, args)
 	return obj
 end
 
+lib.meshTypeFormats = {
+	textured = {
+		{"VertexPosition", "float", 4},     -- x, y, z, extra
+		{"VertexTexCoord", "float", 2},     -- UV
+		{"VertexNormal", "byte", 4},        -- normal
+		{"VertexTangent", "byte", 4},       -- normal tangent
+		{"VertexBiTangent", "byte", 4}      -- normal tangent
+	},
+	textured_array = {
+		{"VertexPosition", "float", 4},     -- x, y, z, extra
+		{"VertexTexCoord", "float", 3},     -- UV
+		{"VertexNormal", "byte", 4},        -- normal
+		{"VertexTangent", "byte", 4},       -- normal tangent
+		{"VertexBiTangent", "byte", 4}      -- normal tangent
+	},
+	simple = {
+		{"VertexPosition", "float", 4},     -- x, y, z, extra
+		{"VertexTexCoord", "float", 3},     -- normal
+		{"VertexMaterial", "float", 3},     -- specular, glossiness, emissive
+		{"VertexColor", "byte", 4},         -- color
+	},
+	material = {
+		{"VertexPosition", "float", 4},     -- x, y, z, extra
+		{"VertexTexCoord", "float", 3},     -- normal
+		{"VertexMaterial", "float", 1},     -- material
+	},
+}
+
 --takes an final and face table and generates the mesh and vertexMap
 --note that .3do files has it's own mesh loader
 function lib.createMesh(self, obj, o)
@@ -759,7 +786,7 @@ function lib.createMesh(self, obj, o)
 	
 	--guess shaderType if not specified based on textures used
 	if not o.shaderType then
-		o.shaderType = "color_extended"
+		o.shaderType = "simple"
 		
 		local s = o.material
 		if s.tex_albedo or s.tex_normal then
@@ -774,41 +801,8 @@ function lib.createMesh(self, obj, o)
 	end
 	
 	--mesh structure
-	local requireTangents = false
-	if o.meshType == "textured" then
-		requireTangents = true
-		o.meshAttributes = {
-		  {"VertexPosition", "float", 4},     -- x, y, z, extra
-		  {"VertexTexCoord", "float", 2},     -- UV
-		  {"VertexNormal", "byte", 4},        -- normal
-		  {"VertexTangent", "byte", 4},       -- normal tangent
-		  {"VertexBiTangent", "byte", 4}      -- normal tangent
-		}
-	elseif o.meshType == "textured_array" then
-		requireTangents = true
-		o.meshAttributes = {
-		  {"VertexPosition", "float", 4},     -- x, y, z, extra
-		  {"VertexTexCoord", "float", 3},     -- UV
-		  {"VertexNormal", "byte", 4},        -- normal
-		  {"VertexTangent", "byte", 4},       -- normal tangent
-		  {"VertexBiTangent", "byte", 4}      -- normal tangent
-		}
-	elseif o.meshType == "color" then
-		o.meshAttributes = {
-		  {"VertexPosition", "float", 4},    -- x, y, z, extra
-		  {"VertexTexCoord", "byte", 4},     -- normal, specular
-		  {"VertexColor", "byte", 4},        -- color
-		}
-	elseif o.meshType == "color_extended" then
-		o.meshAttributes = {
-		  {"VertexPosition", "float", 4},    -- x, y, z, extra
-		  {"VertexTexCoord", "float", 3},    -- normal
-		  {"VertexMaterial", "float", 3},    -- specular, glossiness, emissive
-		  {"VertexColor", "byte", 4},        -- color
-		}
-	else
-		error("unknown mesh type " .. tostring(o.meshType))
-	end
+	local requireTangents = o.meshType == "textured" or o.meshType == "textured_array"
+	o.meshAttributes = self.meshTypeFormats[o.meshType]
 	
 	--remove unused finals, merge finals and set up vertex map
 	local vertexMap = { }
@@ -853,21 +847,20 @@ function lib.createMesh(self, obj, o)
 				s[11]*0.5+0.5, s[12]*0.5+0.5, s[13]*0.5+0.5, 0.0,
 				s[14]*0.5+0.5, s[15]*0.5+0.5, s[16]*0.5+0.5, 0.0
 			)
-		elseif o.meshType == "color" then
-			local c = s[8].color
-			o.mesh:setVertex(d,
-				s[1], s[2], s[3], s[4],
-				s[5]*0.5+0.5, s[6]*0.5+0.5, s[7]*0.5+0.5,
-				s[8].specular,
-				c[1], c[2], c[3], c[4]
-			)
-		elseif o.meshType == "color_extended" then
+		elseif o.meshType == "simple" then
 			local c = s[8].color
 			o.mesh:setVertex(d,
 				s[1], s[2], s[3], s[4],
 				s[5], s[6], s[7],
 				s[8].specular, s[8].glossiness, s[8].emission or 0.0,
 				c[1], c[2], c[3], c[4]
+			)
+		elseif o.meshType == "material" then
+			local c = s[8].color
+			o.mesh:setVertex(d,
+				s[1], s[2], s[3], s[4],
+				s[5], s[6], s[7],
+				s[8]
 			)
 		end
 	end

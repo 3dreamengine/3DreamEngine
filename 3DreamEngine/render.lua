@@ -20,38 +20,40 @@ end
 --use the filled drawTable to build a scene
 --a scene is a subset of the draw table, ordered and prepared for rendering
 --pass can be 0 (include all), 1 (includes solid or semi transparent materials), 2 (include semi and full transparent materials)
-function lib:buildScene(cam, pass)
+function lib:buildScene(cam, pass, blacklist)
 	local scene = { }
 	local noFrustumCheck = cam.noFrustumCheck or not self.frustumCheck
 	
 	--add to scene
 	for d,task in ipairs(self.drawTable) do
-		local mat = task.s.material
-		local alpha = mat.alpha or 0
-		if pass == 0 or pass == 1 and alpha ~= 2 or pass == 2 and alpha ~= 0 then
-			local dist = (task.pos - cam.pos):length()
-			local LoD = task.s.LoD or task.obj.LoD
-			if not LoD or LoD[ math.min(math.floor(dist / self.LoDDistance * 10)+1, 9) ] then
-				if noFrustumCheck or not task.s.boundingBox or self:inFrustum(cam, task.pos, task.s.boundingBox.size) then
-					--group shader and materials together to reduce shader switches
-					if not scene[task.s.shader] then
-						scene[task.s.shader] = { }
-					end
-					if not scene[task.s.shader][mat] then
-						scene[task.s.shader][mat] = { }
-					end
-					
-					--add
-					table.insert(scene[task.s.shader][mat], task)
-					
-					--reflections
-					local reflection = task.s.reflection or task.obj.reflection
-					if reflection then
-						self.reflections[task.s.reflection or task.obj.reflection] = {
-							dist = dist,
-							obj = task.s.reflection and task.s or task.obj,
-							pos = reflection.pos or task.pos,
-						}
+		if not blacklist or not (blacklist[task.obj] or blacklist[task.s]) then
+			local mat = task.s.material
+			local alpha = mat.alpha or 0
+			if pass == 0 or pass == 1 and alpha ~= 2 or pass == 2 and alpha ~= 0 then
+				local dist = (task.pos - cam.pos):length()
+				local LoD = task.s.LoD or task.obj.LoD
+				if not LoD or LoD[ math.min(math.floor(dist / self.LoDDistance * 10)+1, 9) ] then
+					if noFrustumCheck or not task.s.boundingBox or self:inFrustum(cam, task.pos, task.s.boundingBox.size) then
+						--group shader and materials together to reduce shader switches
+						if not scene[task.s.shader] then
+							scene[task.s.shader] = { }
+						end
+						if not scene[task.s.shader][mat] then
+							scene[task.s.shader][mat] = { }
+						end
+						
+						--add
+						table.insert(scene[task.s.shader][mat], task)
+						
+						--reflections
+						local reflection = task.s.reflection or task.obj.reflection
+						if reflection then
+							self.reflections[task.s.reflection or task.obj.reflection] = {
+								dist = dist,
+								obj = task.s.reflection and task.s or task.obj,
+								pos = reflection.pos or task.pos,
+							}
+						end
 					end
 				end
 			end
@@ -72,7 +74,7 @@ function lib:buildScene(cam, pass)
 end
 
 --render the scene onto a canvas set using a specific view camera
-function lib:render(scene, canvases, cam, pass, blacklist)
+function lib:render(scene, canvases, cam, pass)
 	self.delton:start("prepare")
 	
 	--love shader friendly
@@ -112,7 +114,7 @@ function lib:render(scene, canvases, cam, pass, blacklist)
 	--final draw
 	for shaderInfo, shaderGroup in pairs(scene) do
 		self.delton:start("shader")
-		local shader = self:getShader(shaderInfo, lightRequirements)
+		local shader = self:getShader(shaderInfo, lighting, lightRequirements)
 		
 		--output settings
 		love.graphics.setShader(shader)
@@ -122,11 +124,13 @@ function lib:render(scene, canvases, cam, pass, blacklist)
 		
 		--shader
 		local shaderEntry = self.shaderLibrary.base[shaderInfo.shaderType]
+		local vertexEntry = self.shaderLibrary.vertex[shaderInfo.vertexShader]
 		shaderEntry:perShader(self, shader, shaderInfo)
+		vertexEntry:perShader(self, shader, shaderInfo)
 		
 		--light if using forward lighting
 		if #lighting > 0 then
-			self:sendLightUniforms(lighting, lightRequirements, shader, lighting)
+			self:sendLightUniforms(lighting, lightRequirements, shader)
 		end
 		
 		--camera
@@ -152,31 +156,31 @@ function lib:render(scene, canvases, cam, pass, blacklist)
 			
 			--shader
 			shaderEntry:perMaterial(self, shader, shaderInfo, material)
+			vertexEntry:perMaterial(self, shader, shaderInfo, material)
 			
 			--culling
 			love.graphics.setMeshCullMode(canvases.cullMode or material.cullMode or (material.alpha and self.refraction_disableCulling) and "none" or "back")
 			
 			--draw objects
 			for _,task in pairs(materialGroup) do
-				if not blacklist or not (blacklist[task.obj] or blacklist[task.s]) then
-					--sky texture
-					if shaderInfo.reflection then
-						local ref = task.s.reflection and task.s.reflection.canvas or task.obj.reflection and task.obj.reflection.canvas or self.canvas_sky
-						shader:send("tex_background", ref or self.textures.sky_fallback)
-					end
-					
-					--object transformation
-					shader:send("transform", task.transform)
-					
-					--shader
-					shaderEntry:perObject(self, shader, shaderInfo, task)
-					
-					--render
-					love.graphics.setColor(task.color)
-					love.graphics.draw(task.s.mesh)
-					
-					self.stats.draws = self.stats.draws + 1
+				--sky texture
+				if shaderInfo.reflection then
+					local ref = task.s.reflection and task.s.reflection.canvas or task.obj.reflection and task.obj.reflection.canvas or self.canvas_sky
+					shader:send("tex_background", ref or self.textures.sky_fallback)
 				end
+				
+				--object transformation
+				shader:send("transform", task.transform)
+				
+				--shader
+				shaderEntry:perObject(self, shader, shaderInfo, task)
+				vertexEntry:perObject(self, shader, shaderInfo, task)
+				
+				--render
+				love.graphics.setColor(task.color)
+				love.graphics.draw(task.s.mesh)
+				
+				self.stats.draws = self.stats.draws + 1
 			end
 			self.stats.materialDraws = self.stats.materialDraws + 1
 			self.delton:stop()
@@ -196,16 +200,19 @@ function lib:render(scene, canvases, cam, pass, blacklist)
 		love.graphics.setShader(self.shaders.particle)
 		self.shaders.particle:send("transform", cam.transformProj)
 		
-		local right = vec3(cam.transform[1], cam.transform[2], cam.transform[3])
-		local up = vec3(cam.transform[5], cam.transform[6], cam.transform[7])
-		
-		up = vec3(0, 1, 0)
-		right = vec3(right.x, 0, right.z):normalize()
-		
-		self.shaders.particle:send("up", {up:unpack()})
-		self.shaders.particle:send("right", {right:unpack()})
-		
 		for d,s in pairs(self.particles) do
+			local right, up
+			if self.vertical then
+				up = vec3(0, 1, 0)
+				right = vec3(right.x, 0, right.z):normalize()
+			else
+				right = vec3(cam.transform[1], cam.transform[2], cam.transform[3])
+				up = vec3(cam.transform[5], cam.transform[6], cam.transform[7])
+			end
+			
+			self.shaders.particle:send("up", {up:unpack()})
+			self.shaders.particle:send("right", {right:unpack()})
+			
 			d:present(cam.pos)
 		end
 		
@@ -253,24 +260,25 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 	
 	local secondPass = canvases.alphaBlendMode == "average" or canvases.alphaBlendMode == "alpha"
 	
-	--generate scene
-	self.delton:start("scene")
-	local scene = self:buildScene(cam, secondPass and 1 or 0)
-	self.delton:stop()
-	
 	--first pass
 	self.delton:start("first")
-	self:render(scene, canvases, cam, 1, blacklist)
+	
+	--generate scene
+	self.delton:start("scene")
+	local scene = self:buildScene(cam, secondPass and 1 or 0, blacklist)
+	self.delton:stop()
+	
+	self:render(scene, canvases, cam, 1)
 	self.delton:stop()
 	
 	--second (alpha) pass
 	self.delton:start("second")
 	if secondPass then
 		self.delton:start("scene")
-		local scene = self:buildScene(cam, 2)
+		local scene = self:buildScene(cam, 2, blacklist)
 		self.delton:stop()
 		
-		self:render(scene, canvases, cam, 2, blacklist)
+		self:render(scene, canvases, cam, 2)
 	end
 	self.delton:stop()
 	

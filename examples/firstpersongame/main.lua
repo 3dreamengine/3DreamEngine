@@ -49,7 +49,7 @@ function love.draw()
 	--update light
 	dream:resetLight()
 	if love.mouse.isDown(1) then
-		dream:addNewLight(player.x, player.y, player.z, 1.0, 0.75, 0.1, 5.0 + love.math.noise(love.timer.getTime()*2, 1.0))
+		dream:addNewLight(player.x, player.y, player.z, 1.0, 0.75, 0.1, 5.0 + love.math.noise(love.timer.getTime()*2))
 	end
 	
 	dream:prepare()

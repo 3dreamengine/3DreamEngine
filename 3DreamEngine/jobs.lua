@@ -433,8 +433,8 @@ function lib.executeJobs(self, cam)
 			o[4].shadow["transformation_" .. cascade] = shadowCam.transformProj
 			o[4].shadow.canvases[cascade] = o[4].shadow.canvases[cascade] or self:newShadowCanvas("sun", o[4].shadow.res)
 			
-			local scene = self:buildScene(shadowCam, 1)
-			self:renderShadows(scene, shadowCam, {depthstencil = o[4].shadow.canvases[cascade]}, o[4].blacklist)
+			local scene = self:buildScene(shadowCam, 1, o[4].blacklist)
+			self:renderShadows(scene, shadowCam, {depthstencil = o[4].shadow.canvases[cascade]})
 			
 			o[4].shadow.done[cascade] = true
 		elseif o[1] == "shadow_point" then
@@ -459,8 +459,8 @@ function lib.executeJobs(self, cam)
 			--render
 			for face = 1, 6 do
 				local shadowCam = self:newCam(transformations[face], pos, lookNormals[face])
-				local scene = self:buildScene(shadowCam, 1)
-				self:renderShadows(scene, shadowCam, {{o[4].shadow.canvas, face = face}}, o[4].blacklist)
+				local scene = self:buildScene(shadowCam, 1, o[4].blacklist)
+				self:renderShadows(scene, shadowCam, {{o[4].shadow.canvas, face = face}})
 			end
 			
 			o[4].shadow.done[1] = true

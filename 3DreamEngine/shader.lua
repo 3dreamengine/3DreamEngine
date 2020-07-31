@@ -25,37 +25,46 @@ if _DEBUGMODE then
 			print()
 			
 			--dump shader in case of error
-			if not ok then
-				love.filesystem.write("shader_errored.glsl", pixel)
-			end
+			love.filesystem.write("shader_errored.glsl", pixel)
 		end
-		return love.graphics.newShader_old(pixel, vertex)
+		local sh = love.graphics.newShader_old(pixel, vertex)
+		local warnings = sh:getWarnings()
+		if #warnings ~= 29 then
+			if not vertex and #pixel < 1024 and not pixel:find("\n") then
+				print(pixel)
+			end
+			print(warnings)
+			print()
+		end
+		return sh
 	end
 end
 
 --shader library
 lib.shaderLibrary = {
 	base = { },
+	vertex = { },
+	light = { },
 }
 
 --shader register
-function lib:registerBaseShader(path)
+function lib:registerShader(path)
 	local name = (path:match("^.+/(.+)$") or path):sub(1, -5)
-	self.shaderLibrary.base[name] = require(path:sub(1, -5))
+	local sh = require(path:sub(1, -5))
+	self.shaderLibrary[sh.type][name] = sh
 end
 
 --register inbuild shaders
-for d,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/baseShaders")) do
-	lib:registerBaseShader(lib.root .. "/baseShaders/" .. s)
+for i,v in ipairs({"base", "vertex", "light"}) do
+	for d,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/" .. v)) do
+		lib:registerShader(lib.root .. "/shaders/" .. v .. "/" .. s)
+	end
 end
 
 --load code snippsets
 local codes = {
 	functions = { },
 	shading = { },
-	shader = { },
-	shadow = { },
-	vertex = { },
 }
 for i,v in pairs(codes) do
 	for d,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/" .. i)) do
@@ -166,13 +175,18 @@ function lib:getShaderInfo(mat, shaderType, reflection)
 	local shs = self.mainShaders[shaderType][vertexShader]
 	
 	--get a unique ID
+	assert(self.shaderLibrary.base[shaderType], "Shader '" .. shaderType .. "' does not exist!")
 	local ID = self.shaderLibrary.base[shaderType]:getShaderInfoID(self, mat, shaderType, reflection)
+	
+	--reflection module
+	ID = ID + ((reflection or dream.sky_enabled) and 1024 or 0)
 	
 	--create new shader info object if necessary
 	if not shs[ID] then
 		shs[ID] = self.shaderLibrary.base[shaderType]:getShaderInfo(self, mat, shaderType, reflection)
 		shs[ID].shaderType = shaderType
 		shs[ID].vertexShader = vertexShader
+		shs[ID].reflection = reflection or dream.sky_enabled
 		shs[ID].shaders = { }
 	end
 	
@@ -181,9 +195,18 @@ end
 
 --construct a shader
 local baseShader = love.filesystem.read(lib.root .. "/shaders/base.glsl")
-function lib:getShader(info, lightRequirements)
-	--based on scene light we need a specific shader
-	local ID = lightRequirements and ((lightRequirements.simple > 0 and 2 or 1) + lightRequirements.sun_shadow * 256^2 + lightRequirements.point_shadow * 256) or 0
+local lastID = 0
+local lightRequirementIDs = { }
+function lib:getShader(info, lighting, lightRequirements)
+	--get a unique ID for this specific light setup
+	local ID = 0
+	for d,s in pairs(lightRequirements) do
+		if not lightRequirementIDs[d] then
+			lightRequirementIDs[d] = 16 ^ lastID
+			lastID = lastID + 1
+		end
+		ID = ID + lightRequirementIDs[d] * s
+	end
 	
 	if not info.shaders[ID] then
 		--construct shader
@@ -195,92 +218,50 @@ function lib:getShader(info, lightRequirements)
 		]])
 		
 		--the shader might need additional code
-		code = code:gsub("#import shaderDefines", self.shaderLibrary.base[info.shaderType]:constructDefines(self, info))
-		code = code:gsub("#import mainPixelPre", self.shaderLibrary.base[info.shaderType]:constructPixelPre(self, info))
-		code = code:gsub("#import mainPixel", self.shaderLibrary.base[info.shaderType]:constructPixel(self, info))
-		code = code:gsub("#import mainVertex", self.shaderLibrary.base[info.shaderType]:constructVertex(self, info))
+		code = code:gsub("#import mainDefines", self.shaderLibrary.base[info.shaderType]:constructDefines(self, info) or "")
+		code = code:gsub("#import mainPixelPre", self.shaderLibrary.base[info.shaderType]:constructPixelPre(self, info) or "")
+		code = code:gsub("#import mainPixel", self.shaderLibrary.base[info.shaderType]:constructPixel(self, info) or "")
+		code = code:gsub("#import mainVertex", self.shaderLibrary.base[info.shaderType]:constructVertex(self, info) or "")
 		
-		--import code snipsets
-		code = code:gsub("#import animations", codes.vertex[info.vertexShader])
+		--import vertex module
+		code = code:gsub("#import vertexDefines", self.shaderLibrary.vertex[info.vertexShader]:constructDefines(self, info) or "")
+		code = code:gsub("#import vertexPixel", self.shaderLibrary.vertex[info.vertexShader]:constructPixel(self, info) or "")
+		code = code:gsub("#import vertexVertex", self.shaderLibrary.vertex[info.vertexShader]:constructVertex(self, info) or "")
+		
+		--import reflection function
 		code = code:gsub("#import reflections", info.reflection and codes.functions.reflections or codes.functions.ambientOnly)
 		
 		--construct forward lighting system
 		if lightRequirements then
-			local lcInit = (lightRequirements.point_shadow > 0 and codes.shadow.point or "") .. "\n" .. (lightRequirements.sun_shadow > 0 and codes.shadow.sun or "") .. "\n"
-			local lc = ""
-			local count = 0
+			local lcInit = { }
+			local lc = { }
 			
-			local getLightData = self.shaderLibrary.base[info.shaderType]:getLightSignature(self)
+			local lightSignature = self.shaderLibrary.base[info.shaderType]:getLightSignature(self)
 			
 			--light positions, colors and meters (not always used)
-			lcInit = lcInit .. [[
-				extern vec3 lightPos[]] .. self.max_lights .. [[];
-				extern vec3 lightColor[]] .. self.max_lights .. [[];
-				extern float lightMeter[]] .. self.max_lights .. [[];
-			]] .. "\n"
+			lcInit[#lcInit+1] = [[
+				extern vec3 lightPos[]] .. #lighting .. [[];
+				extern vec3 lightColor[]] .. #lighting .. [[];
+			]]
 			
-			--sun with tripple cascade shadow
-			for i = 1, lightRequirements.sun_shadow do
-				lcInit = lcInit .. [[
-					extern highp mat4 transformProjShadow_]] .. count .. [[_1;
-					extern highp mat4 transformProjShadow_]] .. count .. [[_2;
-					extern highp mat4 transformProjShadow_]] .. count .. [[_3;
-					extern sampler2DShadow tex_shadow_1_]] .. count .. [[;
-					extern sampler2DShadow tex_shadow_2_]] .. count .. [[;
-					extern sampler2DShadow tex_shadow_3_]] .. count .. [[;
-				]] .. "\n"
-				
-				lc = lc .. [[{
-					float shadow = sampleShadowSun(vertexPos, transformProjShadow_]] .. count .. [[_1, transformProjShadow_]] .. count .. [[_2, transformProjShadow_]] .. count .. [[_3, tex_shadow_1_]] .. count .. [[, tex_shadow_2_]] .. count .. [[, tex_shadow_3_]] .. count .. [[);
-					if (shadow > 0.0) {
-						vec3 lightVec = normalize(lightPos[]] .. count .. [[]);
-						col += getLight(lightColor[]] .. count .. [[], viewVec, lightVec, normal, ]] .. getLightData .. [[) * albedo.a;
-					}
-				}]] .. "\n"
-				
-				count = count + 1
+			--global defines
+			for d,s in pairs(lightRequirements) do
+				assert(self.shaderLibrary.light[d], "Light of type '" .. d .. "' does not exist!")
+				lcInit[#lcInit+1] = self.shaderLibrary.light[d]:constructDefinesGlobal(self, info)
 			end
 			
-			--point with cubemap shadow
-			for i = 1, lightRequirements.point_shadow do
-				lcInit = lcInit .. [[
-					extern float size_]] .. count .. [[;
-					extern samplerCube tex_shadow_]] .. count .. [[;
-				]] .. "\n"
-				
-				lc = lc .. [[{
-					highp vec3 lightVec = lightPos[]] .. count .. [[] - vertexPos;
-					float shadow = sampleShadowPoint(lightVec, size_]] .. count .. [[, tex_shadow_]] .. count .. [[);
-					if (shadow > 0.0) {
-						float distance = length(lightVec) * lightMeter[]] .. count .. [[];
-						float power = 1.0 / (0.1 + distance * distance);
-						col += getLight(lightColor[]] .. count .. [[] * shadow * power, viewVec, normalize(lightVec), normal, ]] .. getLightData .. [[) * albedo.a;
-					}
-				}]] .. "\n"
-				
-				count = count + 1
+			--defines
+			for	 d,s in ipairs(lighting) do
+				lcInit[#lcInit+1] = self.shaderLibrary.light[s.light_typ]:constructDefines(self, info, d-1)
 			end
 			
-			--simple point or sun lights
-			if lightRequirements.simple > 0 then
-				lc = lc .. [[{
-					for (int i = ]].. count .. [[; i < lightCount; i++) {
-						if (lightMeter[i] > 0.0) {
-							vec3 lightVecRaw = lightPos[i] - vertexPos;
-							vec3 lightVec = normalize(lightVecRaw);
-							float distance = length(lightVecRaw) * lightMeter[i];
-							float power = 1.0 / (0.1 + distance * distance);
-							col += getLight(lightColor[i] * power, viewVec, lightVec, normal, ]] .. getLightData .. [[) * albedo.a;
-						} else {
-							vec3 lightVec = normalize(lightPos[i]);
-							col += getLight(lightColor[i], viewVec, lightVec, normal, ]] .. getLightData .. [[) * albedo.a;
-						}
-					}
-				}]] .. "\n"
+			--code
+			for d,s in ipairs(lighting) do
+				lc[#lc+1] = "{" .. self.shaderLibrary.light[s.light_typ]:constructPixel(self, info, d-1, lightSignature) .. "}"
 			end
 			
-			code = code:gsub("#import lightingSystemInit", lcInit)
-			code = code:gsub("#import lightingSystem", lc)
+			code = code:gsub("#import lightingSystemInit", table.concat(lcInit, "\n"))
+			code = code:gsub("#import lightingSystem", table.concat(lc, "\n"))
 			code = code:gsub("#import lightFunction", codes.shading[self.lighting_engine])
 		end
 		
@@ -293,6 +274,8 @@ function lib:getShader(info, lightRequirements)
 		if ok then
 			info.shaders[ID] = shader
 		end
+		
+		love.filesystem.write(ID .. ".glsl", code)
 	end
 	
 	return info.shaders[ID]
