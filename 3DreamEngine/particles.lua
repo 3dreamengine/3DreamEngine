@@ -58,14 +58,14 @@ local meta = {
 				local ratio = h / w
 				self.instances[n+1] = {px, py, pz, size, size * ratio, x / sw, y / sh, w / sw, h / sh, emission or 0, r, g, b, a}
 			else
-				self.instances[n+1] = {px, py, pz, size, size * ratio, 0, 0, 1, 1, emission or 0, r, g, b, a}
+				self.instances[n+1] = {px, py, pz, size, size, 0, 0, 1, 1, emission or 0, r, g, b, a}
 			end
 		end
 	end,
 	
 	--present the batch
 	present = function(self, camPos)
-		if self.pass == 2 then
+		if self.sort then
 			sortingCamPos = camPos
 			table.sort(self.instances, sortFunction)
 		end
@@ -91,11 +91,12 @@ local meta = {
 	end,
 }
 
-function lib:newParticleBatch(texture, count, pass)
+function lib:newParticleBatch(texture, pass)
 	local p = { }
 	
 	p.texture = texture or 2
 	p.pass = pass or 2
+	p.sort = p.pass == 2
 	
 	p.instances = { }
 	

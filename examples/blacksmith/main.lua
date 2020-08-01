@@ -46,6 +46,10 @@ dream.cam.ry = 0
 local particles = { }
 local lastParticleID = 0
 
+--create new particle batch
+local particleBatch = dream:newParticleBatch(texture_candle, 2)
+particleBatch.vertical = true
+
 --create three light sources and assign shadows
 local lights = { }
 for i = 1, 3 do
@@ -82,13 +86,16 @@ function love.draw()
 		end
 	end
 	
+	--particles
+	particleBatch:clear()
+	for d,s in pairs(particles) do
+		particleBatch:add(s[1], s[2], s[3], s[4]*0.075, 2.0, quads[math.ceil(d + s[4]*25) % 25 + 1])
+	end
+	
 	dream:prepare()
 	dream:draw(scene)
 	
-	--particles
-	for d,s in pairs(particles) do
-		dream:drawParticle(texture_candle, quads[math.ceil(d + s[4]*25) % 25 + 1], s[1], s[2], s[3], s[4]*0.01, 0.0, 0.25)
-	end
+	dream:drawParticleBatch(particleBatch)
 	
 	--torches
 	torch:reset()

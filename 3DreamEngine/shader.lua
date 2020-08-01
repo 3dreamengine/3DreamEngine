@@ -232,7 +232,7 @@ function lib:getShader(info, lighting, lightRequirements)
 		code = code:gsub("#import reflections", info.reflection and codes.functions.reflections or codes.functions.ambientOnly)
 		
 		--construct forward lighting system
-		if lightRequirements then
+		if #lighting > 0 then
 			local lcInit = { }
 			local lc = { }
 			

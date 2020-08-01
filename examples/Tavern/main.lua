@@ -52,12 +52,13 @@ for y = 1, 5 do
 		quads[#quads+1] = love.graphics.newQuad(x-1, (y-1)*factor, 1, factor, 5, 5*factor)
 	end
 end
-local particles = { }
-local lastParticleID = 0
 
 --create new particle batch
-local particleBatch = dream:newParticleBatch(texture_candle, 32)
+local particleBatch = dream:newParticleBatch(texture_candle, 2)
 particleBatch.vertical = true
+
+local particleBatchDust = dream:newParticleBatch(love.graphics.newImage(projectDir .. "smoke.png"), 1)
+particleBatchDust.sort = false
 
 local lights = { }
 for d,s in ipairs(scene.positions) do
@@ -76,6 +77,8 @@ local hideTooltips = false
 local lookingAtCheck = false
 local rotateCamera = true
 
+local n = require(projectDir .. "noise").Simplex2D
+
 function love.draw()
 	--update camera
 	dream.cam:reset()
@@ -86,6 +89,22 @@ function love.draw()
 	dream:prepare()
 	
 	particleBatch:clear()
+	
+	--noise is slow. So lets reuse it
+	local buffer = { }
+	for i = 1, 10 do
+		
+	end
+	
+	--dusty atmosphere
+	particleBatchDust:clear()
+	local c = love.timer.getTime() * 0.005
+	for i = 1, 500 do
+		local x = n(i, 1 + c) * 7
+		local y = n(i, 2 + c) * 2.25 + 1.75
+		local z = n(i, 3 + c) * 7
+		particleBatchDust:add(x, y, z, (i % 10 + 10) * 0.0025)
+	end
 	
 	--update lights
 	dream:resetLight(true)
@@ -109,6 +128,7 @@ function love.draw()
 	dream:draw(scene)
 	
 	dream:drawParticleBatch(particleBatch)
+	dream:drawParticleBatch(particleBatchDust)
 
 	dream:present()
 	
@@ -173,15 +193,6 @@ function love.update(dt)
 	local d = love.keyboard.isDown
 	local speed = 7.5*dt
 	love.mouse.setRelativeMode(rotateCamera)
-	
-	--particles
-	for d,s in pairs(particles) do
-		s[2] = s[2] + dt*0.25
-		s[4] = s[4] - dt
-		if s[4] < 0 then
-			particles[d] = nil
-		end
-	end
 	
 	--collision
 	player.x = player.x + player.ax * dt
