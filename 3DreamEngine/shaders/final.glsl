@@ -1,7 +1,6 @@
 extern Image canvas_color_pass2;
 extern Image canvas_data_pass2;
 extern Image canvas_normal_pass2;
-extern Image canvas_depth;
 
 extern Image canvas_bloom;
 extern Image canvas_ao;
@@ -9,23 +8,12 @@ extern Image canvas_SSR;
 
 extern Image canvas_exposure;
 
-extern CubeImage canvas_sky;
-
-extern mat4 transformInverse;
-extern mat3 transformInverseSubM;
 extern mat4 transform;
 extern vec3 lookNormal;
 extern vec3 viewPos;
 
 extern float gamma;
 extern float exposure;
-
-extern float time;
-
-extern float fog_baseline;
-extern float fog_height;
-extern float fog_density;
-extern vec3 fog_color;
 
 #ifdef AUTOEXPOSURE_ENABLED
 varying float expo;
@@ -130,14 +118,6 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 	vec4 c = Texel(canvas_color, tc_final);
 #endif
 	
-	//data
-	float depth = Texel(canvas_depth, tc_final).r;
-	
-	//sky reflection
-#ifdef SKY_ENABLED
-	vec3 sky = textureLod(canvas_sky, mat3(transformInverseSubM) * vec3(tc_final*2.0-1.0, 1.0) * vec3(1.0, -1.0, 1.0), 0.0).rgb;
-#endif
-	
 	//ao
 #ifdef AO_ENABLED
 	float ao = Texel(canvas_ao, tc_final).r;
@@ -160,23 +140,6 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 #ifdef AVERAGE_ALPHA
 	c.rgb = mix(c2.rgb, c.rgb, alpha);
 	c.a = min(1.0, c.a + c2.a);
-#endif
-
-	//fog
-#ifdef FOG_ENABLED
-	float actualDepth = depth * mix(1.0, 2.0, length(tc - vec2(0.5)));
-	float heightDensity_1 = 1.0 - clamp((viewPos.y - fog_baseline) * fog_height, 0.0, 1.0);
-	float heightDensity_2 = 1.0 - clamp((viewPos.y + lookNormal.y * actualDepth - fog_baseline) * fog_height, 0.0, 1.0);
-	c.rgb = mix(c.rgb, fog_color, min(1.0, (heightDensity_1 + heightDensity_2) * 0.5 * fog_density * actualDepth));
-#ifdef SKY_ENABLED
-	sky.rgb = fog_color;
-#endif
-#endif
-	
-	//backgound
-#ifdef SKY_ENABLED
-	c.rgb = mix(sky.rgb, c.rgb, c.a);
-	c.a = 1.0;
 #endif
 	
 	//exposure

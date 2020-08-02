@@ -32,6 +32,7 @@ require((...) .. "/shader")
 require((...) .. "/loader")
 require((...) .. "/render")
 require((...) .. "/renderLight")
+require((...) .. "/renderSky")
 require((...) .. "/jobs")
 require((...) .. "/particlesystem")
 require((...) .. "/particles")
@@ -129,7 +130,7 @@ lib.autoExposure_adaptionSpeed = 0.1
 lib.sky_enabled = true
 lib.sky_hdri = false
 lib.sky_hdri_exposure = 1.0
-lib.sky_resolution = 1024
+lib.sky_resolution = 512
 lib.sky_format = "rgba16f"
 lib.sky_time = 0.3
 lib.sky_day = 0.0
@@ -401,7 +402,7 @@ function lib:drawParticleBatch(batch)
 	self.particles[batch] = true
 	
 	--enable particle rendering
-	self.particlePresence.pass_2 = true
+	self.particlePresence[batch.pass] = true
 end
 
 return lib

@@ -9,10 +9,6 @@ local projectDir = "examples/Lamborghini/"
 dream.lighting_engine = "PBR"
 dream.alphaBlendMode = "disabled"
 
-dream.shadow_distance = 4
-dream.shadow_factor = 2
-dream.shadow_resolution = 4096
-
 dream.sky_hdri = love.graphics.newImage(projectDir .. "garage.hdr")
 
 dream.cam.fov = 70

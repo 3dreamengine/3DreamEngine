@@ -138,20 +138,21 @@ end
 
 --the final canvas combines all resources into one result
 local sh_final = love.filesystem.read(lib.root .. "/shaders/final.glsl")
-function lib.getFinalShader(self, canvases, noSky)
+function lib.getFinalShader(self, canvases)
 	local parts = { }
+	parts[#parts+1] = canvases.postEffects_enabled and "#define POSTEFFECTS_ENABLED" or nil
 	parts[#parts+1] = canvases.postEffects_enabled and self.autoExposure_enabled and "#define AUTOEXPOSURE_ENABLED" or nil
 	parts[#parts+1] = canvases.postEffects_enabled and self.exposure > 0 and not self.autoExposure_enabled and "#define EXPOSURE_ENABLED" or nil
 	parts[#parts+1] = canvases.postEffects_enabled and self.bloom_enabled and "#define BLOOM_ENABLED" or nil
+	
 	parts[#parts+1] = self.AO_enabled and "#define AO_ENABLED" or nil
+	parts[#parts+1] = self.SSR_enabled and "#define SSR_ENABLED" or nil
+	
 	parts[#parts+1] = canvases.alphaBlendMode == "average" and "#define AVERAGE_ALPHA" or nil
 	parts[#parts+1] = (self.fxaa and canvases.msaa == 0) and "#define FXAA_ENABLED" or nil
-	parts[#parts+1] = self.SSR_enabled and "#define SSR_ENABLED" or nil
-	parts[#parts+1] = self.sky_enabled and not noSky and "#define SKY_ENABLED" or nil
-	parts[#parts+1] = canvases.postEffects_enabled and "#define POSTEFFECTS_ENABLED" or nil
-	parts[#parts+1] = self.lighting_engine == "PBR" and "#define SHADERTYPE_PBR" or nil
+	
 	parts[#parts+1] = self.refraction_enabled and "#define REFRACTION_ENABLED" or nil
-	parts[#parts+1] = self.fog_enabled and "#define FOG_ENABLED" or nil
+	
 	local ID = table.concat(parts, "\n")
 	if not self.shaders.final[ID] then
 		self.shaders.final[ID] = love.graphics.newShader("#pragma language glsl3\n" .. ID .. "\n" .. sh_final)

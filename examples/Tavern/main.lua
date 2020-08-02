@@ -77,7 +77,7 @@ local hideTooltips = false
 local lookingAtCheck = false
 local rotateCamera = true
 
-local n = require(projectDir .. "noise").Simplex2D
+local noise = require(projectDir .. "noise").Simplex2D
 
 function love.draw()
 	--update camera
@@ -93,11 +93,11 @@ function love.draw()
 	
 	--dusty atmosphere
 	particleBatchDust:clear()
-	local c = love.timer.getTime() * 0.005
+	local c = love.timer.getTime() * 0.0003
 	for i = 1, 300 do
-		local x = n(i, 1 + c) * 7
-		local y = n(i, 2 + c) * 2.25 + 1.75
-		local z = n(i, 3 + c) * 7
+		local x = noise(i, 1 + c) * 100 % 10 - 5
+		local y = noise(i, 2 + c) * 100 % 4
+		local z = noise(i, 3 + c) * 100 % 10 - 5
 		particleBatchDust:add(x, y, z, (i % 10 + 10) * 0.0025)
 	end
 	

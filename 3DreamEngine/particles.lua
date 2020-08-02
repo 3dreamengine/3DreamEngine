@@ -18,7 +18,6 @@ local instanceFormat = {
 	{"InstanceColor", "byte", 4},      -- color
 }
 
-
 --quad
 local f = {
 	{"VertexPosition", "float", 3},    -- x, y, z
