@@ -88,7 +88,7 @@ function lib.blurCubeMap(self, cube, level)
 		blurCanvases[f][resolution] = { }
 	end
 	if not blurCanvases[f][resolution][level] then
-		local size = resolution / 2^(level-1)
+		local size = math.ceil(resolution / math.max(1, 2^(level-1)))
 		blurCanvases[f][resolution][level] = love.graphics.newCanvas(size, size, {format = f, readable = true, msaa = 0, type = "2d", mipmaps = "none"})
 	end
 	
@@ -103,11 +103,12 @@ function lib.blurCubeMap(self, cube, level)
 		love.graphics.setCanvas(can)
 		love.graphics.setShader(self.shaders.blur_cube)
 		self.shaders.blur_cube:send("tex", cube)
+		self.shaders.blur_cube:send("strength", 0.025)
 		self.shaders.blur_cube:send("scale", 1.0 / res)
 		self.shaders.blur_cube:send("normal", blurVecs[side][1])
 		self.shaders.blur_cube:send("dirX", blurVecs[side][2])
 		self.shaders.blur_cube:send("dirY", blurVecs[side][3])
-		self.shaders.blur_cube:send("lod", (level - 2.0))
+		self.shaders.blur_cube:send("lod", level - 2.0)
 		love.graphics.rectangle("fill", 0, 0, res, res)
 		
 		--paste

@@ -7,22 +7,51 @@ function sh:constructDefinesGlobal(dream, info)
 		extern float factor;
 		extern float shadowDistance;
 		extern float texelSize;
-		
-		float sampleShadowSun2(sampler2DShadow tex, vec3 shadowUV) {
-			float ox = float(fract(love_PixelCoord.x * 0.5) > 0.25);
-			float oy = float(fract(love_PixelCoord.y * 0.5) > 0.25) + ox;
-			if (oy > 1.1) oy = 0.0;
+	]].. (dream.shadow_smooth and [[
+			vec2 sampleOffset[17] = vec2[] (
+				vec2(2, -1),
+				vec2(3, 0),
+				vec2(2, 1),
+				vec2(1, -2),
+				vec2(1, 0),
+				vec2(1, 2),
+				vec2(0, -3),
+				vec2(0, -1),
+				vec2(0, 0),
+				vec2(0, 1),
+				vec2(0, 3),
+				vec2(-1, -2),
+				vec2(-1, 0),
+				vec2(-1, 2),
+				vec2(-2, -1),
+				vec2(-3, 0),
+				vec2(-2, 1)
+			);
 			
-			return (
-				texture(tex, shadowUV + vec3(-1.5 + ox, 0.5 + oy, 0.0) * texelSize) +
-				texture(tex, shadowUV + vec3(0.5 + ox, 0.5 + oy, 0.0) * texelSize) +
-				texture(tex, shadowUV + vec3(-1.5 + ox, -1.5 + oy, 0.0) * texelSize) +
-				texture(tex, shadowUV + vec3(0.5 + ox, -1.5 + oy, 0.0) * texelSize)
-			) * 0.25;
-		}
-		
+			float sampleShadowSun2(sampler2DShadow tex, vec3 shadowUV) {
+				float shadow = 0.0;
+				for (int i = 0; i < 17; ++i) {
+					shadow += texture(tex, shadowUV + vec3(sampleOffset[i], 0.0) * texelSize);
+				}
+				return shadow / 17.0;
+			}
+		]] or [[
+			float sampleShadowSun2(sampler2DShadow tex, vec3 shadowUV) {
+				float ox = float(fract(love_PixelCoord.x * 0.5) > 0.25);
+				float oy = float(fract(love_PixelCoord.y * 0.5) > 0.25) + ox;
+				if (oy > 1.1) oy = 0.0;
+				
+				return (
+					texture(tex, shadowUV + vec3(-1.5 + ox, 0.5 + oy, 0.0) * texelSize) +
+					texture(tex, shadowUV + vec3(0.5 + ox, 0.5 + oy, 0.0) * texelSize) +
+					texture(tex, shadowUV + vec3(-1.5 + ox, -1.5 + oy, 0.0) * texelSize) +
+					texture(tex, shadowUV + vec3(0.5 + ox, -1.5 + oy, 0.0) * texelSize)
+				) * 0.25;
+			}
+		]])
+	..[[
 		float sampleShadowSun(vec3 vertexPos, mat4 transformProjShadow_1, mat4 transformProjShadow_2, mat4 transformProjShadow_3, sampler2DShadow tex_shadow_1, sampler2DShadow tex_shadow_2, sampler2DShadow tex_shadow_3) {
-			float bias = 0.0005;
+			float bias = 0.00075;
 			vec4 vertexPosShadow;
 			vec3 shadowUV;
 			float dist = distance(vertexPos, viewPos) * shadowDistance;
@@ -60,7 +89,7 @@ function sh:constructPixel(dream, info, ID, lightSignature)
 		float shadow = sampleShadowSun(vertexPos, transformProjShadow_1_#ID#, transformProjShadow_2_#ID#, transformProjShadow_3_#ID#, tex_shadow_1_#ID#, tex_shadow_2_#ID#, tex_shadow_3_#ID#);
 		if (shadow > 0.0) {
 			vec3 lightVec = normalize(lightPos[#ID#]);
-			light += getLight(lightColor[#ID#], viewVec, lightVec, normal, #lightSignature#);
+			light += getLight(lightColor[#ID#] * shadow, viewVec, lightVec, normal, #lightSignature#);
 		}
 	]]):gsub("#ID#", ID):gsub("#lightSignature#", lightSignature)
 end

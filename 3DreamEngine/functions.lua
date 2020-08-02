@@ -55,12 +55,15 @@ function lib:newShadowCanvas(typ, res)
 			{format = "depth16", readable = true, msaa = 0, type = "2d"})
 		
 		canvas:setDepthSampleMode("greater")
-		canvas:setFilter("linear", "linear", 1)
+		canvas:setFilter("linear", "linear")
 		
 		return canvas
 	elseif typ == "point" then
 		local canvas = love.graphics.newCanvas(res, res,
 			{format = "r16f", readable = true, msaa = 0, type = "cube"})
+		
+		canvas:setFilter("linear", "linear")
+		
 		return canvas
 	end
 end

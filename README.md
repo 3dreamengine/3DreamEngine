@@ -110,10 +110,7 @@ dream.shadow_resolution = 1024            -- cascade shadow resolution
 dream.shadow_cube_resolution = 512        -- cube map shadow resolution
 dream.shadow_distance = 8                 -- distance from player for the cascade shadow
 dream.shadow_factor = 4                   -- cascade shadow has 3 layers, each with size factor times bigger
-dream.shadow_smooth = true                -- smooth shadowing
-dream.shadow_smoother = true              -- smoother also applies gaussian blur to achieve best results
-dream.shadow_smooth_downScale = 0.5       -- downscaling the shadow results in better performance and more blur
-dream.shadow_quality = "low"              -- quality when using non defered lighting. WIP, produces slightly incorrect results.
+dream.shadow_smooth = true                -- enables smooth shadows, required 20 instad of 1 points Texels and 17 instad of 4 sun Texels. Point shadows also blur out based on distance.
 
 dream.reflections_resolution = 512        -- cubemap reflection resolution
 dream.reflections_format = "rgba16f"      -- reflection format, normal or rgba16f, where rgba16f preserves more detail in brightness

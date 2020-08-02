@@ -88,18 +88,13 @@ function love.draw()
 	
 	dream:prepare()
 	
+	--torches
 	particleBatch:clear()
-	
-	--noise is slow. So lets reuse it
-	local buffer = { }
-	for i = 1, 10 do
-		
-	end
 	
 	--dusty atmosphere
 	particleBatchDust:clear()
 	local c = love.timer.getTime() * 0.005
-	for i = 1, 500 do
+	for i = 1, 300 do
 		local x = n(i, 1 + c) * 7
 		local y = n(i, 2 + c) * 2.25 + 1.75
 		local z = n(i, 3 + c) * 7
@@ -134,7 +129,7 @@ function love.draw()
 	
 	if not hideTooltips then
 		love.graphics.setColor(1, 1, 1)
-		love.graphics.print("R to toggle rain (" .. tostring(dream.rain_isRaining) .. ")\nU to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")\nL to toggle looking at check (" .. tostring(lookingAtCheck) .. ")\nK to toggle relative mode (" .. tostring(rotateCamera) .. ")\n" .. love.timer.getFPS() .. " FPS", 10, 10)
+		love.graphics.print("R to toggle rain (" .. tostring(dream.rain_isRaining) .. ")\nU to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. "\nB to toggle smooth light (" .. tostring(dream.shadow_smooth) .. ")\nL to toggle looking at check (" .. tostring(lookingAtCheck) .. ")\nK to toggle relative mode (" .. tostring(rotateCamera) .. ")\n" .. love.timer.getFPS() .. " FPS", 10, 10)
 	end
 	
 	--check which object you are looking at
@@ -276,6 +271,11 @@ function love.keypressed(key)
 	
 	if key == "u" then
 		dream.autoExposure_enabled = not dream.autoExposure_enabled
+		dream:init()
+	end
+	
+	if key == "b" then
+		dream.shadow_smooth = not dream.shadow_smooth
 		dream:init()
 	end
 	

@@ -3,18 +3,52 @@ local sh = { }
 sh.type = "light"
 
 function sh:constructDefinesGlobal(dream, info)
-	return [[
-	float sampleShadowPoint(vec3 lightVec, samplerCube tex) {
-		//bias
-		float depth = length(lightVec);
-		float bias = 0.01 + depth * 0.01;
-		depth -= bias;
+	if dream.shadow_smooth then
+		return [[
+		//modified version of https://learnopengl.com/Advanced-Lighting/Shadows/Point-Shadows
+		vec3 sampleOffsetDirections[20] = vec3[] (
+		   vec3( 1,  1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1,  1,  1), 
+		   vec3( 1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1,  1, -1),
+		   vec3( 1,  1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1,  1,  0),
+		   vec3( 1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1,  0, -1),
+		   vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
+		);
 		
-		//fetch
-		vec3 n = -lightVec * vec3(1.0, -1.0, 1.0);
-		return texture(tex, n).r > depth ? 1.0 : 0.0;
-	}
-	]]
+		float sampleShadowPoint(vec3 lightVec, samplerCube tex) {
+			//bias
+			float depth = length(lightVec);
+			float bias = 0.01 + depth * 0.01;
+			depth -= bias;
+			
+			//direction
+			vec3 n = -lightVec * vec3(1.0, -1.0, 1.0);
+			
+			float shadow = 0.0;
+			float diskRadius = 0.01 * depth;
+			for (int i = 0; i < 20; ++i) {
+				if (texture(tex, n + sampleOffsetDirections[i] * diskRadius).r > depth) {
+					shadow += 0.05;
+				}
+			}
+			return shadow;
+		}
+		]]
+	else
+		return [[
+		float sampleShadowPoint(vec3 lightVec, samplerCube tex) {
+			//bias
+			float depth = length(lightVec);
+			float bias = 0.01 + depth * 0.01;
+			depth -= bias;
+			
+			//direction
+			vec3 n = -lightVec * vec3(1.0, -1.0, 1.0);
+			
+			//fetch
+			return texture(tex, n).r > depth ? 1.0 : 0.0;
+		}
+		]]
+	end
 end
 
 function sh:constructDefines(dream, info, ID)

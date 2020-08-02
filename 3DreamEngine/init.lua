@@ -98,8 +98,6 @@ lib.shadow_cube_resolution = 512
 lib.shadow_distance = 8
 lib.shadow_factor = 4
 lib.shadow_smooth = true
-lib.shadow_smoother = true
-lib.shadow_smooth_downScale = 0.5
 
 lib.reflections_resolution = 512
 lib.reflections_format = "rgba16f"
@@ -370,9 +368,7 @@ function lib:draw(obj, x, y, z, sx, sy, sz)
 	for d,s in pairs(obj.objects or {obj}) do
 		if s.mesh and not s.disabled then
 			--get required shader
-			if not s.shader then
-				s.shader = self:getShaderInfo(s.material, s.shaderType, s.reflection or obj.reflection)
-			end
+			s.shader = self:getShaderInfo(s.material, s.shaderType, s.reflection or obj.reflection)
 			
 			local pos
 			local bb = s.boundingBox

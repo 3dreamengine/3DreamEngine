@@ -65,6 +65,10 @@ local meta = {
 	
 	--present the batch
 	present = function(self, camPos)
+		if #self.instances == 0 then
+			return
+		end
+		
 		if self.sort then
 			sortingCamPos = camPos
 			table.sort(self.instances, sortFunction)
