@@ -451,7 +451,7 @@ function lib:inFrustum(cam, pos, radius)
 	local dist = dir:length()
 	
 	--check if within bounding sphere as the angle check fails on close distance
-	if dist < radius * 2 then
+	if dist < radius * 2 + 0.5 then
 		return true
 	end
 	
@@ -529,4 +529,13 @@ function lib:getCollisionData(object)
 	end
 	
 	return n
+end
+
+--shader modules
+lib.activeShaderModules = { }
+function lib:activateShaderModule(name)
+	self.activeShaderModules[name] = true
+end
+function lib:deactivateShaderModule(name)
+	self.activeShaderModules[name] = false
 end

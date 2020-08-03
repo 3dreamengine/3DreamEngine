@@ -137,6 +137,9 @@ function lib:render(scene, canvases, cam, pass)
 		local vertexEntry = self.shaderLibrary.vertex[shaderInfo.vertexShader]
 		shaderEntry:perShader(self, shader, shaderInfo)
 		vertexEntry:perShader(self, shader, shaderInfo)
+		for d,s in pairs(shaderInfo.modules) do
+			s:perShader(self, shader, shaderInfo)
+		end
 		
 		--light if using forward lighting
 		if #lighting > 0 then
@@ -167,6 +170,9 @@ function lib:render(scene, canvases, cam, pass)
 			--shader
 			shaderEntry:perMaterial(self, shader, shaderInfo, material)
 			vertexEntry:perMaterial(self, shader, shaderInfo, material)
+			for d,s in pairs(shaderInfo.modules) do
+				s:perMaterial(self, shader, shaderInfo, material)
+			end
 			
 			--culling
 			love.graphics.setMeshCullMode(canvases.cullMode or material.cullMode or (material.alpha and self.refraction_disableCulling) and "none" or "back")
@@ -185,6 +191,9 @@ function lib:render(scene, canvases, cam, pass)
 				--shader
 				shaderEntry:perObject(self, shader, shaderInfo, task)
 				vertexEntry:perObject(self, shader, shaderInfo, task)
+				for d,s in pairs(shaderInfo.modules) do
+					s:perObject(self, shader, shaderInfo, task)
+				end
 				
 				--render
 				love.graphics.setColor(task.color)
@@ -352,6 +361,8 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 	if shader:hasUniform("canvas_data_pass2") then shader:send("canvas_data_pass2", canvases.data_pass2) end
 	if shader:hasUniform("canvas_normal_pass2") then shader:send("canvas_normal_pass2", canvases.normal_pass2) end
 	
+	if shader:hasUniform("canvas_depth") then shader:send("canvas_depth", canvases.depth) end
+	
 	if shader:hasUniform("canvas_bloom") then shader:send("canvas_bloom", canvases.canvas_bloom_1) end
 	if shader:hasUniform("canvas_ao") then shader:send("canvas_ao", canvases.AO_1) end
 	if shader:hasUniform("canvas_SSR") then shader:send("canvas_SSR", canvases.canvas_SSR_1) end
@@ -367,6 +378,12 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 	
 	if shader:hasUniform("gamma") then shader:send("gamma", self.gamma) end
 	if shader:hasUniform("exposure") then shader:send("exposure", self.exposure) end
+	
+	if shader:hasUniform("fog_distance") then
+		shader:send("fog_distance", self.fog_distance)
+		shader:send("fog_density", self.fog_density)
+		shader:send("fog_color", self.fog_color)
+	end
 	
 	love.graphics.draw(canvases.color)
 	love.graphics.setShader()

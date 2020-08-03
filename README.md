@@ -68,10 +68,9 @@ dream.sun_color = vec3(10.0, 10.0, 10.0)  -- sun color *
 dream.sun_ambient = vec3(1.0, 1.0, 1.0)   -- ambient light color used when no sky is specified *
 dream.sun_shadow = true                   -- if the default sun should use a shadow
 
-dream.fog_enabled = false                 -- enable fog (WIP, works currently only indoor since the sky will be hidden)
-dream.fog_baseline = 0.0                  -- where the fog stars
-dream.fog_height = 5.0                    -- where the fog ends
-dream.fog_density = 0.05                  -- the light reduction per meter
+dream.fog_enabled = false                 -- enables fog
+dream.fog_distance = 20.0                 -- caps density at this distance
+dream.fog_density = 0.75                  -- density at max distance
 dream.fog_color = {0.5, 0.5, 0.5}         -- the color of the fog
 
 dream.AO_enabled = true                   -- enable screen space ambient occlusion

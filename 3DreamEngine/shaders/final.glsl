@@ -1,6 +1,7 @@
 extern Image canvas_color_pass2;
 extern Image canvas_data_pass2;
 extern Image canvas_normal_pass2;
+extern Image canvas_depth;
 
 extern Image canvas_bloom;
 extern Image canvas_ao;
@@ -14,6 +15,12 @@ extern vec3 viewPos;
 
 extern float gamma;
 extern float exposure;
+
+#ifdef FOG_ENABLED
+extern float fog_distance;
+extern float fog_density;
+extern vec3 fog_color;
+#endif
 
 #ifdef AUTOEXPOSURE_ENABLED
 varying float eyeAdaption;
@@ -140,6 +147,16 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 #ifdef AVERAGE_ALPHA
 	c.rgb = mix(c2.rgb, c.rgb, alpha);
 	c.a = min(1.0, c.a + c2.a);
+#endif
+
+	//fog
+#ifdef FOG_ENABLED
+	float depth = Texel(canvas_depth, tc_final).r;
+#ifdef AVERAGE_ALPHA
+	depth = mix(depth, 0.0, c2.a);
+#endif
+	float d = min(depth / fog_distance, 1.0);
+	c.rgb = mix(c.rgb, fog_color, d * fog_density);
 #endif
 	
 	//additional post effects

@@ -10,7 +10,7 @@ function sh:constructPixel(dream, info)
 	
 end
 
-function sh.constructVertex(dream, info)
+function sh:constructVertex(dream, info)
 	return [[
 	vec4 pos = transform * vertex_position;
 	]]

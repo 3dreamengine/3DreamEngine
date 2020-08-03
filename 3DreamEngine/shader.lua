@@ -45,6 +45,7 @@ lib.shaderLibrary = {
 	base = { },
 	vertex = { },
 	light = { },
+	module = { },
 }
 
 --shader register
@@ -55,7 +56,7 @@ function lib:registerShader(path)
 end
 
 --register inbuild shaders
-for i,v in ipairs({"base", "vertex", "light"}) do
+for i,v in ipairs({"base", "vertex", "light", "modules"}) do
 	for d,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/" .. v)) do
 		lib:registerShader(lib.root .. "/shaders/" .. v .. "/" .. s)
 	end
@@ -77,7 +78,6 @@ lib.shaders = { }
 --blur
 lib.shaders.blur = love.graphics.newShader(lib.root .. "/shaders/blur.glsl")
 lib.shaders.blur_cube = love.graphics.newShader(lib.root .. "/shaders/blur_cube.glsl")
-lib.shaders.blur_shadow = love.graphics.newShader(lib.root .. "/shaders/blur_shadow.glsl")
 
 --applies bloom at a given strength
 lib.shaders.bloom = love.graphics.newShader(lib.root .. "/shaders/bloom.glsl")
@@ -145,6 +145,8 @@ function lib.getFinalShader(self, canvases)
 	parts[#parts+1] = canvases.postEffects_enabled and self.exposure > 0 and "#define EXPOSURE_ENABLED" or nil
 	parts[#parts+1] = canvases.postEffects_enabled and self.bloom_enabled and "#define BLOOM_ENABLED" or nil
 	
+	parts[#parts+1] = self.fog_enabled and "#define FOG_ENABLED" or nil
+	
 	parts[#parts+1] = self.AO_enabled and "#define AO_ENABLED" or nil
 	parts[#parts+1] = self.SSR_enabled and "#define SSR_ENABLED" or nil
 	
@@ -161,7 +163,14 @@ function lib.getFinalShader(self, canvases)
 end
 
 --returns a fitting shader construction instruction for the current material and meshtype
-function lib:getShaderInfo(mat, shaderType, reflection)
+local moduleIDs = { }
+local lastModuleID = 0
+function lib:getShaderInfo(s, obj)
+	local mat = s.material
+	local shaderType = s.shaderType
+	local reflection = s.reflection or obj.reflection
+	local modules = s.modules or obj.modules
+	
 	local vertexShader = mat.shader or "default"
 	
 	--group shader and vertex shader
@@ -182,6 +191,31 @@ function lib:getShaderInfo(mat, shaderType, reflection)
 	--reflection module
 	ID = ID + ((reflection or dream.sky_enabled) and 1024 or 0)
 	
+	--global modules
+	local m = { }
+	for d,s in pairs(self.activeShaderModules) do
+		if not moduleIDs[d] then
+			lastModuleID = lastModuleID + 1
+			moduleIDs[d] = 1.0 / lastModuleID
+			m[d] = self.shaderLibrary.module[d]
+		end
+		ID = ID + moduleIDs[d]
+	end
+	
+	--local modules
+	if modules then
+		for d,s in pairs(modules) do
+			if not self.activeShaderModules[d] then
+				if not moduleIDs[d] then
+					lastModuleID = lastModuleID + 1
+					moduleIDs[d] = 1.0 / lastModuleID
+					m[d] = self.shaderLibrary.module[d]
+				end
+				ID = ID + moduleIDs[d]
+			end
+		end
+	end
+	
 	--create new shader info object if necessary
 	if not shs[ID] then
 		shs[ID] = self.shaderLibrary.base[shaderType]:getShaderInfo(self, mat, shaderType, reflection)
@@ -189,6 +223,7 @@ function lib:getShaderInfo(mat, shaderType, reflection)
 		shs[ID].vertexShader = vertexShader
 		shs[ID].reflection = reflection or dream.sky_enabled
 		shs[ID].shaders = { }
+		shs[ID].modules = m
 	end
 	
 	return shs[ID]
@@ -225,12 +260,30 @@ function lib:getShader(info, lighting, lightRequirements)
 		code = code:gsub("#import mainVertex", self.shaderLibrary.base[info.shaderType]:constructVertex(self, info) or "")
 		
 		--import vertex module
+		assert(self.shaderLibrary.vertex[info.vertexShader], "Vertex shader '" .. info.vertexShader .. "' does not exist!")
 		code = code:gsub("#import vertexDefines", self.shaderLibrary.vertex[info.vertexShader]:constructDefines(self, info) or "")
 		code = code:gsub("#import vertexPixel", self.shaderLibrary.vertex[info.vertexShader]:constructPixel(self, info) or "")
 		code = code:gsub("#import vertexVertex", self.shaderLibrary.vertex[info.vertexShader]:constructVertex(self, info) or "")
 		
 		--import reflection function
 		code = code:gsub("#import reflections", info.reflection and codes.functions.reflections or codes.functions.ambientOnly)
+		
+		--import additional modules
+		local define = { }
+		local vertex = { }
+		local pixel = { }
+		local pixelPost = { }
+		for d,s in pairs(info.modules) do
+			assert(s, "Shader module '" .. d .. "' does not exist!")
+			table.insert(define, s:constructDefines(self, info) or "")
+			table.insert(vertex, s:constructVertex(self, info) or "")
+			table.insert(pixel, s:constructPixel(self, info) or "")
+			table.insert(pixelPost, s:constructPixelPost(self, info) or "")
+		end
+		code = code:gsub("#import modulesDefines", table.concat(define, "\n"))
+		code = code:gsub("#import modulesVertex", "{" .. table.concat(vertex, "\n") .. "}")
+		code = code:gsub("#import modulesPixelPost", "{" .. table.concat(pixelPost, "\n") .. "}")
+		code = code:gsub("#import modulesPixel", "{" .. table.concat(pixel, "\n") .. "}")
 		
 		--construct forward lighting system
 		if #lighting > 0 then

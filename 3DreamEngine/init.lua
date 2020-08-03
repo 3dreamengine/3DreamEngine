@@ -57,9 +57,8 @@ lib.sun_ambient = vec3(1.0, 1.0, 1.0)
 lib.sun_shadow = true
 
 lib.fog_enabled = false
-lib.fog_baseline = 0.0
-lib.fog_height = 5.0
-lib.fog_density = 0.05
+lib.fog_distance = 20.0
+lib.fog_density = 0.75
 lib.fog_color = {0.5, 0.5, 0.5}
 
 lib.AO_enabled = true
@@ -368,7 +367,7 @@ function lib:draw(obj, x, y, z, sx, sy, sz)
 	for d,s in pairs(obj.objects or {obj}) do
 		if s.mesh and not s.disabled then
 			--get required shader
-			s.shader = self:getShaderInfo(s.material, s.shaderType, s.reflection or obj.reflection)
+			s.shader = self:getShaderInfo(s, obj)
 			
 			local pos
 			local bb = s.boundingBox

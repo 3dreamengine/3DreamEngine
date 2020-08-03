@@ -12,6 +12,11 @@ dream.autoExposure_enabled = true
 dream.sun_ambient = {0.1, 0.1, 0.1}
 dream.lighting_engine = "PBR"
 
+dream.fog_enabled = true
+dream.fog_distance = 10.0
+dream.fog_density = 0.1
+dream.fog_color = {0.7, 0.6, 0.5}
+
 --load materials
 dream:loadMaterialLibrary(projectDir .. "materials")
 
@@ -130,7 +135,15 @@ function love.draw()
 	
 	if not hideTooltips then
 		love.graphics.setColor(1, 1, 1)
-		love.graphics.print("R to toggle rain (" .. tostring(dream.rain_isRaining) .. ")\nU to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. "\nB to toggle smooth light (" .. tostring(dream.shadow_smooth) .. ")\nL to toggle looking at check (" .. tostring(lookingAtCheck) .. ")\nK to toggle relative mode (" .. tostring(rotateCamera) .. ")\n" .. love.timer.getFPS() .. " FPS", 10, 10)
+		love.graphics.print(table.concat({
+			"R to toggle rain (" .. tostring(dream.rain_isRaining) .. ")",
+			"U to toggle auto exposure (" .. tostring(dream.autoExposure_enabled),
+			"B to toggle smooth light (" .. tostring(dream.shadow_smooth) .. ")",
+			"F to toggle fog (" .. tostring(dream.fog_enabled) .. ")",
+			"L to toggle looking at check (" .. tostring(lookingAtCheck) .. ")",
+			"K to toggle relative mode (" .. tostring(rotateCamera) .. ")",
+			love.timer.getFPS() .. " FPS"
+			}, "\n"), 10, 10)
 	end
 	
 	--check which object you are looking at
@@ -278,6 +291,10 @@ function love.keypressed(key)
 	if key == "b" then
 		dream.shadow_smooth = not dream.shadow_smooth
 		dream:init()
+	end
+	
+	if key == "f" then
+		dream.fog_enabled = not dream.fog_enabled
 	end
 	
 	if key == "l" then
