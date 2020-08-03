@@ -12,6 +12,8 @@ dream:loadMaterialLibrary(projectDir .. "materials")
 
 castle = dream:loadObject(projectDir .. "objects/scene", {splitMaterials = true, export3do = false, skip3do = true})
 
+dream:activateShaderModule("rain")
+
 player = {
 	x = 8,
 	y = 10,
@@ -61,7 +63,7 @@ function love.draw()
 	
 	if not hideTooltips then
 		love.graphics.setColor(1, 1, 1)
-		love.graphics.print("R to toggle rain (" .. tostring(dream.rain_isRaining) .. ")\nT to toggle daytime animation (" .. tostring(timeAnimate) .. ")\nU to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")", 10, 10)
+		love.graphics.print("R to toggle rain (" .. tostring(dream:getShaderModule("rain").isRaining) .. ")\nT to toggle daytime animation (" .. tostring(timeAnimate) .. ")\nU to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")", 10, 10)
 	end
 end
 
@@ -190,17 +192,13 @@ function love.keypressed(key)
 	end
 	
 	if key == "r" then
-		if not dream.rain_enabled then
-			dream.rain_enabled = true
-			dream:init()
-		end
-		
 		if weather > 0.5 then
 			weather = 0.25
-			dream.rain_isRaining = false
+			dream:getShaderModule("rain").isRaining = false
 		else
-			weather = 0.85
-			dream.rain_isRaining = true
+			weather = 0.75
+			dream:getShaderModule("rain").isRaining = true
+			dream:getShaderModule("rain").strength = 5
 		end
 	end
 	

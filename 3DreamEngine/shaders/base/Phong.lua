@@ -76,7 +76,11 @@ function sh:constructPixel(dream, info)
 	#else
 		vec3 emission = color_emission;
 	#endif
-	
+	]]
+end
+
+function sh:constructPixelPost(dream, info)
+	return [[
 	vec3 viewVec = normalize(viewPos - vertexPos);
 	vec3 reflectVec = reflect(-viewVec, normal); 
 	

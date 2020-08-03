@@ -442,8 +442,9 @@ function lib:setWeather(rain, temp)
 	self.clouds_weight = math.mix(math.mix(1.0, 1.5, temp), 0.75, rain)
 	self.clouds_thickness = math.mix(0.0, 0.4, rain^2)
 	
-	self.rain_isRaining = rain > 0.4
-	self.rain_strength = math.ceil(math.clamp((rain-0.4) / 0.6 * 5.0, 0.001, 5.0))
+	--set module settings
+	self:getShaderModule("rain").isRaining = rain > 0.4
+	self:getShaderModule("rain").strength = math.ceil(math.clamp((rain-0.4) / 0.6 * 5.0, 0.001, 5.0))
 end
 
 function lib:inFrustum(cam, pos, radius)
@@ -533,9 +534,16 @@ end
 
 --shader modules
 lib.activeShaderModules = { }
+lib.allActiveShaderModules = { }
 function lib:activateShaderModule(name)
 	self.activeShaderModules[name] = true
 end
 function lib:deactivateShaderModule(name)
-	self.activeShaderModules[name] = false
+	self.activeShaderModules[name] = nil
+end
+function lib:getShaderModule(name)
+	return self.shaderLibrary.module[name]
+end
+function lib:isShaderModuleActive(name)
+	return self.activeShaderModules[name]
 end

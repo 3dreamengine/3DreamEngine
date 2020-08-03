@@ -41,7 +41,11 @@ end
 function sh:constructPixel(dream, info)
 	return [[
 	vec3 normal = normalize(normalVec);
-	
+	]]
+end
+
+function sh:constructPixelPost(dream, info)
+	return [[
 	highp vec3 viewVec = normalize(viewPos - vertexPos);
 	vec3 reflectVec = reflect(-viewVec, normal); 
 	vec3 diffuse = reflection(normal, 1.0);

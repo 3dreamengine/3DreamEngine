@@ -109,7 +109,7 @@ function love.draw()
 	
 	if not hideTooltips then
 		love.graphics.setColor(1, 1, 1)
-		love.graphics.print("R to toggle rain (" .. tostring(dream.rain_isRaining) .. ")\nU to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")", 10, 10)
+		love.graphics.print("U to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")", 10, 10)
 	end
 end
 
@@ -203,14 +203,6 @@ function love.keypressed(key)
 	
 	if key == "f1" then
 		hideTooltips = not hideTooltips
-	end
-	
-	if key == "r" then
-		dream.rain_isRaining = not dream.rain_isRaining
-		if not dream.rain_enabled then
-			dream.rain_enabled = true
-			dream:init()
-		end
 	end
 	
 	if key == "u" then

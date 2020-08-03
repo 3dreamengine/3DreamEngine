@@ -7,10 +7,10 @@ love.window.setVSync(false)
 --settings
 local projectDir = "examples/Tavern/"
 dream.nameDecoder = false
-dream.sky_enabled = false
+dream.sky_enabled = true
 dream.autoExposure_enabled = true
 dream.sun_ambient = {0.1, 0.1, 0.1}
-dream.lighting_engine = "PBR"
+dream.lighting_engine = "Phong"
 
 dream.fog_enabled = true
 dream.fog_distance = 10.0
@@ -136,7 +136,7 @@ function love.draw()
 	if not hideTooltips then
 		love.graphics.setColor(1, 1, 1)
 		love.graphics.print(table.concat({
-			"R to toggle rain (" .. tostring(dream.rain_isRaining) .. ")",
+			"R to toggle rain (" .. tostring(dream:isShaderModuleActive("rain")) .. ")",
 			"U to toggle auto exposure (" .. tostring(dream.autoExposure_enabled),
 			"B to toggle smooth light (" .. tostring(dream.shadow_smooth) .. ")",
 			"F to toggle fog (" .. tostring(dream.fog_enabled) .. ")",
@@ -276,10 +276,10 @@ function love.keypressed(key)
 	end
 	
 	if key == "r" then
-		dream.rain_isRaining = not dream.rain_isRaining
-		if not dream.rain_enabled then
-			dream.rain_enabled = true
-			dream:init()
+		if dream:isShaderModuleActive("rain") then
+			dream:deactivateShaderModule("rain")
+		else
+			dream:activateShaderModule("rain")
 		end
 	end
 	

@@ -58,7 +58,9 @@ end
 --register inbuild shaders
 for i,v in ipairs({"base", "vertex", "light", "modules"}) do
 	for d,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/" .. v)) do
-		lib:registerShader(lib.root .. "/shaders/" .. v .. "/" .. s)
+		if s:sub(-4) == ".lua" then
+			lib:registerShader(lib.root .. "/shaders/" .. v .. "/" .. s)
+		end
 	end
 end
 
@@ -101,10 +103,6 @@ lib.shaders.autoExposure = love.graphics.newShader(lib.root .. "/shaders/autoExp
 
 --clouds
 lib.shaders.clouds = love.graphics.newShader(lib.root .. "/shaders/clouds.glsl")
-
---rain
-lib.shaders.rain = love.graphics.newShader(lib.root .. "/shaders/rain.glsl")
-lib.shaders.rain_splashes = love.graphics.newShader(lib.root .. "/shaders/rain_splashes.glsl")
 
 --debug shaders
 if _DEBUGMODE then
@@ -162,9 +160,27 @@ function lib.getFinalShader(self, canvases)
 	return self.shaders.final[ID]
 end
 
---returns a fitting shader construction instruction for the current material and meshtype
+--returns and initializes if not already done
 local moduleIDs = { }
-local lastModuleID = 0
+local lastModuleID = 1
+function lib:getShaderModule(name)
+	if not moduleIDs[name] then
+		lastModuleID = lastModuleID + 1
+		moduleIDs[name] = 1.0 / lastModuleID
+	end
+	
+	local sh = self.shaderLibrary.module[name]
+	self.allActiveShaderModules[name] = sh
+	if not sh.initilized then
+		sh.initilized = true
+		if sh.init then
+			sh:init(self)
+		end
+	end
+	return sh
+end
+
+--returns a fitting shader construction instruction for the current material and meshtype
 function lib:getShaderInfo(s, obj)
 	local mat = s.material
 	local shaderType = s.shaderType
@@ -194,11 +210,7 @@ function lib:getShaderInfo(s, obj)
 	--global modules
 	local m = { }
 	for d,s in pairs(self.activeShaderModules) do
-		if not moduleIDs[d] then
-			lastModuleID = lastModuleID + 1
-			moduleIDs[d] = 1.0 / lastModuleID
-			m[d] = self.shaderLibrary.module[d]
-		end
+		m[d] = self:getShaderModule(d)
 		ID = ID + moduleIDs[d]
 	end
 	
@@ -206,11 +218,7 @@ function lib:getShaderInfo(s, obj)
 	if modules then
 		for d,s in pairs(modules) do
 			if not self.activeShaderModules[d] then
-				if not moduleIDs[d] then
-					lastModuleID = lastModuleID + 1
-					moduleIDs[d] = 1.0 / lastModuleID
-					m[d] = self.shaderLibrary.module[d]
-				end
+				m[d] = self:getShaderModule(d)
 				ID = ID + moduleIDs[d]
 			end
 		end
@@ -256,6 +264,7 @@ function lib:getShader(info, lighting, lightRequirements)
 		--the shader might need additional code
 		code = code:gsub("#import mainDefines", self.shaderLibrary.base[info.shaderType]:constructDefines(self, info) or "")
 		code = code:gsub("#import mainPixelPre", self.shaderLibrary.base[info.shaderType]:constructPixelPre(self, info) or "")
+		code = code:gsub("#import mainPixelPost", self.shaderLibrary.base[info.shaderType]:constructPixelPost(self, info) or "")
 		code = code:gsub("#import mainPixel", self.shaderLibrary.base[info.shaderType]:constructPixel(self, info) or "")
 		code = code:gsub("#import mainVertex", self.shaderLibrary.base[info.shaderType]:constructVertex(self, info) or "")
 		
@@ -281,9 +290,9 @@ function lib:getShader(info, lighting, lightRequirements)
 			table.insert(pixelPost, s:constructPixelPost(self, info) or "")
 		end
 		code = code:gsub("#import modulesDefines", table.concat(define, "\n"))
-		code = code:gsub("#import modulesVertex", "{" .. table.concat(vertex, "\n") .. "}")
-		code = code:gsub("#import modulesPixelPost", "{" .. table.concat(pixelPost, "\n") .. "}")
-		code = code:gsub("#import modulesPixel", "{" .. table.concat(pixel, "\n") .. "}")
+		code = code:gsub("#import modulesVertex", table.concat(vertex, "\n"))
+		code = code:gsub("#import modulesPixelPost", table.concat(pixelPost, "\n"))
+		code = code:gsub("#import modulesPixel", table.concat(pixel, "\n"))
 		
 		--construct forward lighting system
 		if #lighting > 0 then
@@ -329,7 +338,7 @@ function lib:getShader(info, lighting, lightRequirements)
 			info.shaders[ID] = shader
 		end
 		
-		love.filesystem.write(ID .. ".glsl", code)
+		--love.filesystem.write(ID .. ".glsl", code)
 	end
 	
 	return info.shaders[ID]

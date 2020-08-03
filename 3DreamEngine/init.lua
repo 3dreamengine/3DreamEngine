@@ -109,16 +109,6 @@ lib.reflection_downsample = 2
 lib.gamma = 1.0
 lib.exposure = 1.0
 
-lib.rain_enabled = true
-lib.rain_resolution = 512
-lib.rain_isRaining = false
-lib.rain_strength = 3
-lib.rain_adaptRain = 0.1
-lib.rain_wetness_increase = 0.02
-lib.rain_wetness_decrease = 0.01
-lib.rain_rain = 0.0
-lib.rain_wetness = 0.0
-
 lib.autoExposure_enabled = false
 lib.autoExposure_resolution = 128
 lib.autoExposure_targetBrightness = 0.25
@@ -167,7 +157,6 @@ if love.graphics then
 	lib.object_cube = lib:loadObject(lib.root .. "/objects/cube", {meshType = "simple"})
 	lib.object_warning = lib:loadObject(lib.root .. "/objects/warning", {meshType = "simple"})
 	lib.object_plane = lib:loadObject(lib.root .. "/objects/plane", {meshType = "textured"})
-	lib.object_rain = lib:loadObject(lib.root .. "/objects/rain", {meshType = "textured"})
 	
 	local pix = love.image.newImageData(2, 2)
 	lib.textures = {
@@ -175,15 +164,6 @@ if love.graphics then
 		default_normal = love.graphics.newImage(lib.root .. "/res/default_normal.png"),
 		
 		brdfLUT = love.graphics.newImage(lib.root .. "/res/brdfLut.png"),
-		
-		rain_1 = love.graphics.newImage(lib.root .. "/res/rain_1.png"),
-		rain_2 = love.graphics.newImage(lib.root .. "/res/rain_2.png"),
-		rain_3 = love.graphics.newImage(lib.root .. "/res/rain_3.png"),
-		rain_4 = love.graphics.newImage(lib.root .. "/res/rain_4.png"),
-		rain_5 = love.graphics.newImage(lib.root .. "/res/rain_5.png"),
-		
-		splash = love.graphics.newImage(lib.root .. "/res/splash.png"),
-		wetness = love.graphics.newImage(lib.root .. "/res/wetness.png"),
 		
 		sky_fallback = love.graphics.newCubeImage({pix, pix, pix, pix, pix, pix}),
 		
@@ -272,16 +252,6 @@ function lib.resize(self, w, h)
 	self.canvases = self:newCanvasSet(w, h, self.msaa, self.alphaBlendMode, true)
 	self.canvases_reflections = self:newCanvasSet(self.reflections_resolution, self.reflections_resolution, self.reflections_msaa, self.reflections_alphaBlendMode, false)
 	
-	--rain
-	if self.rain_enabled then
-		self.canvas_rain = love.graphics.newCanvas(self.rain_resolution, self.rain_resolution, {format = "rgba16f"})
-		self.canvas_rain:setWrap("repeat")
-		
-		love.graphics.setCanvas(self.canvas_rain)
-		love.graphics.clear(0.0, 0.0, 1.0)
-		love.graphics.setCanvas()
-	end
-	
 	--auto exposure scaling canvas
 	if self.autoExposure_enabled then
 		self.canvas_exposure = love.graphics.newCanvas(self.autoExposure_resolution, self.autoExposure_resolution, {format = "r16f", readable = true, msaa = 0, mipmaps = "auto"})
@@ -332,6 +302,7 @@ function lib.prepare(self)
 	self.particlePresence = { }
 	self.reflections_last = self.reflections or { }
 	self.reflections = { }
+	self.allActiveShaderModules = { }
 end
 
 --add an object to the scene

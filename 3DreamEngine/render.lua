@@ -74,7 +74,7 @@ function lib:buildScene(cam, pass, blacklist)
 end
 
 --render the scene onto a canvas set using a specific view camera
-function lib:render(scene, canvases, cam, pass)
+function lib:render(scene, canvases, cam, pass, noSky)
 	self.delton:start("prepare")
 	
 	--love shader friendly
@@ -95,12 +95,19 @@ function lib:render(scene, canvases, cam, pass)
 			love.graphics.setCanvas({canvases.color, depthstencil = canvases.depth_buffer})
 		else
 			--clear depth canvas
-			love.graphics.setCanvas({canvases.depth, depthstencil = canvases.depth_buffer})
-			love.graphics.clear(255, 0, 0, 0)
+			if noSky then
+				love.graphics.setCanvas({canvases.color, canvases.depth, depthstencil = canvases.depth_buffer})
+				love.graphics.clear({0, 0, 0, 0}, {255, 0, 0, 0})
+			else
+				love.graphics.setCanvas({canvases.depth, depthstencil = canvases.depth_buffer})
+				love.graphics.clear(255, 0, 0, 0)
+			end
 			
 			--render sky
-			love.graphics.setCanvas(canvases.color)
-			self:renderSky(cam.transformProjOrigin)
+			if not noSky then
+				love.graphics.setCanvas(canvases.color)
+				self:renderSky(cam.transformProjOrigin)
+			end
 			
 			--set canvas
 			love.graphics.setCanvas({canvases.color, pass == 1 and canvases.depth or nil, depthstencil = canvases.depth_buffer})
@@ -287,7 +294,7 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 	local scene = self:buildScene(cam, secondPass and 1 or 0, blacklist)
 	self.delton:stop()
 	
-	self:render(scene, canvases, cam, 1)
+	self:render(scene, canvases, cam, 1, noSky)
 	self.delton:stop()
 	
 	--second (alpha) pass
@@ -350,6 +357,15 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 			love.graphics.draw(canvases.canvas_bloom_2)
 		end
 	end
+	
+	--additional render instructions
+	self.delton:start("modules")
+	for d,s in pairs(self.allActiveShaderModules) do
+		if s.render then
+			s:render(self, cam, canvases, scene, noSky)
+		end
+	end
+	self.delton:stop()
 	
 	--final
 	local shader = self:getFinalShader(canvases)

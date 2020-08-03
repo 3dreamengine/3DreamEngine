@@ -19,8 +19,8 @@ extern float pass;
 
 //shader specific defines
 #import vertexDefines
-#import mainDefines
 #import modulesDefines
+#import mainDefines
 
 #ifdef PIXEL
 
@@ -59,6 +59,7 @@ void effect() {
 #import vertexPixel
 #import mainPixel
 #import modulesPixel
+#import mainPixelPost
 	
 	//forward lighting
 	vec3 light = vec3(0.0);
@@ -86,8 +87,8 @@ void effect() {
 #ifdef VERTEX
 vec4 position(mat4 transform_projection, vec4 vertex_position) {
 #import vertexVertex
-#import mainVertex
 #import modulesVertex
+#import mainVertex
 	
 	vertexPos = pos.xyz;
 	
