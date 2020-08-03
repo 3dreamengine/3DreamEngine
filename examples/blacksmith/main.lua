@@ -7,7 +7,7 @@ love.mouse.setRelativeMode(true)
 local projectDir = "examples/blacksmith/"
 
 dream.sky_enabled = false
-dream.lighting_engine = "PBR"
+dream.defaultShaderType = "PBR"
 
 dream:init()
 

@@ -65,14 +65,9 @@ for i,v in ipairs({"base", "vertex", "light", "modules"}) do
 end
 
 --load code snippsets
-local codes = {
-	functions = { },
-	shading = { },
-}
-for i,v in pairs(codes) do
-	for d,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/" .. i)) do
-		v[s:sub(1, #s-5)] = love.filesystem.read(lib.root .. "/shaders/" .. i .. "/" .. s)
-	end
+local codes = { }
+for d,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/functions")) do
+	codes[s:sub(1, #s-5)] = love.filesystem.read(lib.root .. "/shaders/functions/" .. s)
 end
 
 lib.shaders = { }
@@ -275,7 +270,7 @@ function lib:getShader(info, lighting, lightRequirements)
 		code = code:gsub("#import vertexVertex", self.shaderLibrary.vertex[info.vertexShader]:constructVertex(self, info) or "")
 		
 		--import reflection function
-		code = code:gsub("#import reflections", info.reflection and codes.functions.reflections or codes.functions.ambientOnly)
+		code = code:gsub("#import reflections", info.reflection and codes.reflections or codes.ambientOnly)
 		
 		--import additional modules
 		local define = { }
@@ -325,7 +320,7 @@ function lib:getShader(info, lighting, lightRequirements)
 			
 			code = code:gsub("#import lightingSystemInit", table.concat(lcInit, "\n"))
 			code = code:gsub("#import lightingSystem", table.concat(lc, "\n"))
-			code = code:gsub("#import lightFunction", codes.shading[self.lighting_engine])
+			code = code:gsub("#import lightFunction", self.shaderLibrary.base[info.shaderType].constructLightFunction and self.shaderLibrary.base[info.shaderType]:constructLightFunction(self, info) or codes.Phong)
 		end
 		
 		--remove unused imports and remove tabs

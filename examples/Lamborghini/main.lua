@@ -6,7 +6,7 @@ love.graphics.setBackgroundColor(0.8, 0.8, 0.8)
 --settings
 local projectDir = "examples/Lamborghini/"
 
-dream.lighting_engine = "PBR"
+dream.defaultShaderType = "PBR"
 dream.alphaBlendMode = "disabled"
 
 dream.sky_hdri = love.graphics.newImage(projectDir .. "garage.hdr")
@@ -36,16 +36,11 @@ function love.draw()
 	car:translate(0, -1.1225, -3.5)
 	dream:draw(car)
 	
+	--draw the socket
 	dream:draw(socket, 0, -1, -4.5, 4, 0.25, 4)
 	
+	--render without sky
 	dream:present(true)
-	
-	--stats
-	love.graphics.setColor(0.1, 0.1, 0.1)
-	love.graphics.print("Stats" ..
-		"\ndifferent shaders: " .. dream.stats.shadersInUse ..
-		"\ndifferent materials: " .. dream.stats.materialDraws ..
-		"\ndraws: " .. dream.stats.draws, 15, 500)
 end
 
 function love.keypressed(key)

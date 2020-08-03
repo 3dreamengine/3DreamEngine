@@ -6,7 +6,6 @@ love.window.setTitle("Particle System Example")
 local projectDir = "examples/particlesystem/"
 
 dream.sun_shadow = false
-dream.lighting_engine = "Phong"
 
 dream:init()
 

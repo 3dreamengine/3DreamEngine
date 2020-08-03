@@ -94,6 +94,9 @@ function lib.update(self, time)
 					if s.canvas:getMipmapCount() > 1 then
 						s.canvas:generateMipmaps()
 					end
+					if self.thumbnails[s.path] then
+						self.texturesLoaded[self.thumbnails[s.path]] = nil
+					end
 					fastLoadingJob = false
 				end
 			end
@@ -111,7 +114,6 @@ function lib.update(self, time)
 			o.mesh = love.graphics.newMesh(o.vertexFormat, o.vertexCount, "triangles", "static")
 			o.mesh:setVertexMap(o.vertexMap)
 			o.mesh:setVertices(msg[4])
-			
 			o.vertexMap = nil
 		else
 			--image
@@ -148,6 +150,11 @@ function lib.update(self, time)
 				
 				--store
 				self.texturesLoaded[msg[2]] = tex
+				
+				--clear thumbnail
+				if self.thumbnails[msg[2]] then
+					self.texturesLoaded[self.thumbnails[msg[2]]] = nil
+				end
 			end
 		end
 		return true
@@ -786,11 +793,15 @@ function lib.createMesh(self, obj, o)
 	
 	--guess shaderType if not specified based on textures used
 	if not o.shaderType then
-		o.shaderType = "simple"
-		
-		local s = o.material
-		if s.tex_albedo or s.tex_normal then
-			o.shaderType = lib.lighting_engine
+		if lib.defaultShaderType then
+			o.shaderType = lib.defaultShaderType
+		else
+			o.shaderType = "simple"
+			
+			local s = o.material
+			if s.tex_albedo or s.tex_normal then
+				o.shaderType = "Phong"
+			end
 		end
 	end
 	

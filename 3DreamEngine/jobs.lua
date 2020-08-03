@@ -321,6 +321,8 @@ function lib.executeJobs(self, cam)
 			shadowCam.normal = o[5]
 			shadowCam.transform = self:lookAt(cam.pos + shadowCam.normal * f * 0.5, cam.pos, vec3(0.0, 1.0, 0.0))
 			shadowCam.transformProj = projection * shadowCam.transform
+			local m = shadowCam.transform
+			shadowCam.transformProjOrigin = projection * mat4(m[1], m[2], m[3], 0.0, m[5], m[6], m[7], 0.0, m[9], m[10], m[11], 0.0, 0.0, 0.0, 0.0, 1.0)
 			o[4].shadow["transformation_" .. cascade] = shadowCam.transformProj
 			o[4].shadow.canvases[cascade] = o[4].shadow.canvases[cascade] or self:newShadowCanvas("sun", o[4].shadow.res)
 			
@@ -333,12 +335,12 @@ function lib.executeJobs(self, cam)
 			o[4].shadow.lastPos = pos
 			
 			local transformations = {
-				pointShadowProjectionMatrix * self:lookAt(pos, pos + lookNormals[1], vec3(0, -1, 0)),
-				pointShadowProjectionMatrix * self:lookAt(pos, pos + lookNormals[2], vec3(0, -1, 0)),
-				pointShadowProjectionMatrix * self:lookAt(pos, pos + lookNormals[3], vec3(0, 0, -1)),
-				pointShadowProjectionMatrix * self:lookAt(pos, pos + lookNormals[4], vec3(0, 0, 1)),
-				pointShadowProjectionMatrix * self:lookAt(pos, pos + lookNormals[5], vec3(0, -1, 0)),
-				pointShadowProjectionMatrix * self:lookAt(pos, pos + lookNormals[6], vec3(0, -1, 0)),
+				self:lookAt(pos, pos + lookNormals[1], vec3(0, -1, 0)),
+				self:lookAt(pos, pos + lookNormals[2], vec3(0, -1, 0)),
+				self:lookAt(pos, pos + lookNormals[3], vec3(0, 0, -1)),
+				self:lookAt(pos, pos + lookNormals[4], vec3(0, 0, 1)),
+				self:lookAt(pos, pos + lookNormals[5], vec3(0, -1, 0)),
+				self:lookAt(pos, pos + lookNormals[6], vec3(0, -1, 0)),
 			}
 			
 			--create new canvases if necessary
@@ -349,7 +351,7 @@ function lib.executeJobs(self, cam)
 			
 			--render
 			for face = 1, 6 do
-				local shadowCam = self:newCam(transformations[face], pos, lookNormals[face])
+				local shadowCam = self:newCam(transformations[face], pointShadowProjectionMatrix, pos, lookNormals[face])
 				local scene = self:buildScene(shadowCam, 1, o[4].blacklist)
 				self:renderShadows(scene, shadowCam, {{o[4].shadow.canvas, face = face}})
 			end
@@ -360,18 +362,18 @@ function lib.executeJobs(self, cam)
 			local face = o[6]
 			
 			local transformations = {
-				pointShadowProjectionMatrix * self:lookAt(pos, pos + lookNormals[1], vec3(0, -1, 0)),
-				pointShadowProjectionMatrix * self:lookAt(pos, pos + lookNormals[2], vec3(0, -1, 0)),
-				pointShadowProjectionMatrix * self:lookAt(pos, pos + lookNormals[3], vec3(0, 0, -1)),
-				pointShadowProjectionMatrix * self:lookAt(pos, pos + lookNormals[4], vec3(0, 0, 1)),
-				pointShadowProjectionMatrix * self:lookAt(pos, pos + lookNormals[5], vec3(0, -1, 0)),
-				pointShadowProjectionMatrix * self:lookAt(pos, pos + lookNormals[6], vec3(0, -1, 0)),
+				self:lookAt(pos, pos + lookNormals[1], vec3(0, -1, 0)),
+				self:lookAt(pos, pos + lookNormals[2], vec3(0, -1, 0)),
+				self:lookAt(pos, pos + lookNormals[3], vec3(0, 0, -1)),
+				self:lookAt(pos, pos + lookNormals[4], vec3(0, 0, 1)),
+				self:lookAt(pos, pos + lookNormals[5], vec3(0, -1, 0)),
+				self:lookAt(pos, pos + lookNormals[6], vec3(0, -1, 0)),
 			}
 			
 			--prepare
 			love.graphics.push("all")
 			love.graphics.reset()
-			local cam = self:newCam(transformations[face], pos, lookNormals[face])
+			local cam = self:newCam(transformations[face], pointShadowProjectionMatrix, pos, lookNormals[face])
 			local canvas = o[4].reflection.canvas
 			love.graphics.setCanvas({{canvas, face = face}})
 			o[4].reflection.canvas = nil

@@ -5,15 +5,19 @@
 * fast rendering with z-buffer and shaders
 * PBR rendering (albedo, normal, roughness, metallic, ao, emission)
 * Phong shading (color, normal, glossiness, specular, ao, emission)
-* screen space ambient occlusion (ssao)
-* full HDR with bloom and (optional automatic) exposure
+* HDR with bloom
 * average alpha blending with approximated refraction
+* screen space ambient occlusion (ssao)
 * cubemap reflections
 * proper blurred reflections on rough surfaces
+* particle batches
+* modular and extendable shaders
 * dynamic clouds, sun, moon and stars
 * rain with rain splashes, wetness and reflections
+* eye adaption effect
 * cascade shadow mapping
 * cubemap shadow mapping
+* smooth shadows
 * distance fog
 * static particle emitter (grass, leaves, random rocks, smaller details)
 * wind animation (leaves, grass, ...)
@@ -82,10 +86,6 @@ dream.bloom_size = 1.5                    -- bloom effect size
 dream.bloom_resolution = 0.5              -- downscale bloom canvas
 dream.bloom_strength = 1.0                -- strength of appliance
 
-dream.SSR_enabled = false                 -- enable screen space reflections (real time screen spaced ray traced reflections), depends on scene wether this looks good, rain currently not fully supported
-dream.SSR_resolution = 1.0                -- render canvas size, smaller values makes sense on primary blurry materials
-dream.SSR_format = "normal"               -- use rgba16f to reflect bright spots
-
 dream.refraction_enabled = true           -- if second pass is enabled, this will enable refractions
 dream.refraction_disableCulling = false   -- technically the backside of an object is visible too, however it is false by default because it visually looks better
 
@@ -97,10 +97,10 @@ dream.textures_generateThumbnails = true  -- thumbnails are described in its own
 
 dream.msaa = 4                            -- multi sample anti aliasing, slightly more expensive but good results
 dream.fxaa = false                        -- fast approximated anti aliasing, fast but less good results
-dream.lighting_engine = "Phong"           -- the shading engine (PBR or Phong), should match the shaders (see own section below) used
-dream.alphaBlendMode = "average"          -- average is slowest with order independent blending, "alpha" uses alpha blending with possible order-artefacts,
+dream.defaultShaderType = nil             -- if not specifally set, use this shader. Nil uses simple or phong, depending on wether the material has textures.
+dream.alphaBlendMode = "alpha"            -- average is slowest with order independent blending and optional refraction, "alpha" uses alpha blending with possible order-artefacts,
                                           -- "dither" dithers between full and zero based on alpha and "disabled" only renders 100% alpha. "dither" and "disabled" only require one pass.
-dream.max_lights = 16                     -- max lights when using non defered shadng
+dream.max_lights = 16                     -- max lights. The actual limit is light types and hardware dependend, this value just caps the light count.
 dream.nameDecoder = "blender"             -- imported objects often contain mesh data names appended to the actual name,, blender decoder removes them
 dream.frustumCheck = true                 -- enable automatic frustum check
 dream.LoDDistance = 100                   -- LoD reference distance
@@ -135,8 +135,8 @@ dream.autoExposure_targetBrightness = 0.25-- target screen brightness to normali
 dream.autoExposure_interval = 1 / 15      -- samples per second
 dream.autoExposure_adaptionSpeed = 0.4    -- speed of adaption
 
-dream.sky_enabled = true                  -- enable sky, also disables hdri sphere if set
-dream.sky_hdri = false                    -- dont use the generaded sky, use an image instead. Should be a hdr format
+dream.sky_enabled = true                  -- enable sky reflection, see extended information in the reflecton chapter
+dream.sky_hdri = false                    -- dont use the generated sky, use an hdri sphere image instead. Should be a hdr format
 dream.sky_hdri_exposure = 1.0             -- set image exposure
 dream.sky_resolution = 512                -- resolution of sky cubemap, should match the wrapped hdri image size
 dream.sky_format = "rgba16f"              -- format of sky, should be rgba16f, especially when using hdr formats for the hdri
@@ -283,6 +283,43 @@ dream:inFrustum(cam, pos, radius)                 --checks if the position with 
 dream:getCollisionData(object)                    --returns a raw collision object used in the collision extensions newMesh function from an subObject
 ```
 
+## Shaders
+The shader is constructed based on its base shader, the vertex module and additional, optional shader modules.
+There are basic default shaders present, so this chapter is advanced usage.
+
+### register own shader
+A more tidy docu will be written soon, for now look up the syntax in shaders/base, shaders/vertex, shaders/shading, shaders/light and shaders/modules.
+For a better understanding in the final shader, look into shaders/base.glsl. This is the skeleton where the modules are imported.
+```lua
+--register a component to the library
+dream:registerShader(pathToLuaFile)
+```
+
+### base shader
+This shader does most of the work. It is responsible for fetching data, calculating reflections, emission, ...
+It's chosen by the objects `shaderType` tag, provided at the object loader.
+If not set, it will fall back to `dream.defaultShaderType`.
+If `dream.defaultShaderType` is not set either, it will be `simple` or `Phong`, depending on wether its material has textures.
+The base shader can also set its own light function (the actual thing calculating the effect of light sources), if not, it uses Phong shading.
+
+### vertex shader
+The vertex shader transforms the vertices, e.g. the wind shader. It can be set using the `shader` tag, default is 'default'.
+This shader has to create a 'vec3 pos'.
+
+### shader modules
+Those modules can extend the shader to add certain effects. For example a rain effect as the one implemted, or a burning animation, or a disolving effect, ...
+```lua
+--activate/deactive a module to all objects
+dream:activateShaderModule(name)
+dream:deactivateShaderModule(name)
+
+--get the shader module, for example to change its settings
+dream:getShaderModule(name)
+
+--check if this module is globally active
+dream:isShaderModuleActive(name)
+```
+
 ## materials
 Materials can be either per model by providing a .mtl or .mat file with the same name as the object file or they can be in a global material library.
 ```lua
@@ -298,6 +335,8 @@ Currently its only possible to use one method at a time.
 Dream.init() has to be called after changing.
 ```
 --uses a second render step and a set of canvases to perform an order independent average alpha
+--note that this blend mode is by far more slow than the other modes
+--if you do not have alpha components, use dither or disabled
 --this also allows refractions, if enabled
 dream.alphaBlendMode = "average"
 
@@ -328,7 +367,7 @@ yourObject.objects.subObject.LoD = {true, true, true, true, true, true, false, f
 
 ## textures
 To add textures to the model ...
-* name the textures albedo, normal, roughness, metallic, glossiness, specular, emission and put it next to the material (for material library entries) or suffic them with either the material name "material_" or the object name "object_"
+* name the textures albedo, normal, roughness, metallic, glossiness, specular, emission and put it next to the material (for material library entries) or suffix them with either the material name "material_" or the object name "object_"
 * set the texture path in the mtl file. See (3DreamEngine/loader/mtl.lua) for up to date parser information (no prefix)
 * set the texture in the mat file (tex_diffuse, tex_normal, tex_emission, ...) (no prefix)
 * the relative path it uses to look for textures is the same as the object itself, if not overwritten by the "textures" arg in the model loader
@@ -340,11 +379,12 @@ The emission texture contains RGB color, in contrast to all other textures it wi
 Roughness, metallic, specular and glossiness are single channel textures.
 
 Please note that the rendering pipeline only accepts combined RMA textures (roughness, metallic, ao, or its Phong counterpart glossiness, specular, ao).
-If not present, it will generate it and put it in the love save directory. It is recommended to use them to avoid heavy (but threaded) CPU merge operations.
+If not present, it will generate it and put it in the love save directory. It is recommended to use them to avoid heavy (but at least threaded) CPU merge operations.
+DDS files are supported, but can not generate mipmaps automatically.
 
 ## thumbnails
 Name a (smaller) file "yourImage_thumb.ext" to let the texture loader automatically load it first, then load the full textures at the end.
-If the automatic thumbnail generator is enabled, this will be done automatically, but the first load will be without thumbnail.
+If the automatic thumbnail generator is enabled (true by default), this will be done automatically, but the first load will be without thumbnail.
 
 ## mat - 3Dream material file (lua syntax)
 The .mtl file usually exported with .obj will be loaded automatically.

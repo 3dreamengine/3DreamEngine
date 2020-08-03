@@ -3,9 +3,6 @@ dream = require("3DreamEngine")
 love.window.setTitle("Monkey Example")
 local projectDir = "examples/monkey/"
 
---use Phong shading
-dream.lighting_engine = "Phong"
-
 --initialize engine
 dream:init()
 

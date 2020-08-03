@@ -10,7 +10,7 @@ dream.nameDecoder = false
 dream.sky_enabled = false
 dream.autoExposure_enabled = true
 dream.sun_ambient = {0.1, 0.1, 0.1}
-dream.lighting_engine = "Phong"
+dream.alphaBlendMode = "average"
 
 dream.fog_enabled = true
 dream.fog_distance = 10.0
@@ -63,7 +63,7 @@ end
 local particleBatch = dream:newParticleBatch(texture_candle, 2)
 particleBatch.vertical = true
 
-local particleBatchDust = dream:newParticleBatch(love.graphics.newImage(projectDir .. "smoke.png"), 1)
+local particleBatchDust = dream:newParticleBatch(love.graphics.newImage(projectDir .. "dust.png"), 1)
 particleBatchDust.sort = false
 
 local lights = { }
@@ -142,6 +142,7 @@ function love.draw()
 			"F to toggle fog (" .. tostring(dream.fog_enabled) .. ")",
 			"L to toggle looking at check (" .. tostring(lookingAtCheck) .. ")",
 			"K to toggle relative mode (" .. tostring(rotateCamera) .. ")",
+			love.graphics.getStats().texturememory / 1024^2,
 			love.timer.getFPS() .. " FPS"
 			}, "\n"), 10, 10)
 	end

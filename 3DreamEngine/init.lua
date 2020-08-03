@@ -87,7 +87,6 @@ lib.textures_generateThumbnails = true
 lib.colorFormat = "rgba16f"
 lib.msaa = 4
 lib.fxaa = false
-lib.lighting_engine = "Phong"
 lib.alphaBlendMode = "alpha"
 lib.max_lights = 16
 lib.nameDecoder = "blender"

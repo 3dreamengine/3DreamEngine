@@ -3,7 +3,6 @@ local projectDir = "examples/lowPolyGame/"
 --load the 3D lib
 dream = require("3DreamEngine")
 collision = require("3DreamEngine/collision")
-dream.lighting_engine = "Phong"
 dream:init()
 
 --setup sounds

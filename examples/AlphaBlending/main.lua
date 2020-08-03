@@ -7,7 +7,7 @@ love.mouse.setRelativeMode(true)
 local projectDir = "examples/AlphaBlending/"
 
 --settings
-dream.lighting_engine = "PBR"
+dream.defaultShaderType = "PBR"
 dream.sky_hdri = love.graphics.newImage(projectDir .. "sky.hdr")
 dream.sky_hdri_exposure = 0.25
 dream.cam.fov = 65

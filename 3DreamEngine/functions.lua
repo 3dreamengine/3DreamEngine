@@ -13,10 +13,12 @@ function math.clamp(v, a, b)
 	return math.max(math.min(v, b or 1.0), a or 0.0)
 end
 
-function lib:newCam(transformProj, pos, normal)
+function lib:newCam(transform, transformProj, pos, normal)
+	local m = transform or pos and mat4:getIdentity():translate(pos) or mat4:getIdentity()
 	return setmetatable({
-		transform = mat4:getIdentity(),
-		transformProj = transformProj,
+		transform = m,
+		transformProj = transformProj and (transformProj * m),
+		transformProjOrigin = transformProj and (transformProj * mat4(m[1], m[2], m[3], 0.0, m[5], m[6], m[7], 0.0, m[9], m[10], m[11], 0.0, 0.0, 0.0, 0.0, 1.0)),
 		
 		--extracted from transform matrix
 		normal = normal or vec3(0, 0, 0),
