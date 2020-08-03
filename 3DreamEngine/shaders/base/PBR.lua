@@ -136,7 +136,7 @@ function sh:getLightSignature(dream)
 end
 
 function sh:perShader(dream, shader, info)
-	shader:send("brdfLUT", dream.textures.brdfLUT)
+	shader:send("brdfLUT", dream.textures:get("brdfLUT"))
 end
 
 function sh:perMaterial(dream, shader, info, material)

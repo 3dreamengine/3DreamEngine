@@ -84,10 +84,11 @@ lib.textures_mipmaps = true
 lib.textures_filter = "linear"
 lib.textures_generateThumbnails = true
 
+lib.colorFormat = "rgba16f"
 lib.msaa = 4
 lib.fxaa = false
 lib.lighting_engine = "Phong"
-lib.alphaBlendMode = "average"
+lib.alphaBlendMode = "alpha"
 lib.max_lights = 16
 lib.nameDecoder = "blender"
 lib.frustumCheck = true
@@ -155,7 +156,6 @@ end
 if love.graphics then
 	lib.object_sky = lib:loadObject(lib.root .. "/objects/sky", {meshType = "textured"})
 	lib.object_cube = lib:loadObject(lib.root .. "/objects/cube", {meshType = "simple"})
-	lib.object_warning = lib:loadObject(lib.root .. "/objects/warning", {meshType = "simple"})
 	lib.object_plane = lib:loadObject(lib.root .. "/objects/plane", {meshType = "textured"})
 	
 	local pix = love.image.newImageData(2, 2)
@@ -163,11 +163,11 @@ if love.graphics then
 		default = love.graphics.newImage(lib.root .. "/res/default.png"),
 		default_normal = love.graphics.newImage(lib.root .. "/res/default_normal.png"),
 		
-		brdfLUT = love.graphics.newImage(lib.root .. "/res/brdfLut.png"),
+		brdfLUT = lib.root .. "/res/brdfLut.png",
 		
 		sky_fallback = love.graphics.newCubeImage({pix, pix, pix, pix, pix, pix}),
 		
-		sky = love.graphics.newImage(lib.root .. "/res/sky.png"),
+		sky = lib.root .. "/res/sky.png",
 		stars_hdri = lib.root .. "/res/stars_hdri.png",
 		moon = lib.root .. "/res/moon.png",
 		moon_normal = lib.root .. "/res/moon_normal.png",
@@ -177,21 +177,15 @@ if love.graphics then
 		clouds_packets = love.graphics.newImage(lib.root .. "/res/clouds/packets.png", {mipmaps = true}),
 	}
 	
+	lib.textures.get = function(self, path)
+		if type(self[path]) == "string" then
+			self[path] = love.graphics.newImage(self[path])
+		end
+		return self[path]
+	end
+	
 	--get color of sun based on sunrise sky texture
 	lib.sunlight = require(lib.root .. "/res/sunlight")
-	
---	local img = love.image.newImageData(lib.root .. "/res/sky_color.png")
---	for x = 1, img:getWidth() do
---		local r, g, b = img:getPixel(x-1, 0)
---		print("	vec3(" .. r .. ", " .. g .. ", " .. b .. "),")
---	end
-	
-	if love.graphics.getTextureTypes()["array"] then
-		lib.textures_array = {
-			default = love.graphics.newArrayImage({lib.root .. "/res/default.png"}),
-			default_normal = love.graphics.newArrayImage({lib.root .. "/res/default_normal.png"}),
-		}
-	end
 end
 
 --a canvas set is used to render a scene to
@@ -208,7 +202,7 @@ function lib.newCanvasSet(self, w, h, msaa, alphaBlendMode, postEffects_enabled)
 	set.depth_buffer = love.graphics.newCanvas(w, h, {format = self.canvasFormats["depth32f"] and "depth32f" or self.canvasFormats["depth24"] and "depth24" or "depth16", readable = false, msaa = msaa})
 	
 	--temporary HDR color
-	set.color = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa})
+	set.color = love.graphics.newCanvas(w, h, {format = self.colorFormat, readable = true, msaa = msaa})
 	
 	--depth
 	set.depth = love.graphics.newCanvas(w, h, {format = "r16f", readable = true, msaa = msaa})
@@ -232,22 +226,36 @@ function lib.newCanvasSet(self, w, h, msaa, alphaBlendMode, postEffects_enabled)
 	if postEffects_enabled then
 		--bloom blurring canvases
 		if self.bloom_enabled then
-			set.canvas_bloom_1 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = "rgba16f", readable = true, msaa = 0})
-			set.canvas_bloom_2 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = "rgba16f", readable = true, msaa = 0})
+			set.canvas_bloom_1 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = self.colorFormat, readable = true, msaa = 0})
+			set.canvas_bloom_2 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = self.colorFormat, readable = true, msaa = 0})
 		end
-		
-		--screen space reflections
-		if self.SSR_enabled then
-			set.canvas_SSR_1 = love.graphics.newCanvas(w*self.SSR_resolution, h*self.SSR_resolution, {format = self.SSR_format, readable = true, msaa = 0})
-			set.canvas_SSR_2 = love.graphics.newCanvas(w*self.SSR_resolution, h*self.SSR_resolution, {format = self.SSR_format, readable = true, msaa = 0})
-		end
+	end
+	
+	--screen space reflections
+	if self.SSR_enabled then
+		set.canvas_SSR_1 = love.graphics.newCanvas(w*self.SSR_resolution, h*self.SSR_resolution, {format = self.SSR_format, readable = true, msaa = 0})
+		set.canvas_SSR_2 = love.graphics.newCanvas(w*self.SSR_resolution, h*self.SSR_resolution, {format = self.SSR_format, readable = true, msaa = 0})
 	end
 	
 	return set
 end
 
+function lib:unloadCanvasSet(set)
+	if set then
+		for d,s in pairs(set) do
+			if type(set) == "userdata" and set.release then
+				set:release()
+			end
+		end
+	end
+end
+
 --load canvases
 function lib.resize(self, w, h)
+	--fully unload previous sets
+	self:unloadCanvasSet(self.canvases)
+	self:unloadCanvasSet(self.canvases_reflections)
+	
 	--canvases sets
 	self.canvases = self:newCanvasSet(w, h, self.msaa, self.alphaBlendMode, true)
 	self.canvases_reflections = self:newCanvasSet(self.reflections_resolution, self.reflections_resolution, self.reflections_msaa, self.reflections_alphaBlendMode, false)

@@ -19,7 +19,7 @@ function lib:renderSky(transformProj)
 		self.shaders.sky_WilkieHosek:send("transformProj", transformProj)
 		self.shaders.sky_WilkieHosek:send("time", self.sky_time)
 		love.graphics.setColor(self.sky_color:unpack())
-		self.object_sky.objects.Sphere.mesh:setTexture(self.textures.sky)
+		self.object_sky.objects.Sphere.mesh:setTexture(self.textures:get("sky"))
 		love.graphics.draw(self.object_sky.objects.Sphere.mesh)
 		
 		--stars
@@ -38,7 +38,7 @@ function lib:renderSky(transformProj)
 			end
 		end
 		
-		--moon and sund
+		--moon and sun
 		if self.sunMoon_enabled then
 			--moon
 			for sunMoon = 1, 2 do
