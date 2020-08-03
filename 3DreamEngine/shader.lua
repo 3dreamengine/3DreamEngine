@@ -142,7 +142,7 @@ function lib.getFinalShader(self, canvases)
 	local parts = { }
 	parts[#parts+1] = canvases.postEffects_enabled and "#define POSTEFFECTS_ENABLED" or nil
 	parts[#parts+1] = canvases.postEffects_enabled and self.autoExposure_enabled and "#define AUTOEXPOSURE_ENABLED" or nil
-	parts[#parts+1] = canvases.postEffects_enabled and self.exposure > 0 and not self.autoExposure_enabled and "#define EXPOSURE_ENABLED" or nil
+	parts[#parts+1] = canvases.postEffects_enabled and self.exposure > 0 and "#define EXPOSURE_ENABLED" or nil
 	parts[#parts+1] = canvases.postEffects_enabled and self.bloom_enabled and "#define BLOOM_ENABLED" or nil
 	
 	parts[#parts+1] = self.AO_enabled and "#define AO_ENABLED" or nil

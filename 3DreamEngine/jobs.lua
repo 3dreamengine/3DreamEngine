@@ -276,17 +276,16 @@ function lib.executeJobs(self, cam)
 			--vignette and downscale
 			local c = self.canvas_exposure
 			love.graphics.setCanvas(c)
-			self.shaders.autoExposure:send("targetBrightness", self.autoExposureTargetBrightness)
-			self.shaders.autoExposure:send("adaptionFactor", self.autoExposureAdaptionFactor)
 			love.graphics.setShader(self.shaders.autoExposure)
+			self.shaders.autoExposure:send("targetBrightness", self.autoExposure_targetBrightness)
 			love.graphics.draw(self.canvases.color, 0, 0, 0, c:getWidth() / self.canvases.width, c:getHeight() / self.canvases.height)
 			love.graphics.setShader()
 			
 			--fetch
 			local f = self.autoExposure_adaptionSpeed * math.sqrt(self.autoExposure_interval)
-			love.graphics.setBlendMode("alpha", "premultiplied")
+			love.graphics.setBlendMode("alpha")
 			love.graphics.setCanvas(self.canvas_exposure_fetch)
-			love.graphics.setColor(1, 1, 1, f)
+			love.graphics.setColor(1, 0, 0, f)
 			love.graphics.draw(self.canvas_exposure, 0, 0, 0, 1 / self.autoExposure_resolution)
 			love.graphics.pop()
 		elseif o[1] == "shadow_sun" then

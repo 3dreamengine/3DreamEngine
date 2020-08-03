@@ -16,7 +16,7 @@ extern float gamma;
 extern float exposure;
 
 #ifdef AUTOEXPOSURE_ENABLED
-varying float expo;
+varying float eyeAdaption;
 #endif
 
 #ifdef FXAA_ENABLED
@@ -142,14 +142,17 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 	c.a = min(1.0, c.a + c2.a);
 #endif
 	
-	//exposure
+	//additional post effects
 #ifdef POSTEFFECTS_ENABLED
+	
+	//eye adaption
 #ifdef AUTOEXPOSURE_ENABLED
-	c.rgb = vec3(1.0) - exp(-c.rgb * expo);
-#else
+	c.rgb *= eyeAdaption;
+#endif
+	
+	//exposure
 #ifdef EXPOSURE_ENABLED
 	c.rgb = vec3(1.0) - exp(-c.rgb * exposure);
-#endif
 #endif
 	
 	//gamma correction
@@ -163,7 +166,7 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 #ifdef VERTEX
 	vec4 position(mat4 transform_projection, vec4 vertex_position) {
 #ifdef AUTOEXPOSURE_ENABLED
-		expo = max(0.0, Texel(canvas_exposure, VaryingTexCoord.xy).r * exposure);
+		eyeAdaption = Texel(canvas_exposure, vec2(0.5, 0.5)).r;
 #endif
 		return transform_projection * vertex_position;
 	}

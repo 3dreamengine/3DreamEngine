@@ -132,10 +132,9 @@ dream.rain_wetness_decrease = 0.01        -- speed of wetness decrease
 
 dream.autoExposure_enabled = false        -- enables auto exposure which adapts the exposure to the current view
 dream.autoExposure_resolution = 128       -- temporary canvas resolution
-dream.autoExposureTargetBrightness = 0.333-- target screen brightness to normalize to
-dream.autoExposureAdaptionFactor = 1.0    -- higher values reduce the range of adaption
-dream.autoExposure_interval = 1 / 15      -- samples per second, with smaller apadtion speed these can be reduced
-dream.autoExposure_adaptionSpeed = 0.1    -- speed of adaption
+dream.autoExposure_targetBrightness = 0.25-- target screen brightness to normalize to
+dream.autoExposure_interval = 1 / 15      -- samples per second
+dream.autoExposure_adaptionSpeed = 0.4    -- speed of adaption
 
 dream.sky_enabled = true                  -- enable sky, also disables hdri sphere if set
 dream.sky_hdri = false                    -- dont use the generaded sky, use an image instead. Should be a hdr format

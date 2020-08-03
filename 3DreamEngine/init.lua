@@ -122,10 +122,9 @@ lib.rain_wetness = 0.0
 
 lib.autoExposure_enabled = false
 lib.autoExposure_resolution = 128
-lib.autoExposureTargetBrightness = 0.333
-lib.autoExposureAdaptionFactor = 1.0
+lib.autoExposure_targetBrightness = 0.25
 lib.autoExposure_interval = 1 / 15
-lib.autoExposure_adaptionSpeed = 0.1
+lib.autoExposure_adaptionSpeed = 0.4
 
 lib.sky_enabled = true
 lib.sky_hdri = false
@@ -237,10 +236,10 @@ function lib.newCanvasSet(self, w, h, msaa, alphaBlendMode, postEffects_enabled)
 	
 	--layer count and seperate color canvas for average alpha blending
 	if alphaBlendMode == "average" then
-		set.color_pass2 = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa}) --r, g, b
-		set.data_pass2 = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa})  --steps, alpha, ior
+		set.color_pass2 = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa})       --r, g, b
+		set.data_pass2 = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa})        --steps, alpha, ior
 		if self.refraction_enabled then
-			set.normal_pass2 = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa}) --xyz normal
+			set.normal_pass2 = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa})  --xyz normal
 		end
 	end
 	
@@ -286,7 +285,7 @@ function lib.resize(self, w, h)
 	
 	--auto exposure scaling canvas
 	if self.autoExposure_enabled then
-		self.canvas_exposure = love.graphics.newCanvas(self.autoExposure_resolution, self.autoExposure_resolution, {format = "rgba16f", readable = true, msaa = 0, mipmaps = "auto"})
+		self.canvas_exposure = love.graphics.newCanvas(self.autoExposure_resolution, self.autoExposure_resolution, {format = "r16f", readable = true, msaa = 0, mipmaps = "auto"})
 		self.canvas_exposure_fetch = love.graphics.newCanvas(1, 1, {format = "r16f", readable = true, msaa = 0, mipmaps = "none"})
 		
 		self.canvas_exposure:setFilter("linear")

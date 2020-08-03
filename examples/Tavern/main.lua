@@ -8,6 +8,7 @@ love.window.setVSync(false)
 local projectDir = "examples/Tavern/"
 dream.nameDecoder = false
 dream.sky_enabled = false
+dream.autoExposure_enabled = true
 dream.sun_ambient = {0.1, 0.1, 0.1}
 dream.lighting_engine = "PBR"
 
