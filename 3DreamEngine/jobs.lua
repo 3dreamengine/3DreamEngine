@@ -120,6 +120,7 @@ function lib.blurCubeMap(self, cube, level)
 	love.graphics.pop()
 end
 
+local lastSkyTex
 function lib.executeJobs(self, cam)
 	local t = love.timer.getTime()
 	local dt = love.timer.getDelta()
@@ -127,8 +128,23 @@ function lib.executeJobs(self, cam)
 	local operations = { }
 	
 	--re render sky cube
-	if self.sky_enabled then
-		operations[#operations+1] = {"sky", 1.0}
+	if self.sky_as_reflection then
+		local changes = false
+		local tex = self.sky_cube or self.sky_hdri
+		if tex then
+			if self.sky_refreshRateTexture > 0 and t - (times["sky"] or 0) > self.sky_refreshRateTexture or tostring(tex) ~= lastSkyTexID then
+				changes = true
+				lastSkyTexID = tostring(tex)
+			end
+		else
+			if self.sky_refreshRate > 0 and t - (times["sky"] or 0) > self.sky_refreshRate or self.sky_refreshRate == 0 and not times["sky"] then
+				changes = true
+			end
+		end
+		
+		if changes then
+			operations[#operations+1] = {"sky", 1.0}
+		end
 		
 		--blur sky reflection cubemap
 		for level = 2, self.reflections_levels do

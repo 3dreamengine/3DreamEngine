@@ -7,11 +7,12 @@ love.window.setVSync(false)
 --settings
 local projectDir = "examples/Tavern/"
 dream.nameDecoder = false
-dream.defaultReflection = cimg:load(projectDir .. "sky.cimg")
-dream.sky_enabled = false
 dream.autoExposure_enabled = true
 dream.sun_ambient = {0.1, 0.1, 0.1}
 dream.alphaBlendMode = "average"
+
+dream.sky_as_reflection = false
+dream.defaultReflection = cimg:load(projectDir .. "sky.cimg")
 
 dream.fog_enabled = true
 dream.fog_distance = 10.0
@@ -64,13 +65,13 @@ end
 local particleBatch = dream:newParticleBatch(texture_candle, 2)
 particleBatch.vertical = true
 
-local particleBatchDust = dream:newParticleBatch(love.graphics.newImage(projectDir .. "dust.png"), 1)
+local particleBatchDust = dream:newParticleBatch(love.graphics.newImage(projectDir .. "dust.png"), 2)
 particleBatchDust.sort = false
 
 local lights = { }
 for d,s in ipairs(scene.positions) do
 	if s.name == "LIGHT" then
-		lights[d] = dream:newLight(s.x, s.y + 0.1, s.z, 1.0, 0.75, 0.2)
+		lights[d] = dream:newLight(s.x, s.y + 0.1, s.z, 1.0, 0.75, 0.3)
 		lights[d].shadow = dream:newShadow("point", true)
 		lights[d].shadow.size = 0.1
 	elseif s.name == "FIRE" then
@@ -101,11 +102,11 @@ function love.draw()
 	--dusty atmosphere
 	particleBatchDust:clear()
 	local c = love.timer.getTime() * 0.0003
-	for i = 1, 300 do
-		local x = noise(i, 1 + c) * 100 % 10 - 5
-		local y = noise(i, 2 + c) * 100 % 4
-		local z = noise(i, 3 + c) * 100 % 10 - 5
-		particleBatchDust:add(x, y, z, (i % 10 + 10) * 0.0025)
+	for i = 1, 200 do
+		local x = noise(i, 1 + c) * 100 % 11 - 5.5
+		local y = noise(i, 2 + c) * 100 % 5 - 0.5
+		local z = noise(i, 3 + c) * 100 % 11 - 5.5
+		particleBatchDust:add(x, y, z, (i % 10 + 10) * 0.002)
 	end
 	
 	--update lights
@@ -132,7 +133,7 @@ function love.draw()
 	dream:drawParticleBatch(particleBatch)
 	dream:drawParticleBatch(particleBatchDust)
 
-	dream:present()
+	dream:present(true)
 	
 	if not hideTooltips then
 		love.graphics.setColor(1, 1, 1)

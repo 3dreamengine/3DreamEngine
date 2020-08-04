@@ -8,7 +8,6 @@ local projectDir = "examples/Lamborghini/"
 
 dream.defaultShaderType = "PBR"
 dream.alphaBlendMode = "disabled"
-
 dream.sky_hdri = love.graphics.newImage(projectDir .. "garage.hdr")
 
 dream.cam.fov = 70

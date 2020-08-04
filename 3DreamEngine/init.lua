@@ -115,7 +115,10 @@ lib.autoExposure_targetBrightness = 0.25
 lib.autoExposure_interval = 1 / 15
 lib.autoExposure_adaptionSpeed = 0.4
 
-lib.sky_enabled = true
+lib.sky_as_reflection = true
+lib.sky_refreshRate = 1/15
+lib.sky_refreshRateTexture = 0
+lib.sky_cube = false
 lib.sky_hdri = false
 lib.sky_hdri_exposure = 1.0
 lib.sky_resolution = 512
@@ -273,9 +276,11 @@ function lib.resize(self, w, h)
 	end
 	
 	--sky box
-	if self.sky_enabled then
+	if self.sky_as_reflection then
 		self.defaultReflection = love.graphics.newCanvas(self.sky_resolution, self.sky_resolution, {format = self.sky_format, readable = true, msaa = 0, type = "cube", mipmaps = "manual"})
 	end
+	
+	self.lastSkyTexID = nil
 	
 	self:loadShader()
 end

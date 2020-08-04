@@ -6,18 +6,14 @@ love.mouse.setRelativeMode(true)
 --settings
 local projectDir = "examples/blacksmith/"
 
-dream.sky_enabled = false
+dream.defaultReflection = cimg:load(projectDir .. "sky.cimg")
+dream.sky_as_reflection = false
 dream.defaultShaderType = "PBR"
 
 dream:init()
 
 local scene = dream:loadObject(projectDir .. "scene", {splitMaterials = true})
 local torch = dream:loadObject(projectDir .. "torch", {splitMaterials = true})
-
---create a reflection in the middle of the room 
-local reflection = dream:newReflection(false, 1.0, vec3(0, 0, 0))
-scene.reflection = reflection
-torch.reflection = reflection
 
 --particle texture
 local texture_candle = love.graphics.newImage(projectDir .. "textures/candle.png")
@@ -105,7 +101,7 @@ function love.draw()
 	dream:draw(torch, 1.25, 0, 1.9, 0.075)
 	dream:draw(torch, -1.25, 0, 1.9, 0.075)
 
-	dream:present()
+	dream:present(true)
 	
 	if not hideTooltips then
 		love.graphics.setColor(1, 1, 1)
@@ -208,6 +204,10 @@ function love.keypressed(key)
 	if key == "u" then
 		dream.autoExposure_enabled = not dream.autoExposure_enabled
 		dream:init()
+	end
+	
+	if key == "f2" then
+		dream:take3DScreenshot(vec3(player.x, player.y, player.z), 256)
 	end
 end
 

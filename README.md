@@ -135,8 +135,11 @@ dream.autoExposure_targetBrightness = 0.25-- target screen brightness to normali
 dream.autoExposure_interval = 1 / 15      -- samples per second
 dream.autoExposure_adaptionSpeed = 0.4    -- speed of adaption
 
-dream.sky_enabled = true                  -- enable sky reflection, see extended information in the reflecton chapter
-dream.sky_hdri = false                    -- dont use the generated sky, use an hdri sphere image instead. Should be a hdr format
+dream.sky_as_reflection = true            -- use the sky dome (or cube map / hdri image) as the default reflection cube map
+dream.sky_refreshRate = 1/15              -- refreshes per second when using sky dome
+dream.sky_refreshRateTexture = 0          -- refreshes per second when using a cube map or hdri, 0 means static: only when reference changes
+dream.sky_cube = false                    -- use a cubemap instead
+dream.sky_hdri = false                    -- use an hdri sphere image instead. Should be a hdr format for optimal results.
 dream.sky_hdri_exposure = 1.0             -- set image exposure
 dream.sky_resolution = 512                -- resolution of sky cubemap, should match the wrapped hdri image size
 dream.sky_format = "rgba16f"              -- format of sky, should be rgba16f, especially when using hdr formats for the hdri
@@ -319,6 +322,63 @@ dream:getShaderModule(name)
 --check if this module is globally active
 dream:isShaderModuleActive(name)
 ```
+
+## sky
+The sky will be rendered when the `noSky` arg in dream:present() is not true and contains a sky color, sun, moon, stars and clouds.
+`dream:setWeather(rain, temperature)` and `dream:setDaytime(time)` are helper functions to control those.
+The sky dome is WIP and will receive further upgrades.
+
+### hdri
+Alternatively you can use a sphere hdri image.
+Set `dream.sky_hdri` to an Drawable. Optionally set `dream.sky_hdri_exposure` to adjust exposure.
+
+### cubemap
+Or you can use a cubemap.
+Set `dream.sky_cube` to an CubeImage.
+
+## default reflection
+If a object has no reflection assigned (see chapter functions - reflections) it falls back the default reflection cubemap, or a single color of not set either.
+
+### use sky dome
+To use the sky dome set `dream.sky_as_reflection` to true.
+Note that this will also use the hdri or cube map set. Match the format and resolution to the given texture to avoid loss in quality.
+
+### use a custom cubemap
+To set the map manually, set `dream.sky_as_reflection` to false to avoid automatic overriding it and 'dream.defaultReflection' to the cube map.
+The cubemap should (but dont necessary have to if not using glossy reflections) mipmaps, each heavyly blurred. Therefore, create the cube map with mipmaps set to `manual` and run following code to generate proper mipmaps:
+```lua
+for level = 2, yourCubeMap:getMipmapCount() do
+	self:blurCubeMap(yourCubeMap, level)
+end
+```
+If you change the cubemaps content, you need to recreate mipmaps too.
+
+Make sure `dream.sky_as_reflection` is false, else it will override your reflection.
+Then overwrite `dream.defaultReflection` with a volume Drawable (before `dream:prepare()`)
+This will NOT affect the sky visible to the camera. 
+If you want to use this cubemap instead of an HDRI or the sky dome, set `dream.reflection_as_sky` to true.
+
+### particle batches
+Particles are batched and rendered all together.
+```lua
+--create a particle batch
+--pass a texture and the target pass. 1 means the texture is opaque and depth buffer can be used, 2 means its transparent. 2 is default and slower. Average alpha mode is currently not fully supported and might cause wrong ordering.
+local particleBatch = dream:newParticleBatch(texture, pass)
+
+--set additional settings
+particleBatch.vertical = true  --vertical does only rotate the particle on the Y-axis, used for flames, ...
+particleBatch.sort = false     --sorting is required for transparent particles with a pattern. For example dust with only one color does not require it. Pass 1 does not require it at all.
+
+--clear batch
+particleBatch:clear()
+
+--add particles
+particleBatch:add(x, y, z, size, emission, quad)
+
+--queue for drawing
+dream:drawParticleBatch(particleBatch)
+```
+
 
 ## materials
 Materials can be either per model by providing a .mtl or .mat file with the same name as the object file or they can be in a global material library.

@@ -6,7 +6,12 @@ local lib = _3DreamEngine
 
 function lib:renderSky(transformProj)
 	love.graphics.push("all")
-	if self.sky_hdri then
+	if self.sky_cube then
+		love.graphics.setShader(self.shaders.sky)
+		self.shaders.sky:send("transformProj", transformProj)
+		self.shaders.sky:send("sky", self.sky_cube)
+		love.graphics.draw(self.object_cube.objects.Cube.mesh)
+	elseif self.sky_hdri then
 		--given hdri sphere
 		love.graphics.setShader(self.shaders.sky_hdri)
 		self.shaders.sky_hdri:send("exposure", self.sky_hdri_exposure)

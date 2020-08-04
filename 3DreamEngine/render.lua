@@ -227,19 +227,20 @@ function lib:render(scene, canvases, cam, pass, noSky)
 		self.shaders.particle:send("transform", cam.transformProj)
 		
 		for d,s in pairs(self.particles) do
-			local right, up
-			if self.vertical then
-				up = vec3(0, 1, 0)
-				right = vec3(right.x, 0, right.z):normalize()
-			else
-				right = vec3(cam.transform[1], cam.transform[2], cam.transform[3])
-				up = vec3(cam.transform[5], cam.transform[6], cam.transform[7])
+			if d.pass == pass or pass == 0 then
+				local right, up
+				if self.vertical then
+					up = vec3(0, 1, 0)
+					right = vec3(right.x, 0, right.z):normalize()
+				else
+					right = vec3(cam.transform[1], cam.transform[2], cam.transform[3])
+					up = vec3(cam.transform[5], cam.transform[6], cam.transform[7])
+				end
+				
+				self.shaders.particle:send("up", {up:unpack()})
+				self.shaders.particle:send("right", {right:unpack()})
+				d:present(cam.pos)
 			end
-			
-			self.shaders.particle:send("up", {up:unpack()})
-			self.shaders.particle:send("right", {right:unpack()})
-			
-			d:present(cam.pos)
 		end
 		
 		self.delton:stop()
