@@ -135,7 +135,7 @@ function lib.executeJobs(self, cam)
 			local id = "cubemap_sky" .. level
 			local time = times[id]
 			if (times["sky"] or 0) > (time or 0) then
-				operations[#operations+1] = {"cubemap", time and (1.0 / level) or 1.0, id, self.canvas_sky, level}
+				operations[#operations+1] = {"cubemap", time and (1.0 / level) or 1.0, id, self.defaultReflection, level}
 			end
 		end
 	end
@@ -261,7 +261,7 @@ function lib.executeJobs(self, cam)
 			
 			for side = 1, 6 do
 				love.graphics.setBlendMode("replace", "premultiplied")
-				love.graphics.setCanvas(self.canvas_sky, side)
+				love.graphics.setCanvas(self.defaultReflection, side)
 				love.graphics.clear(1.0, 1.0, 1.0)
 				love.graphics.setDepthMode()
 				
@@ -407,4 +407,42 @@ function lib.executeJobs(self, cam)
 	
 	local delta = love.timer.getTime() - t
 	self.jobRenderTime = self.jobRenderTime + delta
+end
+
+function lib:take3DScreenshot(pos, resolution)
+	resolution = resolution or 512
+	local canvases = self:newCanvasSet(resolution, resolution, 8, self.alphaBlendMode, false)
+	local results = love.graphics.newCanvas(resolution, resolution, {format = "rgba16f", type = "cube", mipmaps = "manual"})
+	
+	--view matrices
+	local transformations = {
+		self:lookAt(pos, pos + lookNormals[1], vec3(0, -1, 0)),
+		self:lookAt(pos, pos + lookNormals[2], vec3(0, -1, 0)),
+		self:lookAt(pos, pos + lookNormals[3], vec3(0, 0, -1)),
+		self:lookAt(pos, pos + lookNormals[4], vec3(0, 0, 1)),
+		self:lookAt(pos, pos + lookNormals[5], vec3(0, -1, 0)),
+		self:lookAt(pos, pos + lookNormals[6], vec3(0, -1, 0)),
+	}
+	
+	--render all faces
+	for face = 1, 6 do
+		love.graphics.push("all")
+		love.graphics.reset()
+		love.graphics.setCanvas({{results, face = face}})
+		love.graphics.clear()
+		
+		--render
+		local cam = self:newCam(transformations[face], pointShadowProjectionMatrix, pos, lookNormals[face])
+		lib:renderFull(cam, canvases, false)
+		
+		love.graphics.pop()
+	end
+	
+	--blur cubemap
+	for level = 2, results:getMipmapCount() do
+		self:blurCubeMap(results, level)
+	end
+	
+	--export mimg data
+	cimg:export(results, "results.cimg")
 end

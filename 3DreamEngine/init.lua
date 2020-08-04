@@ -21,7 +21,7 @@ vec2 = require((...) .. "/libs/luaVectors/vec2")
 vec3 = require((...) .. "/libs/luaVectors/vec3")
 vec4 = require((...) .. "/libs/luaVectors/vec4")
 
---mimg = require((...) .. "/libs/mimg")
+cimg = require((...) .. "/libs/cimg")
 lib.ffi = require("ffi")
 
 --load sub modules
@@ -274,7 +274,7 @@ function lib.resize(self, w, h)
 	
 	--sky box
 	if self.sky_enabled then
-		self.canvas_sky = love.graphics.newCanvas(self.sky_resolution, self.sky_resolution, {format = self.sky_format, readable = true, msaa = 0, type = "cube", mipmaps = "manual"})
+		self.defaultReflection = love.graphics.newCanvas(self.sky_resolution, self.sky_resolution, {format = self.sky_format, readable = true, msaa = 0, type = "cube", mipmaps = "manual"})
 	end
 	
 	self:loadShader()

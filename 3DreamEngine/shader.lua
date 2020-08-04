@@ -200,7 +200,7 @@ function lib:getShaderInfo(s, obj)
 	local ID = self.shaderLibrary.base[shaderType]:getShaderInfoID(self, mat, shaderType, reflection)
 	
 	--reflection module
-	ID = ID + ((reflection or dream.sky_enabled) and 1024 or 0)
+	ID = ID + ((reflection or dream.defaultReflection) and 1024 or 0)
 	
 	--global modules
 	local m = { }
@@ -224,7 +224,7 @@ function lib:getShaderInfo(s, obj)
 		shs[ID] = self.shaderLibrary.base[shaderType]:getShaderInfo(self, mat, shaderType, reflection)
 		shs[ID].shaderType = shaderType
 		shs[ID].vertexShader = vertexShader
-		shs[ID].reflection = reflection or dream.sky_enabled
+		shs[ID].reflection = reflection or dream.defaultReflection
 		shs[ID].shaders = { }
 		shs[ID].modules = m
 	end

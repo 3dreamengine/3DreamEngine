@@ -7,6 +7,7 @@ love.window.setVSync(false)
 --settings
 local projectDir = "examples/Tavern/"
 dream.nameDecoder = false
+dream.defaultReflection = cimg:load(projectDir .. "sky.cimg")
 dream.sky_enabled = false
 dream.autoExposure_enabled = true
 dream.sun_ambient = {0.1, 0.1, 0.1}
@@ -304,6 +305,10 @@ function love.keypressed(key)
 	
 	if key == "k" then
 		rotateCamera = not rotateCamera
+	end
+	
+	if key == "f2" then
+		dream:take3DScreenshot(vec3(player.x, player.y, player.z), 128)
 	end
 end
 

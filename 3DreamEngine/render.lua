@@ -188,7 +188,7 @@ function lib:render(scene, canvases, cam, pass, noSky)
 			for _,task in pairs(materialGroup) do
 				--sky texture
 				if shaderInfo.reflection then
-					local ref = task.s.reflection and task.s.reflection.canvas or task.obj.reflection and task.obj.reflection.canvas or self.canvas_sky
+					local ref = task.s.reflection and task.s.reflection.canvas or task.obj.reflection and task.obj.reflection.canvas or self.defaultReflection
 					shader:send("tex_background", ref or self.textures.sky_fallback)
 				end
 				
@@ -388,9 +388,6 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 	if shader:hasUniform("transform") then shader:send("transform", cam.transformProj) end
 	if shader:hasUniform("viewNormal") then shader:send("viewNormal", cam.normal) end
 	if shader:hasUniform("viewPos") then shader:send("viewPos", cam.pos) end
-	
-	if shader:hasUniform("canvas_sky") then shader:send("canvas_sky", self.canvas_sky) end
-	if shader:hasUniform("ambient") then shader:send("ambient", self.sun_ambient) end
 	
 	if shader:hasUniform("gamma") then shader:send("gamma", self.gamma) end
 	if shader:hasUniform("exposure") then shader:send("exposure", self.exposure) end
