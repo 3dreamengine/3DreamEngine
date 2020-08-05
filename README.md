@@ -412,6 +412,15 @@ dream.alphaBlendMode = "dither"
 dream.alphaBlendMode = "disabled"
 ```
 
+### transparent materials
+With set alpha blending, you have to tell the engine how the material has to be rendered. Set the `alpha` tag accordingly:
+```lua
+mat.alpha = 0 --this is a solid material, no alpha at all. This is default.
+mat.alpha = 1 --this is a semi solid material. Render solid parts in the primary pass and render the rest in the second.
+mat.alpha = 2 --this is a fully transparent material. It only uses the second pass.
+```
+Alpha blending mode disabled and dither ignore those values.
+
 ## Level of Detail
 To define the level of detail, add a boolean array with size 9 to the object or subobject, index 1 is nearest. False prevents this object from rendering.
 ```
@@ -456,6 +465,8 @@ To use more 3DreamEngine specific features (particle system, wind animation ...)
 return {
 	{
 		name = "grass", --extend material Grass
+		
+		alpha = 0, --the alpha passes required as explained in alpah blending chapter
 		
 		--Shared for all shading
 		color = {1.0, 1.0, 1.0, 1.0},  -- color
