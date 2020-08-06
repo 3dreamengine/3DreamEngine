@@ -152,6 +152,7 @@ function lib.executeJobs(self, cam)
 			local time = times[id]
 			if (times["sky"] or 0) > (time or 0) then
 				operations[#operations+1] = {"cubemap", time and (1.0 / level) or 1.0, id, self.defaultReflection, level}
+				break
 			end
 		end
 	end
@@ -206,6 +207,7 @@ function lib.executeJobs(self, cam)
 			local id_blur = "cubemap_" .. (reflection.id + level)
 			if (times[id] or 0) > (times[id_blur] or 0) then
 				operations[#operations+1] = {"cubemap", times[id_blur] and (1.0 / level) or 1.0, id_blur, reflection.canvas, level}
+				break
 			end
 		end
 	end

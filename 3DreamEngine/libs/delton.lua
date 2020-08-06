@@ -73,9 +73,9 @@ function delton:present()
 	selected = false
 	
 	--background
-	love.graphics.setColor(0, 0, 0, 128)
+	love.graphics.setColor(0, 0, 0, 0.5)
 	love.graphics.rectangle("fill", -50, -50, 200, 100, 5)
-	love.graphics.setColor(255, 255, 255)
+	love.graphics.setColor(1, 1, 1)
 	
 	--prepare data
 	self:prepareData(self.root)

@@ -5,7 +5,7 @@ shader.lua - loads the shaders
 
 local lib = _3DreamEngine
 
-local testForOpenES = false
+local testForOpenES = true
 
 --enables auto shader validator
 if _DEBUGMODE then

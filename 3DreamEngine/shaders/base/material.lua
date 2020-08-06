@@ -75,7 +75,7 @@ function sh:constructVertex(dream, info)
 end
 
 function sh:getLightSignature(dream)
-	return "albedo.rgb, glossiness, specular"
+	return "albedo.rgb, specular, glossiness"
 end
 
 function sh:perShader(dream, shader, info)

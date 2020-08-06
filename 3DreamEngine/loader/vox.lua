@@ -139,8 +139,6 @@ return function(self, obj, path)
 			local layerId = parseInt32(i+i2+28)
 			local frameCount = parseInt32(i+i2+32) --must be 1
 			
-			print("transform", id, childId, i2, i)
-			
 			if reserved ~= -1 or frameCount ~= 1 then
 				print(reserved, frameCount)
 				print("unsupported vox file, reserved or frameCount in use, should be -1 / 1, trying to continue.")
@@ -158,7 +156,6 @@ return function(self, obj, path)
 			local att, i2 = parseDICT(i+16)
 			local children = parseInt32(i+i2+20)
 			
-			print("group", id, children)
 			groups[id] = { }
 			for c = 1, children do
 				local cId = parseInt32(i+i2+24 + (c-1)*4)
@@ -173,7 +170,6 @@ return function(self, obj, path)
 				print("invalid vox file, more than one model per shape, trying to continue")
 			end
 			
-			print("shape", id)
 			nodes[id] = {id = id, nodeAttributes = att, modelId = parseInt32(i+i2+24), modelAttributes = parseDICT(i+i2+28)}
 		elseif chunk == "LAYR" then
 			--not required
@@ -195,8 +191,6 @@ return function(self, obj, path)
 	
 	--generate final object
 	function generate(m, name, t)
-		print("gen", name, t[1], t[2], t[3])
-		
 		obj.objects[name] = {
 			faces = { },
 			final = { },

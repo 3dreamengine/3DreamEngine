@@ -10,7 +10,7 @@ extern float lod;
 
 extern CubeImage tex;
 
-extern float strength = 0.025;
+extern float strength;
 
 vec4 effect(vec4 color, Image lol, vec2 tc, vec2 sc) {
 	tc = (sc * scale - vec2(0.5)) * 2.0;

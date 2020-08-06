@@ -156,9 +156,9 @@ end
 
 --default textures
 if love.graphics then
-	lib.object_sky = lib:loadObject(lib.root .. "/objects/sky", {meshType = "textured"})
-	lib.object_cube = lib:loadObject(lib.root .. "/objects/cube", {meshType = "simple"})
-	lib.object_plane = lib:loadObject(lib.root .. "/objects/plane", {meshType = "textured"})
+	lib.object_sky = lib:loadObject(lib.root .. "/objects/sky", {meshType = "textured", shaderType = "Phong"})
+	lib.object_cube = lib:loadObject(lib.root .. "/objects/cube", {meshType = "simple", shaderType = "simple"})
+	lib.object_plane = lib:loadObject(lib.root .. "/objects/plane", {meshType = "textured", shaderType = "Phong"})
 	
 	local pix = love.image.newImageData(2, 2)
 	lib.textures = {
