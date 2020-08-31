@@ -244,16 +244,13 @@ function lib:calcTangents(finals, vertexMap)
 		f[16] = 0
 	end
 	
-	--9-10 UV
-	--5-7 Normal
-	
 	for f = 1, #vertexMap, 3 do
 		local P1 = finals[vertexMap[f+0]]
 		local P2 = finals[vertexMap[f+1]]
 		local P3 = finals[vertexMap[f+2]]
 		
 		local tangent = { }
-		local bitangent = { }
+		--local bitangent = { }
 		
 		local edge1 = {P2[1] - P1[1], P2[2] - P1[2], P2[3] - P1[3]}
 		local edge2 = {P3[1] - P1[1], P3[2] - P1[2], P3[3] - P1[3]}
@@ -265,7 +262,7 @@ function lib:calcTangents(finals, vertexMap)
 		if cp ~= 0.0 then
 			for i = 1, 3 do
 				tangent[i] = (edge1[i] * edge2uv[2] - edge2[i] * edge1uv[2]) / cp
-				bitangent[i] = (edge1[i] * edge2uv[1] - edge2[i] * edge1uv[1]) / cp
+				--bitangent[i] = (edge1[i] * edge2uv[1] - edge2[i] * edge1uv[1]) / cp
 			end
 			
 			for i = 1, 3 do
@@ -273,9 +270,9 @@ function lib:calcTangents(finals, vertexMap)
 				finals[vertexMap[f+i-1]][12] = finals[vertexMap[f+i-1]][12] + tangent[2]
 				finals[vertexMap[f+i-1]][13] = finals[vertexMap[f+i-1]][13] + tangent[3]
 				
-				finals[vertexMap[f+i-1]][14] = finals[vertexMap[f+i-1]][14] + bitangent[1]
-				finals[vertexMap[f+i-1]][15] = finals[vertexMap[f+i-1]][15] + bitangent[2]
-				finals[vertexMap[f+i-1]][16] = finals[vertexMap[f+i-1]][16] + bitangent[3]
+				--finals[vertexMap[f+i-1]][14] = finals[vertexMap[f+i-1]][14] + bitangent[1]
+				--finals[vertexMap[f+i-1]][15] = finals[vertexMap[f+i-1]][15] + bitangent[2]
+				--finals[vertexMap[f+i-1]][16] = finals[vertexMap[f+i-1]][16] + bitangent[3]
 			end
 		end
 	end
@@ -288,11 +285,11 @@ function lib:calcTangents(finals, vertexMap)
 		f[2+o] = f[2+o] / l
 		f[3+o] = f[3+o] / l
 		
-		local o = 13
-		local l = math.sqrt(f[1+o]^2 + f[2+o]^2 + f[3+o]^2)
-		f[1+o] = f[1+o] / l
-		f[2+o] = f[2+o] / l
-		f[3+o] = f[3+o] / l
+		--local o = 13
+		--local l = math.sqrt(f[1+o]^2 + f[2+o]^2 + f[3+o]^2)
+		--f[1+o] = f[1+o] / l
+		--f[2+o] = f[2+o] / l
+		--f[3+o] = f[3+o] / l
 	end	
 	
 	--complete smoothing step

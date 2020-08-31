@@ -39,6 +39,7 @@ require((...) .. "/renderSky")
 require((...) .. "/jobs")
 require((...) .. "/particlesystem")
 require((...) .. "/particles")
+require((...) .. "/3doExport")
 
 --loader
 lib.loader = { }
@@ -158,9 +159,9 @@ end
 
 --default textures
 if love.graphics then
-	lib.object_sky = lib:loadObject(lib.root .. "/objects/sky", {meshType = "textured", shaderType = "Phong"})
-	lib.object_cube = lib:loadObject(lib.root .. "/objects/cube", {meshType = "simple", shaderType = "simple"})
-	lib.object_plane = lib:loadObject(lib.root .. "/objects/plane", {meshType = "textured", shaderType = "Phong"})
+	lib.object_sky = lib:loadObject(lib.root .. "/objects/sky", {shaderType = "Phong"})
+	lib.object_cube = lib:loadObject(lib.root .. "/objects/cube", {shaderType = "simple"})
+	lib.object_plane = lib:loadObject(lib.root .. "/objects/plane", {shaderType = "Phong"})
 	
 	local pix = love.image.newImageData(2, 2)
 	lib.textures = {

@@ -37,13 +37,8 @@ function lib.addParticlesystems(self, obj)
 				
 				--create the particle mesh
 				local pname = o.name .. "_particleSystem_" .. o.material.name .. "_" .. particleSystemID
-				obj.objects[pname] = {
-					faces = { },
-					final = { },
-					name = pname,
-					particleSystem = true,
-					material = particleSystem.objects[1].object.material or obj.materials.None,
-				}
+				obj.objects[pname] = dream:newSubObject(pname, obj, particleSystem.objects[1].object.material or obj.materials.None)
+				obj.objects[pname].particleSystem = true
 				local po = obj.objects[pname]
 				
 				--place particles

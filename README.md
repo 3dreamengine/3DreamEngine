@@ -186,7 +186,6 @@ yourObject = dream:loadObject("objectName", args)
 	mergeObjects         -- merge all object into one
 
 --the name of the object (set by "o" inside .obj, in blender it is the name of the vertex data inside an object) can contain information:
---  if it contains REMOVE, it will not be used. Their use can be frames, particle emitters, helper objects, ...)
 --  if it contains POS it puts it into the positions table for manual use and skips loading. Positions contain the position (x, y, z), its averge radius from its origin as size and the name (everything behind POS+1, but stops at a dot to exlude numberings)
 
 --required for loading textures, 3do files, ...
@@ -573,7 +572,7 @@ object = {
 				{1, 2, 3}, --final ids
 			},
 			final = {
-				{x, y, z, shaderData, nx, ny, nz, material, u, v, tx, ty, tz, btx, bty, btz}, -- position, shader extra value e.g. for animation, normal, material (used for flat shading only), uv coords (may be nil for flat shading) and tangent (calculated automatically)
+				{x, y, z, shaderData, nx, ny, nz, material, u, v, tx, ty, tz}, -- position, shader extra value e.g. for animation, normal, material, uv coords and tangent (calculated automatically)
 			},
 			-- when using 3do or when args.noCleanup is disabled (default is false) faces and final will be deleted once the mesh is created to free memory.
 			
@@ -582,7 +581,7 @@ object = {
 			name = "yourSubObjectBaseName",   --the name, without material postfixes
 			
 			shaderType = "PBR",               --the used shader (PBR, Phong, simple or a custom one)
-			meshType = "textured",            --simple, textured, textured_array - determines the data the mesh contains, if nil it will be guessed based on the shaderType
+			meshType = "textured",            --simple, textured, material - determines the data the mesh contains, if nil it will be guessed based on the shaderType
 			mesh = love.graphics.newMesh(),   --a static, triangles-mesh, may be nil when using 3do, loads automatically
 			
 			transform = mat4(),               --default is nil, overwrites global object transformation

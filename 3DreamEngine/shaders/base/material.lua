@@ -2,6 +2,8 @@ local sh = { }
 
 sh.type = "base"
 
+sh.meshType = "material"
+
 function sh:getShaderInfoID(dream, mat, shaderType)
 	return (mat.tex_normal and 0 or 1) + (mat.tex_emission and 0 or 2)
 end

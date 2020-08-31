@@ -191,12 +191,7 @@ return function(self, obj, path)
 	
 	--generate final object
 	function generate(m, name, t)
-		obj.objects[name] = {
-			faces = { },
-			final = { },
-			name = name,
-			material = self:newMaterial(),
-		}
+		obj.objects[name] = dream:newSubObject(name, obj, self:newMaterial())
 		local o = obj.objects[name]
 		
 		for x = 0, m.x-1 do
