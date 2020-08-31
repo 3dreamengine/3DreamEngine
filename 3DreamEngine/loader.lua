@@ -760,14 +760,12 @@ lib.meshTypeFormats = {
 		{"VertexTexCoord", "float", 2},     -- UV
 		{"VertexNormal", "byte", 4},        -- normal
 		{"VertexTangent", "byte", 4},       -- normal tangent
-		{"VertexBiTangent", "byte", 4}      -- normal tangent
 	},
 	textured_array = {
 		{"VertexPosition", "float", 4},     -- x, y, z, extra
 		{"VertexTexCoord", "float", 3},     -- UV
 		{"VertexNormal", "byte", 4},        -- normal
 		{"VertexTangent", "byte", 4},       -- normal tangent
-		{"VertexBiTangent", "byte", 4}      -- normal tangent
 	},
 	simple = {
 		{"VertexPosition", "float", 4},     -- x, y, z, extra
@@ -847,16 +845,14 @@ function lib.createMesh(self, obj, o)
 				s[1], s[2], s[3], s[4],
 				s[9], s[10],
 				s[5]*0.5+0.5, s[6]*0.5+0.5, s[7]*0.5+0.5, 0.0,
-				s[11]*0.5+0.5, s[12]*0.5+0.5, s[13]*0.5+0.5, 0.0,
-				s[14]*0.5+0.5, s[15]*0.5+0.5, s[16]*0.5+0.5, 0.0
+				s[11]*0.5+0.5, s[12]*0.5+0.5, s[13]*0.5+0.5, 0.0
 			)
 		elseif o.meshType == "textured_array" then
 			o.mesh:setVertex(d,
 				s[1], s[2], s[3], s[4],
 				s[9], s[10], s[8],
 				s[5]*0.5+0.5, s[6]*0.5+0.5, s[7]*0.5+0.5, 0.0,
-				s[11]*0.5+0.5, s[12]*0.5+0.5, s[13]*0.5+0.5, 0.0,
-				s[14]*0.5+0.5, s[15]*0.5+0.5, s[16]*0.5+0.5, 0.0
+				s[11]*0.5+0.5, s[12]*0.5+0.5, s[13]*0.5+0.5, 0.0
 			)
 		elseif o.meshType == "simple" then
 			local c = s[8].color

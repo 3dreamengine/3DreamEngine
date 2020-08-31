@@ -17,7 +17,7 @@ function sh:constructDefines(dream, info)
 	local code = { }
 	if info.tex_normal then
 		code[#code+1] = "#define TEX_NORMAL"
-		code[#code+1] = "varying mat3 objToWorldSpace;"
+		code[#code+1] = "varying mat3 TNB;"
 	else
 		code[#code+1] = "varying vec3 normalV;"
 	end
@@ -41,7 +41,6 @@ function sh:constructDefines(dream, info)
 		#ifdef VERTEX
 		attribute highp vec3 VertexNormal;
 		attribute highp vec3 VertexTangent;
-		attribute highp vec3 VertexBiTangent;
 		#endif
 	]]
 	
@@ -59,7 +58,7 @@ function sh:constructPixel(dream, info)
 	return [[
 	//transform normal to world space
 	#ifdef TEX_NORMAL
-		vec3 normal = normalize(objToWorldSpace * normalize(Texel(tex_normal, VaryingTexCoord.xy).rgb - 0.5));
+		vec3 normal = normalize(TNB * normalize(Texel(tex_normal, VaryingTexCoord.xy).rgb - 0.5));
 	#else
 		vec3 normal = normalize(normalV);
 	#endif
@@ -103,9 +102,9 @@ function sh:constructVertex(dream, info)
 	#ifdef TEX_NORMAL
 		vec3 T = normalize(normalTransform * (VertexTangent*2.0-1.0));
 		vec3 N = normalize(normalTransform * (VertexNormal*2.0-1.0));
-		vec3 B = normalize(normalTransform * (VertexBiTangent*2.0-1.0));
+		vec3 B = cross(N, T);
 		
-		objToWorldSpace = mat3(T, B, N);
+		TNB = mat3(T, B, N);
 	#else
 		normalV = normalTransform * (VertexNormal*2.0-1.0);
 	#endif
