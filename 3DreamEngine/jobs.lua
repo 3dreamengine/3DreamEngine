@@ -422,9 +422,6 @@ function lib.executeJobs(self, cam)
 			break
 		end
 	end
-	
-	local delta = love.timer.getTime() - t
-	self.jobRenderTime = self.jobRenderTime + delta
 end
 
 function lib:take3DScreenshot(pos, resolution)

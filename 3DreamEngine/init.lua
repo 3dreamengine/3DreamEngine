@@ -22,6 +22,7 @@ vec3 = require((...) .. "/libs/luaVectors/vec3")
 vec4 = require((...) .. "/libs/luaVectors/vec4")
 
 cimg = require((...) .. "/libs/cimg")
+require((...) .. "/libs/saveTable")
 lib.ffi = require("ffi")
 
 --load sub modules
@@ -30,13 +31,14 @@ lib.root = (...)
 require((...) .. "/functions")
 require((...) .. "/shader")
 require((...) .. "/loader")
+require((...) .. "/materials")
+require((...) .. "/resources")
 require((...) .. "/render")
 require((...) .. "/renderLight")
 require((...) .. "/renderSky")
 require((...) .. "/jobs")
 require((...) .. "/particlesystem")
 require((...) .. "/particles")
-require((...) .. "/libs/saveTable")
 
 --loader
 lib.loader = { }
