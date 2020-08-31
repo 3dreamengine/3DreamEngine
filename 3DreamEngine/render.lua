@@ -47,7 +47,7 @@ function lib:buildScene(cam, pass, blacklist)
 						
 						--reflections
 						local reflection = task.s.reflection or task.obj.reflection
-						if reflection then
+						if reflection and reflection.canvas then
 							self.reflections[task.s.reflection or task.obj.reflection] = {
 								dist = dist,
 								obj = task.s.reflection and task.s or task.obj,
@@ -159,9 +159,7 @@ function lib:render(scene, canvases, cam, pass, noSky)
 			shader:send("viewPos", viewPos)
 		end
 		
-		if shaderInfo.reflection then
-			shader:send("reflections_levels", self.reflections_levels-1)
-		else
+		if not shaderInfo.reflection then
 			shader:send("ambient", self.sun_ambient)
 		end
 		
@@ -188,8 +186,22 @@ function lib:render(scene, canvases, cam, pass, noSky)
 			for _,task in pairs(materialGroup) do
 				--sky texture
 				if shaderInfo.reflection then
-					local ref = task.s.reflection and task.s.reflection.canvas or task.obj.reflection and task.obj.reflection.canvas or self.defaultReflection
-					shader:send("tex_background", ref or self.textures.sky_fallback)
+					local ref = task.s.reflection or task.obj.reflection or self.defaultReflection
+					local tex = ref.image or ref.canvas
+					assert(tex, "invalid reflection, make sure to use dream:newReflection()")
+					
+					shader:send("tex_background", tex)
+					shader:send("reflections_levels", (ref.levels or self.reflections_levels) - 1)
+					
+					--box for local cubemaps
+					if ref.first then
+						shader:send("reflections_enabled", true)
+						shader:send("reflections_pos", ref.pos)
+						shader:send("reflections_first", ref.first)
+						shader:send("reflections_second", ref.second)
+					else
+						shader:send("reflections_enabled", false)
+					end
 				end
 				
 				--object transformation

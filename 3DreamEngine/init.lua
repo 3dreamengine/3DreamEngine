@@ -279,12 +279,15 @@ function lib.resize(self, w, h)
 	
 	--sky box
 	if self.sky_as_reflection then
-		self.defaultReflection = love.graphics.newCanvas(self.sky_resolution, self.sky_resolution, {format = self.sky_format, readable = true, msaa = 0, type = "cube", mipmaps = "manual"})
+		assert(not self.defaultReflection or self.defaultReflection.canvas, "defaultReflection seems to be a static reflection, disable dream.sky_as_reflection!")
+		
+		self.defaultReflection = {
+			canvas = love.graphics.newCanvas(self.sky_resolution, self.sky_resolution, {format = self.sky_format, readable = true, msaa = 0, type = "cube", mipmaps = "manual"})
+		}
 	end
 	
-	self.lastSkyTexID = nil
-	
 	self:loadShader()
+	self:initJobs()
 end
 
 --applies settings and load canvases

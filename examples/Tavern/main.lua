@@ -12,7 +12,7 @@ dream.sun_ambient = {0.1, 0.1, 0.1}
 dream.alphaBlendMode = "average"
 
 dream.sky_as_reflection = false
-dream.defaultReflection = cimg:load(projectDir .. "sky.cimg")
+dream.defaultReflection = dream:newReflection(cimg:load(projectDir .. "sky.cimg"))
 
 dream.fog_enabled = true
 dream.fog_distance = 10.0
@@ -250,22 +250,7 @@ end
 function love.keypressed(key)
 	--screenshots!
 	if key == "f2" then
-		if love.keyboard.isDown("lctrl") then
-			love.system.openURL(love.filesystem.getSaveDirectory() .. "/screenshots")
-		else
-			love.filesystem.createDirectory("screenshots")
-			if not screenShotThread then
-				screenShotThread = love.thread.newThread([[
-					require("love.image")
-					channel = love.thread.getChannel("screenshots")
-					while true do
-						local screenshot = channel:demand()
-						screenshot:encode("png", "screenshots/screen_" .. tostring(os.time()) .. ".png")
-					end
-				]]):start()
-			end
-			love.graphics.captureScreenshot(love.thread.getChannel("screenshots"))
-		end
+		dream:takeScreenshot()
 	end
 
 	--fullscreen
@@ -308,7 +293,7 @@ function love.keypressed(key)
 		rotateCamera = not rotateCamera
 	end
 	
-	if key == "f2" then
+	if key == "f3" then
 		dream:take3DScreenshot(vec3(player.x, player.y, player.z), 128)
 	end
 end

@@ -5,10 +5,15 @@ love.mouse.setRelativeMode(true)
 
 --settings
 local projectDir = "examples/blacksmith/"
-
-dream.defaultReflection = cimg:load(projectDir .. "sky.cimg")
-dream.sky_as_reflection = false
 dream.defaultShaderType = "PBR"
+dream.sky_as_reflection = false
+
+--set reflection cubemap with local corrections
+local r = dream:newReflection(cimg:load(projectDir .. "sky.cimg"))
+r.pos = vec3(0, 0, 0)
+r.first = vec3(-2, -1, -2)
+r.second = vec3(2, 1, 2)
+dream.defaultReflection = r
 
 dream:init()
 
@@ -18,13 +23,19 @@ local torch = dream:loadObject(projectDir .. "torch", {splitMaterials = true})
 --particle texture
 local texture_candle = love.graphics.newImage(projectDir .. "textures/candle.png")
 local factor = texture_candle:getHeight() / texture_candle:getWidth()
-
 local quads = { }
 for y = 1, 5 do
 	for x = 1, 5 do
 		quads[#quads+1] = love.graphics.newQuad(x-1, (y-1)*factor, 1, factor, 5, 5*factor)
 	end
 end
+
+local particles = { }
+local lastParticleID = 0
+
+--create new particle batch
+local particleBatch = dream:newParticleBatch(texture_candle, 2)
+particleBatch.vertical = true
 
 local player = {
 	x = 0,
@@ -39,19 +50,11 @@ local player = {
 dream.cam.rx = 0
 dream.cam.ry = 0
 
-local particles = { }
-local lastParticleID = 0
-
---create new particle batch
-local particleBatch = dream:newParticleBatch(texture_candle, 2)
-particleBatch.vertical = true
-
 --create three light sources and assign shadows
 local lights = { }
 for i = 1, 3 do
 	lights[i] = dream:newLight(0, 0, 0, 1.0, 0.75, 0.5)
 	lights[i].shadow = dream:newShadow("point")
-	lights[i].shadow.size = 0.1
 end
 
 local hideTooltips = false
@@ -73,7 +76,7 @@ function love.draw()
 		{-1.25, 0.3, 1.85},
 	}) do
 		lights[d]:setPosition(s[1], s[2], s[3])
-		lights[d]:setBrightness(5.0 + 4.0 * love.math.noise(love.timer.getTime()*2))
+		lights[d]:setBrightness(8.0 + 4.0 * love.math.noise(love.timer.getTime()*2))
 		dream:addLight(lights[d])
 		
 		if math.random() < love.timer.getDelta()*8.0 then
@@ -174,22 +177,7 @@ end
 function love.keypressed(key)
 	--screenshots!
 	if key == "f2" then
-		if love.keyboard.isDown("lctrl") then
-			love.system.openURL(love.filesystem.getSaveDirectory() .. "/screenshots")
-		else
-			love.filesystem.createDirectory("screenshots")
-			if not screenShotThread then
-				screenShotThread = love.thread.newThread([[
-					require("love.image")
-					channel = love.thread.getChannel("screenshots")
-					while true do
-						local screenshot = channel:demand()
-						screenshot:encode("png", "screenshots/screen_" .. tostring(os.time()) .. ".png")
-					end
-				]]):start()
-			end
-			love.graphics.captureScreenshot(love.thread.getChannel("screenshots"))
-		end
+		dream:takeScreenshot()
 	end
 
 	--fullscreen
@@ -206,7 +194,7 @@ function love.keypressed(key)
 		dream:init()
 	end
 	
-	if key == "f2" then
+	if key == "f3" then
 		dream:take3DScreenshot(vec3(player.x, player.y, player.z), 256)
 	end
 end

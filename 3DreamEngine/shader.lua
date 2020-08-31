@@ -179,7 +179,7 @@ end
 function lib:getShaderInfo(s, obj)
 	local mat = s.material
 	local shaderType = s.shaderType
-	local reflection = s.reflection or obj.reflection
+	local reflection = s.reflection or obj.reflection or self.defaultReflection
 	local modules = s.modules or obj.modules
 	
 	local vertexShader = mat.shader or "default"
@@ -200,7 +200,7 @@ function lib:getShaderInfo(s, obj)
 	local ID = self.shaderLibrary.base[shaderType]:getShaderInfoID(self, mat, shaderType, reflection)
 	
 	--reflection module
-	ID = ID + ((reflection or dream.defaultReflection) and 1024 or 0)
+	ID = ID + (reflection and 1024 or 0)
 	
 	--global modules
 	local m = { }
@@ -224,7 +224,7 @@ function lib:getShaderInfo(s, obj)
 		shs[ID] = self.shaderLibrary.base[shaderType]:getShaderInfo(self, mat, shaderType, reflection)
 		shs[ID].shaderType = shaderType
 		shs[ID].vertexShader = vertexShader
-		shs[ID].reflection = reflection or dream.defaultReflection
+		shs[ID].reflection = reflection
 		shs[ID].shaders = { }
 		shs[ID].modules = m
 	end

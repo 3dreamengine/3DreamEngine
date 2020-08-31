@@ -10,11 +10,10 @@ local projectDir = "examples/AlphaBlending/"
 dream.defaultShaderType = "PBR"
 dream.sky_hdri = love.graphics.newImage(projectDir .. "sky.hdr")
 dream.sky_hdri_exposure = 0.25
-dream.cam.fov = 65
-dream:loadMaterialLibrary(projectDir .. "materials")
 dream:init()
 
 --scene
+dream:loadMaterialLibrary(projectDir .. "materials")
 scene = dream:loadObject(projectDir .. "scene", {splitMaterials = true})
 
 --light
@@ -23,7 +22,7 @@ local light = dream:newLight(p.x, p.y, p.z, 1.4, 1.2, 1.0, 20.0)
 light.shadow = dream:newShadow("point")
 light.blacklist = {[scene.objects.chandelier_glass_Chalendier] = true, [scene.objects.chandelier_WhiteGlass] = true}
 
---custom position and rotatoin
+--custom position and rotation
 dream.cam.rx = 0.9
 dream.cam.ry = 0
 dream.cam.ax = 0
@@ -32,6 +31,7 @@ dream.cam.az = 0
 dream.cam.x = 0.95
 dream.cam.y = 0.75
 dream.cam.z = 0.95
+dream.cam.fov = 65
 
 function love.draw()
 	--update camera
@@ -40,18 +40,16 @@ function love.draw()
 	dream.cam:rotateY(dream.cam.ry)
 	dream.cam:rotateX(dream.cam.rx)
 	
-	dream.sun = vec3(-1.0, 1.0, 1.0)
-	dream.sun_color = vec3(1, 1, 1)
-	
+	--light (no daylight) with two custom light sources
 	dream:resetLight(true)
 	dream:addLight(light)
-	dream:addNewLight(dream.cam.x, dream.cam.y, dream.cam.z, 1, 1, 1, 5)
+	dream:addNewLight(dream.cam.x, dream.cam.y, dream.cam.z, 1, 1, 1, 1)
 	
 	dream:prepare()
 	dream:draw(scene)
 	dream:present(true)
 	
-	love.graphics.print("use number keys to change alpha blend mode\n1)Average Sum\n2)Alpha and Sorting\n3)Dither\n4)Disabled")
+	love.graphics.print("use number keys to change alpha blend mode\n1) Average Sum\n2) Alpha and Sorting\n3) Dither\n4) Disabled", 5, 5)
 end
 
 function love.mousemoved(_, _, x, y)
@@ -102,22 +100,7 @@ end
 function love.keypressed(key)
 	--screenshots!
 	if key == "f2" then
-		if love.keyboard.isDown("lctrl") then
-			love.system.openURL(love.filesystem.getSaveDirectory() .. "/screenshots")
-		else
-			love.filesystem.createDirectory("screenshots")
-			if not screenShotThread then
-				screenShotThread = love.thread.newThread([[
-					require("love.image")
-					channel = love.thread.getChannel("screenshots")
-					while true do
-						local screenshot = channel:demand()
-						screenshot:encode("png", "screenshots/screen_" .. tostring(os.time()) .. ".png")
-					end
-				]]):start()
-			end
-			love.graphics.captureScreenshot(love.thread.getChannel("screenshots"))
-		end
+		dream:takeScreenshot()
 	end
 	
 	--switch alpha blend mode

@@ -5,10 +5,15 @@ jobs.lua - processes all kind of side tasks (shadows, blurring ambient lighting,
 
 local lib = _3DreamEngine
 
-local timeRequirement = { }
-local executionsPerSecond = { }
-local executions = { }
-local times = { }
+local timeRequirement, executionsPerSecondexecutions, times, blurCanvases
+function lib:initJobs()
+	timeRequirement = { }
+	executionsPerSecond = { }
+	executions = { }
+	times = { }
+	blurCanvases = { }
+end
+lib:initJobs()
 
 local pointShadowProjectionMatrix
 do
@@ -77,7 +82,6 @@ local blurVecs = {
 
 local identityMatrix = mat4:getIdentity()
 
-local blurCanvases = { }
 function lib.blurCubeMap(self, cube, level)
 	local f = cube:getFormat()
 	local resolution = math.ceil(cube:getWidth() / self.reflection_downsample)
@@ -120,7 +124,6 @@ function lib.blurCubeMap(self, cube, level)
 	love.graphics.pop()
 end
 
-local lastSkyTex
 function lib.executeJobs(self, cam)
 	local t = love.timer.getTime()
 	local dt = love.timer.getDelta()
@@ -132,18 +135,20 @@ function lib.executeJobs(self, cam)
 		local changes = false
 		local tex = self.sky_cube or self.sky_hdri
 		if tex then
-			if self.sky_refreshRateTexture > 0 and t - (times["sky"] or 0) > self.sky_refreshRateTexture or tostring(tex) ~= self.lastSkyTexID then
+			--HDRI texture
+			if self.sky_refreshRateTexture > 0 and t - (times["sky"] or 0) > self.sky_refreshRateTexture or tostring(tex) ~= times["sky_tex"] then
 				changes = true
-				self.lastSkyTexID = tostring(tex)
 			end
 		else
+			--sky dome
 			if self.sky_refreshRate > 0 and t - (times["sky"] or 0) > self.sky_refreshRate or self.sky_refreshRate == 0 and not times["sky"] then
 				changes = true
 			end
 		end
 		
+		--request rerender
 		if changes then
-			operations[#operations+1] = {"sky", 1.0}
+			operations[#operations+1] = {"sky", 1.0, false, tostring(tex)}
 		end
 		
 		--blur sky reflection cubemap
@@ -151,7 +156,7 @@ function lib.executeJobs(self, cam)
 			local id = "cubemap_sky" .. level
 			local time = times[id]
 			if (times["sky"] or 0) > (time or 0) then
-				operations[#operations+1] = {"cubemap", time and (1.0 / level) or 1.0, id, self.defaultReflection, level}
+				operations[#operations+1] = {"cubemap", time and (1.0 / level) or 1.0, id, self.defaultReflection.canvas, level}
 				break
 			end
 		end
@@ -263,6 +268,10 @@ function lib.executeJobs(self, cam)
 		if type(o[1]) == "function" then
 			o[1](o, delta)
 		elseif o[1] == "sky" then
+			if o[4] then
+				times["sky_tex"] = o[4]
+			end
+			
 			love.graphics.push("all")
 			love.graphics.reset()
 			love.graphics.setDepthMode()
@@ -279,7 +288,7 @@ function lib.executeJobs(self, cam)
 			
 			for side = 1, 6 do
 				love.graphics.setBlendMode("replace", "premultiplied")
-				love.graphics.setCanvas(self.defaultReflection, side)
+				love.graphics.setCanvas(self.defaultReflection.canvas, side)
 				love.graphics.clear(1.0, 1.0, 1.0)
 				love.graphics.setDepthMode()
 				
@@ -424,7 +433,7 @@ function lib.executeJobs(self, cam)
 	end
 end
 
-function lib:take3DScreenshot(pos, resolution)
+function lib:take3DScreenshot(pos, resolution, path)
 	resolution = resolution or 512
 	local canvases = self:newCanvasSet(resolution, resolution, 8, self.alphaBlendMode, false)
 	local results = love.graphics.newCanvas(resolution, resolution, {format = "rgba16f", type = "cube", mipmaps = "manual"})
@@ -459,5 +468,5 @@ function lib:take3DScreenshot(pos, resolution)
 	end
 	
 	--export mimg data
-	cimg:export(results, "results.cimg")
+	cimg:export(results, path or "results.cimg")
 end

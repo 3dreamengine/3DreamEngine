@@ -298,22 +298,7 @@ end
 function love.keypressed(key)
 	--screenshots!
 	if key == "f2" then
-		if love.keyboard.isDown("lctrl") then
-			love.system.openURL(love.filesystem.getSaveDirectory() .. "/screenshots")
-		else
-			love.filesystem.createDirectory("screenshots")
-			if not screenShotThread then
-				screenShotThread = love.thread.newThread([[
-					require("love.image")
-					channel = love.thread.getChannel("screenshots")
-					while true do
-						local screenshot = channel:demand()
-						screenshot:encode("png", "screenshots/screen_" .. tostring(os.time()) .. ".png")
-					end
-				]]):start()
-			end
-			love.graphics.captureScreenshot(love.thread.getChannel("screenshots"))
-		end
+		dream:takeScreenshot()
 	end
 
 	--fullscreen

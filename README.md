@@ -113,7 +113,7 @@ dream.shadow_smooth = true                -- enables smooth shadows, required 20
 
 dream.reflections_resolution = 512        -- cubemap reflection resolution
 dream.reflections_format = "rgba16f"      -- reflection format, normal or rgba16f, where rgba16f preserves more detail in brightness
-dream.reflections_alphaBlendMode = "average" --//--
+dream.reflections_alphaBlendMode = "alpha"--//--
 dream.reflections_msaa = 4                -- multi sample antialiasing for reflections, else use fxaa if enabled
 dream.reflections_levels = 5              -- the count of mipmaps used, lower values cause incorrect blending between roughnesses, high values cause low quality on high roughnesses
 dream.reflection_downsample = 2           -- the factor of downsampling when bluring the cubemap. Should not be changed since the blur is calibrated.
@@ -261,18 +261,55 @@ dream:addLight(light)
 dream:addNewLight(posX, posY, posZ, red, green, blue, brightness, typ)
 ```
 
-### Reflections
-Reflections are updated automatically if in use and can be assigned to several objects without issues. Note that reflections are cubemap based and are physically incorrect the more far away the pixel from the reflection center is.
+## Reflections
+Reflections are dynamic or static cubemaps, automatically updated if in use and can be assigned to one or several objects.
+
+Dynamic Reflections are heavy resources and should be used carefully. Use static tag and set priority to achieve best performance.
+
 ```lua
 --add reflections to the object
---reflections are rather slow, use static if the scene does not change or the reflection should not reflect changes
---priority is used to priorisize the sub task render queue
---pos is an alternative position, else taken from the boundary center
-yourObject.reflection = dream:newReflection(static, priority, pos)
-yourObject.objects.yourSubObject.reflection = dream:newReflection(static, priority, pos)
+--use static if the scene does not change or the reflection should not reflect changes
+--priority is used to priorisize the sub task render queue, trying to keep up with the screen refreh rate.
+--pos is an alternative position, else taken from the boundary center of the object connected with. Carefull with multiple assignments.
+
+local r = dream:newReflection(static, priority, pos) -- dynamic
+local r = dream:newReflection(cubemap)               -- static cubemap
+
+dream.defaultReflection = r     -- use as default reflection, read chapter 'default reflection'
+yourObject.reflection = r       -- assign to object including subObject
+yourObject.objects.yourSubObject.reflection = r -- assign to subObject only
 ```
 
-### Utils
+### Local cubemaps
+By default cubemaps are treated as infinite cubemaps, working perfect for distant objects. If all objects are on the same AABB bounding box (e.g. a room, hallway, ...) local correction can be applied.
+```
+local r = dream:newReflection()
+r.pos = vec3()    -- center of cubemap
+r.first = vec3()  -- smaller point of the AABB
+r.second = vec3() -- bigger point of the AABB
+```
+
+### Planar reflections
+WIP
+
+### default reflection
+If a object has no reflection assigned it falls back the default reflection cubemap or a single color (dream.sun_ambient) of not set either.
+
+To use the sky dome set `dream.sky_as_reflection` to true.
+Note that this will also use the hdri or cube map set. Match the format and resolution to the given texture to avoid loss in quality.
+
+To set the map manually, set `dream.sky_as_reflection` to false and 'dream.defaultReflection' to a reflection object.
+The cubemap should (but don't necessary have to if not using glossy reflections) mipmaps, each heavily blurred. Therefore, create the cube map with mipmaps set to `manual` and run following code to generate proper mipmaps:
+```lua
+for level = 2, yourCubeMap:getMipmapCount() do
+	self:blurCubeMap(yourCubeMap, level)
+end
+```
+If you change the cubemaps content, you need to recreate mipmaps too.
+If the cubemap is static you can also use advanced software to create those mipmaps.
+
+
+## Utils
 This is a collection of helpful utils.
 ```lua
 local m = dream:lookAt(eye, at, up)               --returns a transformation matrix at point 'eye' looking at 'at' with upwards vector 'up' (default vec3(0, 1, 0))
@@ -284,7 +321,10 @@ local h, s, v = dream:RGBtoHSV(r, g, b)           --converts rgb to hsv
 
 dream:inFrustum(cam, pos, radius)                 --checks if the position with given radius is visible with the current (projection matrix) camera
 dream:getCollisionData(object)                    --returns a raw collision object used in the collision extensions newMesh function from an subObject
+
+dream:take3DScreenshot(pos, resolution, path)     --takes a rgba16f screenshot and saves it using the (custom) CIMG lib. Can be used to capture a static reflection cubemap. Performs blurring automatically. See Tavern demo for usage example.
 ```
+
 
 ## Shaders
 The shader is constructed based on its base shader, the vertex module and additional, optional shader modules.
@@ -323,6 +363,7 @@ dream:getShaderModule(name)
 dream:isShaderModuleActive(name)
 ```
 
+
 ## sky
 The sky will be rendered when the `noSky` arg in dream:present() is not true and contains a sky color, sun, moon, stars and clouds.
 `dream:setWeather(rain, temperature)` and `dream:setDaytime(time)` are helper functions to control those.
@@ -336,29 +377,8 @@ Set `dream.sky_hdri` to an Drawable. Optionally set `dream.sky_hdri_exposure` to
 Or you can use a cubemap.
 Set `dream.sky_cube` to an CubeImage.
 
-## default reflection
-If a object has no reflection assigned (see chapter functions - reflections) it falls back the default reflection cubemap, or a single color of not set either.
 
-### use sky dome
-To use the sky dome set `dream.sky_as_reflection` to true.
-Note that this will also use the hdri or cube map set. Match the format and resolution to the given texture to avoid loss in quality.
-
-### use a custom cubemap
-To set the map manually, set `dream.sky_as_reflection` to false to avoid automatic overriding it and 'dream.defaultReflection' to the cube map.
-The cubemap should (but dont necessary have to if not using glossy reflections) mipmaps, each heavyly blurred. Therefore, create the cube map with mipmaps set to `manual` and run following code to generate proper mipmaps:
-```lua
-for level = 2, yourCubeMap:getMipmapCount() do
-	self:blurCubeMap(yourCubeMap, level)
-end
-```
-If you change the cubemaps content, you need to recreate mipmaps too.
-
-Make sure `dream.sky_as_reflection` is false, else it will override your reflection.
-Then overwrite `dream.defaultReflection` with a volume Drawable (before `dream:prepare()`)
-This will NOT affect the sky visible to the camera. 
-If you want to use this cubemap instead of an HDRI or the sky dome, set `dream.reflection_as_sky` to true.
-
-### particle batches
+## particle batches
 Particles are batched and rendered all together.
 ```lua
 --create a particle batch

@@ -37,16 +37,24 @@ function lib:newCam(transform, transformProj, pos, normal)
 end
 
 function lib:newReflection(static, priority, pos)
-	local canvas = love.graphics.newCanvas(self.reflections_resolution, self.reflections_resolution,
-		{format = self.reflections_format, readable = true, msaa = 0, type = "cube", mipmaps = "manual"})
+	local canvas, image
+	if type(static) == "userdata" then
+		image = static
+		static = true
+	else
+		canvas = love.graphics.newCanvas(self.reflections_resolution, self.reflections_resolution,
+			{format = self.reflections_format, readable = true, msaa = 0, type = "cube", mipmaps = "manual"})
+	end
 	
 	return {
 		canvas = canvas,
+		image = image,
 		static = static or false,
 		done = { },
 		priority = priority or 1.0,
 		lastUpdate = 0,
 		pos = pos,
+		levels = false,
 		id = math.random(), --used for the job render
 	}
 end
@@ -532,6 +540,25 @@ function lib:getCollisionData(object)
 	end
 	
 	return n
+end
+
+function lib:takeScreenshot()
+	if love.keyboard.isDown("lctrl") then
+		love.system.openURL(love.filesystem.getSaveDirectory() .. "/screenshots")
+	else
+		love.filesystem.createDirectory("screenshots")
+		if not screenShotThread then
+			screenShotThread = love.thread.newThread([[
+				require("love.image")
+				channel = love.thread.getChannel("screenshots")
+				while true do
+					local screenshot = channel:demand()
+					screenshot:encode("png", "screenshots/screen_" .. tostring(os.time()) .. ".png")
+				end
+			]]):start()
+		end
+		love.graphics.captureScreenshot(love.thread.getChannel("screenshots"))
+	end
 end
 
 --shader modules
