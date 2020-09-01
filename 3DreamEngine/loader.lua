@@ -35,8 +35,15 @@ function lib:newSubObject(name, obj, mat)
 	local o = {
 		name = name,
 		material = mat,
-		final = { },
+		
+		vertices = { },
+		normals = { },
+		texCoords = { },
+		colors = { },
+		materials = { },
+		extras = { },
 		faces = { },
+		
 		shaderType = shaderType,
 		meshType = meshType,
 	}
@@ -61,6 +68,7 @@ function lib:loadObject(path, shaderType, args)
 		"3do", --3DreamEngine object file - way faster than obj but does not keep vertex information
 		"vox", --magicka voxel
 		"obj", --obj file
+		"dae", --dae file
 	}
 	
 	--get name and dir
@@ -146,20 +154,21 @@ function lib:loadObject(path, shaderType, args)
 		local pos = s.name:find("POS")
 		if pos then
 			local x, y, z = 0, 0, 0
-			for i,v in ipairs(s.final) do
+			for i,v in ipairs(s.vertices) do
 				x = x + v[1]
 				y = y + v[2]
 				z = z + v[3]
 			end
-			x = x / #s.final
-			y = y / #s.final
-			z = z / #s.final
+			local c = #s.vertices
+			x = x / c
+			y = y / c
+			z = z / c
 			
 			local r = 0
-			for i,v in ipairs(s.final) do
+			for i,v in ipairs(s.vertices) do
 				r = r + math.sqrt((v[1] - x)^2 + (v[2] - y)^2 + (v[3] - z)^2)
 			end
-			r = r / #s.final
+			r = r / c
 			
 			local stop = s.name:find(".", pos, true)
 			obj.positions[#obj.positions+1] = {
@@ -186,7 +195,7 @@ function lib:loadObject(path, shaderType, args)
 	if obj.grid then
 		for d,o in pairs(obj.objects) do
 			local minX, minY, minZ
-			for i,v in ipairs(o.final) do
+			for i,v in ipairs(o.vertices) do
 				minX = math.min(minX or v[1], v[1])
 				minY = math.min(minY or v[2], v[2])
 				minZ = math.min(minZ or v[3], v[3])
@@ -196,7 +205,7 @@ function lib:loadObject(path, shaderType, args)
 			o.y = math.floor((minY or 0) + 0.25)
 			o.z = math.floor((minZ or 0) + 0.25)
 			
-			for i,v in ipairs(o.final) do
+			for i,v in ipairs(o.vertices) do
 				v[1] = v[1] - o.x
 				v[2] = v[2] - o.y
 				v[3] = v[3] - o.z
@@ -209,20 +218,19 @@ function lib:loadObject(path, shaderType, args)
 		for d,o in pairs(obj.objects) do
 			if not (d:sub(1, 10) == "COLLISION_" and obj.objects[d:sub(11)]) then
 				local x, y, z = 0, 0, 0
-				for i,v in ipairs(o.final) do
+				for i,v in ipairs(o.vertices) do
 					x = x + v[1]
 					y = y + v[2]
 					z = z + v[3]
 				end
 				
-				o.cx = x / #o.final
-				o.cy = y / #o.final
-				o.cz = z / #o.final
+				local c = #o.vertices
+				o.cx = x / c
+				o.cy = y / c
+				o.cz = z / c
 				
-				for i,v in ipairs(o.final) do
-					v[1] = v[1] - o.cx
-					v[2] = v[2] - o.cy
-					v[3] = v[3] - o.cz
+				for i,v in ipairs(o.vertices) do
+					o.vertices[i] = {v[1] - o.cx, v[2] - o.cy, v[3] - o.cz}
 				end
 			end
 		end
@@ -236,10 +244,8 @@ function lib:loadObject(path, shaderType, args)
 				o.cx = o2.cx
 				o.cy = o2.cy
 				o.cz = o2.cz
-				for i,v in ipairs(o.final) do
-					v[1] = v[1] - o.cx
-					v[2] = v[2] - o.cy
-					v[3] = v[3] - o.cz
+				for i,v in ipairs(o.vertices) do
+					o.vertices[i] = {v[1] - o.cx, v[2] - o.cy, v[3] - o.cz}
 				end
 			end
 		end
@@ -254,7 +260,7 @@ function lib:loadObject(path, shaderType, args)
 	
 	--remove empty objects
 	for d,s in pairs(obj.objects) do
-		if s.final and #s.final == 0 then
+		if s.vertices and #s.vertices == 0 then
 			obj.objects[d] = nil
 		end
 	end
@@ -275,14 +281,14 @@ function lib:loadObject(path, shaderType, args)
 			s.boundingBox = newBoundaryBox()
 			
 			--scan all vertices
-			for i,v in ipairs(s.final) do
+			for i,v in ipairs(s.vertices) do
 				local pos = vec3(v)
 				s.boundingBox.first = s.boundingBox.first:min(pos)
 				s.boundingBox.second = s.boundingBox.second:max(pos)
 				s.boundingBox.center = s.boundingBox.center + pos
 			end
 			
-			s.boundingBox.center = s.boundingBox.center / #s.final
+			s.boundingBox.center = s.boundingBox.center / #s.vertices
 			s.boundingBox.dimensions = s.boundingBox.second - s.boundingBox.first
 			s.boundingBox.size = math.max((s.boundingBox.dimensions * 0.5):length(), s.boundingBox.size)
 		end
@@ -330,8 +336,16 @@ function lib:loadObject(path, shaderType, args)
 	--cleaning up
 	if not obj.noCleanup then
 		for d,s in pairs(obj.objects) do
-			s.faces = nil
-			s.final = nil
+			--s.vertices = nil
+			--s.faces = nil
+			
+			s.normals = nil
+			s.texCoords = nil
+			s.colors = nil
+			s.materials = nil
+			s.extras = nil
+			
+			s.tangents = nil
 		end
 		collectgarbage()
 	end
@@ -386,46 +400,58 @@ function lib.createMesh(self, o)
 	local shader = self.shaderLibrary.base[o.shaderType]
 	assert(shader, "shader '" .. tostring(o.shaderType) .. "' for object '" .. tostring(o.name) .. "' does not exist")
 	if shader.requireTangents then
-		self:calcTangents(o.final, vertexMap)
+		self:calcTangents(o)
 	end
 	
 	--create mesh
 	local meshLayout = self.meshTypeFormats[o.meshType]
-	o.mesh = love.graphics.newMesh(meshLayout, #o.final, "triangles", "static")
+	o.mesh = love.graphics.newMesh(meshLayout, #o.vertices, "triangles", "static")
 	
 	--vertex map
 	o.mesh:setVertexMap(vertexMap)
 	
 	--set vertices
-	for d,s in ipairs(o.final) do
+	local empty = {0, 0, 0, 0}
+	for i = 1, #o.vertices do
+		local vertex = o.vertices[i] or empty
+		local normal = o.normals[i] or empty
+		local texCoord = o.texCoords[i] or empty
+		
 		if o.meshType == "textured" then
-			o.mesh:setVertex(d,
-				s[1], s[2], s[3], s[4],
-				s[9], s[10],
-				s[5]*0.5+0.5, s[6]*0.5+0.5, s[7]*0.5+0.5, 0.0,
-				s[11]*0.5+0.5, s[12]*0.5+0.5, s[13]*0.5+0.5, 0.0
+			local tangent = o.tangents[i] or empty
+			o.mesh:setVertex(i,
+				vertex[1], vertex[2], vertex[3], o.extras[i] or 1,
+				texCoord[1], texCoord[2],
+				normal[1]*0.5+0.5, normal[2]*0.5+0.5, normal[3]*0.5+0.5, 0.0,
+				tangent[1]*0.5+0.5, tangent[2]*0.5+0.5, tangent[3]*0.5+0.5, 0.0
 			)
 		elseif o.meshType == "textured_array" then
-			o.mesh:setVertex(d,
-				s[1], s[2], s[3], s[4],
-				s[9], s[10], s[8],
-				s[5]*0.5+0.5, s[6]*0.5+0.5, s[7]*0.5+0.5, 0.0,
-				s[11]*0.5+0.5, s[12]*0.5+0.5, s[13]*0.5+0.5, 0.0
+			local tangent = o.tangents[i] or empty
+			o.mesh:setVertex(i,
+				vertex[1], vertex[2], vertex[3], o.extras[i] or 1,
+				texCoord[1], texCoord[2], texCoord[3], 
+				normal[1]*0.5+0.5, normal[2]*0.5+0.5, normal[3]*0.5+0.5, 0.0,
+				tangent[1]*0.5+0.5, tangent[2]*0.5+0.5, tangent[3]*0.5+0.5, 0.0
 			)
 		elseif o.meshType == "simple" then
-			local c = s[8].color
-			o.mesh:setVertex(d,
-				s[1], s[2], s[3], s[4],
-				s[5], s[6], s[7],
-				s[8].specular, s[8].glossiness, s[8].emission or 0.0,
-				c[1], c[2], c[3], c[4]
+			local material = o.materials[i] or empty
+			local color = o.colors[i] or material.color or empty
+			
+			local specular = material.specular or material[1] or 0
+			local glossiness = material.glossiness or material[2] or 0
+			local emission = material.emission or material[3] or 0
+			
+			o.mesh:setVertex(i,
+				vertex[1], vertex[2], vertex[3], o.extras[i] or 1,
+				normal[1], normal[2], normal[3],
+				specular, glossiness, emission,
+				color[1], color[2], color[3], color[4]
 			)
 		elseif o.meshType == "material" then
-			local c = s[8].color
-			o.mesh:setVertex(d,
-				s[1], s[2], s[3], s[4],
-				s[5], s[6], s[7],
-				s[8]
+			o.mesh:setVertex(i,
+				vertex[1], vertex[2], vertex[3], o.extras[i] or 1,
+				normal[1], normal[2], normal[3],
+				texCoord
 			)
 		end
 	end

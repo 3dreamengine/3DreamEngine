@@ -572,7 +572,7 @@ object = {
 				{1, 2, 3}, --final ids
 			},
 			final = {
-				{x, y, z, shaderData, nx, ny, nz, material, u, v, tx, ty, tz}, -- position, shader extra value e.g. for animation, normal, material, uv coords and tangent (calculated automatically)
+				{x, y, z, extra, nx, ny, nz, material, u, v, tx, ty, tz}, -- position, shader extra value e.g. for animation, normal, material, uv coords and tangent (calculated automatically)
 			},
 			-- when using 3do or when args.noCleanup is disabled (default is false) faces and final will be deleted once the mesh is created to free memory.
 			

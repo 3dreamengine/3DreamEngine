@@ -10,10 +10,13 @@ return function(self, obj, path, loadAsCollisions)
 	
 	--load object
 	local material = obj.materials.None
+	
 	local o_col = self:newSubObject("COLLISION_object", obj, material)
 	obj.objects.COLLISION_object = o_col
+	
 	local o_def = self:newSubObject("object", obj, material)
 	obj.objects.object = o_def
+	
 	local o = loadAsCollisions and o_col or o_def
 	
 	for l in love.filesystem.lines(path) do
@@ -43,26 +46,24 @@ return function(self, obj, path, loadAsCollisions)
 			for i = 1, verts do
 				local v2 = self:split(v[i+1]:gsub("//", "/0/"), "/")
 				
-				local dv = vertices[tonumber(v2[1])]
-				local uv = texture[tonumber(v2[2])]
-				local dn = normals[tonumber(v2[3])]
-				
-				o.final[#o.final+1] = {
-					dv[1], dv[2], dv[3],                             --position
-					material.shaderValue or o.shaderValue or 1.0,    --extra float for animations
-					dn[1], dn[2], dn[3],                             --normal
-					material,                                        --material
-					uv and uv[1], uv and uv[2],                      --UV
-				}
+				local index = #o.vertices+1
+				o.vertices[index] = vertices[tonumber(v2[1])]
+				o.texCoords[index] = texture[tonumber(v2[2])]
+				if not loadAsCollisions then
+					o.normals[index] = normals[tonumber(v2[3])]
+					o.materials[index] = material
+					o.extras[index] = material.shaderValue or o.shaderValue or 1.0
+				end
 			end
 			
+			local index = #o.vertices
 			if verts == 3 then
 				--tris
-				o.faces[#o.faces+1] = {#o.final-2, #o.final-1, #o.final-0}
+				o.faces[#o.faces+1] = {index-2, index-1, index}
 			else
 				--triangulates, fan style
 				for i = 1, verts-2 do
-					o.faces[#o.faces+1] = {#o.final-verts+1, #o.final-verts+1+i, #o.final-verts+2+i}
+					o.faces[#o.faces+1] = {index-verts+1, index-verts+1+i, index-verts+2+i}
 				end
 			end
 		elseif v[1] == "o" then

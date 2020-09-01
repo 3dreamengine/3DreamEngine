@@ -376,6 +376,7 @@ local colliders = {
 					avgPos = avgPos + p
 				end
 			end
+			
 			if count % 2 == 1 then
 				return normal, avgPos / count
 			end

@@ -10,6 +10,10 @@ dream.sun_shadow = false
 dream:init()
 
 ground = dream:loadObject(projectDir .. "ground", {splitMaterials = true})
+ground.objects["Cube.001_particleSystem_Grass_1"].material.cullMode = "none"
+ground.objects["Cube.001_particleSystem_Grass_2"].material.cullMode = "none"
+ground.objects["Cube.001_particleSystem_Branch_1"].material.cullMode = "none"
+ground.objects["Cube.001_particleSystem_Branch_2"].material.cullMode = "none"
 
 function love.draw()
 	dream:resetLight()

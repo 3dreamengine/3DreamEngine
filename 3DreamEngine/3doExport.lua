@@ -20,6 +20,7 @@ local function copy(first_table, skip)
 end
 
 function lib:export3do(obj)
+	print("3DO export WIP")
 	local compressed = "lz4"
 	local compressedLevel = 9
 	local meshHeaderData = { }

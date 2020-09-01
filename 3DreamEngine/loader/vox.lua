@@ -189,6 +189,12 @@ return function(self, obj, path)
 		i = i + length + 12
 	end
 	
+	local function add(o, x, y, z, nx, ny, nz, mat)
+		o.vertices[#o.vertices+1] = {x, y, z}
+		o.normals[#o.normals+1] = {nx, ny, nz}
+		o.materials[#o.materials+1] = mat
+	end
+	
 	--generate final object
 	function generate(m, name, t)
 		obj.objects[name] = dream:newSubObject(name, obj, self:newMaterial())
@@ -204,65 +210,72 @@ return function(self, obj, path)
 						local oz = t[2] + y
 						
 						local mat = materials[b]
+						o.material = mat
 						
 						--top
 						if z == 0 or m.blocks[x][y][z-1] == 0 then
-							o.final[#o.final+1] = {ox+0, oy+0, oz+1, 1.0, 0, -1, 0, mat}
-							o.final[#o.final+1] = {ox+1, oy+0, oz+1, 1.0, 0, -1, 0, mat}
-							o.final[#o.final+1] = {ox+1, oy+0, oz+0, 1.0, 0, -1, 0, mat}
-							o.final[#o.final+1] = {ox+0, oy+0, oz+0, 1.0, 0, -1, 0, mat}
-							o.faces[#o.faces+1] = {#o.final-0, #o.final-1, #o.final-2}
-							o.faces[#o.faces+1] = {#o.final-0, #o.final-2, #o.final-3}
+							add(o, ox+0, oy+0, oz+1, 0, -1, 0, mat)
+							add(o, ox+1, oy+0, oz+1, 0, -1, 0, mat)
+							add(o, ox+1, oy+0, oz+0, 0, -1, 0, mat)
+							add(o, ox+0, oy+0, oz+0, 0, -1, 0, mat)
+							local c = #o.vertices
+							o.faces[#o.faces+1] = {c-0, c-1, c-2}
+							o.faces[#o.faces+1] = {c-0, c-2, c-3}
 						end
 						
 						--bottom
 						if z == m.z-1 or m.blocks[x][y][z+1] == 0 then
-							o.final[#o.final+1] = {ox+0, oy+1, oz+0, 1.0, 0, 1, 0, mat}
-							o.final[#o.final+1] = {ox+1, oy+1, oz+0, 1.0, 0, 1, 0, mat}
-							o.final[#o.final+1] = {ox+1, oy+1, oz+1, 1.0, 0, 1, 0, mat}
-							o.final[#o.final+1] = {ox+0, oy+1, oz+1, 1.0, 0, 1, 0, mat}
-							o.faces[#o.faces+1] = {#o.final-0, #o.final-1, #o.final-2}
-							o.faces[#o.faces+1] = {#o.final-0, #o.final-2, #o.final-3}
+							add(o, ox+0, oy+1, oz+0, 0, 1, 0, mat)
+							add(o, ox+1, oy+1, oz+0, 0, 1, 0, mat)
+							add(o, ox+1, oy+1, oz+1, 0, 1, 0, mat)
+							add(o, ox+0, oy+1, oz+1, 0, 1, 0, mat)
+							local c = #o.vertices
+							o.faces[#o.faces+1] = {c-0, c-1, c-2}
+							o.faces[#o.faces+1] = {c-0, c-2, c-3}
 						end
 						
 						--right
 						if x == 0 or m.blocks[x-1][y][z] == 0 then
-							o.final[#o.final+1] = {ox+0, oy+1, oz+0, 1.0, 1, 0, 0, mat}
-							o.final[#o.final+1] = {ox+0, oy+1, oz+1, 1.0, 1, 0, 0, mat}
-							o.final[#o.final+1] = {ox+0, oy+0, oz+1, 1.0, 1, 0, 0, mat}
-							o.final[#o.final+1] = {ox+0, oy+0, oz+0, 1.0, 1, 0, 0, mat}
-							o.faces[#o.faces+1] = {#o.final-0, #o.final-1, #o.final-2}
-							o.faces[#o.faces+1] = {#o.final-0, #o.final-2, #o.final-3}
+							add(o, ox+0, oy+1, oz+0, 1, 0, 0, mat)
+							add(o, ox+0, oy+1, oz+1, 1, 0, 0, mat)
+							add(o, ox+0, oy+0, oz+1, 1, 0, 0, mat)
+							add(o, ox+0, oy+0, oz+0, 1, 0, 0, mat)
+							local c = #o.vertices
+							o.faces[#o.faces+1] = {c-0, c-1, c-2}
+							o.faces[#o.faces+1] = {c-0, c-2, c-3}
 						end
 						
 						--left
 						if x == m.x-1 or m.blocks[x+1][y][z] == 0 then
-							o.final[#o.final+1] = {ox+1, oy+0, oz+0, 1.0, -1, 0, 0, mat}
-							o.final[#o.final+1] = {ox+1, oy+0, oz+1, 1.0, -1, 0, 0, mat}
-							o.final[#o.final+1] = {ox+1, oy+1, oz+1, 1.0, -1, 0, 0, mat}
-							o.final[#o.final+1] = {ox+1, oy+1, oz+0, 1.0, -1, 0, 0, mat}
-							o.faces[#o.faces+1] = {#o.final-0, #o.final-1, #o.final-2}
-							o.faces[#o.faces+1] = {#o.final-0, #o.final-2, #o.final-3}
+							add(o, ox+1, oy+0, oz+0, -1, 0, 0, mat)
+							add(o, ox+1, oy+0, oz+1, -1, 0, 0, mat)
+							add(o, ox+1, oy+1, oz+1, -1, 0, 0, mat)
+							add(o, ox+1, oy+1, oz+0, -1, 0, 0, mat)
+							local c = #o.vertices
+							o.faces[#o.faces+1] = {c-0, c-1, c-2}
+							o.faces[#o.faces+1] = {c-0, c-2, c-3}
 						end
 						
 						--front
 						if y == 0 or m.blocks[x][y-1][z] == 0 then
-							o.final[#o.final+1] = {ox+0, oy+0, oz+0, 1.0, 0, 0, 1, mat}
-							o.final[#o.final+1] = {ox+1, oy+0, oz+0, 1.0, 0, 0, 1, mat}
-							o.final[#o.final+1] = {ox+1, oy+1, oz+0, 1.0, 0, 0, 1, mat}
-							o.final[#o.final+1] = {ox+0, oy+1, oz+0, 1.0, 0, 0, 1, mat}
-							o.faces[#o.faces+1] = {#o.final-0, #o.final-1, #o.final-2}
-							o.faces[#o.faces+1] = {#o.final-0, #o.final-2, #o.final-3}
+							add(o, ox+0, oy+0, oz+0, 0, 0, 1, mat)
+							add(o, ox+1, oy+0, oz+0, 0, 0, 1, mat)
+							add(o, ox+1, oy+1, oz+0, 0, 0, 1, mat)
+							add(o, ox+0, oy+1, oz+0, 0, 0, 1, mat)
+							local c = #o.vertices
+							o.faces[#o.faces+1] = {c-0, c-1, c-2}
+							o.faces[#o.faces+1] = {c-0, c-2, c-3}
 						end
 						
 						--front
 						if y == m.y-1 or m.blocks[x][y+1][z] == 0 then
-							o.final[#o.final+1] = {ox+0, oy+1, oz+1, 1.0, 0, 0, 1, mat}
-							o.final[#o.final+1] = {ox+1, oy+1, oz+1, 1.0, 0, 0, 1, mat}
-							o.final[#o.final+1] = {ox+1, oy+0, oz+1, 1.0, 0, 0, 1, mat}
-							o.final[#o.final+1] = {ox+0, oy+0, oz+1, 1.0, 0, 0, 1, mat}
-							o.faces[#o.faces+1] = {#o.final-0, #o.final-1, #o.final-2}
-							o.faces[#o.faces+1] = {#o.final-0, #o.final-2, #o.final-3}
+							add(o, ox+0, oy+1, oz+1, 0, 0, 1, mat)
+							add(o, ox+1, oy+1, oz+1, 0, 0, 1, mat)
+							add(o, ox+1, oy+0, oz+1, 0, 0, 1, mat)
+							add(o, ox+0, oy+0, oz+1, 0, 0, 1, mat)
+							local c = #o.vertices
+							o.faces[#o.faces+1] = {c-0, c-1, c-2}
+							o.faces[#o.faces+1] = {c-0, c-2, c-3}
 						end
 					end
 				end

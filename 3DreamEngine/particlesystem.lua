@@ -44,21 +44,20 @@ function lib.addParticlesystems(self, obj)
 				--place particles
 				for _,particle in ipairs(particleSystem.objects) do
 					local amount = particle.amount / #particleSystem.objects
-					local particleVertexPerformanceImpact = (128 + #particle.object.final) / 128
 					
 					for _,f in ipairs(o.faces) do
-						if o.final[f[1]][8] == o.material and (amount >= 1 or math.random() < amount) then
-							local v1 = o.final[f[1]]
-							local v2 = o.final[f[2]]
-							local v3 = o.final[f[3]]
+						if (amount >= 1 or math.random() < amount) then
+							local v1 = o.vertices[f[1]]
+							local v2 = o.vertices[f[2]]
+							local v3 = o.vertices[f[3]]
 							
 							--normal vector
 							local va = {v1[1] - v2[1], v1[2] - v2[2], v1[3] - v2[3]}
 							local vb = {v1[1] - v3[1], v1[2] - v3[2], v1[3] - v3[3]}
 							local n = {
-								o.final[f[1]][5] + o.final[f[2]][5] + o.final[f[3]][5],
-								o.final[f[1]][6] + o.final[f[2]][6] + o.final[f[3]][6],
-								o.final[f[1]][7] + o.final[f[2]][7] + o.final[f[3]][7]
+								o.normals[f[1]][1] + o.normals[f[2]][1] + o.normals[f[3]][1],
+								o.normals[f[1]][2] + o.normals[f[2]][2] + o.normals[f[3]][2],
+								o.normals[f[1]][3] + o.normals[f[2]][3] + o.normals[f[3]][3]
 							}
 							
 							--some particles like grass points towards the sky
@@ -137,11 +136,15 @@ function lib.addParticlesystems(self, obj)
 									z = z + vn[3] * particleSystem.randomDistance * math.random() / l
 								end
 								
-								--insert finals and faces
-								local lastIndex = #po.final
-								for d,s in ipairs(particle.object.final) do
+								--insert vertices and faces
+								local lastIndex = #po.vertices
+								for d,s in ipairs(particle.object.vertices) do
 									local vp = res * vec3(s[1], s[2], s[3])
-									local vn = res * vec3(s[5], s[6], s[7])
+									
+									local n = particle.object.normals[d]
+									local vn = (res * vec3(n[1], n[2], n[3])):normalize()
+									
+									local uv = particle.object.texCoords[d]
 									
 									local extra = 1.0
 									if particleSystem.shader == "wind" then
@@ -152,14 +155,20 @@ function lib.addParticlesystems(self, obj)
 										end
 									end
 									
-									po.final[#po.final+1] = {
-										vp[1]+x, vp[2]+y, vp[3]+z, --position
-										extra,                     --optional extra value
-										vn[1], vn[2], vn[3],       --normal
-										s[8],                      --material
-										s[9], s[10],               --UV
-									}
+									local index = #po.vertices+1
+									local emission = po.material.emission or 0
+									if type(emission) == "table" then
+										emission = math.sqrt(emission[1]^2+emission[2]^2+emission[3]^2)
+									end
+									po.vertices[index] = {vp[1]+x, vp[2]+y, vp[3]+z}
+									po.extras[index] = extra
+									po.normals[index] = {vn[1], vn[2], vn[3]}
+									po.materials[index] = {po.material.specular, po.material.glossiness, emission}
+									po.texCoords[index] = {uv[1], uv[2]}
+									
+									po.colors[index] = po.material.color
 								end
+								
 								for d,s in ipairs(particle.object.faces) do
 									po.faces[#po.faces+1] = {s[1]+lastIndex, s[2]+lastIndex, s[3]+lastIndex}
 								end

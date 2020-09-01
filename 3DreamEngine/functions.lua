@@ -230,80 +230,68 @@ end
 
 --add tangents to a 3Dream vertex format
 --x, y, z, shaderData, nx, ny, nz, materialID, u, v, tx, ty, tz, btx, bty, btz
-function lib:calcTangents(finals, vertexMap)
-	--expand uv if missing
-	for d,f in ipairs(finals) do
-		f[9] = f[9] or 0
-		f[10] = f[10] or 0
-		
-		f[11] = 0
-		f[12] = 0
-		f[13] = 0
-		f[14] = 0
-		f[15] = 0
-		f[16] = 0
+function lib:calcTangents(o)
+	o.tangents = { }
+	for i = 1, #o.vertices do
+		o.tangents[i] = {0, 0, 0}
 	end
 	
-	for f = 1, #vertexMap, 3 do
-		local P1 = finals[vertexMap[f+0]]
-		local P2 = finals[vertexMap[f+1]]
-		local P3 = finals[vertexMap[f+2]]
+	for i,f in ipairs(o.faces) do
+		--vertices
+		local v1 = o.vertices[f[1]]
+		local v2 = o.vertices[f[2]]
+		local v3 = o.vertices[f[3]]
+		
+		--tex coords
+		local uv1 = o.texCoords[f[1]]
+		local uv2 = o.texCoords[f[2]]
+		local uv3 = o.texCoords[f[3]]
 		
 		local tangent = { }
-		--local bitangent = { }
 		
-		local edge1 = {P2[1] - P1[1], P2[2] - P1[2], P2[3] - P1[3]}
-		local edge2 = {P3[1] - P1[1], P3[2] - P1[2], P3[3] - P1[3]}
-		local edge1uv = {P2[9] - P1[9], P2[10] - P1[10]}
-		local edge2uv = {P3[9] - P1[9], P3[10] - P1[10]}
+		local edge1 = {v2[1] - v1[1], v2[2] - v1[2], v2[3] - v1[3]}
+		local edge2 = {v3[1] - v1[1], v3[2] - v1[2], v3[3] - v1[3]}
+		local edge1uv = {uv2[1] - uv1[1], uv2[2] - uv1[2]}
+		local edge2uv = {uv3[1] - uv1[1], uv3[2] - uv1[2]}
 		
 		local cp = edge1uv[1] * edge2uv[2] - edge1uv[2] * edge2uv[1]
 		
 		if cp ~= 0.0 then
 			for i = 1, 3 do
 				tangent[i] = (edge1[i] * edge2uv[2] - edge2[i] * edge1uv[2]) / cp
-				--bitangent[i] = (edge1[i] * edge2uv[1] - edge2[i] * edge1uv[1]) / cp
 			end
 			
+			--sum up tangents to smooth across shared vertices
 			for i = 1, 3 do
-				finals[vertexMap[f+i-1]][11] = finals[vertexMap[f+i-1]][11] + tangent[1]
-				finals[vertexMap[f+i-1]][12] = finals[vertexMap[f+i-1]][12] + tangent[2]
-				finals[vertexMap[f+i-1]][13] = finals[vertexMap[f+i-1]][13] + tangent[3]
-				
-				--finals[vertexMap[f+i-1]][14] = finals[vertexMap[f+i-1]][14] + bitangent[1]
-				--finals[vertexMap[f+i-1]][15] = finals[vertexMap[f+i-1]][15] + bitangent[2]
-				--finals[vertexMap[f+i-1]][16] = finals[vertexMap[f+i-1]][16] + bitangent[3]
+				o.tangents[f[i]][1] = o.tangents[f[i]][1] + tangent[1]
+				o.tangents[f[i]][2] = o.tangents[f[i]][2] + tangent[2]
+				o.tangents[f[i]][3] = o.tangents[f[i]][3] + tangent[3]
 			end
 		end
 	end
 	
 	--normalize
-	for d,f in ipairs(finals) do
-		local o = 10
-		local l = math.sqrt(f[1+o]^2 + f[2+o]^2 + f[3+o]^2)
-		f[1+o] = f[1+o] / l
-		f[2+o] = f[2+o] / l
-		f[3+o] = f[3+o] / l
-		
-		--local o = 13
-		--local l = math.sqrt(f[1+o]^2 + f[2+o]^2 + f[3+o]^2)
-		--f[1+o] = f[1+o] / l
-		--f[2+o] = f[2+o] / l
-		--f[3+o] = f[3+o] / l
+	for i,f in ipairs(o.tangents) do
+		local l = math.sqrt(f[1]^2 + f[2]^2 + f[3]^2)
+		f[1] = f[1] / l
+		f[2] = f[2] / l
+		f[3] = f[3] / l
 	end	
 	
 	--complete smoothing step
-	for d,f in ipairs(finals) do
-		--Gram-Schmidt orthogonalization
-		local dot = (f[11] * f[5] + f[12] * f[6] + f[13] * f[7])
-		f[11] = f[11] - f[5] * dot
-		f[12] = f[12] - f[6] * dot
-		f[13] = f[13] - f[7] * dot
+	for i,f in ipairs(o.tangents) do
+		local n = o.normals[i]
 		
-		local l = math.sqrt(f[11]^2 + f[12]^2 + f[13]^2)
-		f[11] = f[11] / l
-		f[12] = f[12] / l
-		f[13] = f[13] / l
+		--Gram-Schmidt orthogonalization
+		local dot = (f[1] * n[1] + f[2] * n[2] + f[3] * n[3])
+		f[1] = f[1] - n[1] * dot
+		f[2] = f[2] - n[2] * dot
+		f[3] = f[3] - n[3] * dot
+		
+		local l = math.sqrt(f[1]^2 + f[2]^2 + f[3]^2)
+		f[1] = f[1] / l
+		f[2] = f[2] / l
+		f[3] = f[3] / l
 	end
 end
 
@@ -495,19 +483,17 @@ function lib:getCollisionData(object)
 	n.point = vec3(0, 0, 0)
 	
 	hashes = { }
-	local f = object.final
-	
 	for d,s in ipairs(object.faces) do
-		local a, b, c = f[s[1]], f[s[2]], f[s[3]]
-		
-		n.point = a
+		--vertices
+		local a = vec3(object.vertices[s[1]]) - n.transform
+		local b = vec3(object.vertices[s[2]]) - n.transform
+		local c = vec3(object.vertices[s[3]]) - n.transform
 		
 		--face normal
-		table.insert(n.normals, vec3(a[5]+b[5]+c[5], a[6]+b[6]+c[6], a[7]+b[7]+c[7]):normalize())
+		local normal = (b-a):cross(c-a):normalize()
+		table.insert(n.normals, normal)
 		
-		a = vec3(a[1], a[2], a[3]) - n.transform
-		b = vec3(b[1], b[2], b[3]) - n.transform
-		c = vec3(c[1], c[2], c[3]) - n.transform
+		n.point = a
 		
 		--boundary
 		n.boundary = math.max(n.boundary, a:length(), b:length(), c:length())
