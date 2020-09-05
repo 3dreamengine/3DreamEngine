@@ -1,6 +1,5 @@
 return {
-	shadow = false,
-	extra = 0.02,
+	name = "Grass",
 	cullMode = "none",
 	
 	onFinish = function(mat, obj)

@@ -29,10 +29,8 @@ return function(self, obj, path)
 			material.color[4] = 1.0 - tonumber(v[2])
 		elseif v[1] == "ior" then
 			material.ior = tonumber(v[2])
-		elseif v[1] == "shaderValue" then
-			material.shaderValue = v[2]
-		elseif v[1] == "shader" then
-			material.shader = v[2]
+		elseif v[1] == "extra" then
+			material.extra = v[2]
 		elseif v[1] == "cullMode" then
 			material.cullMode = v[2]
 		elseif v[1] == "emission" then

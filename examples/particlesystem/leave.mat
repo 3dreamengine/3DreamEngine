@@ -1,6 +1,5 @@
 return {
-	shadow = false,
-	extra = 0.02,
+	name = "Leave",
 	cullMode = "none",
 	
 	onFinish = function(mat, obj)

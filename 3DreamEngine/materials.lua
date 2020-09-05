@@ -60,7 +60,9 @@ function lib.loadMaterialLibrary(self, path, prefix)
 end
 
 --link textures to material
-function lib.finishMaterial(self, mat, obj)
+function lib:finishMaterial(mat, obj)
+	setmetatable(mat, self.meta.material)
+	
 	for _,typ in ipairs({"albedo", "normal", "roughness", "metallic", "emission", "ao", "specular", "glossiness"}) do
 		local custom = mat["tex_" .. typ]
 		mat["tex_" .. typ] = nil
@@ -120,5 +122,9 @@ function lib.finishMaterial(self, mat, obj)
 				mat["tex_" .. "combined"] = self:combineTextures(mat["tex_glossiness"], mat["tex_specular"], mat["tex_ao"])
 			end
 		end
+	end
+	
+	if mat.onFinish then
+		mat:onFinish(obj)
 	end
 end

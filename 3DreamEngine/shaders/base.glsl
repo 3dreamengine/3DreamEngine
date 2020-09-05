@@ -2,7 +2,7 @@
 
 //camera uniforms
 extern highp mat4 transformProj;   //projective transformation
-extern highp mat4 transform;       //model transformation
+extern highp mat4 transformRaw;    //model transformation
 extern highp vec3 viewPos;         //camera position
 
 //varyings
@@ -86,14 +86,18 @@ void effect() {
 
 #ifdef VERTEX
 vec4 position(mat4 transform_projection, vec4 vertex_position) {
+	mat4 transform = transformRaw;
+	vertexPos = vertex_position.xyz;
+	
 #import vertexVertex
 #import modulesVertex
 #import mainVertex
 	
-	vertexPos = pos.xyz;
+	//apply final vertex transform
+	vertexPos = (transform * vec4(vertexPos, 1.0)).xyz;
 	
 	//projection transform for the vertex
-	highp vec4 vPos = transformProj * pos;
+	highp vec4 vPos = transformProj * vec4(vertexPos, 1.0);
 	
 	//extract and pass depth
 	depth = vPos.z;

@@ -52,7 +52,7 @@ return function(self, obj, path, loadAsCollisions)
 				if not loadAsCollisions then
 					o.normals[index] = normals[tonumber(v2[3])]
 					o.materials[index] = material
-					o.extras[index] = material.shaderValue or o.shaderValue or 1.0
+					o.extras[index] = material.extra or o.extra or 1.0
 				end
 			end
 			

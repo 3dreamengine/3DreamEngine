@@ -1,7 +1,9 @@
 return {
-	alpha = 1,
 	shadow = false,
-	shader = "wind",
-	shaderValue = 0.15,
+	extra = 0.02,
 	cullMode = "none",
+	
+	onFinish = function(mat, obj)
+		mat:activateShaderModule("wind")
+	end,
 }

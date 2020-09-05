@@ -5,12 +5,61 @@ functions.lua - contains library relevant functions
 
 local lib = _3DreamEngine
 
-function math.mix(a, b, f)
-	return a * (1.0 - f) + b * f 
+function lib:newObject(path)
+	--get name and dir
+	local n = self:split(path, "/")
+	local name = n[#n] or path
+	local dir = #n > 1 and table.concat(n, "/", 1, #n-1) or ""
+	
+	return setmetatable({
+		materials = {
+			None = self:newMaterial()
+		},
+		objects = { },
+		positions = { },
+		
+		path = path, --absolute path to object
+		name = name, --name of object
+		dir = dir, --dir containing the object
+		
+		--the object transformation
+		transform = mat4:getIdentity(),
+	}, self.meta.object)
 end
 
-function math.clamp(v, a, b)
-	return math.max(math.min(v, b or 1.0), a or 0.0)
+function lib:newSubObject(name, obj, mat)
+	--guess shaderType if not specified based on textures used
+	local shaderType = obj.shaderType
+	if not shaderType then
+		if lib.defaultShaderType then
+			shaderType = lib.defaultShaderType
+		else
+			shaderType = "simple"
+			
+			if mat.tex_albedo or mat.tex_normal then
+				shaderType = "Phong"
+			end
+		end
+	end
+	
+	local o = {
+		name = name,
+		material = mat,
+		
+		--common data arrays
+		vertices = { },
+		normals = { },
+		texCoords = { },
+		colors = { },
+		materials = { },
+		extras = { },
+		faces = { },
+		
+		shaderType = shaderType,
+		meshType = obj.meshType or self.shaderLibrary.base[shaderType].meshType,
+	}
+	
+	return setmetatable(o, self.meta.subObject)
 end
 
 function lib:newCam(transform, transformProj, pos, normal)
@@ -33,7 +82,7 @@ function lib:newCam(transform, transformProj, pos, normal)
 		near = 0.01,
 		far = 1000,
 		aspect = 1.0,
-	}, self.operations)
+	}, self.meta.cam)
 end
 
 function lib:newReflection(static, priority, pos)
@@ -46,7 +95,7 @@ function lib:newReflection(static, priority, pos)
 			{format = self.reflections_format, readable = true, msaa = 0, type = "cube", mipmaps = "manual"})
 	end
 	
-	return {
+	return setmetatable({
 		canvas = canvas,
 		image = image,
 		static = static or false,
@@ -56,7 +105,7 @@ function lib:newReflection(static, priority, pos)
 		pos = pos,
 		levels = false,
 		id = math.random(), --used for the job render
-	}
+	}, self.meta.reflection)
 end
 
 function lib:newShadowCanvas(typ, res)
@@ -85,7 +134,7 @@ function lib:newShadow(typ, static, res)
 		res = res or self.shadow_resolution
 	end
 	
-	return {
+	return setmetatable({
 		typ = typ,
 		res = res,
 		static = static or false,
@@ -94,31 +143,8 @@ function lib:newShadow(typ, static, res)
 		lastUpdate = 0,
 		size = 0.1,
 		lastPos = vec3(0, 0, 0)
-	}
+	}, self.meta.shadow)
 end
-
-local lightMetaTable = {
-	setBrightness = function(self, brightness)
-		self.brightness = brightness
-	end,
-	setColor = function(self, r, g, b)
-		if type(r) == "table" then
-			r, g, b = r[1], r[2], r[3]
-		end
-		local v = math.sqrt(r^2+g^2+b^2)
-		self.r = r / v
-		self.g = g / v
-		self.b = b / v
-	end,
-	setPosition = function(self, x, y, z)
-		if type(x) == "table" then
-			x, y, z = x[1], x[2], x[3]
-		end
-		self.x = x
-		self.y = y
-		self.z = z
-	end,
-}
 
 function lib:newLight(posX, posY, posZ, r, g, b, brightness, typ)
 	r = r or 1.0
@@ -137,7 +163,7 @@ function lib:newLight(posX, posY, posZ, r, g, b, brightness, typ)
 		brightness = brightness or 1.0,
 	}
 	
-	return setmetatable(l, {__index = lightMetaTable})
+	return setmetatable(l, self.meta.light)
 end
 
 function lib:resetLight(noDayLight)
@@ -164,44 +190,6 @@ end
 
 function lib:addNewLight(...)
 	self:addLight(self:newLight(...))
-end
-
-lib.operations = { }
-lib.operations.__index = lib.operations
-
-function lib.operations.reset(obj)
-	obj.transform = mat4:getIdentity()
-	return obj
-end
-
-function lib.operations.translate(obj, x, y, z)
-	obj.transform = obj.transform:translate(x, y, z)
-	return obj
-end
-
-function lib.operations.scale(obj, x, y, z)
-	obj.transform = obj.transform:scale(x, y, z)
-	return obj
-end
-
-function lib.operations.rotateX(obj, rx)
-	obj.transform = obj.transform:rotateX(rx)
-	return obj
-end
-
-function lib.operations.rotateY(obj, ry)
-	obj.transform = obj.transform:rotateY(ry)
-	return obj
-end
-
-function lib.operations.rotateZ(obj, rz)
-	obj.transform = obj.transform:rotateZ(rz)
-	return obj
-end
-
-function lib.operations.setDirection(obj, normal, up)
-	obj.transform = lib:lookAt(vec3(0, 0, 0), normal, up):invert() * obj.transform
-	return obj
 end
 
 function lib:split(text, sep)
@@ -544,7 +532,7 @@ function lib:takeScreenshot()
 	end
 end
 
---shader modules
+--global shader modules
 lib.activeShaderModules = { }
 lib.allActiveShaderModules = { }
 function lib:activateShaderModule(name)

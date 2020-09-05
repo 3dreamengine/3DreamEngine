@@ -20,7 +20,6 @@ local objects = { }
 local collisions = { }
 for d,s in pairs(map.loader) do
 	if not objects[d] then
-		s.noCleanup = true
 		s.skip3do = true
 		objects[d] = dream:loadObject(d, s)
 	end

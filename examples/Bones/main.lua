@@ -11,7 +11,8 @@ dream.defaultShaderType = "Phong"
 dream:init()
 
 --scene
-character = dream:loadObject(projectDir .. "character")
+character = dream:loadObject(projectDir .. "character", {cleanup = false})
+character:activateShaderModule("bones")
 
 --custom position and rotation
 dream.cam.rx = 0.9
@@ -32,6 +33,9 @@ function love.draw()
 	dream.cam:rotateX(dream.cam.rx)
 	
 	dream:resetLight()
+	
+	dream:setPose(character, love.timer.getTime())
+	--dream:applyJoints(character)
 	
 	dream:prepare()
 	dream:draw(character)

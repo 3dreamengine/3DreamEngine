@@ -1,7 +1,7 @@
 # Blender MTL File: 'untitled.blend'
 # Material Count: 1
 
-newmtl Grass.001
+newmtl Grass
 Ns 225.000000
 Ka 1.000000 1.000000 1.000000
 Kd 0.015938 0.295692 0.012761

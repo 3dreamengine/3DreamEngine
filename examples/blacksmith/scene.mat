@@ -2,16 +2,19 @@
 return {
 	{
 		name = "Ivy",
-		shader = "wind",
-		shader_wind_speed = 0.5,
-		shader_wind_strength = 1.0,
-		shader_wind_scale = 3.0,
-		shaderValue = 0.02,
 		metallic = 0.0,
 		tex_albedo = "textures/ivy_albedo",
 		tex_ao = "textures/ivy_ao",
 		tex_normal = "textures/ivy_normal",
 		tex_roughness = "textures/ivy_roughness",
+		
+		shadow = false,
+		extra = 0.02,
+		cullMode = "none",
+		
+		onFinish = function(mat, obj)
+			mat:activateShaderModule("wind")
+		end,
 	},
 	{
 		name = "Iron",

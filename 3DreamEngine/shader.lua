@@ -22,10 +22,10 @@ if _DEBUGMODE then
 			print(err)
 			print(debug.traceback())
 			print("-----------------")
-			print()
 			
 			--dump shader in case of error
 			love.filesystem.write("shader_errored.glsl", pixel)
+			error("shader compile failed")
 		end
 		local sh = love.graphics.newShader_old(pixel, vertex)
 		local warnings = sh:getWarnings()
@@ -43,7 +43,6 @@ end
 --shader library
 lib.shaderLibrary = {
 	base = { },
-	vertex = { },
 	light = { },
 	module = { },
 }
@@ -56,7 +55,7 @@ function lib:registerShader(path)
 end
 
 --register inbuild shaders
-for i,v in ipairs({"base", "vertex", "light", "modules"}) do
+for i,v in ipairs({"base", "light", "modules"}) do
 	for d,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/" .. v)) do
 		if s:sub(-4) == ".lua" then
 			lib:registerShader(lib.root .. "/shaders/" .. v .. "/" .. s)
@@ -180,20 +179,15 @@ function lib:getShaderInfo(s, obj)
 	local mat = s.material
 	local shaderType = s.shaderType
 	local reflection = s.reflection or obj.reflection or self.defaultReflection
-	local modules = s.modules or obj.modules
-	
-	local vertexShader = mat.shader or "default"
+	local modules = s.modules or obj.modules or mat.modules
 	
 	--group shader and vertex shader
 	if not self.mainShaders[shaderType] then
 		self.mainShaders[shaderType] = { }
 	end
-	if not self.mainShaders[shaderType][vertexShader] then
-		self.mainShaders[shaderType][vertexShader] = { }
-	end
 	
 	--add new type of shader to list
-	local shs = self.mainShaders[shaderType][vertexShader]
+	local shs = self.mainShaders[shaderType]
 	
 	--get a unique ID
 	assert(self.shaderLibrary.base[shaderType], "Shader '" .. shaderType .. "' does not exist!")
@@ -223,7 +217,6 @@ function lib:getShaderInfo(s, obj)
 	if not shs[ID] then
 		shs[ID] = self.shaderLibrary.base[shaderType]:getShaderInfo(self, mat, shaderType, reflection)
 		shs[ID].shaderType = shaderType
-		shs[ID].vertexShader = vertexShader
 		shs[ID].reflection = reflection
 		shs[ID].shaders = { }
 		shs[ID].modules = m
@@ -263,12 +256,6 @@ function lib:getShader(info, lighting, lightRequirements)
 		code = code:gsub("#import mainPixel", self.shaderLibrary.base[info.shaderType]:constructPixel(self, info) or "")
 		code = code:gsub("#import mainVertex", self.shaderLibrary.base[info.shaderType]:constructVertex(self, info) or "")
 		
-		--import vertex module
-		assert(self.shaderLibrary.vertex[info.vertexShader], "Vertex shader '" .. info.vertexShader .. "' does not exist!")
-		code = code:gsub("#import vertexDefines", self.shaderLibrary.vertex[info.vertexShader]:constructDefines(self, info) or "")
-		code = code:gsub("#import vertexPixel", self.shaderLibrary.vertex[info.vertexShader]:constructPixel(self, info) or "")
-		code = code:gsub("#import vertexVertex", self.shaderLibrary.vertex[info.vertexShader]:constructVertex(self, info) or "")
-		
 		--import reflection function
 		code = code:gsub("#import reflections", info.reflection and codes.reflections or codes.ambientOnly)
 		
@@ -279,10 +266,10 @@ function lib:getShader(info, lighting, lightRequirements)
 		local pixelPost = { }
 		for d,s in pairs(info.modules) do
 			assert(s, "Shader module '" .. d .. "' does not exist!")
-			table.insert(define, s:constructDefines(self, info) or "")
-			table.insert(vertex, s:constructVertex(self, info) or "")
-			table.insert(pixel, s:constructPixel(self, info) or "")
-			table.insert(pixelPost, s:constructPixelPost(self, info) or "")
+			table.insert(define, s.constructDefines and s:constructDefines(self, info) or "")
+			table.insert(vertex, s.constructVertex and s:constructVertex(self, info) or "")
+			table.insert(pixel, s.constructPixel and s:constructPixel(self, info) or "")
+			table.insert(pixelPost, s.constructPixelPost and s:constructPixelPost(self, info) or "")
 		end
 		code = code:gsub("#import modulesDefines", table.concat(define, "\n"))
 		code = code:gsub("#import modulesVertex", table.concat(vertex, "\n"))
@@ -328,12 +315,7 @@ function lib:getShader(info, lighting, lightRequirements)
 		code = code:gsub("	", "")
 		
 		--compile
-		local ok, shader = pcall(love.graphics.newShader, code)
-		if ok then
-			info.shaders[ID] = shader
-		end
-		
-		--love.filesystem.write(ID .. ".glsl", code)
+		info.shaders[ID] = love.graphics.newShader(code)
 	end
 	
 	return info.shaders[ID]

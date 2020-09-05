@@ -15,42 +15,6 @@ local function newBoundaryBox()
 	}
 end
 
-function lib:newSubObject(name, obj, mat)
-	--guess shaderType if not specified based on textures used
-	local shaderType = obj.shaderType
-	if not shaderType then
-		if lib.defaultShaderType then
-			shaderType = lib.defaultShaderType
-		else
-			shaderType = "simple"
-			
-			if mat.tex_albedo or mat.tex_normal then
-				shaderType = "Phong"
-			end
-		end
-	end
-	
-	local meshType = self.shaderLibrary.base[shaderType].meshType
-	
-	local o = {
-		name = name,
-		material = mat,
-		
-		vertices = { },
-		normals = { },
-		texCoords = { },
-		colors = { },
-		materials = { },
-		extras = { },
-		faces = { },
-		
-		shaderType = shaderType,
-		meshType = meshType,
-	}
-	
-	return o
-end
-
 --loads an object
 --args is a table containing additional settings
 --path is the absolute path without extension
@@ -71,29 +35,7 @@ function lib:loadObject(path, shaderType, args)
 		"dae", --dae file
 	}
 	
-	--get name and dir
-	local n = self:split(path, "/")
-	name = n[#n] or path
-	local dir = #n > 1 and table.concat(n, "/", 1, #n-1) or ""
-	
-	local obj = {
-		materials = {
-			None = args.material or self:newMaterial()
-		},
-		objects = { },
-		positions = { },
-		
-		path = path, --absolute path to object
-		name = name, --name of object
-		dir = dir, --dir containing the object
-		
-		--additional args settings
-		noParticleSystem = args.noParticleSystem == nil and args.noMesh or args.noParticleSystem,
-		
-		--the object transformation
-		transform = mat4:getIdentity(),
-	}
-	setmetatable(obj, self.operations)
+	local obj = self:newObject(path)
 	
 	--merge args
 	for d,s in pairs(args) do
@@ -151,7 +93,7 @@ function lib:loadObject(path, shaderType, args)
 	
 	--extract positions
 	for d,s in pairs(obj.objects) do
-		local pos = s.name:find("POS")
+		local pos = s.name:find("POS_")
 		if pos then
 			local x, y, z = 0, 0, 0
 			for i,v in ipairs(s.vertices) do
@@ -318,7 +260,7 @@ function lib:loadObject(path, shaderType, args)
 	
 	--post load materials
 	for d,s in pairs(obj.materials) do
-		s.dir = s.dir or obj.textures or dir
+		s.dir = s.dir or obj.textures or obj.dir
 		self:finishMaterial(s, obj)
 	end
 	
@@ -334,10 +276,12 @@ function lib:loadObject(path, shaderType, args)
 	
 	
 	--cleaning up
-	if not obj.noCleanup then
+	if obj.cleanup ~= false then
 		for d,s in pairs(obj.objects) do
-			--s.vertices = nil
-			--s.faces = nil
+			if obj.cleanup then
+				s.vertices = nil
+				s.faces = nil
+			end
 			
 			s.normals = nil
 			s.texCoords = nil
@@ -347,7 +291,6 @@ function lib:loadObject(path, shaderType, args)
 			
 			s.tangents = nil
 		end
-		collectgarbage()
 	end
 	
 	
@@ -404,7 +347,7 @@ function lib.createMesh(self, o)
 	end
 	
 	--create mesh
-	local meshLayout = self.meshTypeFormats[o.meshType]
+	local meshLayout = table.copy(self.meshTypeFormats[o.meshType])
 	o.mesh = love.graphics.newMesh(meshLayout, #o.vertices, "triangles", "static")
 	
 	--vertex map

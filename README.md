@@ -41,8 +41,8 @@ dream.bloom_enabled = false
 --inits (applies settings)
 dream:init()
 
---loads a object (optional with args)
-yourObject = dream:loadObject("examples/monkey/object", {splitMaterials = true})
+--loads a object
+yourObject = dream:loadObject("examples/monkey/object")
 
 function love.draw()
   --reset lighting to default sun
@@ -61,6 +61,7 @@ end
 ```
 
 # documentation
+The documentaion became larger than expected, I am working on a better solution.
 
 ## settings
 ```lua
@@ -104,6 +105,7 @@ dream.max_lights = 16                     -- max lights. The actual limit is lig
 dream.nameDecoder = "blender"             -- imported objects often contain mesh data names appended to the actual name,, blender decoder removes them
 dream.frustumCheck = true                 -- enable automatic frustum check
 dream.LoDDistance = 100                   -- LoD reference distance
+dream.defaultShaderType = nil             -- use this shader type if not specified in the loader args
 
 dream.shadow_resolution = 1024            -- cascade shadow resolution
 dream.shadow_cube_resolution = 512        -- cube map shadow resolution
@@ -120,14 +122,6 @@ dream.reflection_downsample = 2           -- the factor of downsampling when blu
 
 dream.gamma = 1.0                         -- gamma, 1.0 has no effect
 dream.exposure = 1.0                      -- final exposure
-
-dream.rain_enabled = true                 -- enable rain engine, does not actually toggle rain
-dream.rain_resolution = 512               -- splash texture resolution
-dream.rain_isRaining = false              -- enables rain
-dream.rain_strength = 3                   -- set rain strength
-dream.rain_adaptRain = 0.1                -- speed of rain strength change
-dream.rain_wetness_increase = 0.02        -- speed of wetness increase
-dream.rain_wetness_decrease = 0.01        -- speed of wetness decrease
 
 dream.autoExposure_enabled = false        -- enables auto exposure which adapts the exposure to the current view
 dream.autoExposure_resolution = 128       -- temporary canvas resolution
@@ -171,25 +165,31 @@ dream.weather_temperature = 0.0           -- between cold (0) and hot (1)
 dream:init()
 
 --loads an object
-yourObject = dream:loadObject("objectName", args)
+yourObject = dream:loadObject("objectName", shaderType, args)
+	
+	--where shaderType determines the base shader required, e.g. PBR, Phong or simple. Leave blank to 
 
 	--where args is a table with additional settings
 	textures             -- location for textures, use "dir/" to specify diretcory, "file" to specify "file_albedo", "file_roughness", ...
 	splitMaterials       -- if a single mesh has different textured materials, it has to be split into single meshes. splitMaterials does this automatically.
 	grid                 -- grid moves all vertices in a way that 0, 0, 0 is the floored origin with an maximal overhang of 0.25 units.
-	forceTextured        -- if the mesh gets created, it will determine texture mode or simple mode based on tetxures. forceTextured always loads as (non set) texture.
 	noMesh               -- load vertex information but do not create a final mesh - template objects etc
-	noParticleSystem     -- prevent the particle system from bein generated, used by template objects, ... If noMesh is true and noParticleSystem nil, it assume noParticleSystem should be true too.
-	cleanup              -- release vertex, ... information once done - prefer using 3do files if cleanup is nil or true, since then it would not even load this information into RAM
+	noParticleSystem     -- prevent the particle system from being generated
+	cleanup              -- the level of cleanup after the objects have been loaded. false deloads nothing. nil (default) deloads all buffers except faces and vertex positions. true deloads everything.
 	export3do            -- loads the object as usual, then export the entire object, including simple versions and particle system, as a single, high speed 3do file
 	centerMass           -- normalize the center of mass (vertice mass) to its origin
 	mergeObjects         -- merge all object into one
 
---the name of the object (set by "o" inside .obj, in blender it is the name of the vertex data inside an object) can contain information:
---  if it contains POS it puts it into the positions table for manual use and skips loading. Positions contain the position (x, y, z), its averge radius from its origin as size and the name (everything behind POS+1, but stops at a dot to exlude numberings)
+--if the name of an subObject contains:
+-- ... "POS_" it puts it into the positions table for manual use and skips loading. Positions contain the position (x, y, z), its averge radius from its origin as size and the name
+-- ... "COLLISION_" it loads it as a collision and puts it into the collisions table. If used as a collider it only uses those instead.
 
 --required for loading textures, 3do files, ...
 dream:update()
+
+--update time and weather
+dream:setDaytime(time)
+dream:setWeather(rain, temp)
 
 --prepare for rendering
 --if cam is nil, it uses the default cam (dream.cam)
@@ -207,19 +207,20 @@ dream:present(noSky, cam, canvases)
 dream:presentLite(noSky, cam, canvases)
 ```
 
-### Object/Camera functions
+### transform functions
+Supports Objects and Cameras
 ```lua
 --transform the object
-yourObject:reset()
-yourObject:translate(x, y, z)
-yourObject:scale(x, y, z)
-yourObject:rotateX(angle)
-yourObject:rotateY(angle)
-yourObject:rotateZ(angle)
-yourObject:setDirection(normal, [up]) --rotate the object to face into the given direction, up is default vec3(0, 1, 0)
+object:reset()
+object:translate(x, y, z)
+object:scale(x, y, z)
+object:rotateX(angle)
+object:rotateY(angle)
+object:rotateZ(angle)
+object:setDirection(normal, [up]) --rotate the object to face into the given direction, up is default vec3(0, 1, 0)
 ```
 
-### Camera
+### camera
 ```lua
 --default camera (with functions as defined in chapter above)
 dream.cam:reset()
@@ -229,18 +230,14 @@ yourCam = dream:newCam()
 --and pass it to dream:prepare()
 ```
 
-### Light
+### light
 ```lua
---update time and weather
-dream:setDaytime(time)
-dream:setWeather(rain, temp)
-
 --resets light sources (if noDayLight is set to true, the sun light (dream.sunObject) will not be added)
 dream:resetLight(noDayLight)
 
 --creates a new light
 --typ is the light type, "point" and "sun" is inbuild, further types can be added via the shader library
-local light = dream:newLight(posX, posY, posZ, red, green, blue, brightness, typ)
+local light = dream:newLight(x, y, z, red, green, blue, brightness, typ)
 
 --add a shadow to the light
 --typ is either point or sun
@@ -253,12 +250,230 @@ light:setBrightness(b)
 light:setColor(r, g, b)
 light:setPosition(x, y, z)
 
---add light to scene, note that in case of exceeding the max light sources it only uses the most relevant sources, based on distance and brightness
+--add light to scene, note that in case of exceeding the max light sources it only uses the most relevant sources, based on distance to camera and brightness
 dream:addLight(light)
 
 --or create a new light source and add it at once
-dream:addNewLight(posX, posY, posZ, red, green, blue, brightness, typ)
+dream:addNewLight(x, y, z, red, green, blue, brightness, typ)
 ```
+
+
+## utils
+This is a collection of helpful utils.
+```lua
+local m = dream:lookAt(eye, at, up)               --returns a transformation matrix at point 'eye' looking at 'at' with upwards vector 'up' (default vec3(0, 1, 0))
+dream:pointToPixel(point, cam, canvases)          --converts a 3D point with given camera (default dream.cam) and canvas set (default dream.canvases) to a vec3 2D screen coord + depth
+dream:pixelToPoint(point, cam, canvases)          --converts a 2D screen coord + depth to a 3D point
+
+local r, g, b = dream:HSVtoRGB(h, s, v)           --converts hsv to rgb
+local h, s, v = dream:RGBtoHSV(r, g, b)           --converts rgb to hsv
+
+dream:inFrustum(cam, pos, radius)                 --checks if the position with given radius is visible with the current (projection matrix) camera
+dream:getCollisionData(object)                    --returns a raw collision object used in the collision extensions newMesh function from an subObject
+
+dream:take3DScreenshot(pos, resolution, path)     --takes a rgba16f screenshot and saves it using the (custom) CIMG lib. Can be used to capture a static reflection cubemap. Performs blurring automatically. See Tavern demo for usage example.
+```
+
+There are a few libraries included you can use. Check their files for supported functions
+* vec2, vec3, vec4 with common functions and metatables
+* mat2, mat3, mat4
+* quaternions
+* a XML parser
+* utils.lua which expands luas table, string and math libraries by common functions
+
+
+## sky
+The sky will be rendered when the `noSky` arg in dream:present() is not true and contains a sky color, sun, moon, stars and clouds.
+`dream:setWeather(rain, temperature)` and `dream:setDaytime(time)` are helper functions to control those.
+The sky dome is WIP and will receive further upgrades.
+
+### hdri
+Alternatively you can use a sphere hdri image.
+Set `dream.sky_hdri` to an Drawable. Optionally set `dream.sky_hdri_exposure` to adjust exposure.
+
+### cubemap
+Or you can use a cubemap.
+Set `dream.sky_cube` to an CubeImage.
+
+
+## particle batches
+Particles are batched and rendered all together.
+```lua
+--create a particle batch
+--pass a texture and the target pass. 1 means the texture is opaque and depth buffer can be used, 2 means its transparent. 2 is default and slower. Average alpha mode is currently not fully supported and might cause wrong ordering.
+local particleBatch = dream:newParticleBatch(texture, pass)
+
+--set additional settings
+particleBatch.vertical = true  --vertical does only rotate the particle on the Y-axis, used for flames, ...
+particleBatch.sort = false     --sorting is required for transparent particles with a pattern. For example dust with only one color does not require it. Pass 1 does not require it at all.
+
+--clear batch
+particleBatch:clear()
+
+--add particles
+particleBatch:add(x, y, z, size, emission, quad)
+
+--queue for drawing
+dream:drawParticleBatch(particleBatch)
+```
+
+
+## materials
+Materials can be either per model by providing a .mtl or .mat file with the same name as the object file or they can be in a global material library.
+```lua
+--load materials into the library, if a object now requires a material, and it is not defined in a local material file, it will take the global one
+dream:loadMaterialLibrary("path")
+```
+A material library looks for material files (.mat) or for directory containing material.mat or at least one texture, linking them automatically.
+
+For the internal format see chapter .mat.
+
+
+### transparent materials
+With set alpha blending, you have to tell the engine how the material has to be rendered. Set the `alpha` tag accordingly:
+```lua
+mat.alpha = 0 --this is a solid material, no alpha at all. This is default.
+mat.alpha = 1 --this is a semi solid material. Render solid parts in the primary pass and render the rest in the second.
+mat.alpha = 2 --this is a fully transparent material. It only uses the second pass.
+```
+Alpha blending mode disabled and dither ignore those values.
+
+
+## alpha blend mode
+Alpha blending can be quite tricky, therefore 3Dream offers 4 different approaches, depending on your scene.
+There is a AlphaBlending demo to see those modes in action.
+Currently its only possible to use one method at a time.
+Dream.init() has to be called after changing.
+```
+--uses a second render step and a set of canvases to perform an order independent average alpha
+--note that this blend mode is by far more slow than the other modes
+--if you do not have alpha components, use dither or disabled
+--this also allows refractions, if enabled
+dream.alphaBlendMode = "average"
+
+--sort the objects and render in a second step using alpha blending
+--works mostly, but can screw up render order, especially within the same object
+dream.alphaBlendMode = "alpha"
+
+--does not require a second step, but perform dithering based on alpha
+dream.alphaBlendMode = "dither"
+
+--uses a threshold and avoid alpha at all
+--known issues are linear interpolated mipmaps and alpha, since the interpolated parts are cut away.
+dream.alphaBlendMode = "disabled"
+```
+
+
+## level of detail
+To define the level of detail, add a boolean array with size 9 to the object or subobject, index 1 is nearest. False prevents this object from rendering.
+```
+--set reference distance (max render distance if 9th index is false)
+dream.LoDDistance = 100
+
+--set objects LoD
+yourObject.LoD = {true, true, true, false, false, false, false, false, false} --allow rendering 1/3 of the max LoD distance
+
+--overwrite the LoD of one sub object
+yourObject.objects.subObject.LoD = {true, true, true, true, true, true, false, false, false} --allow rendering 2/3 of the max LoD distance
+```
+Support for custom LoD maps for reflections and shadows are WIP.
+
+
+## textures
+To add textures to the model ...
+* name the textures albedo, normal, roughness, metallic, glossiness, specular, emission and put it next to the material (for material library entries) or suffix them with either the material name "material_" or the object name "object_"
+* set the texture path in the mtl file, if exported by another software it should work fine
+* set the texture in the mat file (tex_diffuse, tex_normal, tex_emission, ...)
+* by default 3Dream looks for textures relative to the object path, if not overwritten by the `textures` arg in the model loader
+* it does automatically choose the best format and load it threaded when needed. Setting a texture manually prevents this.
+
+* The diffuse texture is a RGB non alpha texture with the color. Alpha channel needs material `alpha` tag set accordingly and a valid alpha blend mode.
+* The normal texture contains tangential normal coordinates.
+* The emission texture contains RGB color, in contrast to all other textures it will be multiplied by material.emission (RGB color) instead of using it as fallback. Use this as a multiplier if required.
+* Roughness, metallic or specular and glossiness as well as ambient occlusion are single channel textures, however the engine works with combined RMA textures for performance reasons. If not present, 3Dream will generate them and caches them in the love save directory. It is recommended to use them in the final build to avoid heavy (but at least threaded) CPU merge operations, or provide RMA textures in the first place.
+* DDS files are supported, but can not generate mipmaps automatically. Also love2ds DDS loader seems to hate some mipmaps.
+
+
+### thumbnails
+Name a (smaller) file "yourImage_thumb.ext" to let the texture loader automatically load it first, then load the full textures at the end.
+
+If the automatic thumbnail generator is enabled (true by default), this will be done automatically, but the first load will be without thumbnail.
+
+
+## mat - 3Dream material file (lua syntax)
+The .mtl file usually exported with .obj will be loaded automatically.
+To use more 3DreamEngine specific features (particle system, wind animation ...) a .mat file is required. A .mat file can replace the .mtl file entirely, else it will extend it.
+
+### example mat file:
+```lua 
+--3DreamEngine material properties file
+return {
+	{
+		name = "grass",      --extend material Grass
+		
+		alpha = 0,           --the alpha passes required as explained in alpah blending chapter
+		cullMode = "back",   --the cullmode to render the mesh with
+		shadow = nil,        --false would disable this object in the shadow pass
+		
+		--Shared for all shading
+		color = {1.0, 1.0, 1.0, 1.0},  -- color
+		emission = {1.0, 1.0, 1.0},    -- emission color, or the multiplier if a texture is present
+		
+		--Phong
+		specular = 0.5,                -- specular component (note that specular component has the same color as the albedo texture / color)
+		glossiness = 0.1,              -- exponent, 0-1 (where 1 represent around exponent 1000)
+		
+		--PBR
+		roughness = 0.5,               -- roughness if no texture is set
+		metallic = 0.5,                -- metallic if no texture is set
+		
+		extra = 1.0,                   -- the value in the shader extra slot, primary used for animations, e.g. in the wind shader. Particle system generate them automatically.
+		
+		--textures (loaded automatically and should, but dont have to, be strings)
+		--Textured Phong
+		tex_albedo = "path/name",
+		tex_normal = "path/name",
+		tex_specular = "path/name",
+		tex_glossiness = "path/name",
+		tex_emission = "path/name",
+		tex_ao = "path/name",
+		tex_combined = "path/name", --replaced glossiness, specular and ao
+		
+		--PBR
+		tex_albedo = "path/name",
+		tex_normal = "path/name",
+		tex_roughness = "path/name",
+		tex_metallic = "path/name",
+		tex_emission = "path/name",
+		tex_ao = "path/name",
+		tex_combined = "path/name", --replaced roughness, metallic and ao
+		
+		--a callback once the material has been fully finished
+		--obj is nil in case on an public material
+		--this callback is commonly used to apply shader modules or change values based on dynamic data
+		onFinish = function(mat, obj)
+			
+		end,
+		
+		--add particleSystems
+		particleSystems = {
+			{ --first system
+				objects = { --add objects, pathes have to be global, objects are merged and therefore has to share a material. If not, use two particle systems instead.
+					["path/grass"] = 20,
+				},
+				randomSize = {0.75, 1.25},    --randomize the particle size
+				randomRotation = true,        --randomize the rotation
+				normal = 0.9,                 --align to 90% with its emitters surface normal
+				
+				shader = "wind",              --instruction on how to set the extra buffer, currently only wind exists, see wind module on how to use
+				shaderValue = "grass",        --tell the wind shader to behave like grass, the amount of waving depends on its Y-value
+				shaderValue = 0.2,            --or use a constant float
+			},
+		}
+	},
+}
+```
+
 
 ## Reflections
 Reflections are dynamic or static cubemaps, automatically updated if in use and can be assigned to one or several objects.
@@ -308,23 +523,6 @@ If you change the cubemaps content, you need to recreate mipmaps too.
 If the cubemap is static you can also use advanced software to create those mipmaps.
 
 
-## Utils
-This is a collection of helpful utils.
-```lua
-local m = dream:lookAt(eye, at, up)               --returns a transformation matrix at point 'eye' looking at 'at' with upwards vector 'up' (default vec3(0, 1, 0))
-dream:pointToPixel(point, cam, canvases)          --converts a 3D point with given camera (default dream.cam) and canvas set (default dream.canvases) to a vec3 2D screen coord + depth
-dream:pixelToPoint(point, cam, canvases)          --converts a 2D screen coord + depth to a 3D point
-
-local r, g, b = dream:HSVtoRGB(h, s, v)           --converts hsv to rgb
-local h, s, v = dream:RGBtoHSV(r, g, b)           --converts rgb to hsv
-
-dream:inFrustum(cam, pos, radius)                 --checks if the position with given radius is visible with the current (projection matrix) camera
-dream:getCollisionData(object)                    --returns a raw collision object used in the collision extensions newMesh function from an subObject
-
-dream:take3DScreenshot(pos, resolution, path)     --takes a rgba16f screenshot and saves it using the (custom) CIMG lib. Can be used to capture a static reflection cubemap. Performs blurring automatically. See Tavern demo for usage example.
-```
-
-
 ## Shaders
 The shader is constructed based on its base shader, the vertex module and additional, optional shader modules.
 There are basic default shaders present, so this chapter is advanced usage.
@@ -344,12 +542,8 @@ If not set, it will fall back to `dream.defaultShaderType`.
 If `dream.defaultShaderType` is not set either, it will be `simple` or `Phong`, depending on wether its material has textures.
 The base shader can also set its own light function (the actual thing calculating the effect of light sources), if not, it uses Phong shading.
 
-### vertex shader
-The vertex shader transforms the vertices, e.g. the wind shader. It can be set using the `shader` tag, default is 'default'.
-This shader has to create a 'vec3 pos'.
-
 ### shader modules
-Those modules can extend the shader to add certain effects. For example a rain effect as the one implemted, or a burning animation, or a disolving effect, ...
+Those modules can extend the shader to add certain effects. For example a rain effect as the one implemeted, or a burning animation, or a disolving effect, ...
 ```lua
 --activate/deactive a module to all objects
 dream:activateShaderModule(name)
@@ -362,190 +556,78 @@ dream:getShaderModule(name)
 dream:isShaderModuleActive(name)
 ```
 
-
-## sky
-The sky will be rendered when the `noSky` arg in dream:present() is not true and contains a sky color, sun, moon, stars and clouds.
-`dream:setWeather(rain, temperature)` and `dream:setDaytime(time)` are helper functions to control those.
-The sky dome is WIP and will receive further upgrades.
-
-### hdri
-Alternatively you can use a sphere hdri image.
-Set `dream.sky_hdri` to an Drawable. Optionally set `dream.sky_hdri_exposure` to adjust exposure.
-
-### cubemap
-Or you can use a cubemap.
-Set `dream.sky_cube` to an CubeImage.
-
-
-## particle batches
-Particles are batched and rendered all together.
+To apply a module on a single object, subObject or material only, use following functions:
 ```lua
---create a particle batch
---pass a texture and the target pass. 1 means the texture is opaque and depth buffer can be used, 2 means its transparent. 2 is default and slower. Average alpha mode is currently not fully supported and might cause wrong ordering.
-local particleBatch = dream:newParticleBatch(texture, pass)
-
---set additional settings
-particleBatch.vertical = true  --vertical does only rotate the particle on the Y-axis, used for flames, ...
-particleBatch.sort = false     --sorting is required for transparent particles with a pattern. For example dust with only one color does not require it. Pass 1 does not require it at all.
-
---clear batch
-particleBatch:clear()
-
---add particles
-particleBatch:add(x, y, z, size, emission, quad)
-
---queue for drawing
-dream:drawParticleBatch(particleBatch)
+obj:activateShaderModule(name)
+obj:deactivateShaderModule(name)
+obj:isShaderModuleActive(name)
 ```
 
-
-## materials
-Materials can be either per model by providing a .mtl or .mat file with the same name as the object file or they can be in a global material library.
+Or modify the `obj.modules` table manually. This way you can also specify modules on a subObject only:
 ```lua
---load materials into the library, if a object now requires a material, and it is not defined in a local material file, it will take the global one
-dream:loadMaterialLibrary("materialsDirectory")
-```
-A material library looks for material files (.mat) or for directory containing material.mat or at least an image.
-
-## alpha blend mode
-Alpha blending can be quite tricky, therefore 3Dream offers 4 different approaches, depending on your scene.
-There is a AlphaBlending demo to see those modes in action.
-Currently its only possible to use one method at a time.
-Dream.init() has to be called after changing.
-```
---uses a second render step and a set of canvases to perform an order independent average alpha
---note that this blend mode is by far more slow than the other modes
---if you do not have alpha components, use dither or disabled
---this also allows refractions, if enabled
-dream.alphaBlendMode = "average"
-
---sort the objects and render in a second step using alpha blending
---works mostly, but can screw up render order, especially within the same object
-dream.alphaBlendMode = "alpha"
-
---does not require a second step, but perform dithering based on alpha
-dream.alphaBlendMode = "dither"
-
---uses a threshold and avoid alpha at all
---known issues are linear interpolated mipmaps and alpha, since the interpolated parts are cut away.
-dream.alphaBlendMode = "disabled"
-```
-
-### transparent materials
-With set alpha blending, you have to tell the engine how the material has to be rendered. Set the `alpha` tag accordingly:
-```lua
-mat.alpha = 0 --this is a solid material, no alpha at all. This is default.
-mat.alpha = 1 --this is a semi solid material. Render solid parts in the primary pass and render the rest in the second.
-mat.alpha = 2 --this is a fully transparent material. It only uses the second pass.
-```
-Alpha blending mode disabled and dither ignore those values.
-
-## Level of Detail
-To define the level of detail, add a boolean array with size 9 to the object or subobject, index 1 is nearest. False prevents this object from rendering.
-```
---set reference distance (max render distance if 9th index is false)
-dream.LoDDistance = 100
-
---set objects LoD
-yourObject.LoD = {true, true, true, false, false, false, false, false, false} --allow rendering 1/3 of the max LoD distance
-
---overwrite the LoD of one sub object
-yourObject.objects.subObject.LoD = {true, true, true, true, true, true, false, false, false} --allow rendering 2/3 of the max LoD distance
-```
-
-## textures
-To add textures to the model ...
-* name the textures albedo, normal, roughness, metallic, glossiness, specular, emission and put it next to the material (for material library entries) or suffix them with either the material name "material_" or the object name "object_"
-* set the texture path in the mtl file. See (3DreamEngine/loader/mtl.lua) for up to date parser information (no prefix)
-* set the texture in the mat file (tex_diffuse, tex_normal, tex_emission, ...) (no prefix)
-* the relative path it uses to look for textures is the same as the object itself, if not overwritten by the "textures" arg in the model loader
-* it does automatically choose the best format and load it threaded when needed.
-
-The diffuse texture is a RGB non alpha texture with the color.
-The normal texture contains tangential normal coordinates.
-The emission texture contains RGB color, in contrast to all other textures it will be multiplied by material.emission (RGB color) instead of using it as fallback. Use this as a multiplier if required.
-Roughness, metallic, specular and glossiness are single channel textures.
-
-Please note that the rendering pipeline only accepts combined RMA textures (roughness, metallic, ao, or its Phong counterpart glossiness, specular, ao).
-If not present, it will generate it and put it in the love save directory. It is recommended to use them to avoid heavy (but at least threaded) CPU merge operations.
-DDS files are supported, but can not generate mipmaps automatically.
-
-## thumbnails
-Name a (smaller) file "yourImage_thumb.ext" to let the texture loader automatically load it first, then load the full textures at the end.
-If the automatic thumbnail generator is enabled (true by default), this will be done automatically, but the first load will be without thumbnail.
-
-## mat - 3Dream material file (lua syntax)
-The .mtl file usually exported with .obj will be loaded automatically.
-To use more 3DreamEngine specific features (particle system, wind animation ...) a .mat file is required. A .mat file can replace the .mtl file entirely, else it will extend it.
-
-### example mat file:
-```lua 
---3DreamEngine material properties file
-return {
-	{
-		name = "grass", --extend material Grass
-		
-		alpha = 0, --the alpha passes required as explained in alpah blending chapter
-		
-		--Shared for all shading
-		color = {1.0, 1.0, 1.0, 1.0},  -- color
-		emission = {1.0, 1.0, 1.0},    -- emission color, or the multiplier if a texture is present
-		
-		--Phong
-		specular = 0.5,                -- specular component (note that specular component has the same color as the albedo texture / color)
-		glossiness = 0.1,              -- exponent, 0-1 (where 1 represent around exponent 1000)
-		
-		--PBR
-		roughness = 0.5,               -- roughness if no texture is set
-		metallic = 0.5,                -- metallic if no texture is set
-		
-		--textures (loaded automatically and should, but dont have to, be strings)
-		--Textured Phong
-		tex_albedo = "path/name",
-		tex_normal = "path/name",
-		tex_specular = "path/name",
-		tex_glossiness = "path/name",
-		tex_emission = "path/name",
-		tex_ao = "path/name",
-		tex_combined = "path/name", --replaced glossiness, specular and ao
-		
-		--PBR
-		tex_albedo = "path/name",
-		tex_normal = "path/name",
-		tex_roughness = "path/name",
-		tex_metallic = "path/name",
-		tex_emission = "path/name",
-		tex_ao = "path/name",
-		tex_combined = "path/name", --replaced roughness, metallic and ao
-		
-		--vertex shader information
-		shader = "wind",                -- vertex shader affecting the entire object
-		shaderValue = 1.0,              -- animation multiplier
-		
-		--some shaders have additional values, like the wind shader (currently the only one)
-		shader_wind_speed = 0.5,       -- the time multiplier
-		shader_wind_strength = 1.0,    -- the multiplier of animation
-		shader_wind_scale = 3.0,       -- the scale of wind waves
-		
-		--add particleSystems
-		particleSystems = {
-			{ --first system
-				objects = { --add objects, pathes have to be global, objects are merged and therefore has to share a material. If not, use two particle systems instead.
-					["path/grass"] = 20,
-				},
-				randomSize = {0.75, 1.25},    --randomize the particle size
-				randomRotation = true,        --randomize the rotation
-				normal = 0.9,                 --align to 90% with its emitters surface normal
-				shader = "wind",              --use the wind shader
-				shaderValue = "grass",        --tell the wind shader to behave like grass, the amount of waving depends on its Y-value
-				shaderValue = 0.2,            --or use a constant float
-			},
-		}
-	},
+obj.modules = {
+	["effect"] = true,
 }
 ```
 
+### built-in shader modules
+There are a few modules already built in, ready to enable:
+
+#### rain
+The rain modules renders rain, wetness and splash animations on surfaces.
+The render part requires the module to be activated globally.
+```lua
+dream:activateShaderModule("rain")
+dream:getShaderModule("rain").isRaining = true
+dream:getShaderModule("rain").strength = 3 -- 1 to 5
+```
+
+#### wind
+Wind lets the vertices wave. It requires the extra buffer as an factor of animation, either set `material.extra` to an appropiate constant or let the particle system generator do it. See mat chapter for this. To enable the wind shader, enable it on the affected material, optional adjust the shader modules settings.
+```lua
+material:activateShaderModule("wind")
+```
+Since .mat files supports `onFinish()` callbacks you can put the above line here too.
+```lua
+--example material file for grass
+return {
+	shadow = false,
+	extra = 0.02,
+	cullMode = "none",
+	
+	onFinish = function(mat, obj)
+		mat:activateShaderModule("wind")
+	end,
+}
+```
+
+#### bones
+3Dream supports animations with a few conditions:
+1. it requires a skeleton and skin information, therefore export your object as a COLLADA file (.dae)
+2. the bone module needs to be activated: `object:activateShaderModule("bones")` in order to use GPU powered transformations. Theoretical optional but cause heavy CPU usage and GPU bandwidth.
+3. update animations as in the skeletal animations specified
+
+## skeletal animations
+WIP but should work fine. The COLLADA loader is often confused and needs further tweeking for some exports but should work most of the time.
+A vertex can be assigned to multiple joints/bones, but 3Dream only considers the 4 most important.
+
+```lua
+--returns a pose at a specific time stamp
+pose = self:getPose(object, time)
+
+--apply this pose (results in object.boneTransforms)
+self:applyPose(object, pose)
+
+--alternative create and apply in one
+dream:setPose(object, time)
+
+--apply joints to mesh, heavy operation, shader module instead recommended
+dream:applyJoints(object)
+```
+
+
 ## 3do - 3Dream object file
+WIP - currently receiving improvements and might not work as expected
 It is strongly recommended to export your objects as 3do files, these files can be loaded on multiple cores, have only ~10-20% loading time compared to .obj and are better compressed.
 To export, just set the argument 'export3do' to true when loading the object. This then combines the .obj, .mtl, .mat file and particle systems into one .3do files and saves it with the same relative path into the LÖVE save directory. Next time loading the game will use the new file instead. The original files are no longer required.
 
@@ -555,10 +637,12 @@ But note that...
 * The exported 3do is shader dependend, you can not change the used shading engine later. You can not change any args to be precice.
 * Particle systems are packed too, it is not possible to e.g. change the particle system based on user settings. Instead, disable particle system objects manually (yourObject.objects.particleSystemName.disabled = true).
 
+
 ## Object format
 dream:loadObject() returns an object using this format:
 ```lua
 object = {
+	--a table of local materials
 	materials = {
 		None = {
 			--None is the default, empty fallback material
@@ -566,23 +650,31 @@ object = {
 		},
 	},
 	
+	--a table of sub objects, each representing a drawable mesh, vertice buffers, render instructions and optional data
 	objects = {
 		yourSubObject = {
 			faces = {
 				{1, 2, 3}, --final ids
 			},
-			final = {
-				{x, y, z, extra, nx, ny, nz, material, u, v, tx, ty, tz}, -- position, shader extra value e.g. for animation, normal, material, uv coords and tangent (calculated automatically)
-			},
-			-- when using 3do or when args.noCleanup is disabled (default is false) faces and final will be deleted once the mesh is created to free memory.
 			
-			material = material,              --mesh material. If several materials are used (and splitMaterials is disabled), it can only use the last, unlinking your other materials.
+			--buffers, each a vector or a skalar
+			--following buffers are must have (might be empty to use default values)
+			--additional buffers (e.g. joints, vertex weights, additional uv maps) require custom base shaders or modules
+			vertices = { },
+			normals = { },
+			texCoords = { },
+			colors = { },
+			materials = { },
+			extras = { },
+			faces = { },
 			
-			name = "yourSubObjectBaseName",   --the name, without material postfixes
+			material = material,              --material. Per mesh only one material is possible. Therefore consider splitMaterials, or per vertex color only
+			
+			name = "yourSubObjectBaseName",   --the name, without material postfixes in case of splitMaterials
 			
 			shaderType = "PBR",               --the used shader (PBR, Phong, simple or a custom one)
-			meshType = "textured",            --simple, textured, material - determines the data the mesh contains, if nil it will be guessed based on the shaderType
-			mesh = love.graphics.newMesh(),   --a static, triangles-mesh, may be nil when using 3do, loads automatically
+			meshType = "textured",            --simple, textured, material - if not overwritten by the arg in the object loader it will be chosen based on shaderType
+			mesh = love.graphics.newMesh(),   --a static, triangles-mesh, may be nil when using 3do, loads automatically if not disabled by arg
 			
 			transform = mat4(),               --default is nil, overwrites global object transformation
 		}
@@ -590,22 +682,23 @@ object = {
 	
 	--array of positions as explained earlier
 	positions = { },
-
+	
 	path = path, --absolute path to object
 	name = name, --name of object
 	dir = dir,   --dir containing the object
-
+	
 	--args as provided in loadObject
 	--some nil args will be automatically set to default values based on shading engine
 	splitMaterials = args.splitMaterials,
 	--...
 	--...
 	--...
-
+	
 	--the object transformation
 	transform = mat4(),
 }
 ```
+
 
 ## deferred rendering
 REMOVED

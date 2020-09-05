@@ -19,12 +19,12 @@ function lib.addParticlesystems(self, obj)
 					ps.objects_new = { }
 					ps.randomSize = ps.randomSize or {0.75, 1.25}
 					ps.normal = ps.normal or 1.0
-					
 					for i,v in pairs(ps.objects) do
-						local o = self:loadObject(i, {noCleanup = true, noMesh = true})
+						local o = self:loadObject(i, {cleanup = false, noMesh = true, noParticleSystem = true})
+						
+						--extract subObjects
 						for d,s in pairs(o.objects) do
 							table.insert(ps.objects_new, {object = s, material = s.material, amount = v})
-							s.material.shader = ps.shader
 						end
 					end
 					
@@ -33,11 +33,9 @@ function lib.addParticlesystems(self, obj)
 			end
 			
 			for particleSystemID, particleSystem in ipairs(o.material.particleSystems) do
-				local t = love.timer.getTime()
-				
 				--create the particle mesh
 				local pname = o.name .. "_particleSystem_" .. o.material.name .. "_" .. particleSystemID
-				obj.objects[pname] = dream:newSubObject(pname, obj, particleSystem.objects[1].object.material or obj.materials.None)
+				obj.objects[pname] = dream:newSubObject(pname, obj, particleSystem.objects[1].material or obj.materials.None)
 				obj.objects[pname].particleSystem = true
 				local po = obj.objects[pname]
 				
@@ -177,7 +175,7 @@ function lib.addParticlesystems(self, obj)
 					end
 				end
 				
-				print(o.material.name .. ": " .. #po.faces .. " particle-faces") io.flush()
+				--print(o.material.name .. ": " .. #po.faces .. " particle-faces") io.flush()
 			end
 		end
 	end

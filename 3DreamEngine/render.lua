@@ -141,9 +141,7 @@ function lib:render(scene, canvases, cam, pass, noSky)
 		
 		--shader
 		local shaderEntry = self.shaderLibrary.base[shaderInfo.shaderType]
-		local vertexEntry = self.shaderLibrary.vertex[shaderInfo.vertexShader]
 		shaderEntry:perShader(self, shader, shaderInfo)
-		vertexEntry:perShader(self, shader, shaderInfo)
 		for d,s in pairs(shaderInfo.modules) do
 			s:perShader(self, shader, shaderInfo)
 		end
@@ -174,7 +172,6 @@ function lib:render(scene, canvases, cam, pass, noSky)
 			
 			--shader
 			shaderEntry:perMaterial(self, shader, shaderInfo, material)
-			vertexEntry:perMaterial(self, shader, shaderInfo, material)
 			for d,s in pairs(shaderInfo.modules) do
 				s:perMaterial(self, shader, shaderInfo, material)
 			end
@@ -205,11 +202,10 @@ function lib:render(scene, canvases, cam, pass, noSky)
 				end
 				
 				--object transformation
-				shader:send("transform", task.transform)
+				shader:send("transformRaw", task.transform)
 				
 				--shader
 				shaderEntry:perObject(self, shader, shaderInfo, task)
-				vertexEntry:perObject(self, shader, shaderInfo, task)
 				for d,s in pairs(shaderInfo.modules) do
 					s:perObject(self, shader, shaderInfo, task)
 				end

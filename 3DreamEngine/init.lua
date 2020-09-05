@@ -21,7 +21,9 @@ vec2 = require((...) .. "/libs/luaVectors/vec2")
 vec3 = require((...) .. "/libs/luaVectors/vec3")
 vec4 = require((...) .. "/libs/luaVectors/vec4")
 
+quat = require((...) .. "/libs/quat")
 cimg = require((...) .. "/libs/cimg")
+utils = require((...) .. "/libs/utils")
 require((...) .. "/libs/saveTable")
 lib.ffi = require("ffi")
 
@@ -29,6 +31,7 @@ lib.ffi = require("ffi")
 _3DreamEngine = lib
 lib.root = (...)
 require((...) .. "/functions")
+require((...) .. "/metaFunctions")
 require((...) .. "/shader")
 require((...) .. "/loader")
 require((...) .. "/materials")
@@ -40,6 +43,7 @@ require((...) .. "/jobs")
 require((...) .. "/particlesystem")
 require((...) .. "/particles")
 require((...) .. "/3doExport")
+require((...) .. "/animations")
 
 --loader
 lib.loader = { }
@@ -377,6 +381,7 @@ function lib:draw(obj, x, y, z, sx, sy, sz)
 				s = s,                 --drawable object
 				color = col,           --color, will affect color/albedo input
 				obj = obj,             --the object container used to store general informations (reflections, ...)
+				boneTransforms = obj.boneTransforms,
 			})
 		end
 	end

@@ -26,7 +26,7 @@ dream:loadMaterialLibrary(projectDir .. "materials")
 dream:init()
 
 --load scene
-local scene = dream:loadObject(projectDir .. "scene", {shaderType = "PBR", noCleanup = true})
+local scene = dream:loadObject(projectDir .. "scene", "PBR")
 
 --create mesh collisions for all sub objects
 local colls = collision:newGroup()
