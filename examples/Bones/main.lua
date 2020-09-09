@@ -7,7 +7,7 @@ love.mouse.setRelativeMode(true)
 local projectDir = "examples/Bones/"
 
 --settings
-dream.defaultShaderType = "Phong"
+dream.defaultShaderType = "simple"
 dream:init()
 
 --scene

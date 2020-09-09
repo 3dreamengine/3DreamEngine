@@ -50,9 +50,11 @@ function sh:perObject(dream, shader, info, task)
 		task.s.boneMesh = love.graphics.newMesh({{"VertexJoint", "byte", 4}, {"VertexWeight", "byte", 4}}, task.s.mesh:getVertexCount(), "triangles", "static")
 		
 		--create mesh
-		for d,s in ipairs(task.s.joints) do
-			local w = task.s.weights[d]
-			task.s.boneMesh:setVertex(d, (s[1] or 0) / 255, (s[2] or 0) / 255, (s[3] or 0) / 255, (s[4] or 0) / 255, w[1] or 0, w[2] or 0, w[3] or 0, w[4] or 0)
+		if task.s.joints then
+			for d,s in ipairs(task.s.joints) do
+				local w = task.s.weights[d]
+				task.s.boneMesh:setVertex(d, (s[1] or 0) / 255, (s[2] or 0) / 255, (s[3] or 0) / 255, (s[4] or 0) / 255, w[1] or 0, w[2] or 0, w[3] or 0, w[4] or 0)
+			end
 		end
 		
 		--clear buffers
@@ -65,11 +67,13 @@ function sh:perObject(dream, shader, info, task)
 		task.s.mesh:attachAttribute("VertexWeight", task.s.boneMesh)
 	end
 	
-	assert(task.boneTransforms, "")
+	assert(task.boneTransforms, "missing bone transforms")
 	
 	local matrices = {mat4:getIdentity()}
-	for i,j in ipairs(task.s.jointIDs) do
-		matrices[i+1] = task.boneTransforms[j]
+	if task.s.jointIDs then
+		for i,j in ipairs(task.s.jointIDs) do
+			matrices[i+1] = task.boneTransforms[j]
+		end
 	end
 	shader:send("jointTransforms", unpack(matrices))
 end

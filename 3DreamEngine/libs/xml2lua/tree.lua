@@ -1,7 +1,7 @@
 local function init()
     local obj = {
         root = {},
-        options = {noreduce = {}}
+        options = {}
     }
     
     obj._stack = {obj.root, n=1}  
@@ -87,22 +87,6 @@ local function getFirstKey(tb)
    return tb
 end
 
---- Recursively removes redundant vectors for nodes
--- with single child elements
-function tree:reduce(node, key, parent)
-    for k,v in pairs(node) do
-        if type(v) == 'table' then
-            self:reduce(v,k,node)
-        end
-    end
-    if #node == 1 and not self.options.noreduce[key] and 
-        node._attr == nil then
-        parent[key] = node[1]
-    else
-        node.n = nil
-    end
-end
-
 ---Parses a start tag.
 -- @param tag a {name, attrs} table
 -- where name is the name of the tag and attrs
@@ -136,10 +120,6 @@ function tree:endtag(tag, s)
     local prev = self._stack[#self._stack-1]
     if not prev[tag.name] then
         error("XML Error - Unmatched Tag ["..s..":"..tag.name.."]\n")
-    end
-    if prev == self.root then
-        -- Once parsing complete, recursively reduce tree
-        self:reduce(prev, nil, nil)
     end
 
     local firstKey = getFirstKey(current)

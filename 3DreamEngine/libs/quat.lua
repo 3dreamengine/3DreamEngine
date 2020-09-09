@@ -163,4 +163,4 @@ meta = {
 	__index = quat,
 }
 
-return setmetatable(quat, {__call = quat.new})
+return setmetatable(quat, {__call = function(self, ...) return quat.new(...) end})

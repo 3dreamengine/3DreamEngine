@@ -7,6 +7,7 @@ local lib = _3DreamEngine
 
 --helper function to interpolate and set the pose
 local function animToPose(a, time, pose)
+	assert(a, "animation is nil")
 	for d,s in pairs(a) do
 		if s.frames then
 			local lf = s.frames[#s.frames]

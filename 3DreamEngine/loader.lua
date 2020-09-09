@@ -383,6 +383,9 @@ function lib.createMesh(self, o)
 			local specular = material.specular or material[1] or 0
 			local glossiness = material.glossiness or material[2] or 0
 			local emission = material.emission or material[3] or 0
+			if type(emission) == "table" then
+				emission = emission[1] * 0.33 + emission[2] * 0.33 + emission[3] * 0.33
+			end
 			
 			o.mesh:setVertex(i,
 				vertex[1], vertex[2], vertex[3], o.extras[i] or 1,
