@@ -37,10 +37,7 @@ function lib:loadObject(path, shaderType, args)
 	
 	local obj = self:newObject(path)
 	
-	--merge args
-	for d,s in pairs(args) do
-		obj[d] = obj[d] or s
-	end
+	obj.args = args
 	
 	--load files
 	--if two object files are available (.obj and .vox) it might crash, since it loads all)
@@ -75,11 +72,11 @@ function lib:loadObject(path, shaderType, args)
 			--skip furhter modifying and exporting if already packed as 3do
 			--also skips mesh loading since it is done manually
 			if typ == "3do" and not failed then
-				obj.noParticleSystem = true
-				obj.noMesh = true
-				obj.export3do = false
-				obj.centerMass = false
-				obj.grid = false
+				obj.args.noParticleSystem = true
+				obj.args.noMesh = true
+				obj.args.export3do = false
+				obj.args.centerMass = false
+				obj.args.grid = false
 				break
 			end
 		end
@@ -134,7 +131,7 @@ function lib:loadObject(path, shaderType, args)
 	end
 	
 	--grid moves all vertices in a way that 0, 0, 0 is the floored origin with an maximal overhang of 0.25 units.
-	if obj.grid then
+	if obj.args.grid then
 		for d,o in pairs(obj.objects) do
 			local minX, minY, minZ
 			for i,v in ipairs(o.vertices) do
@@ -156,7 +153,7 @@ function lib:loadObject(path, shaderType, args)
 	end
 	
 	--move object to its center of vertice mass
-	if obj.centerMass then
+	if obj.args.centerMass then
 		for d,o in pairs(obj.objects) do
 			if not (d:sub(1, 10) == "COLLISION_" and obj.objects[d:sub(11)]) then
 				local x, y, z = 0, 0, 0
@@ -179,7 +176,7 @@ function lib:loadObject(path, shaderType, args)
 	end
 	
 	--use mass center of collisions actual mesh
-	if obj.centerMass then
+	if obj.args.centerMass then
 		for d,o in pairs(obj.objects) do
 			if d:sub(1, 10) == "COLLISION_" and obj.objects[d:sub(11)] then
 				local o2 = obj.objects[d:sub(11)]
@@ -195,7 +192,7 @@ function lib:loadObject(path, shaderType, args)
 	
 	
 	--create particle systems
-	if not obj.noParticleSystem then
+	if not obj.args.noParticleSystem then
 		self:addParticlesystems(obj)
 	end
 	
@@ -260,13 +257,13 @@ function lib:loadObject(path, shaderType, args)
 	
 	--post load materials
 	for d,s in pairs(obj.materials) do
-		s.dir = s.dir or obj.textures or obj.dir
+		s.dir = s.dir or obj.args.textures or obj.dir
 		self:finishMaterial(s, obj)
 	end
 	
 	
 	--create meshes
-	if not obj.noMesh then
+	if not obj.args.noMesh then
 		for d,o in pairs(obj.objects) do
 			if not o.disabled then
 				self:createMesh(o)
@@ -276,9 +273,9 @@ function lib:loadObject(path, shaderType, args)
 	
 	
 	--cleaning up
-	if obj.cleanup ~= false then
+	if obj.args.cleanup ~= false then
 		for d,s in pairs(obj.objects) do
-			if obj.cleanup then
+			if obj.args.cleanup then
 				s.vertices = nil
 				s.faces = nil
 			end
@@ -295,7 +292,7 @@ function lib:loadObject(path, shaderType, args)
 	
 	
 	--3do exporter
-	if obj.export3do then
+	if obj.args.export3do then
 		self:export3do(obj)
 	end
 	

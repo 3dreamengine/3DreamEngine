@@ -17,6 +17,7 @@ function lib:newObject(path)
 		},
 		objects = { },
 		positions = { },
+		args = { },
 		
 		path = path, --absolute path to object
 		name = name, --name of object

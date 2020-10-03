@@ -5,40 +5,16 @@ functions.lua - contains library relevant functions
 
 local lib = _3DreamEngine
 
---helper function to interpolate and set the pose
-local function animToPose(a, time, pose)
-	assert(a, "animation is nil")
-	for d,s in pairs(a) do
-		if s.frames then
-			local lf = s.frames[#s.frames]
-			local t = time % lf.time
-			local frames = {lf, lf}
-			for f = 1, #s.frames do
-				if s.frames[f].time > t then
-					frames = {s.frames[f-1] or s.frames[1], s.frames[f]}
-					break
-				end
-			end
-			
-			--get interpolation factor
-			local diff = (frames[2].time - frames[1].time)
-			local factor = diff == 0 and 0 or (t - frames[1].time) / diff
-			
-			local position = frames[1].position * (1.0 - factor) + frames[2].position * factor
-			local rotation = frames[1].rotation:nLerp(frames[2].rotation, factor)
-			
-			pose[s.joint] = {
-				position = position,
-				rotation = rotation,
-			}
-		else
-			animToPose(s, time, pose)
-		end
-	end
+--interpolate position and rotatation between two frames
+local function interpolateFrames(f1, f2, factor)
+	return {
+		position = f1.position * (1.0 - factor) + f2.position * factor,
+		rotation = f1.rotation:nLerp(f2.rotation, factor),
+	}
 end
 
 --returns a new animated pose at a specific time stamp
-function lib:getPose(object, time)
+function lib:getPose(object, time, animation)
 	local pose = { }
 	
 	--create rest pose
@@ -50,7 +26,30 @@ function lib:getPose(object, time)
 	end
 	
 	--get frame of animation
-	animToPose(object.animations, time, pose)
+	local anim = object.animations[animation]
+	local length = object.animationLengths[animation]
+	assert(anim and length, "animation is nil")
+	for joint,frames in pairs(anim) do
+		--general data
+		local start = frames[1].time
+		local t = time % length + start
+		
+		--find two frames
+		local f1 = frames[1]
+		local f2 = frames[2]
+		for f = 2, #frames do
+			if frames[f].time > t then
+				f1 = frames[f-1]
+				f2 = frames[f]
+				break
+			end
+		end
+		
+		--get interpolation factor
+		local diff = (f2.time - f1.time)
+		local factor = diff == 0 and 0.5 or (t - f1.time) / diff
+		pose[joint] = interpolateFrames(f1, f2, factor)
+	end
 	
 	return pose
 end
@@ -77,11 +76,18 @@ function lib:applyPose(object, pose, skeleton, parentTransform)
 end
 
 --all in one
-function lib:setPose(object, time)
-	self:applyPose(object, self:getPose(object, time))
+function lib:setPose(object, time, first, second, blend)
+	local p = self:getPose(object, time, first)
+	if second then
+		local p2 = self:getPose(object, time, second)
+		for joint,frame in pairs(p) do
+			p[joint] = interpolateFrames(frame, p2[joint], math.clamp(blend, 0.0, 1.0))
+		end
+	end
+	self:applyPose(object, p)
 end
 
---apply 
+--apply joints to mesh data directly
 function lib:applyJoints(obj)
 	for _,o in pairs(obj.objects) do
 		if o.joints then

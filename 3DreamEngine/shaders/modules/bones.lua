@@ -32,7 +32,7 @@ function sh:constructVertex(dream, info)
 			jointTransforms[int(VertexJoint[2]*255.0)] * VertexWeight[2] +
 			jointTransforms[int(VertexJoint[3]*255.0)] * VertexWeight[3]
 		);
-		transform = boneTransform * transform;
+		vertexPos = (boneTransform * vec4(vertexPos, 1.0)).xyz;
 	]==]
 end
 
@@ -58,7 +58,7 @@ function sh:perObject(dream, shader, info, task)
 		end
 		
 		--clear buffers
-		if task.obj.cleanup ~= false then
+		if task.obj.args.cleanup ~= false then
 			task.s.joints = nil
 			task.s.weights = nil
 		end

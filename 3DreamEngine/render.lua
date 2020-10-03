@@ -202,7 +202,7 @@ function lib:render(scene, canvases, cam, pass, noSky)
 				end
 				
 				--object transformation
-				shader:send("transformRaw", task.transform)
+				shader:send("transform", task.transform)
 				
 				--shader
 				shaderEntry:perObject(self, shader, shaderInfo, task)

@@ -32,7 +32,7 @@ return function(self, obj, path, loadAsCollisions)
 			material = obj.materials[l:sub(8)] or self.materialLibrary[l:sub(8)] or obj.materials.None
 			
 			--if required, start a new object
-			if obj.splitMaterials and not o.name:find("COLLISION") and not loadAsCollisions then
+			if obj.args.splitMaterials and not o.name:find("COLLISION") and not loadAsCollisions then
 				local name = o.name .. "_" .. l:sub(8)
 				obj.objects[name] = obj.objects[name] or self:newSubObject(o.name, obj, material)
 				o = obj.objects[name]
@@ -68,7 +68,7 @@ return function(self, obj, path, loadAsCollisions)
 			end
 		elseif v[1] == "o" then
 			local name = self:decodeObjectName(l:sub(3))
-			if obj.mergeObjects then
+			if obj.args.mergeObjects then
 				--only split collision data
 				o = name:find("COLLISION") and o_col or o_def
 			else

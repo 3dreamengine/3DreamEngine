@@ -367,11 +367,11 @@ return function(self, obj, path)
 	
 	--load animations
 	if root.library_animations then
+		local animations = { }
 		local function loadAnimation(anim)
-			local animations = { }
 			for _,a in ipairs(anim) do
 				if a.animation then
-					animations[a._attr.id] = loadAnimation(a.animation)
+					loadAnimation(a.animation)
 				else
 					local keyframes = { }
 					local name = a.channel[1]._attr.target:sub(1, -11)
@@ -402,15 +402,37 @@ return function(self, obj, path)
 					end
 					
 					--pack
-					animations[a._attr.id] = {
-						frames = frames,
-						joint = name,
-					}
+					animations[name] = frames
 				end
 			end
-			return animations
 		end
-		obj.animations = loadAnimation(root.library_animations[1].animation)
+		loadAnimation(root.library_animations[1].animation)
+		
+		--split animations
+		if obj.args.animations then
+			obj.animations = { }
+			obj.animationLengths = { }
+			for anim, time in pairs(obj.args.animations) do
+				obj.animations[anim] = { }
+				obj.animationLengths[anim] = time[2] - time[1]
+				for joint, frames in pairs(animations) do
+					local newFrames = { }
+					for i, frame in ipairs(frames) do
+						if frame.time >= time[1] and frame.time <= time[2] then
+							table.insert(newFrames, frame)
+						end
+					end
+					obj.animations[anim][joint] = newFrames
+				end
+			end
+		else
+			obj.animations = {
+				default = animations,
+			}
+			obj.animationLengths = {
+				default = animations[#animations].time,
+			}
+		end
 	end
 	
 	--load cameras

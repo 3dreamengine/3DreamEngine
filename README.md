@@ -179,6 +179,7 @@ yourObject = dream:loadObject("objectName", shaderType, args)
 	export3do            -- loads the object as usual, then export the entire object, including simple versions and particle system, as a single, high speed 3do file
 	centerMass           -- normalize the center of mass (vertice mass) to its origin
 	mergeObjects         -- merge all object into one
+	animations           -- when using COLLADA format, split the animation into {key = {from, to}}, where from and to are timestamps in seconds
 
 --if the name of an subObject contains:
 -- ... "POS_" it puts it into the positions table for manual use and skips loading. Positions contain the position (x, y, z), its averge radius from its origin as size and the name
@@ -683,16 +684,12 @@ object = {
 	--array of positions as explained earlier
 	positions = { },
 	
+	--the provided args in the loader
+	args = { },
+	
 	path = path, --absolute path to object
 	name = name, --name of object
 	dir = dir,   --dir containing the object
-	
-	--args as provided in loadObject
-	--some nil args will be automatically set to default values based on shading engine
-	splitMaterials = args.splitMaterials,
-	--...
-	--...
-	--...
 	
 	--the object transformation
 	transform = mat4(),

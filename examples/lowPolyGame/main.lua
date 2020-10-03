@@ -46,9 +46,18 @@ end
 player = {
 	position = vec3(0, 10, 0),
 	velocity = vec3(0, 0, 0),
-	collision = collision:newSphere(1, vec3(0, -1, 0)),
-	rot = vec2(0, 0);
+	collision = collision:newSphere(0.5),
+	rot = vec2(0, 0),
+	animation = 0,
+	model = dream:loadObject(projectDir .. "models/character", {
+		animations = {
+			run = {0 / 20, 20 / 20},
+			walk = {50 / 20, 70 / 20},
+			idle = {100 / 20, 120 / 20},
+		}
+	})
 }
+player.model:activateShaderModule("bones")
 
 --bullets
 bullets = { }
@@ -89,6 +98,14 @@ function love.draw()
 	dream.cam:rotateY(player.rot.y)
 	dream.cam:rotateX(player.rot.x)
 	
+	local dist = 3
+	local camPos = player.position + vec3(
+		math.sin(player.rot.y) * math.cos(player.rot.x),
+		math.sin(player.rot.x),
+		math.cos(player.rot.y) * math.cos(player.rot.x)
+	) * dist
+	dream.cam.transform = dream:lookAt(camPos, player.position)
+	
 	--update listener
 	love.audio.setPosition(player.position.x, player.position.y, player.position.z)
 	
@@ -122,6 +139,16 @@ function love.draw()
 		dream:draw(objects.crate, s.position.x, s.position.y, s.position.z)
 	end
 	
+	--render player
+	if math.sqrt(player.velocity.x^2 + player.velocity.z^2) > 0.25 then
+		player.model:reset()
+		player.model:rotateY(math.pi-player.rot.y)
+		dream:setPose(player.model, player.animation * 0.5, "walk", "run", (player.velocity:length()-0.25) / 4)
+	else
+		dream:setPose(player.model, love.timer.getTime(), "idle")
+	end
+	dream:draw(player.model, player.position.x, player.position.y, player.position.z)
+	
 	dream:present()
 end
 
@@ -138,64 +165,10 @@ function love.update(dt)
 	
 	--gravity
 	player.velocity.y = player.velocity.y - 10 * dt
-	
---	--push crates
---	local found = false
---	for d,s in ipairs(crates) do
---		local c = s.collision
---		c:moveTo(s.position)
-		
---		if collision:collide(c, player.collision, true) then
---			s.velocity = player.velocity:normalize()*5 + vec3(0, 1, 0)
---			player.velocity = vec3(0, 0, 0)
---			player.position = old
---			found = true
---		end
---	end
-	
-	--remember old position
-	local onGround = false
-	local oldPos = player.position:clone()
-	local oldVel = player.velocity:clone()
-	player.position = player.position + player.velocity * dt
-	player.collision:moveTo(player.position)
-	
-	--collision
-	local final = player.velocity
-	for step = 1, 10 do
-		local normal = collision:collide(player.collision, world)
-		
-		if normal then
-			local impact, reflect, slide
-			final, impact, reflect, slide = collision:calculateImpact(player.velocity, normal, 0.0, 0.0)
-			if normal.y > 0.5 and player.velocity.y < 0.0 then
-				onGround = true
-			end
-			
-			--retry with adjusted vectors
-			player.velocity = slide * player.velocity:length()
-			player.position = oldPos + player.velocity * dt
-			player.collision:moveTo(player.position)
-			break
-		end
-	end
-	
-	if final:dot(oldVel) < 0 then
-		player.position = oldPos
-		player.velocity = vec3(0, 0, 0)
-	else
-		player.velocity = final
-	end
-	
-	--jump
-	if onGround then
-		if d("space") then
-			player.velocity = player.velocity + vec3(0, 8, 0)
-		end
-	end
+	player.animation = player.animation + math.sqrt(player.velocity.x^2 + player.velocity.z^2) * dt
 	
 	--movement
-	local speed = 5
+	local speed = 4
 	local accel = (onGround and 10 or 2) * dt
 	local curr = math.sqrt(player.velocity.x^2 + player.velocity.z^2)
 	local old = player.velocity:clone()
@@ -216,10 +189,11 @@ function love.update(dt)
 		player.velocity.z = player.velocity.z + math.sin(-player.rot.y+math.pi/2-math.pi/2) * speed
 	end
 	
-	--max speed
-	local f = math.min(1.0, math.max(speed, curr) / math.sqrt(player.velocity.x^2 + player.velocity.z^2))
-	player.velocity.x = player.velocity.x * f
-	player.velocity.z = player.velocity.z * f
+	local speed = math.sqrt(player.velocity.x^2 + player.velocity.z^2) / 5
+	if speed > 1 then
+		player.velocity.x = player.velocity.x / speed
+		player.velocity.z = player.velocity.z / speed
+	end
 	
 	--friction
 	if not d("w", "d", "a", "d") then
@@ -227,6 +201,56 @@ function love.update(dt)
 		local f = math.min(1, (5 + speed) * dt) * (onGround and 1.0 or 0.2)
 		player.velocity.x = player.velocity.x - player.velocity.x * f
 		player.velocity.z = player.velocity.z - player.velocity.z * f
+	end
+	
+--	--push crates
+--	local found = false
+--	for d,s in ipairs(crates) do
+--		local c = s.collision
+--		c:moveTo(s.position)
+		
+--		if collision:collide(c, player.collision, true) then
+--			s.velocity = player.velocity:normalize()*5 + vec3(0, 1, 0)
+--			player.velocity = vec3(0, 0, 0)
+--			player.position = old
+--			found = true
+--		end
+--	end
+	
+	--remember old position
+	local onGround = false
+	local oldPos = player.position:clone()
+	
+	player.position = player.position + player.velocity * dt
+	player.collision:moveTo(player.position)
+	
+	--collision
+	local normal = collision:collide(player.collision, world)
+	if normal then
+		if normal.y > 0.5 and player.velocity.y < 0.0 then
+			onGround = true
+		end
+		
+		--resolve
+		local final, impact, reflect, slide = collision:calculateImpact(player.velocity, normal, 0, 0)
+		for i = 0, 0.5, 0.1 do
+			player.position = oldPos + final * dt + normal:normalize() * i
+			player.velocity = final
+			
+			player.collision:moveTo(player.position)
+			if collision:collide(player.collision, world) then
+				player.position = oldPos
+			else
+				break
+			end
+		end
+	end
+	
+	--jump
+	if onGround then
+		if d("space") then
+			player.velocity = player.velocity + vec3(0, 4, 0)
+		end
 	end
 	
 	--bullets
