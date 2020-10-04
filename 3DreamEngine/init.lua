@@ -77,11 +77,6 @@ lib.bloom_size = 1.5
 lib.bloom_resolution = 0.5
 lib.bloom_strength = 1.0
 
---currently unavailable
-lib.SSR_enabled = false
-lib.SSR_resolution = 1.0
-lib.SSR_format = "normal"
-
 lib.refraction_enabled = true
 lib.refraction_disableCulling = false
 
@@ -95,6 +90,7 @@ lib.colorFormat = "rgba16f"
 lib.msaa = 4
 lib.fxaa = false
 lib.deferred = false
+lib.direct = false
 lib.deferredShaderType = "PBR"
 lib.max_lights = 16
 lib.nameDecoder = "blender"
@@ -209,16 +205,20 @@ function lib.newCanvasSet(self, w, h, msaa, deferred, postEffects_enabled)
 	set.height = h
 	set.msaa = msaa
 	set.deferred = deferred
-	set.postEffects_enabled = postEffects_enabled
+	set.postEffects_enabled = postEffects_enabled and not self.direct
 	
-	--depth
-	set.depth_buffer = love.graphics.newCanvas(w, h, {format = self.canvasFormats["depth32f"] and "depth32f" or self.canvasFormats["depth24"] and "depth24" or "depth16", readable = false, msaa = msaa})
+	assert(not deferred or not self.direct, "Deferred rendering is not compatible with direct rendering!")
 	
-	--temporary HDR color
-	set.color = love.graphics.newCanvas(w, h, {format = self.colorFormat, readable = true, msaa = msaa})
-	
-	--depth
-	set.depth = love.graphics.newCanvas(w, h, {format = "r16f", readable = true, msaa = msaa})
+	if not self.direct then
+		--depth
+		set.depth_buffer = love.graphics.newCanvas(w, h, {format = self.canvasFormats["depth32f"] and "depth32f" or self.canvasFormats["depth24"] and "depth24" or "depth16", readable = false, msaa = msaa})
+		
+		--temporary HDR color
+		set.color = love.graphics.newCanvas(w, h, {format = self.colorFormat, readable = true, msaa = msaa})
+		
+		--depth
+		set.depth = love.graphics.newCanvas(w, h, {format = "r16f", readable = true, msaa = msaa})
+	end
 	
 	--deferred rendering
 	if deferred then
@@ -230,24 +230,18 @@ function lib.newCanvasSet(self, w, h, msaa, deferred, postEffects_enabled)
 	end
 	
 	--screen space ambient occlusion blurring canvases
-	if self.AO_enabled then
+	if self.AO_enabled and not self.direct then
 		set.AO_1 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
 		set.AO_2 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
 	end
 	
 	--post effects
-	if postEffects_enabled then
+	if set.postEffects_enabled then
 		--bloom blurring canvases
 		if self.bloom_enabled then
 			set.canvas_bloom_1 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = self.colorFormat, readable = true, msaa = 0})
 			set.canvas_bloom_2 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = self.colorFormat, readable = true, msaa = 0})
 		end
-	end
-	
-	--screen space reflections
-	if self.SSR_enabled then
-		set.canvas_SSR_1 = love.graphics.newCanvas(w*self.SSR_resolution, h*self.SSR_resolution, {format = self.SSR_format, readable = true, msaa = 0})
-		set.canvas_SSR_2 = love.graphics.newCanvas(w*self.SSR_resolution, h*self.SSR_resolution, {format = self.SSR_format, readable = true, msaa = 0})
 	end
 	
 	return set
@@ -301,7 +295,16 @@ end
 
 --applies settings and load canvases
 function lib.init(self, w, h)
-	assert(not self.SSR_enabled, "screen space reflections are currently unavailable and have to be disabled!")
+	local width, height, flags = love.window.getMode()
+	if flags.depth == 0 then
+		print("Direct render is enabled, but there is no depth buffer! Using 16-bit depth from now on.")
+		love.window.updateMode(width, height, {depth = 16})
+	end
+	
+	if self.autoExposure_enabled and self.direct then
+		print("Autoexposure does not work with direct render! Autoexposure has been disabled.")
+		self.autoExposure_enabled = false
+	end
 	
 	self:resize(w or love.graphics.getWidth(), h or love.graphics.getHeight())
 	

@@ -86,21 +86,29 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 	love.graphics.push("all")
 	love.graphics.reset()
 	
-	if noSky then
-		love.graphics.setCanvas(canvases.color)
-		love.graphics.clear()
+	if self.direct then
+		if not noSky then
+			self:renderSky(cam.transformProjOrigin)
+		end
 	else
-		--render sky
-		love.graphics.setCanvas(canvases.color)
-		self:renderSky(cam.transformProjOrigin)
+		if noSky then
+			love.graphics.setCanvas(canvases.color)
+			love.graphics.clear()
+		else
+			--render sky
+			love.graphics.setCanvas(canvases.color)
+			self:renderSky(cam.transformProjOrigin)
+		end
 	end
 	
 	--clear
-	love.graphics.setCanvas({canvases.depth, depthstencil = canvases.depth_buffer})
-	love.graphics.clear()
-	if self.deferred and pass == 1 then
-		love.graphics.setCanvas({canvases.position, canvases.normaö, canvases.material, canvases.albedo})
+	if not self.direct then
+		love.graphics.setCanvas({canvases.depth, depthstencil = canvases.depth_buffer})
 		love.graphics.clear()
+		if self.deferred and pass == 1 then
+			love.graphics.setCanvas({canvases.position, canvases.normaö, canvases.material, canvases.albedo})
+			love.graphics.clear()
+		end
 	end
 	
 	--prepare lighting
@@ -116,10 +124,13 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 		love.graphics.setDepthMode("less", pass == 1)
 		love.graphics.setBlendMode("alpha")
 		
-		if self.deferred and pass == 1 then
-			love.graphics.setCanvas({canvases.color, canvases.depth, canvases.position, canvases.normal, canvases.material, canvases.albedo, depthstencil = canvases.depth_buffer})
-		else
-			love.graphics.setCanvas({canvases.color, canvases.depth, depthstencil = canvases.depth_buffer})
+		--set canvases
+		if not self.direct then
+			if self.deferred and pass == 1 then
+				love.graphics.setCanvas({canvases.color, canvases.depth, canvases.position, canvases.normal, canvases.material, canvases.albedo, depthstencil = canvases.depth_buffer})
+			else
+				love.graphics.setCanvas({canvases.color, canvases.depth, depthstencil = canvases.depth_buffer})
+			end
 		end
 		
 		--final draw
@@ -331,6 +342,11 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 	self:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 	self.delton:stop()
 	
+	if self.direct then
+		love.graphics.pop()
+		return
+	end
+	
 	--Ambient Occlusion (SSAO)
 	if self.AO_enabled then
 		love.graphics.setCanvas(canvases.AO_1)
@@ -453,7 +469,7 @@ function lib:present(noSky, cam, canvases)
 	local b = -t
 	local projection = mat4(
 		2*n / (r-l),   0,              (r+l) / (r-l),     0,
-		0,             -2*n / (t - b),  (t+b) / (t-b),     0,
+		0,             2*n / (t - b) * (self.direct and 1 or -1),  (t+b) / (t-b),     0,
 		0,             0,              -(f+n) / (f-n),    -2*f*n / (f-n),
 		0,             0,              -1,                0
 	)
