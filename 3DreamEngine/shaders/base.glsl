@@ -39,16 +39,20 @@ void effect() {
 	
 	//dither alpha
 	if (ditherAlpha) {
-		if (alpha < fract(love_PixelCoord.x * 0.37 + love_PixelCoord.y * 73.73 + depth * 3.73)) {
+		if (albedo.a < fract(love_PixelCoord.x * 0.37 + love_PixelCoord.y * 73.73 + depth * 3.73)) {
 			discard;
 		} else {
-			alpha = 1.0;
+			albedo.a = 1.0;
 		}
 	}
+	
+	vec3 viewVec = normalize(viewPos - vertexPos);
 	
 #import vertexPixel
 #import mainPixel
 #import modulesPixel
+
+#ifndef DEFERRED
 #import mainPixelPost
 	
 	//forward lighting
@@ -57,11 +61,18 @@ void effect() {
 	col += light * albedo.a;
 	
 #import modulesPixelPost
+#endif
 	
 	//returns color
-	//requires alpha, col and normal
-	love_Canvases[0] = vec4(col, alpha);
-	love_Canvases[1] = vec4(depth, 1.0, 1.0, alpha);
+#ifdef DEFERRED
+	love_Canvases[0] = vec4(vertexPos, albedo.a);
+	love_Canvases[1] = vec4(normal, albedo.a);
+	love_Canvases[2] = vec4(material, albedo.a);
+	love_Canvases[3] = albedo;
+#else
+	love_Canvases[0] = vec4(col, albedo.a);
+	love_Canvases[1] = vec4(depth, 1.0, 1.0, albedo.a);
+#endif
 }
 #endif
 

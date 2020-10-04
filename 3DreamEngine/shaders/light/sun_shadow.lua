@@ -75,23 +75,27 @@ end
 
 function sh:constructDefines(dream, info, ID)
 	return ([[
-		extern highp mat4 transformProjShadow_1_#ID#;
-		extern highp mat4 transformProjShadow_2_#ID#;
-		extern highp mat4 transformProjShadow_3_#ID#;
+		extern mat4 transformProjShadow_1_#ID#;
+		extern mat4 transformProjShadow_2_#ID#;
+		extern mat4 transformProjShadow_3_#ID#;
 		extern sampler2DShadow tex_shadow_1_#ID#;
 		extern sampler2DShadow tex_shadow_2_#ID#;
 		extern sampler2DShadow tex_shadow_3_#ID#;
 	]]):gsub("#ID#", ID)
 end
 
-function sh:constructPixel(dream, info, ID, lightSignature)
+function sh:constructPixelGlobal(dream, info)
+
+end
+
+function sh:constructPixel(dream, info, ID)
 	return ([[
 		float shadow = sampleShadowSun(vertexPos, transformProjShadow_1_#ID#, transformProjShadow_2_#ID#, transformProjShadow_3_#ID#, tex_shadow_1_#ID#, tex_shadow_2_#ID#, tex_shadow_3_#ID#);
 		if (shadow > 0.0) {
 			vec3 lightVec = normalize(lightPos[#ID#]);
-			light += getLight(lightColor[#ID#] * shadow, viewVec, lightVec, normal, #lightSignature#);
+			light += getLight(lightColor[#ID#] * shadow, viewVec, lightVec, normal, albedo.rgb, material.x, material.y);
 		}
-	]]):gsub("#ID#", ID):gsub("#lightSignature#", lightSignature)
+	]]):gsub("#ID#", ID)
 end
 
 function sh:sendGlobalUniforms(dream, shader, info)

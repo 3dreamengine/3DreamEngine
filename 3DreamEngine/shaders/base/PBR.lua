@@ -45,8 +45,8 @@ function sh:constructDefines(dream, info)
 		
 		//additional vertex attributes
 		#ifdef VERTEX
-		attribute highp vec3 VertexNormal;
-		attribute highp vec3 VertexTangent;
+		attribute vec3 VertexNormal;
+		attribute vec3 VertexTangent;
 		#endif
 	]]
 	
@@ -56,7 +56,6 @@ end
 function sh:constructPixelPre(dream, info)
 	return [[
 	vec4 albedo = Texel(tex_albedo, VaryingTexCoord.xy) * VaryingColor;
-	float alpha = albedo.a;
 	]]
 end
 
@@ -70,10 +69,7 @@ function sh:constructPixel(dream, info)
 	#endif
 	
 	//fetch material data
-	vec3 rma = Texel(tex_combined, VaryingTexCoord.xy).rgb * color_combined;
-	float roughness = rma.r;
-	float metallic = rma.g;
-	float ao = rma.b;
+	vec3 material = Texel(tex_combined, VaryingTexCoord.xy).rgb * color_combined;
 	
 	//emission
 	#ifdef TEX_EMISSION
@@ -87,28 +83,27 @@ end
 function sh:constructPixelPost(dream, info)
 	return [[
 	//PBR model data
-	vec3 viewVec = normalize(viewPos - vertexPos);
 	vec3 reflectVec = reflect(-viewVec, normal); 
 	float cosTheta = clamp(dot(normal, viewVec), 0.0, 1.0);
-	vec3 F0 = mix(vec3(0.04), albedo.rgb, metallic);
+	vec3 F0 = mix(vec3(0.04), albedo.rgb, material.y);
 	
 	//fresnel
     vec3 F = F0 + (vec3(1.0) - F0) * pow(1.0 - cosTheta, 5.0);
     
 	//specular and diffuse component
     vec3 kS = F;
-    vec3 kD = (1.0 - kS) * (1.0 - metallic);
+    vec3 kD = (1.0 - kS) * (1.0 - material.y);
     
 	//use the reflection texture as irradiance map approximation
     vec3 diffuse = reflection(normal, 1.0) * albedo.rgb;
 	
 	//final ambient color with reflection
 	//approximate the specular part with brdf lookup table
-	vec3 ref = reflection(reflectVec, roughness);
-	vec2 brdf = Texel(brdfLUT, vec2(cosTheta, roughness)).rg;
+	vec3 ref = reflection(reflectVec, material.x);
+	vec2 brdf = Texel(brdfLUT, vec2(cosTheta, material.x)).rg;
 	vec3 specular = ref * (F * brdf.x + vec3(brdf.y));
 	
-	vec3 col = (kD * diffuse + specular) * ao;
+	vec3 col = (kD * diffuse + specular) * material.z;
 	
 	//emission
 	col += emission;
@@ -196,19 +191,17 @@ function sh:constructLightFunction(dream, info)
 	]]
 end
 
-function sh:getLightSignature(dream)
-	return "albedo.rgb, roughness, metallic"
-end
-
 function sh:perShader(dream, shader, info)
-	shader:send("brdfLUT", dream.textures:get("brdfLUT"))
+	if shader:hasUniform("brdfLUT") then
+		shader:send("brdfLUT", dream.textures:get("brdfLUT"))
+	end
 end
 
 function sh:perMaterial(dream, shader, info, material)
 	local tex = dream.textures
 	
 	shader:send("tex_albedo", dream:getTexture(material.tex_albedo) or tex.default)
-	shader:send("color_albedo", (material.tex_albedo and {1.0, 1.0, 1.0, 1.0} or material.color and {material.color[1], material.color[2], material.color[3], material.color[4] or 1.0} or {1.0, 1.0, 1.0, 1.0}))
+	shader:send("color_albedo", (material.tex_albedo and {1.0, 1.0, 1.0, material.color[4]} or material.color and {material.color[1], material.color[2], material.color[3], material.color[4] or 1.0} or {1.0, 1.0, 1.0, 1.0}))
 	
 	shader:send("tex_combined", dream:getTexture(material.tex_combined) or tex.default)
 	shader:send("color_combined", {material.tex_roughness and 1.0 or material.roughness or 0.5, material.tex_metallic and 1.0 or material.metallic or 0.5, 1.0})
@@ -220,7 +213,9 @@ function sh:perMaterial(dream, shader, info, material)
 	if info.tex_emission then
 		shader:send("tex_emission", dream:getTexture(material.tex_emission) or tex.default)
 	end
-	shader:send("color_emission", material.emission or (info.tex_emission and {5.0, 5.0, 5.0}) or {0.0, 0.0, 0.0})
+	if shader:hasUniform("color_emission") then
+		shader:send("color_emission", material.emission or (info.tex_emission and {5.0, 5.0, 5.0}) or {0.0, 0.0, 0.0})
+	end
 end
 
 function sh:perObject(dream, shader, info, task)

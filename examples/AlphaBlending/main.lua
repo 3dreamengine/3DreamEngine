@@ -49,7 +49,7 @@ function love.draw()
 	dream:draw(scene)
 	dream:present(true)
 	
-	love.graphics.print("use space bar to toggle deferred rendering .. (" .. tostring(dream.deferred) .. ")", 5, 5)
+	love.graphics.print("use H to toggle deferred rendering .. (" .. tostring(dream.deferred) .. ")", 5, 5)
 end
 
 function love.mousemoved(_, _, x, y)
@@ -103,7 +103,7 @@ function love.keypressed(key)
 		dream:takeScreenshot()
 	end
 	
-	if key = space then
+	if key == "h" then
 		dream.deferred = not dream.deferred
 		dream:init()
 	end

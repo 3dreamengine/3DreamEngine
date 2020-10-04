@@ -43,8 +43,8 @@ function sh:constructDefines(dream, info)
 		
 		//additional vertex attributes
 		#ifdef VERTEX
-		attribute highp vec3 VertexNormal;
-		attribute highp vec3 VertexTangent;
+		attribute vec3 VertexNormal;
+		attribute vec3 VertexTangent;
 		#endif
 	]]
 	
@@ -54,7 +54,6 @@ end
 function sh:constructPixelPre(dream, info)
 	return [[
 	vec4 albedo = Texel(tex_albedo, VaryingTexCoord.xy) * VaryingColor;
-	float alpha = albedo.a;
 	]]
 end
 
@@ -68,10 +67,7 @@ function sh:constructPixel(dream, info)
 	#endif
 	
 	//fetch material data
-	vec3 rma = Texel(tex_combined, VaryingTexCoord.xy).rgb * color_combined;
-	float glossiness = rma.r;
-	float specular = rma.g;
-	float ao = rma.b;
+	vec3 material = Texel(tex_combined, VaryingTexCoord.xy).rgb * color_combined;
 	
 	//emission
 	#ifdef TEX_EMISSION
@@ -84,15 +80,14 @@ end
 
 function sh:constructPixelPost(dream, info)
 	return [[
-	vec3 viewVec = normalize(viewPos - vertexPos);
 	vec3 reflectVec = reflect(-viewVec, normal); 
 	
 	//ambient component
 	vec3 diffuse = reflection(normal, 1.0);
 	
 	//final ambient color and reflection
-	vec3 ref = reflection(reflectVec, 1.0 - glossiness);
-	vec3 col = (diffuse + ref * specular) * albedo.rgb * ao;
+	vec3 ref = reflection(reflectVec, 1.0 - material.x);
+	vec3 col = (diffuse + ref * material.y) * albedo.rgb * material.z;
 	
 	//emission
 	col += emission;
@@ -118,8 +113,24 @@ function sh:constructVertex(dream, info)
 	]]
 end
 
-function sh:getLightSignature(dream)
-	return "albedo.rgb, specular, glossiness"
+function sh:constructLightFunction(dream, info)
+	return [[
+	//the PBR model is darker than the Phong shading, the use the same light intensities the Phong shading will be adapted
+	const float adaptToPBR = 0.25;
+
+	vec3 getLight(vec3 lightColor, vec3 viewVec, vec3 lightVec, vec3 normal, vec3 albedo, float specular, float glossiness) {
+		float lambertian = max(dot(lightVec, normal), 0.0);
+		float spec = 0.0;
+		
+		if (lambertian > 0.0) {
+			vec3 halfDir = normalize(lightVec + viewVec);
+			float specAngle = max(dot(halfDir, normal), 0.0);
+			spec = specular * pow(specAngle, 1.0 + glossiness * 256.0);
+		}
+		
+		return albedo * lightColor * (lambertian + spec) * adaptToPBR;
+	}
+	]]
 end
 
 function sh:perShader(dream, shader, info)
@@ -142,7 +153,9 @@ function sh:perMaterial(dream, shader, info, material)
 	if info.tex_emission then
 		shader:send("tex_emission", dream:getTexture(material.tex_emission) or tex.default)
 	end
-	shader:send("color_emission", material.emission or (info.tex_emission and {5.0, 5.0, 5.0}) or {0.0, 0.0, 0.0})
+	if shader:hasUniform("color_emission") then
+		shader:send("color_emission", material.emission or (info.tex_emission and {5.0, 5.0, 5.0}) or {0.0, 0.0, 0.0})
+	end
 end
 
 function sh:perObject(dream, shader, info, task)

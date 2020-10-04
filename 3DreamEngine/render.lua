@@ -88,10 +88,63 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 	
 	--render material pass
 	if canvases.deferred then
+		self.delton:start("geometry")
 		love.graphics.setDepthMode("less", true)
 		love.graphics.setBlendMode("replace", "premultiplied")
-		love.graphics.setCanvas({canvases.position, canvases.normal, canvases.albedo, canvases.material, depthstencil = canvases.depth_buffer})
+		love.graphics.setCanvas({canvases.position, canvases.normal, canvases.material, canvases.albedo, depthstencil = canvases.depth_buffer})
 		love.graphics.clear(0, 0, 0, 0)
+		
+		--material draw
+		for shaderInfo, shaderGroup in pairs(sceneSolid) do
+			local shader = self:getShader(shaderInfo, false)
+			
+			--output settings
+			love.graphics.setShader(shader)
+			shader:send("ditherAlpha", pass == 1)
+			
+			--shader
+			local shaderEntry = self.shaderLibrary.base[shaderInfo.shaderType]
+			shaderEntry:perShader(self, shader, shaderInfo)
+			for d,s in pairs(shaderInfo.modules) do
+				s:perShader(self, shader, shaderInfo)
+			end
+			
+			--camera
+			shader:send("transformProj", cam.transformProj)
+			if shader:hasUniform("viewPos") then
+				shader:send("viewPos", viewPos)
+			end
+			
+			--for each material
+			for material, materialGroup in pairs(shaderGroup) do
+				--shader
+				shaderEntry:perMaterial(self, shader, shaderInfo, material)
+				for d,s in pairs(shaderInfo.modules) do
+					s:perMaterial(self, shader, shaderInfo, material)
+				end
+				
+				--culling
+				love.graphics.setMeshCullMode(canvases.cullMode or material.cullMode or "back")
+				
+				--draw objects
+				for _,task in pairs(materialGroup) do
+					--object transformation
+					shader:send("transform", task.transform)
+					
+					--shader
+					shaderEntry:perObject(self, shader, shaderInfo, task)
+					for d,s in pairs(shaderInfo.modules) do
+						s:perObject(self, shader, shaderInfo, task)
+					end
+					
+					--render
+					love.graphics.setColor(task.color)
+					love.graphics.draw(task.s.mesh)
+				end
+			end
+		end
+		self.delton:stop()
+		love.graphics.setColor(1.0, 1.0, 1.0)
 	end
 	
 	--clear depth canvas
@@ -118,6 +171,7 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 	--start both passes
 	for pass = 1, 2 do
 		local scene = pass == 1 and sceneSolid or sceneAlpha
+		local noLight = canvases.deferred and pass == 1 or #lighting == 0
 		
 		--only first pass writes depth
 		love.graphics.setDepthMode("less", pass == 1)
@@ -126,7 +180,7 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 		--final draw
 		for shaderInfo, shaderGroup in pairs(scene) do
 			self.delton:start("shader")
-			local shader = self:getShader(shaderInfo, lighting, lightRequirements)
+			local shader = noLight and self:getShader(shaderInfo) or self:getShader(shaderInfo, lighting, lightRequirements)
 			
 			--output settings
 			love.graphics.setShader(shader)
@@ -140,7 +194,7 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 			end
 			
 			--light if using forward lighting
-			if #lighting > 0 then
+			if not noLight then
 				self:sendLightUniforms(lighting, lightRequirements, shader)
 			end
 			
@@ -216,6 +270,47 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 			self.delton:stop()
 		end
 		love.graphics.setColor(1.0, 1.0, 1.0)
+		
+		--light
+		if canvases.deferred then
+			local types = { }
+			local batches = { }
+			for _,s in ipairs(self.lighting) do
+				local typ = s.typ .. "_" .. (s.shadow and "shadow" or "simple")
+				types[typ] = (types[typ] or 0) + 1
+				
+				local dat = dream.shaderLibrary.light[typ]
+				local b = batches[#batches]
+				if not b or b.typ ~= typ or #b >= (dat.batchable and self.max_lights or 1) then
+					batches[#batches+1] = {typ = typ}
+				end
+				
+				table.insert(batches[#batches], s)
+			end
+			
+			--render light batches
+			love.graphics.setCanvas(canvases.color)
+			love.graphics.setBlendMode("add")
+			love.graphics.setDepthMode()
+			local lastTyp
+			for _,batch in ipairs(batches) do
+				local dat = dream.shaderLibrary.light[batch.typ]
+				local shader = self.lightShaders[batch.typ]
+				
+				if lastTyp ~= batch.typ then
+					lastTyp = batch.typ
+					love.graphics.setShader(shader)
+					shader:send("tex_position", canvases.position)
+					shader:send("tex_normal", canvases.normal)
+					shader:send("tex_material", canvases.material)
+				end
+				
+				lib:sendLightUniforms(batch, {[batch.typ] = #batch}, shader)
+				love.graphics.draw(canvases.albedo)
+			end
+			love.graphics.setBlendMode("alpha")
+			love.graphics.setCanvas({canvases.color, canvases.depth, depthstencil = canvases.depth_buffer})
+		end
 		
 		--particles
 		if self.particlePresence[pass == 2] then

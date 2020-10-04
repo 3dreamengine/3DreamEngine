@@ -57,16 +57,20 @@ function sh:constructDefines(dream, info, ID)
 	]]):gsub("#ID#", ID)
 end
 
-function sh:constructPixel(dream, info, ID, lightSignature)
+function sh:constructPixelGlobal(dream, info)
+
+end
+
+function sh:constructPixel(dream, info, ID)
 	return ([[
 		vec3 lightVec = lightPos[#ID#] - vertexPos;
 		float shadow = sampleShadowPoint(lightVec, tex_shadow_#ID#);
 		if (shadow > 0.0) {
 			float distance = length(lightVec);
 			float power = 1.0 / (0.1 + distance * distance);
-			light += getLight(lightColor[#ID#] * shadow * power, viewVec, normalize(lightVec), normal, #lightSignature#);
+			light += getLight(lightColor[#ID#] * shadow * power, viewVec, normalize(lightVec), normal, albedo.rgb, material.x, material.y);
 		}
-	]]):gsub("#ID#", ID):gsub("#lightSignature#", lightSignature)
+	]]):gsub("#ID#", ID)
 end
 
 function sh:sendGlobalUniforms(dream, shader, info)

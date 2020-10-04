@@ -18,9 +18,7 @@ end
 function sh:constructDefines(dream, info)
 	local code = { }
 	code[#code+1] = [[
-		varying float specular;
-		varying float glossiness;
-		varying float emission;
+		varying vec3 material;
 		
 		varying vec3 normalVec;
 		
@@ -36,7 +34,6 @@ end
 function sh:constructPixelPre(dream, info)
 	return [[
 	vec4 albedo = VaryingColor;
-	float alpha = albedo.a;
 	]]
 end
 
@@ -48,14 +45,11 @@ end
 
 function sh:constructPixelPost(dream, info)
 	return [[
-	highp vec3 viewVec = normalize(viewPos - vertexPos);
 	vec3 reflectVec = reflect(-viewVec, normal); 
 	vec3 diffuse = reflection(normal, 1.0);
 	
-	vec3 ref = reflection(reflectVec, 1.0 - glossiness);
-	vec3 col = (diffuse + ref * specular) * albedo.rgb;
-	
-	col += emission * albedo.rgb;
+	vec3 ref = reflection(reflectVec, 1.0 - material.x);
+	vec3 col = (diffuse + ref * material.y) * albedo.rgb + material.z * albedo.rgb;
 	]]
 end
 
@@ -65,14 +59,28 @@ function sh:constructVertex(dream, info)
 	normalVec = mat3(transform) * VertexTexCoord.xyz;
 	
 	//extract material
-	specular = VertexMaterial.r;
-	glossiness = VertexMaterial.g;
-	emission = VertexMaterial.b;
+	material = VertexMaterial;
 	]]
 end
 
-function sh:getLightSignature(dream)
-	return "albedo.rgb, specular, glossiness"
+function sh:constructLightFunction(dream, info)
+	return [[
+	//the PBR model is darker than the Phong shading, the use the same light intensities the Phong shading will be adapted
+	const float adaptToPBR = 0.25;
+
+	vec3 getLight(vec3 lightColor, vec3 viewVec, vec3 lightVec, vec3 normal, vec3 albedo, float specular, float glossiness) {
+		float lambertian = max(dot(lightVec, normal), 0.0);
+		float spec = 0.0;
+		
+		if (lambertian > 0.0) {
+			vec3 halfDir = normalize(lightVec + viewVec);
+			float specAngle = max(dot(halfDir, normal), 0.0);
+			spec = specular * pow(specAngle, 1.0 + glossiness * 256.0);
+		}
+		
+		return albedo * lightColor * (lambertian + spec) * adaptToPBR;
+	}
+	]]
 end
 
 function sh:perShader(dream, shader, info)

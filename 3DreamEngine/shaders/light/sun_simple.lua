@@ -10,11 +10,15 @@ function sh:constructDefines(dream, info, ID)
 	
 end
 
-function sh:constructPixel(dream, info, ID, lightSignature)
+function sh:constructPixelGlobal(dream, info)
+
+end
+
+function sh:constructPixel(dream, info, ID)
 	return ([[
 		vec3 lightVec = normalize(lightPos[#ID#]);
-		light += getLight(lightColor[#ID#], viewVec, lightVec, normal, #lightSignature#);
-	]]):gsub("#ID#", ID):gsub("#lightSignature#", lightSignature)
+		light += getLight(lightColor[#ID#], viewVec, lightVec, normal, albedo.rgb, material.x, material.y);
+	]]):gsub("#ID#", ID)
 end
 
 function sh:sendGlobalUniforms(dream, shader, info)
