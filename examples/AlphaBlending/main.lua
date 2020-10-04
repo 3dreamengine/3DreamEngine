@@ -49,7 +49,7 @@ function love.draw()
 	dream:draw(scene)
 	dream:present(true)
 	
-	love.graphics.print("use number keys to change alpha blend mode\n1) Average Sum\n2) Alpha and Sorting\n3) Dither\n4) Disabled", 5, 5)
+	love.graphics.print("use space bar to toggle deferred rendering .. (" .. tostring(dream.deferred) .. ")", 5, 5)
 end
 
 function love.mousemoved(_, _, x, y)
@@ -103,10 +103,8 @@ function love.keypressed(key)
 		dream:takeScreenshot()
 	end
 	
-	--switch alpha blend mode
-	local tn = tonumber(key)
-	if tn and tn >= 1 and tn <= 4 then
-		dream.alphaBlendMode = ({"average", "alpha", "dither", "disabled"})[tn]
+	if key = space then
+		dream.deferred = not dream.deferred
 		dream:init()
 	end
 

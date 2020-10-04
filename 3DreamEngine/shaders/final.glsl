@@ -1,6 +1,3 @@
-extern Image canvas_color_pass2;
-extern Image canvas_data_pass2;
-extern Image canvas_normal_pass2;
 extern Image canvas_depth;
 
 extern Image canvas_bloom;
@@ -89,35 +86,6 @@ vec4 fxaa(Image tex, vec2 tc) {
 vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 	vec2 tc_final = tc;
 	
-	//pass 2 data
-#ifdef AVERAGE_ALPHA
-	vec3 dat = Texel(canvas_data_pass2, tc).xyz;
-	float ior, alpha;
-	vec4 c2;
-	if (dat.r < 0.5) {
-		ior = 0.0;
-		alpha = 1.0;
-		c2 = vec4(0.0);
-	} else {
-#ifdef FXAA_ENABLED
-		c2 = fxaa(canvas_color_pass2, tc) / dat.g;
-#else
-		c2 = Texel(canvas_color_pass2, tc) / dat.g;
-#endif
-		float f = 1.0 / dat.r;
-		ior = dat.b * f;
-		c2.a = dat.g * f;
-		alpha = pow(1.0 - c2.a, dat.r);
-		
-		//refraction
-#ifdef REFRACTION_ENABLED
-		vec3 normal_pass2 = Texel(canvas_normal_pass2, tc).xyz;
-		tc_final += (transform * vec4(viewPos + lookNormal + normal_pass2 * (ior - 1.0) * 0.25, 1.0)).xy;
-#endif
-	}
-#endif
-	
-	
 	//color
 #ifdef FXAA_ENABLED
 	vec4 c = fxaa(canvas_color, tc_final);
@@ -141,12 +109,6 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 #ifdef SSR_ENABLED
 	vec3 ref = Texel(canvas_SSR, tc_final).rgb;
 	c.rgb += ref;
-#endif
-
-	//merge passes
-#ifdef AVERAGE_ALPHA
-	c.rgb = mix(c2.rgb, c.rgb, alpha);
-	c.a = min(1.0, c.a + c2.a);
 #endif
 
 	//fog

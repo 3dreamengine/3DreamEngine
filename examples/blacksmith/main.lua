@@ -34,7 +34,7 @@ local particles = { }
 local lastParticleID = 0
 
 --create new particle batch
-local particleBatch = dream:newParticleBatch(texture_candle, 2)
+local particleBatch = dream:newParticleBatch(texture_candle)
 particleBatch.vertical = true
 
 local player = {

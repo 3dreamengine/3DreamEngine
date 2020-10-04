@@ -9,7 +9,6 @@ local projectDir = "examples/Tavern/"
 dream.nameDecoder = false
 dream.autoExposure_enabled = true
 dream.sun_ambient = {0.1, 0.1, 0.1}
-dream.alphaBlendMode = "average"
 
 dream.sky_as_reflection = false
 dream.defaultReflection = dream:newReflection(cimg:load(projectDir .. "sky.cimg"))
@@ -62,10 +61,10 @@ for y = 1, 5 do
 end
 
 --create new particle batch
-local particleBatch = dream:newParticleBatch(texture_candle, 2)
+local particleBatch = dream:newParticleBatch(texture_candle)
 particleBatch.vertical = true
 
-local particleBatchDust = dream:newParticleBatch(love.graphics.newImage(projectDir .. "dust.png"), 2)
+local particleBatchDust = dream:newParticleBatch(love.graphics.newImage(projectDir .. "dust.png"))
 particleBatchDust.sort = false
 
 local lights = { }

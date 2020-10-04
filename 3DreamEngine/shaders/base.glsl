@@ -2,7 +2,7 @@
 
 //camera uniforms
 extern highp mat4 transformProj;   //projective transformation
-extern highp mat4 transform;    //model transformation
+extern highp mat4 transform;       //model transformation
 extern highp vec3 viewPos;         //camera position
 
 //varyings
@@ -10,9 +10,7 @@ varying highp vec3 vertexPos;      //vertex position for pixel shader
 varying float depth;               //depth
 
 //shader settings
-extern bool average_alpha;
-extern bool useAlphaDither;
-extern float pass;
+extern bool ditherAlpha;
 
 //setting specific defines
 #import globalDefines
@@ -40,20 +38,12 @@ void effect() {
 #import mainPixelPre
 	
 	//dither alpha
-	if (useAlphaDither) {
-		alpha = step(fract(love_PixelCoord.x * 0.37 + love_PixelCoord.y * 73.73 + depth * 3.73), alpha);
-	} else if (alpha < 0.99 && pass < 0.0 || alpha >= 0.99 && pass > 0.0) {
-		discard;
-	}
-	
-	//hidden
-	if (alpha <= 0.0) {
-		discard;
-	}
-	
-	//alpha disabled
-	if (pass == 0.0) {
-		alpha = 1.0;
+	if (ditherAlpha) {
+		if (alpha < fract(love_PixelCoord.x * 0.37 + love_PixelCoord.y * 73.73 + depth * 3.73)) {
+			discard;
+		} else {
+			alpha = 1.0;
+		}
 	}
 	
 #import vertexPixel
@@ -70,16 +60,8 @@ void effect() {
 	
 	//returns color
 	//requires alpha, col and normal
-	if (average_alpha) {
-		love_Canvases[0] = vec4(col * alpha, 1.0);
-		love_Canvases[1] = vec4(1.0, alpha, ior, 1.0);
-		#ifdef REFRACTION_ENABLED
-			love_Canvases[2] = vec4(normal, 1.0);
-		#endif
-	} else {
-		love_Canvases[0] = vec4(col, alpha);
-		love_Canvases[1] = vec4(depth, 1.0, 1.0, 1.0);
-	}
+	love_Canvases[0] = vec4(col, alpha);
+	love_Canvases[1] = vec4(depth, 1.0, 1.0, alpha);
 }
 #endif
 

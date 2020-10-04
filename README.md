@@ -6,7 +6,6 @@
 * PBR rendering (albedo, normal, roughness, metallic, ao, emission)
 * Phong shading (color, normal, glossiness, specular, ao, emission)
 * HDR with bloom
-* average alpha blending with approximated refraction
 * screen space ambient occlusion (ssao)
 * cubemap reflections
 * proper blurred reflections on rough surfaces
@@ -99,8 +98,7 @@ dream.textures_generateThumbnails = true  -- thumbnails are described in its own
 dream.msaa = 4                            -- multi sample anti aliasing, slightly more expensive but good results
 dream.fxaa = false                        -- fast approximated anti aliasing, fast but less good results
 dream.defaultShaderType = nil             -- if not specifally set, use this shader. Nil uses simple or phong, depending on wether the material has textures.
-dream.alphaBlendMode = "alpha"            -- average is slowest with order independent blending and optional refraction, "alpha" uses alpha blending with possible order-artefacts,
-                                          -- "dither" dithers between full and zero based on alpha and "disabled" only renders 100% alpha. "dither" and "disabled" only require one pass.
+dream.deferred = true                     -- if a deferred pipeline should be used. Required for advanced visuals like screen space reflections, refractions, deferred lighting and transmission effects
 dream.max_lights = 16                     -- max lights. The actual limit is light types and hardware dependend, this value just caps the light count.
 dream.nameDecoder = "blender"             -- imported objects often contain mesh data names appended to the actual name,, blender decoder removes them
 dream.frustumCheck = true                 -- enable automatic frustum check
@@ -115,7 +113,7 @@ dream.shadow_smooth = true                -- enables smooth shadows, required 20
 
 dream.reflections_resolution = 512        -- cubemap reflection resolution
 dream.reflections_format = "rgba16f"      -- reflection format, normal or rgba16f, where rgba16f preserves more detail in brightness
-dream.reflections_alphaBlendMode = "alpha"--//--
+dream.reflections_deferred = true         --//--
 dream.reflections_msaa = 4                -- multi sample antialiasing for reflections, else use fxaa if enabled
 dream.reflections_levels = 5              -- the count of mipmaps used, lower values cause incorrect blending between roughnesses, high values cause low quality on high roughnesses
 dream.reflection_downsample = 2           -- the factor of downsampling when bluring the cubemap. Should not be changed since the blur is calibrated.
@@ -301,8 +299,8 @@ Set `dream.sky_cube` to an CubeImage.
 Particles are batched and rendered all together.
 ```lua
 --create a particle batch
---pass a texture and the target pass. 1 means the texture is opaque and depth buffer can be used, 2 means its transparent. 2 is default and slower. Average alpha mode is currently not fully supported and might cause wrong ordering.
-local particleBatch = dream:newParticleBatch(texture, pass)
+--pass a texture and the alphaPass. alphaPass true uses z-sorting and is slower.
+local particleBatch = dream:newParticleBatch(texture, alphaPass)
 
 --set additional settings
 particleBatch.vertical = true  --vertical does only rotate the particle on the Y-axis, used for flames, ...
@@ -331,37 +329,10 @@ For the internal format see chapter .mat.
 
 
 ### transparent materials
-With set alpha blending, you have to tell the engine how the material has to be rendered. Set the `alpha` tag accordingly:
+With alpha, you have to tell the engine how the material has to be rendered. Set the `alpha` tag accordingly:
 ```lua
-mat.alpha = 0 --this is a solid material, no alpha at all. This is default.
-mat.alpha = 1 --this is a semi solid material. Render solid parts in the primary pass and render the rest in the second.
-mat.alpha = 2 --this is a fully transparent material. It only uses the second pass.
-```
-Alpha blending mode disabled and dither ignore those values.
-
-
-## alpha blend mode
-Alpha blending can be quite tricky, therefore 3Dream offers 4 different approaches, depending on your scene.
-There is a AlphaBlending demo to see those modes in action.
-Currently its only possible to use one method at a time.
-Dream.init() has to be called after changing.
-```
---uses a second render step and a set of canvases to perform an order independent average alpha
---note that this blend mode is by far more slow than the other modes
---if you do not have alpha components, use dither or disabled
---this also allows refractions, if enabled
-dream.alphaBlendMode = "average"
-
---sort the objects and render in a second step using alpha blending
---works mostly, but can screw up render order, especially within the same object
-dream.alphaBlendMode = "alpha"
-
---does not require a second step, but perform dithering based on alpha
-dream.alphaBlendMode = "dither"
-
---uses a threshold and avoid alpha at all
---known issues are linear interpolated mipmaps and alpha, since the interpolated parts are cut away.
-dream.alphaBlendMode = "disabled"
+mat.alpha = true  -- this material needs Z-sorting and alpha blending, optionally causes refractions and transmission colors if using deferred rendering
+mat.alpha = false -- this material is solid, alpha will be dithered
 ```
 
 

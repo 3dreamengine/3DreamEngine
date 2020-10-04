@@ -5,6 +5,12 @@ functions.lua - contains library relevant functions
 
 local lib = _3DreamEngine
 
+function lib:newScene()
+	return setmetatable({
+		tasks = { },
+	}, self.meta.scene)
+end
+
 function lib:newObject(path)
 	--get name and dir
 	local n = self:split(path, "/")

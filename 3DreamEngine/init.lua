@@ -94,7 +94,7 @@ lib.textures_generateThumbnails = true
 lib.colorFormat = "rgba16f"
 lib.msaa = 4
 lib.fxaa = false
-lib.alphaBlendMode = "alpha"
+lib.deferred = true
 lib.max_lights = 16
 lib.nameDecoder = "blender"
 lib.frustumCheck = true
@@ -108,7 +108,7 @@ lib.shadow_smooth = true
 
 lib.reflections_resolution = 512
 lib.reflections_format = "rgba16f"
-lib.reflections_alphaBlendMode = "dither"
+lib.reflection_deferred = true
 lib.reflections_msaa = 4
 lib.reflections_levels = 5
 lib.reflection_downsample = 2
@@ -152,6 +152,9 @@ lib.weather_temperature = 0.0
 
 --default camera
 lib.cam = lib:newCam()
+
+--default scene
+lib.scene = lib:newScene()
 
 lib.delton = require((...) .. "/libs/delton"):new(512)
 
@@ -198,13 +201,13 @@ if love.graphics then
 end
 
 --a canvas set is used to render a scene to
-function lib.newCanvasSet(self, w, h, msaa, alphaBlendMode, postEffects_enabled)
+function lib.newCanvasSet(self, w, h, msaa, deferred, postEffects_enabled)
 	local set = { }
 	
 	set.width = w
 	set.height = h
 	set.msaa = msaa
-	set.alphaBlendMode = alphaBlendMode
+	set.deferred = deferred
 	set.postEffects_enabled = postEffects_enabled
 	
 	--depth
@@ -216,13 +219,13 @@ function lib.newCanvasSet(self, w, h, msaa, alphaBlendMode, postEffects_enabled)
 	--depth
 	set.depth = love.graphics.newCanvas(w, h, {format = "r16f", readable = true, msaa = msaa})
 	
-	--layer count and seperate color canvas for average alpha blending
-	if alphaBlendMode == "average" then
-		set.color_pass2 = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa})       --r, g, b
-		set.data_pass2 = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa})        --steps, alpha, ior
-		if self.refraction_enabled then
-			set.normal_pass2 = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = msaa})  --xyz normal
-		end
+	--deferred rendering
+	if deferred then
+		--materials
+		set.position = love.graphics.newCanvas(w, h, {format = self.colorFormat, readable = true, msaa = msaa})
+		set.normal = love.graphics.newCanvas(w, h, {format = self.colorFormat, readable = true, msaa = msaa})
+		set.material = love.graphics.newCanvas(w, h, {format = self.colorFormat, readable = true, msaa = msaa})
+		set.albedo = love.graphics.newCanvas(w, h, {format = self.colorFormat, readable = true, msaa = msaa})
 	end
 	
 	--screen space ambient occlusion blurring canvases
@@ -266,8 +269,8 @@ function lib.resize(self, w, h)
 	self:unloadCanvasSet(self.canvases_reflections)
 	
 	--canvases sets
-	self.canvases = self:newCanvasSet(w, h, self.msaa, self.alphaBlendMode, true)
-	self.canvases_reflections = self:newCanvasSet(self.reflections_resolution, self.reflections_resolution, self.reflections_msaa, self.reflections_alphaBlendMode, false)
+	self.canvases = self:newCanvasSet(w, h, self.msaa, self.deferred, true)
+	self.canvases_reflections = self:newCanvasSet(self.reflections_resolution, self.reflections_resolution, self.reflections_msaa, self.reflections_deferred, false)
 	
 	--auto exposure scaling canvas
 	if self.autoExposure_enabled then
@@ -318,21 +321,28 @@ end
 
 --clears the current scene
 function lib.prepare(self)
-	--clear draw table
-	self.drawTable = { }
+	self.scenes = { }
+	
+	lib:drawScene(self.scene)
+	self.scene:clear()
+	
 	self.particles = { }
 	self.particlePresence = { }
+	
+	--keep track of reflections
 	self.reflections_last = self.reflections or { }
 	self.reflections = { }
+	
+	--shader modules referenced this frame
 	self.allActiveShaderModules = { }
 end
 
---add an object to the scene
+--add an object to the default scene
 local identityMatrix = mat4:getIdentity()
 function lib:draw(obj, x, y, z, sx, sy, sz)
 	self.delton:start("draw")
 	
-	self.delton:start("transform")
+	--prepare transform matrix
 	local transform
 	if x then
 		--simple transform with arguments, ignores object transformation matrix
@@ -351,42 +361,18 @@ function lib:draw(obj, x, y, z, sx, sy, sz)
 		--pre defined transform
 		transform = obj.transform or identityMatrix
 	end
-	self.delton:stop()
 	
+	--fetch current color
 	local col = vec4(love.graphics.getColor())
 	
 	--add to scene
-	self.delton:start("add")
-	for d,s in pairs(obj.objects or {obj}) do
-		if s.mesh and not s.disabled then
-			--get required shader
-			s.shader = self:getShaderInfo(s, obj)
-			
-			local pos
-			local bb = s.boundingBox
-			if bb then
-				--mat4 * vec3 multiplication, for performance reasons hardcoded
-				local a = bb.center
-				pos = vec3(transform[1] * a[1] + transform[2] * a[2] + transform[3] * a[3] + transform[4],
-					transform[5] * a[1] + transform[6] * a[2] + transform[7] * a[3] + transform[8],
-					transform[9] * a[1] + transform[10] * a[2] + transform[11] * a[3] + transform[12])
-			else
-				pos = vec3(transform[4], transform[8], transform[12])
-			end
-			
-			--add
-			table.insert(lib.drawTable, {
-				transform = transform, --transformation matrix, can be nil
-				pos = pos,             --bounding box center position of object
-				s = s,                 --drawable object
-				color = col,           --color, will affect color/albedo input
-				obj = obj,             --the object container used to store general informations (reflections, ...)
-				boneTransforms = obj.boneTransforms,
-			})
-		end
-	end
+	self.scene:add(obj, transform, col)
+	
 	self.delton:stop()
-	self.delton:stop()
+end
+
+function lib:drawScene(scene)
+	self.scenes[scene] = true
 end
 
 function lib:drawParticleBatch(batch)
@@ -394,7 +380,7 @@ function lib:drawParticleBatch(batch)
 	self.particles[batch] = true
 	
 	--enable particle rendering
-	self.particlePresence[batch.pass] = true
+	self.particlePresence[batch.alphaPass] = true
 end
 
 return lib

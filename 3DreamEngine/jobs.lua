@@ -353,8 +353,8 @@ function lib.executeJobs(self, cam)
 			o[4].shadow["transformation_" .. cascade] = shadowCam.transformProj
 			o[4].shadow.canvases[cascade] = o[4].shadow.canvases[cascade] or self:newShadowCanvas("sun", o[4].shadow.res)
 			
-			local scene = self:buildScene(shadowCam, 1, o[4].blacklist)
-			self:renderShadows(scene, shadowCam, {depthstencil = o[4].shadow.canvases[cascade]})
+			local sceneSolid = self:buildScene(shadowCam, "shadows", o[4].blacklist)
+			self:renderShadows(sceneSolid, shadowCam, {depthstencil = o[4].shadow.canvases[cascade]})
 			
 			o[4].shadow.done[cascade] = true
 		elseif o[1] == "shadow_point" then
@@ -379,8 +379,8 @@ function lib.executeJobs(self, cam)
 			--render
 			for face = 1, 6 do
 				local shadowCam = self:newCam(transformations[face], pointShadowProjectionMatrix, pos, lookNormals[face])
-				local scene = self:buildScene(shadowCam, 1, o[4].blacklist)
-				self:renderShadows(scene, shadowCam, {{o[4].shadow.canvas, face = face}})
+				local sceneSolid = self:buildScene(shadowCam, "shadows", o[4].blacklist)
+				self:renderShadows(sceneSolid, shadowCam, {{o[4].shadow.canvas, face = face}})
 			end
 			
 			o[4].shadow.done[1] = true
@@ -435,7 +435,7 @@ end
 
 function lib:take3DScreenshot(pos, resolution, path)
 	resolution = resolution or 512
-	local canvases = self:newCanvasSet(resolution, resolution, 8, self.alphaBlendMode, false)
+	local canvases = self:newCanvasSet(resolution, resolution, 8, self.deferred, false)
 	local results = love.graphics.newCanvas(resolution, resolution, {format = "rgba16f", type = "cube", mipmaps = "manual"})
 	
 	--view matrices

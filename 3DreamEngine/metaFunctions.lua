@@ -87,22 +87,82 @@ local shader = {
 	end
 }
 
+--sene functions
+local white = vec4(1.0, 1.0, 1.0, 1.0)
+local scene = {
+	clear = function(self)
+		self.tasks = { }
+	end,
+	
+	add = function(self, obj, transform, col)
+		if not transform then
+			transform = obj.transform
+		end
+		
+		--add to scene
+		for d,s in pairs(obj.objects or {obj}) do
+			if s.mesh and not s.disabled then
+				--get required shader
+				s.shader = lib:getShaderInfo(s, obj)
+				
+				--bounding box
+				local pos
+				local bb = s.boundingBox
+				if bb then
+					--mat4 * vec3 multiplication, for performance reasons hardcoded
+					local a = bb.center
+					pos = vec3(transform[1] * a[1] + transform[2] * a[2] + transform[3] * a[3] + transform[4],
+						transform[5] * a[1] + transform[6] * a[2] + transform[7] * a[3] + transform[8],
+						transform[9] * a[1] + transform[10] * a[2] + transform[11] * a[3] + transform[12])
+				else
+					pos = vec3(transform[4], transform[8], transform[12])
+				end
+				
+				--add
+				table.insert(self.tasks, {
+					transform = transform, --transformation matrix, can be nil
+					pos = pos,             --bounding box center position of object
+					s = s,                 --drawable object
+					color = col or white,  --color, will affect color/albedo input
+					obj = obj,             --the object container used to store general informations (reflections, ...)
+					boneTransforms = obj.boneTransforms,
+				})
+			end
+		end
+	end,
+}
+
+print("visibility functions not implemented yet")
+local visibility = {
+	setLoD = function(self, map)
+		
+	end,
+	setLoDDistance = function(self, distance)
+		
+	end,
+	setVisibility = function(self, render, shadow, reflections)
+		
+	end,
+}
+
 --link several metatables together
 local function link(...)
-	local mts = {...}
-	local m = {__index = mts[1]}
-	for i = 2, #mts do
-		m = {__index = setmetatable(mts[i], m)}
+	local m = { }
+	for _,meta in pairs({...}) do
+		for name, func in pairs(meta) do
+			m[name] = func
+		end
 	end
-	return m
+	return {__index = m}
 end
 
 --final meta tables
 lib.meta = {
 	cam = link(transforms),
-	object = link(transforms, shader),
-	subObject = link(shader),
+	object = link(transforms, shader, visibility),
+	subObject = link(shader, visibility),
 	material = link(shader),
 	cam = link(transforms),
 	light = link(light),
+	scene = link(scene, visibility),
 }
