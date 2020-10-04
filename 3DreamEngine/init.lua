@@ -328,7 +328,6 @@ function lib.prepare(self)
 	self.scene:clear()
 	
 	self.particles = { }
-	self.particlePresence = { }
 	
 	--keep track of reflections
 	self.reflections_last = self.reflections or { }
@@ -377,11 +376,7 @@ function lib:drawScene(scene)
 end
 
 function lib:drawParticleBatch(batch)
-	--register as to-draw
 	self.particles[batch] = true
-	
-	--enable particle rendering
-	self.particlePresence[batch.alphaPass] = true
 end
 
 return lib

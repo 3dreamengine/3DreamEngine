@@ -7,7 +7,7 @@ local lib = _3DreamEngine
 
 local lightTypes = { }
 local lastLightTyp = 0
-function lib:getLightOverview(cam)
+function lib:getLightOverview(cam, alphaPass)
 	--select the most important lights
 	for d,s in ipairs(self.lighting) do
 		s.active = false
@@ -19,7 +19,7 @@ function lib:getLightOverview(cam)
 	local lighting = { }
 	local lightRequirements = { }
 	for d,s in ipairs(self.lighting) do
-		local typ = s.typ .. "_" .. (s.shadow and "shadow" or "simple")
+		local typ = s.typ .. "_" .. (s.shadow and (not alphaPass or not s.shadow.noAlphaPass) and "shadow" or "simple")
 		if not lightTypes[typ] then
 			lightTypes[typ] = lastLightTyp
 			lastLightTyp = lastLightTyp + 1
@@ -28,12 +28,14 @@ function lib:getLightOverview(cam)
 		s.light_typ = typ
 		s.light_typ_id = lightTypes[typ]
 		
-		lightRequirements[typ] = (lightRequirements[typ] or 0) + 1
-		lighting[#lighting+1] = s
-		
-		s.active = true
-		if #lighting == self.max_lights then
-			break
+		if not alphaPass or not s.noAlphaPass then
+			lightRequirements[typ] = (lightRequirements[typ] or 0) + 1
+			lighting[#lighting+1] = s
+			
+			s.active = true
+			if #lighting == self.max_lights then
+				break
+			end
 		end
 	end
 	
@@ -42,7 +44,7 @@ function lib:getLightOverview(cam)
 	return lighting, lightRequirements
 end
 
-function lib:sendLightUniforms(lighting, lightRequirements, shader)
+function lib:sendLightUniforms(lighting, lightRequirements, shader, overwriteTyp)
 	--general settings
 	local lightColor = { }
 	local lightPos = { }
@@ -54,7 +56,7 @@ function lib:sendLightUniforms(lighting, lightRequirements, shader)
 	
 	--uniforms
 	for d,s in ipairs(lighting) do
-		local hide = self.shaderLibrary.light[s.light_typ]:sendUniforms(self, shader, info, s, d-1)
+		local hide = self.shaderLibrary.light[overwriteTyp or s.light_typ]:sendUniforms(self, shader, info, s, d-1)
 		if hide then
 			lightColor[d] = {0, 0, 0}
 			lightPos[d] = {0, 0, 0}

@@ -32,15 +32,15 @@ function sh:constructPixel(dream, info, ID)
 end
 
 function sh:sendGlobalUniforms(dream, shader, info, lighting, lightRequirements)
-	local first, last = 0, -1
+	local first, last = math.huge, -1
 	for d,s in ipairs(lighting) do
 		if s.light_typ == "point_simple" then
 			first = math.min(first, d)
 			last = math.max(last, d)
 		end
 	end
-	shader:send("firstSimpleLight", first)
-	shader:send("lastSimpleLight", math.min(last, first + dream.max_lights - 1))
+	shader:send("firstSimpleLight", first-1)
+	shader:send("lastSimpleLight", math.min(last, first + dream.max_lights - 1)-1)
 end
 
 function sh:sendUniforms(dream, shader, info, light, ID)

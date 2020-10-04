@@ -73,10 +73,12 @@ for d,s in ipairs(scene.positions) do
 		lights[d] = dream:newLight(s.x, s.y + 0.1, s.z, 1.0, 0.75, 0.3)
 		lights[d].shadow = dream:newShadow("point", true)
 		lights[d].shadow.size = 0.1
+		lights[d].shadow.noAlphaPass = true
 	elseif s.name == "FIRE" then
 		lights[d] = dream:newLight(s.x, s.y + 0.1, s.z, 1.0, 0.75, 0.2)
 		lights[d].shadow = dream:newShadow("point", true)
 		lights[d].shadow.size = 0.1
+		lights[d].shadow.noAlphaPass = true
 	end
 end
 

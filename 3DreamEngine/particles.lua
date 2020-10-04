@@ -94,13 +94,11 @@ local meta = {
 	end,
 }
 
-function lib:newParticleBatch(texture, alphaPass)
-	assert(type(alphaPass) ~= "number", "second parameter is now a boolean, wether to use the alpha pass or not")
+function lib:newParticleBatch(texture)
 	local p = { }
 	
 	p.texture = texture or 2
-	p.alphaPass = alphaPass or true
-	p.sort = p.alphaPass
+	p.sort = true
 	
 	p.instances = { }
 	

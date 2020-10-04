@@ -86,86 +86,25 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 	love.graphics.push("all")
 	love.graphics.reset()
 	
-	--render material pass
-	if canvases.deferred then
-		self.delton:start("geometry")
-		love.graphics.setDepthMode("less", true)
-		love.graphics.setBlendMode("replace", "premultiplied")
-		love.graphics.setCanvas({canvases.position, canvases.normal, canvases.material, canvases.albedo, depthstencil = canvases.depth_buffer})
-		love.graphics.clear(0, 0, 0, 0)
-		
-		--material draw
-		for shaderInfo, shaderGroup in pairs(sceneSolid) do
-			local shader = self:getShader(shaderInfo, false)
-			
-			--output settings
-			love.graphics.setShader(shader)
-			shader:send("ditherAlpha", pass == 1)
-			
-			--shader
-			local shaderEntry = self.shaderLibrary.base[shaderInfo.shaderType]
-			shaderEntry:perShader(self, shader, shaderInfo)
-			for d,s in pairs(shaderInfo.modules) do
-				s:perShader(self, shader, shaderInfo)
-			end
-			
-			--camera
-			shader:send("transformProj", cam.transformProj)
-			if shader:hasUniform("viewPos") then
-				shader:send("viewPos", viewPos)
-			end
-			
-			--for each material
-			for material, materialGroup in pairs(shaderGroup) do
-				--shader
-				shaderEntry:perMaterial(self, shader, shaderInfo, material)
-				for d,s in pairs(shaderInfo.modules) do
-					s:perMaterial(self, shader, shaderInfo, material)
-				end
-				
-				--culling
-				love.graphics.setMeshCullMode(canvases.cullMode or material.cullMode or "back")
-				
-				--draw objects
-				for _,task in pairs(materialGroup) do
-					--object transformation
-					shader:send("transform", task.transform)
-					
-					--shader
-					shaderEntry:perObject(self, shader, shaderInfo, task)
-					for d,s in pairs(shaderInfo.modules) do
-						s:perObject(self, shader, shaderInfo, task)
-					end
-					
-					--render
-					love.graphics.setColor(task.color)
-					love.graphics.draw(task.s.mesh)
-				end
-			end
-		end
-		self.delton:stop()
-		love.graphics.setColor(1.0, 1.0, 1.0)
-	end
-	
-	--clear depth canvas
 	if noSky then
-		love.graphics.setCanvas({canvases.color, canvases.depth, depthstencil = canvases.depth_buffer})
-		love.graphics.clear({0, 0, 0, 0}, {255, 0, 0, 0})
+		love.graphics.setCanvas(canvases.color)
+		love.graphics.clear()
 	else
-		--clear depth only
-		love.graphics.setCanvas({canvases.depth, depthstencil = canvases.depth_buffer})
-		love.graphics.clear(255, 0, 0, 0)
-		
 		--render sky
 		love.graphics.setCanvas(canvases.color)
 		self:renderSky(cam.transformProjOrigin)
-		
-		--set canvases
-		love.graphics.setCanvas({canvases.color, canvases.depth, depthstencil = canvases.depth_buffer})
+	end
+	
+	--clear
+	love.graphics.setCanvas({canvases.depth, depthstencil = canvases.depth_buffer})
+	love.graphics.clear()
+	if self.deferred and pass == 1 then
+		love.graphics.setCanvas({canvases.position, canvases.normaö, canvases.material, canvases.albedo})
+		love.graphics.clear()
 	end
 	
 	--prepare lighting
-	local lighting, lightRequirements = self:getLightOverview(cam)
+	local lighting, lightRequirements = self:getLightOverview(cam, canvases.deferred)
 	self.delton:stop()
 	
 	--start both passes
@@ -177,10 +116,16 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 		love.graphics.setDepthMode("less", pass == 1)
 		love.graphics.setBlendMode("alpha")
 		
+		if self.deferred and pass == 1 then
+			love.graphics.setCanvas({canvases.color, canvases.depth, canvases.position, canvases.normal, canvases.material, canvases.albedo, depthstencil = canvases.depth_buffer})
+		else
+			love.graphics.setCanvas({canvases.color, canvases.depth, depthstencil = canvases.depth_buffer})
+		end
+		
 		--final draw
 		for shaderInfo, shaderGroup in pairs(scene) do
 			self.delton:start("shader")
-			local shader = noLight and self:getShader(shaderInfo) or self:getShader(shaderInfo, lighting, lightRequirements)
+			local shader = noLight and self:getShader(shaderInfo, false) or self:getShader(shaderInfo, lighting, lightRequirements)
 			
 			--output settings
 			love.graphics.setShader(shader)
@@ -272,10 +217,12 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 		love.graphics.setColor(1.0, 1.0, 1.0)
 		
 		--light
-		if canvases.deferred then
+		if canvases.deferred and pass == 1 then
 			local types = { }
 			local batches = { }
 			for _,s in ipairs(self.lighting) do
+				s.active = true
+				
 				local typ = s.typ .. "_" .. (s.shadow and "shadow" or "simple")
 				types[typ] = (types[typ] or 0) + 1
 				
@@ -305,39 +252,34 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 					shader:send("tex_material", canvases.material)
 				end
 				
-				lib:sendLightUniforms(batch, {[batch.typ] = #batch}, shader)
+				lib:sendLightUniforms(batch, {[batch.typ] = #batch}, shader, batch.typ)
 				love.graphics.draw(canvases.albedo)
 			end
 			love.graphics.setBlendMode("alpha")
-			love.graphics.setCanvas({canvases.color, canvases.depth, depthstencil = canvases.depth_buffer})
-		end
-		
-		--particles
-		if self.particlePresence[pass == 2] then
-			self.delton:start("particles")
-			love.graphics.setShader(self.shaders.particle)
-			self.shaders.particle:send("transform", cam.transformProj)
-			
-			for d,s in pairs(self.particles) do
-				if d.alphaPass == (pass == 2) then
-					local right, up
-					if self.vertical then
-						up = vec3(0, 1, 0)
-						right = vec3(right.x, 0, right.z):normalize()
-					else
-						right = vec3(cam.transform[1], cam.transform[2], cam.transform[3])
-						up = vec3(cam.transform[5], cam.transform[6], cam.transform[7])
-					end
-					
-					self.shaders.particle:send("up", {up:unpack()})
-					self.shaders.particle:send("right", {right:unpack()})
-					d:present(cam.pos)
-				end
-			end
-			
-			self.delton:stop()
 		end
 	end
+	
+	--particles
+	self.delton:start("particles")
+	love.graphics.setShader(self.shaders.particle)
+	self.shaders.particle:send("transform", cam.transformProj)
+	
+	for d,s in pairs(self.particles) do
+		local right, up
+		if self.vertical then
+			up = vec3(0, 1, 0)
+			right = vec3(right.x, 0, right.z):normalize()
+		else
+			right = vec3(cam.transform[1], cam.transform[2], cam.transform[3])
+			up = vec3(cam.transform[5], cam.transform[6], cam.transform[7])
+		end
+		
+		self.shaders.particle:send("up", {up:unpack()})
+		self.shaders.particle:send("right", {right:unpack()})
+		d:present(cam.pos)
+	end
+	
+	self.delton:stop()
 	
 	love.graphics.pop()
 end

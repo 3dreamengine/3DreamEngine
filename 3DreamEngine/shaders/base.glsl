@@ -52,9 +52,9 @@ void effect() {
 #import mainPixel
 #import modulesPixel
 
-#ifndef DEFERRED
 #import mainPixelPost
 	
+#ifndef DEFERRED
 	//forward lighting
 	vec3 light = vec3(0.0);
 #import lightingSystem
@@ -64,14 +64,15 @@ void effect() {
 #endif
 	
 	//returns color
-#ifdef DEFERRED
-	love_Canvases[0] = vec4(vertexPos, albedo.a);
-	love_Canvases[1] = vec4(normal, albedo.a);
-	love_Canvases[2] = vec4(material, albedo.a);
-	love_Canvases[3] = albedo;
-#else
 	love_Canvases[0] = vec4(col, albedo.a);
 	love_Canvases[1] = vec4(depth, 1.0, 1.0, albedo.a);
+	
+#ifdef DEFERRED
+	love_Canvases[2] = vec4(vertexPos, albedo.a);
+	love_Canvases[3] = vec4(normal, albedo.a);
+	love_Canvases[4] = vec4(material, albedo.a);
+	love_Canvases[5] = albedo;
+#else
 #endif
 }
 #endif
