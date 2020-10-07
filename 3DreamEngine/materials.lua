@@ -8,15 +8,17 @@ local lib = _3DreamEngine
 --creates an empty material
 function lib.newMaterial(self, name, dir)
 	return {
-		color = {0.5, 0.5, 0.5, 1.0}, --base color
-		glossiness = 0.1,             --used for vertex color based shader
-		specular = 0.5,               --used for vertex color based shader
-		emission = false,             --used vertex color based shader
-		alpha = false,                --decides on what pass it will go
+		color = {0.5, 0.5, 0.5, 1.0},
+		glossiness = 0.1,
+		specular = 0.5,
+		emission = {0.0, 0.0, 0.0},
+		roughness = 0.5,
+		metallic = 0.0,
+		alpha = false,
 		name = name or "None",        --name, used for texture linking
 		dir = dir,                    --directory, used for texture linking
 		obj = false,                  --object to which the material is assigned to. If it is false, it is most likely a public material from the material library.
-		ior = 1.0,                    --used for second pass refractions, should be used on full-object glass like diamonds only, else it might reflect itself, which is incorrect
+		ior = 1.0,
 	}
 end
 
@@ -60,6 +62,16 @@ function lib.loadMaterialLibrary(self, path, prefix)
 end
 
 --link textures to material
+local function texSetter(mat, typ, tex)
+	--use the setter function to overwrite color
+	local func = "set" .. typ:sub(1, 1):upper() .. typ:sub(2) .. "Tex"
+	if mat[func] then
+		mat[func](mat, tex)
+	else
+		mat["tex_" .. typ] = tex
+	end
+end
+
 function lib:finishMaterial(mat, obj)
 	setmetatable(mat, self.meta.material)
 	
@@ -68,7 +80,7 @@ function lib:finishMaterial(mat, obj)
 		mat["tex_" .. typ] = nil
 		if custom then
 			if type(custom) == "userdata" then
-				mat["tex_" .. typ] = custom
+				texSetter(mat, typ, custom)
 			else
 				--path specified
 				custom = custom and custom:match("(.+)%..+") or custom
@@ -77,7 +89,7 @@ function lib:finishMaterial(mat, obj)
 					(mat.dir and (mat.dir .. "/") or "") .. custom,
 				}) do
 					if self.images[p] then
-						mat["tex_" .. typ] = self.images[p]
+						texSetter(mat, typ, self.images[p])
 						break
 					end
 				end
@@ -89,7 +101,7 @@ function lib:finishMaterial(mat, obj)
 			if images then
 				for i,v in pairs(images) do
 					if string.find(i, typ) then
-						mat["tex_" .. typ] = v
+						texSetter(mat, typ, v)
 						break
 					end
 				end
@@ -104,13 +116,14 @@ function lib:finishMaterial(mat, obj)
 				dir .. obj.name .. "_" .. typ,      	  -- e.g. "materialDirectory/objectName_albedo.png"
 			}) do
 				if self.images[p] then
-					mat["tex_" .. typ] = self.images[p]
+					texSetter(mat, typ, self.images[p])
 					break
 				end
 			end
 		end
 	end
 	
+	--combiner
 	if not mat["tex_" .. "combined"] then
 		local metallicRoughness = mat["tex_metallic"] or mat["tex_roughness"]
 		local specularGlossiness = mat["tex_specular"] or mat["tex_glossiness"]

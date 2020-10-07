@@ -23,6 +23,7 @@ function lib:newObject(path)
 		},
 		objects = { },
 		positions = { },
+		lights = { },
 		args = { },
 		
 		path = path, --absolute path to object
@@ -36,7 +37,7 @@ end
 
 function lib:newSubObject(name, obj, mat)
 	--guess shaderType if not specified based on textures used
-	local shaderType = obj.shaderType
+	local shaderType = obj.args.shaderType
 	if not shaderType then
 		if lib.defaultShaderType then
 			shaderType = lib.defaultShaderType
@@ -164,9 +165,10 @@ function lib:newLight(posX, posY, posZ, r, g, b, brightness, typ)
 		x = posX or 0,
 		y = posY or 0,
 		z = posZ or 0,
-		r = r / v,
-		g = g / v,
-		b = b / v,
+		r = v == 0 and 0 or r / v,
+		g = v == 0 and 0 or g / v,
+		b = v == 0 and 0 or b / v,
+		smooth = nil,
 		brightness = brightness or 1.0,
 	}
 	
@@ -471,6 +473,10 @@ function lib:getCollisionData(object)
 	n.transform = object.boundingBox and object.boundingBox.center or vec3(0, 0, 0)
 	n.boundary = 0
 	
+	if object.transform then
+		n.transform = object.transform * n.transform
+	end
+	
 	--data
 	n.faces = { }
 	n.normals = { }
@@ -480,9 +486,9 @@ function lib:getCollisionData(object)
 	hashes = { }
 	for d,s in ipairs(object.faces) do
 		--vertices
-		local a = vec3(object.vertices[s[1]]) - n.transform
-		local b = vec3(object.vertices[s[2]]) - n.transform
-		local c = vec3(object.vertices[s[3]]) - n.transform
+		local a = (object.transform and object.transform * vec3(object.vertices[s[1]]) or vec3(object.vertices[s[1]])) - n.transform
+		local b = (object.transform and object.transform * vec3(object.vertices[s[2]]) or vec3(object.vertices[s[2]])) - n.transform
+		local c = (object.transform and object.transform * vec3(object.vertices[s[3]]) or vec3(object.vertices[s[3]])) - n.transform
 		
 		--face normal
 		local normal = (b-a):cross(c-a):normalize()

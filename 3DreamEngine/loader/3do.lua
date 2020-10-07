@@ -16,7 +16,7 @@ return function(self, obj, path)
 	
 	do
 		print("3DOs are currently disabled until compatibility has been restored")
-		return
+		return true
 	end
 	
 	local compressed = file:read(4)

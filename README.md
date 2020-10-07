@@ -103,7 +103,6 @@ dream.max_lights = 16                     -- max lights. The actual limit is lig
 dream.nameDecoder = "blender"             -- imported objects often contain mesh data names appended to the actual name,, blender decoder removes them
 dream.frustumCheck = true                 -- enable automatic frustum check
 dream.LoDDistance = 100                   -- LoD reference distance
-dream.defaultShaderType = nil             -- use this shader type if not specified in the loader args
 
 dream.shadow_resolution = 1024            -- cascade shadow resolution
 dream.shadow_cube_resolution = 512        -- cube map shadow resolution

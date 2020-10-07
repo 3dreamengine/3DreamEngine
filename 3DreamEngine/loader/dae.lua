@@ -21,18 +21,10 @@ end
 --load entire tree and index all IDs
 local indices
 local localToGlobal
-local materialInstances
 local function indexTree(node)
 	for key,child in pairs(node) do
 		if type(child) == "table" and key ~= "_attr" then
 			indexTree(child)
-		end
-		
-		--extracting those material links I do not fully understand yet
-		if key == "instance_material" then
-			for _,c in ipairs(child) do
-				materialInstances[c._attr.symbol] = c._attr.target:sub(2)
-			end
 		end
 	end
 	
@@ -60,12 +52,13 @@ return function(self, obj, path)
 	--get id indices
 	indices = { }
 	localToGlobal = { }
-	materialInstances = { }
 	indexTree(root)
+	
 	
 	--load armatures and vertex weights
 	local armatures = { }
-	if root.library_controllers[1] then
+	local controllers = { }
+	if root.library_controllers then
 		for d,s in ipairs(root.library_controllers[1].controller) do
 			if s.skin then
 				local name = s.skin[1]._attr.source:sub(2)
@@ -75,6 +68,7 @@ return function(self, obj, path)
 					jointIDs = { },
 				}
 				armatures[name] = a
+				controllers[s._attr.id] = name
 				
 				--load sources
 				local weights = { }
@@ -178,16 +172,25 @@ return function(self, obj, path)
 						if step ~= "_attr" then
 							local data = dataArr[1]
 							if data.emission then
-								local color = loadFloatArray( data.emission[1].color[1][1] )
-								material.emission = {color[1] * color[4], color[2] * color[4], color[3] * color[4]}
+								local e = data.emission[1]
+								if e.color then
+									local color = loadFloatArray( e.color[1][1] )
+									material.emission = {color[1] * color[4], color[2] * color[4], color[3] * color[4]}
+								end
 							end
 							if data.diffuse then
-								local color = loadFloatArray( data.diffuse[1].color[1][1] )
-								material.color = color
+								local d = data.diffuse[1]
+								if d.color then
+									local color = loadFloatArray( d.color[1][1] )
+									material.color = color
+								end
 							end
 							if data.specular then
-								local color = loadFloatArray( data.specular[1].color[1][1] )
-								material.specular = math.sqrt(color[1]^2 + color[2]^2 + color[3]^2)
+								local s = data.specular[1]
+								if s.color then
+									local color = loadFloatArray( s.color[1][1] )
+									material.specular = math.sqrt(color[1]^2 + color[2]^2 + color[3]^2)
+								end
 							end
 							if data.shininess then
 								material.glossiness = tonumber( data.shininess[1].float[1][1] )
@@ -204,10 +207,11 @@ return function(self, obj, path)
 	
 	
 	--load main geometry
+	local meshData = { }
 	for d,geo in ipairs(root.library_geometries[1].geometry) do
-		local o = self:newSubObject(geo._attr.id, obj, self:newMaterial())
 		local mesh = geo.mesh[1]
-		obj.objects[o.name] = o
+		local id = geo._attr.id
+		meshData[id] = meshData[id] or { }
 		
 		--translation table
 		local translate = {
@@ -217,14 +221,9 @@ return function(self, obj, path)
 			["COLOR"] = "colors",
 		}
 		
-		--expand armature to all vertices
-		if armatures[o.name] then
-			o.weights = { }
-			o.joints = { }
-			o.jointIDs = armatures[o.name].jointIDs
-		end
-		
 		--parse vertices
+		local o
+		local lastMaterial
 		local index = 0
 		for typ = 1, 3 do
 			local list
@@ -237,7 +236,23 @@ return function(self, obj, path)
 			end
 			if list then
 				for _,l in ipairs(list) do
-					o.material = indices[l._attr.material] or indices[materialInstances[l._attr.material]] or o.material
+					local mat = indices[l._attr.material] or obj.materials.None
+					local material = self.materialLibrary[mat.name] or mat
+					if obj.args.splitMaterials then
+						o = self:newSubObject(geo._attr.id, obj, material)
+						meshData[id][#meshData[id]+1] = o
+						index = 0
+					elseif not o then
+						o = self:newSubObject(geo._attr.id, obj, material)
+						meshData[id][#meshData[id]+1] = o
+					end
+					
+					--connect with armature
+					if armatures[o.name] and not o.weights then
+						o.weights = { }
+						o.joints = { }
+						o.jointIDs = armatures[o.name].jointIDs
+					end
 					
 					--ids of source components per vertex
 					local ids
@@ -276,7 +291,7 @@ return function(self, obj, path)
 									--xy vector
 									o[f][index+i] = {
 										s[id*2+1],
-										s[id*2+2],
+										1.0-s[id*2+2],
 									}
 								elseif f == "colors" then
 									--rgba vector
@@ -288,17 +303,17 @@ return function(self, obj, path)
 									}
 								else
 									--xyz vectors
-									o[f][index+i] = correction * vec3(
+									o[f][index+i] = {
 										s[id*3+1],
 										s[id*3+2],
 										s[id*3+3]
-									)
+									}
 									
 									--also connect weight and joints
 									if f == "vertices" and o.weights then
 										o.weights[index+i] = armatures[o.name].weights[id+1]
 										o.joints[index+i] = armatures[o.name].joints[id+1]
-										o.materials[index+i] = o.material
+										o.materials[index+i] = material
 									end
 								end
 							end
@@ -328,22 +343,67 @@ return function(self, obj, path)
 		end
 	end
 	
-	--load skeleton
-	local rootJoint
+	
+	--load light
+	local lightIDs = { }
+	if root.library_lights then
+		for d,light in ipairs(root.library_lights[1].light) do
+			local l = self:newLight()
+			lightIDs[light._attr.id] = l
+			
+			if light.extra and light.extra[1] and light.extra[1].technique and light.extra[1].technique[1] then
+				local dat = light.extra[1].technique[1]
+				
+				l:setColor(dat.red and tonumber(dat.red[1][1]) or 1.0, dat.green and tonumber(dat.green[1][1]) or 1.0, dat.blue and tonumber(dat.blue[1][1]) or 1.0)
+				l:setBrightness(dat.energy and tonumber(dat.energy[1][1]) or 1.0)
+			end
+			
+			table.insert(obj.lights, l)
+		end
+	end
+	
+	local function addObject(name, mesh, transform)
+		for _,subObject in ipairs(meshData[mesh]) do
+			if obj.args.splitMaterials then
+				name = name .. "_" .. subObject.material.name
+			end
+			obj.objects[name] = subObject:clone()
+			obj.objects[name].transform = correction * transform
+		end
+	end
+	
+	
+	--load scene
 	for d,s in ipairs(root.library_visual_scenes[1].visual_scene[1].node) do
 		obj.joints = { }
-		if s._attr.name == "Armature" then
+		if s.instance_geometry then
+			--object
+			local id = s.instance_geometry[1]._attr.url:sub(2)
+			local name = s._attr.name or s._attr.id
+			local transform = mat4(loadFloatArray(s.matrix[1][1]))
+			addObject(name, id, transform)
+		elseif s.instance_light then
+			local transform = correction * mat4(loadFloatArray(s.matrix[1][1]))
+			local l = lightIDs[s.instance_light[1]._attr.url:sub(2)]
+			l:setPosition(transform[4], transform[8], transform[12])
+		elseif s._attr.name == "Armature" then
+			--propably an armature
+			--TODO: not a proper way to identify armature nodes
 			local function skeletonLoader(nodes, parentTransform)
 				local skel = { }
 				for d,s in ipairs(nodes) do
+					if s.instance_controller then
+						--object associated with skeleton
+						local id = s.instance_controller[1]._attr.url:sub(2)
+						local mesh = controllers[id]
+						local name = s._attr.name or s._attr.id
+						local transform = mat4(loadFloatArray(s.matrix[1][1]))
+						addObject(name, mesh, transform)
+					end
 					if s._attr.type == "JOINT" then
 						local name = s._attr.id
 						
 						local m = mat4(loadFloatArray(s.matrix[1][1]))
-						if not parentTransform then
-							m = correction * m
-							rootJoint = name
-						end
 						local bindTransform = parentTransform and parentTransform * m or m
 						
 						skel[name] = {
@@ -364,6 +424,7 @@ return function(self, obj, path)
 			break
 		end
 	end
+	
 	
 	--load animations
 	if root.library_animations then
@@ -390,9 +451,6 @@ return function(self, obj, path)
 					local positions = { }
 					for i = 1, #sources.OUTPUT / 16 do
 						local m = mat4(unpack(sources.OUTPUT, i*16-15, i*16))
-						if name == rootJoint then
-							m = correction * m
-						end
 						frames[#frames+1] = {
 							time = sources.INPUT[i],
 							interpolations = sources.INTERPOLATION[i],
@@ -434,8 +492,4 @@ return function(self, obj, path)
 			}
 		end
 	end
-	
-	--load cameras
-	
-	--load light
 end

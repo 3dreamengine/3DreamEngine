@@ -26,6 +26,14 @@ function lib:loadObject(path, shaderType, args)
 	args = args or { }
 	args.shaderType = shaderType or args.shaderType
 	
+	--some shaderType specific settings
+	if args.shaderType then
+		local dat = self.shaderLibrary.base[args.shaderType]
+		if args.splitMaterials == nil then
+			args.splitMaterials = dat.splitMaterials
+		end
+	end
+	
 	local supportedFiles = {
 		"mtl", --obj material file
 		"mat", --3DreamEngine material file
@@ -244,9 +252,10 @@ function lib:loadObject(path, shaderType, args)
 	
 	--extract collisions
 	for dd,s in pairs(obj.objects) do
-		local pos = s.name:find("COLLISION")
+		local pos = dd:find("COLLISION")
 		if pos then
-			local d = #s.name:sub(pos + 10) == 0 and "collision" or s.name:sub(pos + 10)
+			local d = #dd:sub(pos + 10) == 0 and "collision" or dd:sub(pos + 10)
+			
 			obj.collisions = obj.collisions or { }
 			obj.collisionCount = (obj.collisionCount or 0) + 1
 			obj.collisions[d] = self:getCollisionData(s)
@@ -264,9 +273,16 @@ function lib:loadObject(path, shaderType, args)
 	
 	--create meshes
 	if not obj.args.noMesh then
+		local cache = { }
 		for d,o in pairs(obj.objects) do
 			if not o.disabled then
-				self:createMesh(o)
+				if cache[o.vertices] then
+					o.mesh = cache[o.vertices].mesh
+					o.tangents = cache[o.vertices].tangents
+				else
+					self:createMesh(o)
+					cache[o.vertices] = o
+				end
 			end
 		end
 	end
@@ -351,7 +367,7 @@ function lib.createMesh(self, o)
 	o.mesh:setVertexMap(vertexMap)
 	
 	--set vertices
-	local empty = {0, 0, 0, 0}
+	local empty = {1, 0, 1, 1}
 	for i = 1, #o.vertices do
 		local vertex = o.vertices[i] or empty
 		local normal = o.normals[i] or empty
@@ -381,7 +397,7 @@ function lib.createMesh(self, o)
 			local glossiness = material.glossiness or material[2] or 0
 			local emission = material.emission or material[3] or 0
 			if type(emission) == "table" then
-				emission = emission[1] * 0.33 + emission[2] * 0.33 + emission[3] * 0.33
+				emission = emission[1] / 3 + emission[2] / 3 + emission[3] / 3
 			end
 			
 			o.mesh:setVertex(i,

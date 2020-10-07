@@ -109,6 +109,7 @@ end
 function lib.loadShader(self)
 	self.shaders.final = { }
 	self.mainShaders = { }
+	self.mainShaderCount = 0
 
 	--the ambient occlusion shader
 	local code = (
@@ -261,7 +262,7 @@ function lib:getShader(info, lighting, lightRequirements)
 				lightRequirementIDs[d] = 16 ^ lastID
 				lastID = lastID + 1
 			end
-			ID = ID + lightRequirementIDs[d] * s
+			ID = ID + lightRequirementIDs[d] * (dream.shaderLibrary.light[d].batchable and 1 or s)
 		end
 	end
 	if not info.shaders[ID] then
@@ -318,6 +319,9 @@ function lib:getShader(info, lighting, lightRequirements)
 		
 		--compile
 		info.shaders[ID] = love.graphics.newShader(code)
+		
+		--count
+		self.mainShaderCount = self.mainShaderCount + 1
 	end
 	
 	return info.shaders[ID]

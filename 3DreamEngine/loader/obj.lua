@@ -29,7 +29,7 @@ return function(self, obj, path, loadAsCollisions)
 		elseif v[1] == "vt" then
 			texture[#texture+1] = {tonumber(v[2]), 1.0 - tonumber(v[3])}
 		elseif v[1] == "usemtl" then
-			material = obj.materials[l:sub(8)] or self.materialLibrary[l:sub(8)] or obj.materials.None
+			material = self.materialLibrary[l:sub(8)] or obj.materials[l:sub(8)] or obj.materials.None
 			
 			--if required, start a new object
 			if obj.args.splitMaterials and not o.name:find("COLLISION") and not loadAsCollisions then

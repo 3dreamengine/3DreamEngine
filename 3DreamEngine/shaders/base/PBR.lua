@@ -201,10 +201,10 @@ function sh:perMaterial(dream, shader, info, material)
 	local tex = dream.textures
 	
 	shader:send("tex_albedo", dream:getTexture(material.tex_albedo) or tex.default)
-	shader:send("color_albedo", (material.tex_albedo and {1.0, 1.0, 1.0, material.color[4]} or material.color and {material.color[1], material.color[2], material.color[3], material.color[4] or 1.0} or {1.0, 1.0, 1.0, 1.0}))
+	shader:send("color_albedo", material.color)
 	
 	shader:send("tex_combined", dream:getTexture(material.tex_combined) or tex.default)
-	shader:send("color_combined", {material.tex_roughness and 1.0 or material.roughness or 0.5, material.tex_metallic and 1.0 or material.metallic or 0.5, 1.0})
+	shader:send("color_combined", {material.roughness, material.metallic, 1.0})
 	
 	if info.tex_normal then
 		shader:send("tex_normal", dream:getTexture(material.tex_normal) or tex.default_normal)
@@ -214,7 +214,7 @@ function sh:perMaterial(dream, shader, info, material)
 		shader:send("tex_emission", dream:getTexture(material.tex_emission) or tex.default)
 	end
 	if shader:hasUniform("color_emission") then
-		shader:send("color_emission", material.emission or (info.tex_emission and {5.0, 5.0, 5.0}) or {0.0, 0.0, 0.0})
+		shader:send("color_emission", material.emission)
 	end
 end
 

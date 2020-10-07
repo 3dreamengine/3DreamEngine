@@ -163,9 +163,9 @@ end
 
 --default textures
 if love.graphics then
-	lib.object_sky = lib:loadObject(lib.root .. "/objects/sky", {shaderType = "Phong"})
-	lib.object_cube = lib:loadObject(lib.root .. "/objects/cube", {shaderType = "simple"})
-	lib.object_plane = lib:loadObject(lib.root .. "/objects/plane", {shaderType = "Phong"})
+	lib.object_sky = lib:loadObject(lib.root .. "/objects/sky", "Phong", {splitMaterials = false})
+	lib.object_cube = lib:loadObject(lib.root .. "/objects/cube", "simple", {splitMaterials = false})
+	lib.object_plane = lib:loadObject(lib.root .. "/objects/plane", "Phong", {splitMaterials = false})
 	
 	local pix = love.image.newImageData(2, 2)
 	lib.textures = {
@@ -295,10 +295,12 @@ end
 
 --applies settings and load canvases
 function lib.init(self, w, h)
-	local width, height, flags = love.window.getMode()
-	if flags.depth == 0 then
-		print("Direct render is enabled, but there is no depth buffer! Using 16-bit depth from now on.")
-		love.window.updateMode(width, height, {depth = 16})
+	if self.direct then
+		local width, height, flags = love.window.getMode()
+		if flags.depth == 0 then
+			print("Direct render is enabled, but there is no depth buffer! Using 16-bit depth from now on.")
+			love.window.updateMode(width, height, {depth = 16})
+		end
 	end
 	
 	if self.autoExposure_enabled and self.direct then
@@ -341,7 +343,6 @@ function lib.prepare(self)
 end
 
 --add an object to the default scene
-local identityMatrix = mat4:getIdentity()
 function lib:draw(obj, x, y, z, sx, sy, sz)
 	self.delton:start("draw")
 	
@@ -356,13 +357,13 @@ function lib:draw(obj, x, y, z, sx, sy, sz)
 			0, 0, 0, 1
 		)
 		
-		--also applies objects own transformation
+		--also applies objects own transformation if present
 		if obj.transform then
 			transform = transform * obj.transform
 		end
 	else
 		--pre defined transform
-		transform = obj.transform or identityMatrix
+		transform = obj.transform
 	end
 	
 	--fetch current color
