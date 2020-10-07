@@ -159,10 +159,10 @@ end
 local sh_final = love.filesystem.read(lib.root .. "/shaders/final.glsl")
 function lib.getFinalShader(self, canvases)
 	local parts = { }
-	parts[#parts+1] = canvases.postEffects_enabled and "#define POSTEFFECTS_ENABLED" or nil
-	parts[#parts+1] = canvases.postEffects_enabled and self.autoExposure_enabled and "#define AUTOEXPOSURE_ENABLED" or nil
-	parts[#parts+1] = canvases.postEffects_enabled and self.exposure > 0 and "#define EXPOSURE_ENABLED" or nil
-	parts[#parts+1] = canvases.postEffects_enabled and self.bloom_enabled and "#define BLOOM_ENABLED" or nil
+	parts[#parts+1] = canvases.postEffects and "#define POSTEFFECTS_ENABLED" or nil
+	parts[#parts+1] = canvases.postEffects and self.autoExposure_enabled and "#define AUTOEXPOSURE_ENABLED" or nil
+	parts[#parts+1] = canvases.postEffects and self.exposure > 0 and "#define EXPOSURE_ENABLED" or nil
+	parts[#parts+1] = canvases.postEffects and self.bloom_enabled and "#define BLOOM_ENABLED" or nil
 	
 	parts[#parts+1] = self.fog_enabled and "#define FOG_ENABLED" or nil
 	

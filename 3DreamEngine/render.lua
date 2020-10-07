@@ -84,9 +84,11 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 	
 	--clear and set canvases
 	love.graphics.push("all")
-	love.graphics.reset()
+	if not canvases.direct then
+		love.graphics.reset()
+	end
 	
-	if self.direct then
+	if canvases.direct then
 		if not noSky then
 			self:renderSky(cam.transformProjOrigin)
 		end
@@ -102,7 +104,7 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 	end
 	
 	--clear
-	if not self.direct then
+	if not canvases.direct then
 		love.graphics.setCanvas({canvases.depth, depthstencil = canvases.depth_buffer})
 		love.graphics.clear()
 		if self.deferred and pass == 1 then
@@ -125,7 +127,7 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 		love.graphics.setBlendMode("alpha")
 		
 		--set canvases
-		if not self.direct then
+		if not canvases.direct then
 			if self.deferred and pass == 1 then
 				love.graphics.setCanvas({canvases.color, canvases.depth, canvases.position, canvases.normal, canvases.material, canvases.albedo, depthstencil = canvases.depth_buffer})
 			else
@@ -330,7 +332,9 @@ end
 --full render, including bloom, fxaa, exposure and gamma correction
 function lib:renderFull(cam, canvases, noSky, blacklist)
 	love.graphics.push("all")
-	love.graphics.reset()
+	if not canvases.direct then
+		love.graphics.reset()
+	end
 	
 	--generate scene
 	self.delton:start("scene")
@@ -342,7 +346,7 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 	self:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 	self.delton:stop()
 	
-	if self.direct then
+	if canvases.direct then
 		love.graphics.pop()
 		return
 	end
@@ -371,7 +375,7 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 	end
 	
 	--bloom
-	if canvases.postEffects_enabled and self.bloom_enabled then
+	if canvases.postEffects and self.bloom_enabled then
 		--down sample
 		love.graphics.setCanvas(canvases.canvas_bloom_1)
 		love.graphics.clear()
@@ -469,7 +473,7 @@ function lib:present(noSky, cam, canvases)
 	local b = -t
 	local projection = mat4(
 		2*n / (r-l),   0,              (r+l) / (r-l),     0,
-		0,             2*n / (t - b) * (self.direct and 1 or -1),  (t+b) / (t-b),     0,
+		0,             2*n / (t - b) * (canvases.direct and 1 or -1),  (t+b) / (t-b),     0,
 		0,             0,              -(f+n) / (f-n),    -2*f*n / (f-n),
 		0,             0,              -1,                0
 	)

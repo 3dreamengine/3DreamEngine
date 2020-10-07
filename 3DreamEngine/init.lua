@@ -31,7 +31,7 @@ lib.ffi = require("ffi")
 _3DreamEngine = lib
 lib.root = (...)
 require((...) .. "/functions")
-require((...) .. "/metaFunctions")
+require((...) .. "/classes")
 require((...) .. "/shader")
 require((...) .. "/loader")
 require((...) .. "/materials")
@@ -103,12 +103,16 @@ lib.shadow_distance = 8
 lib.shadow_factor = 4
 lib.shadow_smooth = true
 
-lib.reflections_resolution = 512
-lib.reflections_format = "rgba16f"
-lib.reflection_deferred = true
-lib.reflections_msaa = 4
+--canvas set settings
+lib.default_settings = lib:newSetSettings()
+
+lib.reflections_settings = lib:newSetSettings()
+lib.reflections_settings:setDirect(true)
+
+lib.mirror_settings = lib:newSetSettings()
+lib.mirror_settings:setDirect(true)
+
 lib.reflections_levels = 5
-lib.reflection_downsample = 2
 
 lib.gamma = 1.0
 lib.exposure = 1.0
@@ -198,45 +202,48 @@ if love.graphics then
 end
 
 --a canvas set is used to render a scene to
-function lib.newCanvasSet(self, w, h, msaa, deferred, postEffects_enabled)
+function lib.newCanvasSet(self, settings, w, h)
 	local set = { }
+	w = w or settings.resolution
+	h = h or settings.resolution
 	
+	--settings
 	set.width = w
 	set.height = h
-	set.msaa = msaa
-	set.deferred = deferred
-	set.postEffects_enabled = postEffects_enabled and not self.direct
+	set.msaa = settings.msaa
+	set.direct = settings.direct
+	set.deferred = settings.deferred and not set.direct
+	set.postEffects = settings.postEffects and not set.direct
 	
-	assert(not deferred or not self.direct, "Deferred rendering is not compatible with direct rendering!")
+	assert(not set.deferred or not set.direct, "Deferred rendering is not compatible with direct rendering!")
 	
-	if not self.direct then
+	if not set.direct then
 		--depth
-		set.depth_buffer = love.graphics.newCanvas(w, h, {format = self.canvasFormats["depth32f"] and "depth32f" or self.canvasFormats["depth24"] and "depth24" or "depth16", readable = false, msaa = msaa})
+		set.depth_buffer = love.graphics.newCanvas(w, h, {format = self.canvasFormats["depth32f"] and "depth32f" or self.canvasFormats["depth24"] and "depth24" or "depth16", readable = false, msaa = set.msaa})
 		
 		--temporary HDR color
-		set.color = love.graphics.newCanvas(w, h, {format = self.colorFormat, readable = true, msaa = msaa})
+		set.color = love.graphics.newCanvas(w, h, {format = self.colorFormat, readable = true, msaa = set.msaa})
 		
 		--depth
-		set.depth = love.graphics.newCanvas(w, h, {format = "r16f", readable = true, msaa = msaa})
+		set.depth = love.graphics.newCanvas(w, h, {format = "r16f", readable = true, msaa = set.msaa})
 	end
 	
 	--deferred rendering
-	if deferred then
-		--materials
-		set.position = love.graphics.newCanvas(w, h, {format = self.colorFormat, readable = true, msaa = msaa})
-		set.normal = love.graphics.newCanvas(w, h, {format = self.colorFormat, readable = true, msaa = msaa})
-		set.material = love.graphics.newCanvas(w, h, {format = self.colorFormat, readable = true, msaa = msaa})
-		set.albedo = love.graphics.newCanvas(w, h, {format = self.colorFormat, readable = true, msaa = msaa})
+	if set.deferred then
+		set.position = love.graphics.newCanvas(w, h, {format = self.colorFormat, readable = true, msaa = set.msaa})
+		set.normal = love.graphics.newCanvas(w, h, {format = self.colorFormat, readable = true, msaa = set.msaa})
+		set.material = love.graphics.newCanvas(w, h, {format = self.colorFormat, readable = true, msaa = set.msaa})
+		set.albedo = love.graphics.newCanvas(w, h, {format = self.colorFormat, readable = true, msaa = set.msaa})
 	end
 	
 	--screen space ambient occlusion blurring canvases
-	if self.AO_enabled and not self.direct then
+	if self.AO_enabled and not set.direct then
 		set.AO_1 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
 		set.AO_2 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
 	end
 	
 	--post effects
-	if set.postEffects_enabled then
+	if set.postEffects then
 		--bloom blurring canvases
 		if self.bloom_enabled then
 			set.canvas_bloom_1 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = self.colorFormat, readable = true, msaa = 0})
@@ -264,8 +271,8 @@ function lib.resize(self, w, h)
 	self:unloadCanvasSet(self.canvases_reflections)
 	
 	--canvases sets
-	self.canvases = self:newCanvasSet(w, h, self.msaa, self.deferred, true)
-	self.canvases_reflections = self:newCanvasSet(self.reflections_resolution, self.reflections_resolution, self.reflections_msaa, self.reflections_deferred, false)
+	self.canvases = self:newCanvasSet(self.default_settings, w, h)
+	self.canvases_reflections = self:newCanvasSet(self.reflections_settings)
 	
 	--auto exposure scaling canvas
 	if self.autoExposure_enabled then

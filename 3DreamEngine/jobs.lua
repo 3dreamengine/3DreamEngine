@@ -84,7 +84,7 @@ local identityMatrix = mat4:getIdentity()
 
 function lib.blurCubeMap(self, cube, level)
 	local f = cube:getFormat()
-	local resolution = math.ceil(cube:getWidth() / self.reflection_downsample)
+	local resolution = math.ceil(cube:getWidth() / 2)
 	
 	--create canvases if needed
 	blurCanvases[f] = blurCanvases[f] or { }
@@ -118,7 +118,7 @@ function lib.blurCubeMap(self, cube, level)
 		--paste
 		love.graphics.setCanvas(cube, side, level)
 		love.graphics.setShader()
-		love.graphics.draw(can, 0, 0, 0, self.reflection_downsample)
+		love.graphics.draw(can, 0, 0, 0, 2)
 	end
 	
 	love.graphics.pop()
@@ -402,7 +402,9 @@ function lib.executeJobs(self, cam)
 			love.graphics.reset()
 			local cam = self:newCam(transformations[face], pointShadowProjectionMatrix, pos, lookNormals[face])
 			local canvas = o[4].reflection.canvas
-			love.graphics.setCanvas({{canvas, face = face}})
+			depth_buffer = depth_buffer or love.graphics.newCanvas(canvas:getWidth(), canvas:getHeight(), {format = "depth16", readable = false, msaa = canvas:getMSAA()})
+			love.graphics.setCanvas({{canvas, face = face}, depthstencil = depth_buffer})
+			love.graphics.clear()
 			o[4].reflection.canvas = nil
 			
 			--render
