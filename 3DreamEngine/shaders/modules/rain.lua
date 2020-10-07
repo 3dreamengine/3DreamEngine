@@ -114,7 +114,7 @@ function sh:render(dream, cam, canvases, scene, noSky)
 	love.graphics.pop()
 end
 
-function sh:jobCreator(dream, operations, cam)
+function sh:jobCreator(dream, operations)
 	operations[#operations+1] = {self.jobExecuter, 1.0}
 end
 

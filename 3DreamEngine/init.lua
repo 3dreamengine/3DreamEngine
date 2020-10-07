@@ -31,6 +31,7 @@ lib.ffi = require("ffi")
 _3DreamEngine = lib
 lib.root = (...)
 require((...) .. "/functions")
+require((...) .. "/settings")
 require((...) .. "/classes")
 require((...) .. "/shader")
 require((...) .. "/loader")
@@ -97,6 +98,7 @@ lib.nameDecoder = "blender"
 lib.frustumCheck = true
 lib.LoDDistance = 100
 
+--SHADOWS
 lib.shadow_resolution = 1024
 lib.shadow_cube_resolution = 512
 lib.shadow_distance = 8
@@ -139,7 +141,7 @@ lib.stars_enabled = true
 lib.sunMoon_enabled = true
 
 lib.clouds_enabled = true
-lib.clouds_scale = 4.0
+lib.clouds_scale = 2.0
 lib.clouds_threshold = 0.5
 lib.clouds_thresholdPackets = 0.3
 lib.clouds_sharpness = 0.15
@@ -166,40 +168,39 @@ if not _DEBUGMODE then
 end
 
 --default textures
-if love.graphics then
-	lib.object_sky = lib:loadObject(lib.root .. "/objects/sky", "Phong", {splitMaterials = false})
-	lib.object_cube = lib:loadObject(lib.root .. "/objects/cube", "simple", {splitMaterials = false})
-	lib.object_plane = lib:loadObject(lib.root .. "/objects/plane", "Phong", {splitMaterials = false})
+lib.object_sky = lib:loadObject(lib.root .. "/objects/sky", "Phong", {splitMaterials = false})
+lib.object_cube = lib:loadObject(lib.root .. "/objects/cube", "simple", {splitMaterials = false})
+lib.object_plane = lib:loadObject(lib.root .. "/objects/plane", "Phong", {splitMaterials = false})
+
+local pix = love.image.newImageData(2, 2)
+lib.textures = {
+	default = love.graphics.newImage(lib.root .. "/res/default.png"),
+	default_normal = love.graphics.newImage(lib.root .. "/res/default_normal.png"),
 	
-	local pix = love.image.newImageData(2, 2)
-	lib.textures = {
-		default = love.graphics.newImage(lib.root .. "/res/default.png"),
-		default_normal = love.graphics.newImage(lib.root .. "/res/default_normal.png"),
-		
-		brdfLUT = lib.root .. "/res/brdfLut.png",
-		
-		sky_fallback = love.graphics.newCubeImage({pix, pix, pix, pix, pix, pix}),
-		
-		sky = lib.root .. "/res/sky.png",
-		stars_hdri = lib.root .. "/res/stars_hdri.png",
-		moon = lib.root .. "/res/moon.png",
-		moon_normal = lib.root .. "/res/moon_normal.png",
-		sun = lib.root .. "/res/sun.png",
-		
-		clouds_rough = love.graphics.newImage(lib.root .. "/res/clouds/rough.png", {mipmaps = true}),
-		clouds_packets = love.graphics.newImage(lib.root .. "/res/clouds/packets.png", {mipmaps = true}),
-	}
+	brdfLUT = lib.root .. "/res/brdfLut.png",
 	
-	lib.textures.get = function(self, path)
-		if type(self[path]) == "string" then
-			self[path] = love.graphics.newImage(self[path])
-		end
-		return self[path]
+	sky_fallback = love.graphics.newCubeImage({pix, pix, pix, pix, pix, pix}),
+	
+	sky = lib.root .. "/res/sky.png",
+	stars_hdri = lib.root .. "/res/stars_hdri.png",
+	moon = lib.root .. "/res/moon.png",
+	moon_normal = lib.root .. "/res/moon_normal.png",
+	sun = lib.root .. "/res/sun.png",
+	
+	clouds = love.graphics.newImage(lib.root .. "/res/clouds.png", {mipmaps = true}),
+	clouds_base = love.graphics.newImage(lib.root .. "/res/clouds_base.png", {mipmaps = true}),
+}
+
+lib.textures.get = function(self, path)
+	if type(self[path]) == "string" then
+		self[path] = love.graphics.newImage(self[path])
 	end
-	
-	--get color of sun based on sunrise sky texture
-	lib.sunlight = require(lib.root .. "/res/sunlight")
+	return self[path]
 end
+
+--get color of sun based on sunrise sky texture
+lib.sunlight = require(lib.root .. "/res/sunlight")
+lib.skylight = require(lib.root .. "/res/skylight")
 
 --a canvas set is used to render a scene to
 function lib.newCanvasSet(self, settings, w, h)
@@ -323,6 +324,9 @@ function lib.init(self, w, h)
 	--reset lighting
 	self.lighting = { }
 	
+	--reset cache
+	self.cache = { }
+	
 	--create sun shadow if requested
 	self.sunObject = lib:newLight(1, 1, 1, 1, 1, 1, 5, "sun")
 	if self.sun_shadow then
@@ -330,6 +334,8 @@ function lib.init(self, w, h)
 	else
 		self.sunObject.shadow = nil
 	end
+	
+	self.cloudCanvas = love.graphics.newCanvas(1024, 1024, {format = "r8"})
 end
 
 --clears the current scene

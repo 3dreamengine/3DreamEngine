@@ -11,11 +11,6 @@ function lib:newCam(transform, transformProj, pos, normal)
 		normal = normal or vec3(0, 0, 0),
 		pos = pos or vec3(0, 0, 0),
 		
-		--DEPRICATED, use transform
-		x = 0,
-		y = 0,
-		z = 0,
-		
 		fov = 90,
 		near = 0.01,
 		far = 1000,

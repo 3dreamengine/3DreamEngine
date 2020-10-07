@@ -47,13 +47,15 @@ function lib:buildScene(cam, typ, blacklist)
 							table.insert(scene[task.s.shader][mat], task)
 							
 							--reflections
-							local reflection = task.s.reflection or task.obj.reflection
-							if reflection and reflection.canvas then
-								self.reflections[task.s.reflection or task.obj.reflection] = {
-									dist = (task.pos - cam.pos):length(),
-									obj = task.s.reflection and task.s or task.obj,
-									pos = reflection.pos or task.pos,
-								}
+							if typ == "render" then
+								local reflection = task.s.reflection or task.obj.reflection
+								if reflection and reflection.canvas then
+									self.reflections[task.s.reflection or task.obj.reflection] = {
+										dist = (task.pos - cam.pos):length(),
+										obj = task.s.reflection and task.s or task.obj,
+										pos = reflection.pos or task.pos,
+									}
+								end
 							end
 						end
 					end
@@ -106,7 +108,7 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 	--clear
 	if not canvases.direct then
 		love.graphics.setCanvas({canvases.depth, depthstencil = canvases.depth_buffer})
-		love.graphics.clear()
+		love.graphics.clear(255, 255, 255)
 		if self.deferred and pass == 1 then
 			love.graphics.setCanvas({canvases.position, canvases.normaö, canvases.material, canvases.albedo})
 			love.graphics.clear()
@@ -483,10 +485,11 @@ function lib:present(noSky, cam, canvases)
 	local m = cam.transform
 	cam.transformProjOrigin = projection * mat4(m[1], m[2], m[3], 0.0, m[5], m[6], m[7], 0.0, m[9], m[10], m[11], 0.0, 0.0, 0.0, 0.0, 1.0)
 	cam.aspect = aspect
+	self.lastUsedCam = cam
 	
 	--process render jobs
 	self.delton:start("jobs")
-	self:executeJobs(cam)
+	self:executeJobs()
 	self.delton:stop()
 	
 	--render

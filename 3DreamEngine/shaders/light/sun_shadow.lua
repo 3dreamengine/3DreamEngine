@@ -138,6 +138,11 @@ function sh:sendUniforms(dream, shader, info, light, ID)
 		shader:send("tex_shadow_1_" .. ID, light.shadow.canvases[1])
 		shader:send("tex_shadow_2_" .. ID, light.shadow.canvases[2])
 		shader:send("tex_shadow_3_" .. ID, light.shadow.canvases[3])
+		if light.smooth == nil then
+			shader:send("smooth_" .. ID, dream.shadow_smooth)
+		else
+			shader:send("smooth_" .. ID, light.smooth)
+		end
 	else
 		return
 	end

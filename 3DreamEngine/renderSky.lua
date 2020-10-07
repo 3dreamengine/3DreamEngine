@@ -15,7 +15,7 @@ function lib:renderSky(transformProj)
 		--given hdri sphere
 		love.graphics.setShader(self.shaders.sky_hdri)
 		self.shaders.sky_hdri:send("exposure", self.sky_hdri_exposure)
-		self.shaders.sky_hdri:send("transformProj", transformProj)
+		self.shaders.sky_hdri:send("transformProj", transformProj * mat4:getRotateY(love.timer.getTime()*0.01))
 		self.object_sky.objects.Sphere.mesh:setTexture(self.sky_hdri)
 		love.graphics.draw(self.object_sky.objects.Sphere.mesh)
 	else
@@ -96,29 +96,22 @@ function lib:renderSky(transformProj)
 			love.graphics.setBlendMode("alpha")
 			
 			love.graphics.setShader(self.shaders.clouds)
-			self.shaders.clouds:send("sunColor", {(self.sun_color * 3.0):unpack()})
-			self.shaders.clouds:send("ambientColor", {(self.sun_color * 2.0):unpack()})
-			self.shaders.clouds:send("sunVec", {self.sun:normalize():unpack()})
+			self.shaders.clouds:send("sunColor", {(self.sun_color * 4.0):unpack()})
+			self.shaders.clouds:send("ambientColor", {(self.sun_ambient + vec3(0.5, 0.5, 0.5) * (1.0 - self.sun_color:length())):unpack()})
+			
+			local sun = self.sun:normalize()
+			self.shaders.clouds:send("sunVec", {sun:unpack()})
+			self.shaders.clouds:send("sunStrength", math.max(0.0, 1.0 - math.abs(sun.y) * (sun.y > 0 and 3.0 or 10.0)) * 10.0)
+			self.shaders.clouds:send("roughnessOffset", {love.timer.getTime() * 0.01, love.math.noise(love.timer.getTime() * 0.01)})
+			
 			self.shaders.clouds:send("scale", self.clouds_scale)
-			self.shaders.clouds:send("time", {love.timer.getTime() * 0.001, 0.0})
+			self.shaders.clouds:send("scale_base", self.clouds_scale / 27.0)
 			
-			self.shaders.clouds:send("threshold", self.clouds_threshold)
-			self.shaders.clouds:send("thresholdInverted", 1.0 / (1.0 - math.min(0.99, self.clouds_threshold)))
+			self.textures.clouds_base:setWrap("repeat")
+			self.shaders.clouds:send("tex_base", self.textures.clouds_base)
 			
-			self.shaders.clouds:send("thresholdPackets", self.clouds_thresholdPackets)
-			self.shaders.clouds:send("thresholdInvertedPackets", 1.0 / (1.0 - math.min(0.99, self.clouds_thresholdPackets)))
-			
-			self.shaders.clouds:send("packets", self.clouds_packets)
-			self.shaders.clouds:send("weight", self.clouds_weight)
-			self.shaders.clouds:send("sharpness", self.clouds_sharpness)
-			self.shaders.clouds:send("detail", self.clouds_detail)
-			self.shaders.clouds:send("thickness", self.clouds_thickness)
-			
-			self.object_cube.objects.Cube.mesh:setTexture(self.textures.clouds_rough)
-			self.textures.clouds_rough:setWrap("repeat")
-			
-			self.shaders.clouds:send("tex_packets", self.textures.clouds_packets)
-			self.textures.clouds_packets:setWrap("repeat")
+			self.object_cube.objects.Cube.mesh:setTexture(self.cloudCanvas)
+			self.cloudCanvas:setWrap("repeat")
 			
 			self.shaders.clouds:send("transformProj", transformProj)
 			love.graphics.draw(self.object_cube.objects.Cube.mesh)

@@ -57,7 +57,7 @@ return {
 		end
 	end,
 	
-	setSmooth = function(self, smooth)
+	setSmoothing = function(self, smooth)
 		assert(type(smooth) == "boolean", "boolean expected!")
 		self.smooth = smooth
 	end,

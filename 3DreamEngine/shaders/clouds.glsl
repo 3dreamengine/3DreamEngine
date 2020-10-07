@@ -1,7 +1,3 @@
-#pragma language glsl3
-//part of the 3DreamEngine by Luke100000
-//clouds shader
-
 //transformations
 extern highp mat4 transformProj;
 varying highp vec3 vertexPos;
@@ -10,53 +6,38 @@ varying highp vec3 vertexPos;
 extern vec3 sunColor;
 extern vec3 ambientColor;
 
-extern float threshold;
-extern float thresholdInverted;
-
-extern float thresholdPackets;
-extern float thresholdInvertedPackets;
-
-extern vec2 time;
 extern float scale;
-extern float weight;
-extern float sharpness;
-extern float detail;
-extern float thickness;
-
-extern float packets;
+extern float scale_base;
 
 extern vec3 sunVec;
+extern float sunStrength;
+extern vec2 roughnessOffset;
 
-extern Image tex_packets;
+extern Image tex_base;
 
-vec4 effect(vec4 c, Image tex_rough, vec2 tc, vec2 sc) {
-	vec3 pos = normalize(vertexPos * vec3(1.0, 10.0, 1.0));
+vec4 effect(vec4 c, Image tex, vec2 tc, vec2 sc) {
+	vec3 dir = normalize(vertexPos);
+	vec3 pos = normalize(vertexPos * vec3(1.0, 8.0, 1.0));
 	if (pos.y < 0.0) {
 		discard;
 	}
 	
-	//base 
-	vec4 c0 = texture(tex_rough, (pos.xz * 0.3 + time) * scale, detail) - vec4(0.5, 0.5, 0.5, 0.0);
-	vec4 c1 = texture(tex_rough, (pos.xz * 0.2 + time) * scale, detail + 1.0) - vec4(0.5, 0.5, 0.5, 0.0);
-	vec4 c2 = texture(tex_rough, (pos.xz * 0.2 + time * 0.3) * scale, detail + 2.0) - vec4(0.5, 0.5, 0.5, 0.0);
+	//cloud
+	float cloud = Texel(tex, pos.xz * scale).r;
+	float base = Texel(tex_base, pos.xz * scale_base).r;
+	float roughness = Texel(tex_base, pos.xz * scale * 0.7 + roughnessOffset).r;
 	
-	//packets
-	vec4 p0 = texture(tex_packets, (pos.xz * 0.3 + time) * scale, 0.0) - vec4(0.5, 0.5, 0.5, 0.0);
-	float p_d = (p0.a - thresholdPackets) * thresholdInvertedPackets;
+	//density
+	float density = cloud * base * pos.y;
 	
-	//final
-	float c_d = max(((c0.a + c1.a) * c2.a * mix(1.0, p_d * 1.5, packets) - threshold + thickness), 0.0) * thresholdInverted;
-	vec3 c_n = c0.xyz * c0.a + c1.xyz * c1.a + c2.xyz * c2.a + p0.xyz * p0.a * packets * 2.0;
-	c_n = normalize(c_n.xzy * vec3(1.0, sharpness * (1.0 + abs(sunVec.y)), 1.0));
-	
-	//direct light
-	float directLight = max(0.0, max(
-		dot(-sunVec, c_n * vec3(1.0, -1.0, 1.0)) * (1.0 - thickness * 0.5),
-		dot(-sunVec, c_n)
-	));
+	//direct sun
+	float directDot = max(dot(sunVec, dir), 0.0);
+	float direct = pow(directDot, 2.0 + density * 10.0) * sunStrength * max(0.0, 1.0 - dir.y);
 	
 	//color
-	return vec4(sunColor * pow(directLight, 4.0) + ambientColor, min(1.0, pow(c_d * pos.y, weight)));
+	vec3 color = mix(sunColor + direct * sunColor, ambientColor, density) * (0.6 + roughness * 0.8);
+	
+	return vec4(color, density);
 }
 #endif
 

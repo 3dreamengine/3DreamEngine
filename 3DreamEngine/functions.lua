@@ -238,10 +238,17 @@ function lib:setDaytime(time)
 	
 	local c = #self.sunlight
 	local p = self.sky_time * c
-	self.sun_color = (
+	self.sun_color_raw = (
 		self.sunlight[math.max(1, math.min(c, math.ceil(p)))] * (1.0 - p % 1) +
 		self.sunlight[math.max(1, math.min(c, math.ceil(p+1)))] * (p % 1)
 	)
+	self.sun_color = self.sun_color_raw
+	
+	self.sun_ambient_raw = (
+		self.skylight[math.max(1, math.min(c, math.ceil(p)))] * (1.0 - p % 1) +
+		self.skylight[math.max(1, math.min(c, math.ceil(p+1)))] * (p % 1)
+	)
+	self.sun_ambient = self.sun_ambient_raw
 end
 
 --0 is the happiest day ever and 1 the end of the world
@@ -249,20 +256,15 @@ function lib:setWeather(rain, temp)
 	rain = rain or 0.0
 	temp = temp or (1.0 - rain)
 	
+	self.weather_rain = rain
+	self.weather_temperature = temp
+	
 	--blue-darken ambient and sun color
 	local color = rain * 0.75
-	self.sun_color = vec3(0, 50/255, 80/255) * color + self.sun_color * (1.0 - color)
-	self.sun_ambient = vec3(0, 50/255, 80/255) * color + self.sun_ambient * (1.0 - color)
-	self.sky_color = vec3(0, 50/255, 80/255) * color + vec3(1.0, 1.0, 1.0) * (1.0 - color)
-	
-	self.clouds_scale = 4.0
-	self.clouds_threshold = math.mix(0.6, 0.2, rain * (1.0 - temp * 0.5))
-	self.clouds_thresholdPackets = math.mix(0.6, 0.1, temp)
-	self.clouds_sharpness = math.mix(0.1, 0.2, temp)
-	self.clouds_detail = 0.0
-	self.clouds_packets = math.mix(0.1, 0.6, temp * (1.0 - rain))
-	self.clouds_weight = math.mix(math.mix(1.0, 1.5, temp), 0.75, rain)
-	self.clouds_thickness = math.mix(0.0, 0.4, rain^2)
+	local darkBlue = vec3(30, 40, 60):normalize() * self.sun_color:length()
+	self.sun_color = darkBlue * 0.2 * color + self.sun_color * (1.0 - color)
+	self.sun_ambient = darkBlue * 0.1 * color + self.sun_ambient * (1.0 - color)
+	self.sky_color = darkBlue * 0.25 * color + vec3(1.0, 1.0, 1.0) * (1.0 - color)
 	
 	--set module settings
 	self:getShaderModule("rain").isRaining = rain > 0.4
@@ -356,6 +358,91 @@ function lib:getCollisionData(object)
 	return n
 end
 
+do
+	local blurVecs = {
+		{
+			{1.0, 0.0, 0.0},
+			{0.0, 0.0, -1.0},
+			{0.0, -1.0, 0.0},
+			{0.0, 0.0, 1.0},
+		},
+		{
+			{-1.0, 0.0, 0.0},
+			{0.0, 0.0, 1.0},
+			{0.0, -1.0, 0.0},
+			{0.0, 0.0, 1.0},
+		},
+		{
+			{0.0, 1.0, 0.0},
+			{1.0, 0.0, 0.0},
+			{0.0, 0.0, 1.0},
+			{1.0, 0.0, 0.0},
+		},
+		{
+			{0.0, -1.0, 0.0},
+			{1.0, 0.0, 0.0},
+			{0.0, 0.0, -1.0},
+			{1.0, 0.0, 0.0},
+		},
+		{
+			{0.0, 0.0, 1.0},
+			{1.0, 0.0, 0.0},
+			{0.0, -1.0, 0.0},
+			{1.0, 0.0, 0.0},
+		},
+		{
+			{0.0, 0.0, -1.0},
+			{-1.0, 0.0, 0.0},
+			{0.0, -1.0, 0.0},
+			{1.0, 0.0, 0.0},
+		},
+	}
+	
+	function lib.blurCubeMap(self, cube, level)
+		local f = cube:getFormat()
+		local resolution = math.ceil(cube:getWidth() / 2)
+		
+		--create canvases if needed
+		self.cache.blurCubeMap = self.cache.blurCubeMap or { }
+		local cache = self.cache.blurCubeMap
+		cache[f] = cache[f] or { }
+		if not cache[f][resolution] then
+			cache[f][resolution] = { }
+		end
+		if not cache[f][resolution][level] then
+			local size = math.ceil(resolution / math.max(1, 2^(level-1)))
+			cache[f][resolution][level] = love.graphics.newCanvas(size, size, {format = f, readable = true, msaa = 0, type = "2d", mipmaps = "none"})
+		end
+		
+		--blurring
+		love.graphics.push("all")
+		love.graphics.reset()
+		love.graphics.setBlendMode("replace", "premultiplied")
+		
+		local can = cache[f][resolution][level]
+		local res = can:getWidth()
+		for side = 1, 6 do
+			love.graphics.setCanvas(can)
+			love.graphics.setShader(self.shaders.blur_cube)
+			self.shaders.blur_cube:send("tex", cube)
+			self.shaders.blur_cube:send("strength", 0.025)
+			self.shaders.blur_cube:send("scale", 1.0 / res)
+			self.shaders.blur_cube:send("normal", blurVecs[side][1])
+			self.shaders.blur_cube:send("dirX", blurVecs[side][2])
+			self.shaders.blur_cube:send("dirY", blurVecs[side][3])
+			self.shaders.blur_cube:send("lod", level - 2.0)
+			love.graphics.rectangle("fill", 0, 0, res, res)
+			
+			--paste
+			love.graphics.setCanvas(cube, side, level)
+			love.graphics.setShader()
+			love.graphics.draw(can, 0, 0, 0, 2)
+		end
+		
+		love.graphics.pop()
+	end
+end
+
 function lib:takeScreenshot()
 	if love.keyboard.isDown("lctrl") then
 		love.system.openURL(love.filesystem.getSaveDirectory() .. "/screenshots")
@@ -373,6 +460,45 @@ function lib:takeScreenshot()
 		end
 		love.graphics.captureScreenshot(love.thread.getChannel("screenshots"))
 	end
+end
+
+function lib:take3DScreenshot(pos, resolution, path)
+	local lookNormals = self.lookNormals
+	resolution = resolution or 512
+	local canvases = self:newCanvasSet(resolution, resolution, 8, self.deferred, false)
+	local results = love.graphics.newCanvas(resolution, resolution, {format = "rgba16f", type = "cube", mipmaps = "manual"})
+	
+	--view matrices
+	local transformations = {
+		self:lookAt(pos, pos + lookNormals[1], vec3(0, -1, 0)),
+		self:lookAt(pos, pos + lookNormals[2], vec3(0, -1, 0)),
+		self:lookAt(pos, pos + lookNormals[3], vec3(0, 0, -1)),
+		self:lookAt(pos, pos + lookNormals[4], vec3(0, 0, 1)),
+		self:lookAt(pos, pos + lookNormals[5], vec3(0, -1, 0)),
+		self:lookAt(pos, pos + lookNormals[6], vec3(0, -1, 0)),
+	}
+	
+	--render all faces
+	for face = 1, 6 do
+		love.graphics.push("all")
+		love.graphics.reset()
+		love.graphics.setCanvas({{results, face = face}})
+		love.graphics.clear()
+		
+		--render
+		local cam = self:newCam(transformations[face], self.cubeMapProjection, pos, lookNormals[face])
+		lib:renderFull(cam, canvases, false)
+		
+		love.graphics.pop()
+	end
+	
+	--blur cubemap
+	for level = 2, results:getMipmapCount() do
+		self:blurCubeMap(results, level)
+	end
+	
+	--export mimg data
+	cimg:export(results, path or "results.cimg")
 end
 
 --global shader modules
