@@ -66,6 +66,7 @@ lib.materialLibrary = { }
 lib:setAO(16, 0.75)
 lib:setBloom(1.0, 1.5, 0.5)
 lib:setFog()
+lib:setFogHeight(1, -1)
 lib:setDaytime(0.3)
 
 --TODO, replace sun and moon with particle-like billboarding

@@ -426,8 +426,7 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 	
 	if shader:hasUniform("canvas_exposure") then shader:send("canvas_exposure", self.canvas_exposure_fetch) end
 	
-	if shader:hasUniform("transform") then shader:send("transform", cam.transformProj) end
-	if shader:hasUniform("viewNormal") then shader:send("viewNormal", cam.normal) end
+	if shader:hasUniform("transformInverse") then shader:send("transformInverse", cam.transformProj:invert()) end
 	if shader:hasUniform("viewPos") then shader:send("viewPos", cam.pos) end
 	
 	if shader:hasUniform("gamma") then shader:send("gamma", self.gamma) end
@@ -436,6 +435,11 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 	if shader:hasUniform("fog_density") then
 		shader:send("fog_density", self.fog_density)
 		shader:send("fog_color", self.fog_color)
+		shader:send("fog_sun", self.sun)
+		shader:send("fog_sunColor", self.sun_color)
+		shader:send("fog_scatter", self.fog_scatter)
+		shader:send("fog_min", self.fog_min)
+		shader:send("fog_max", self.fog_max)
 	end
 	
 	love.graphics.draw(canvases.color)

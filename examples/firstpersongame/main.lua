@@ -1,17 +1,19 @@
 --load the 3D lib
 dream = require("3DreamEngine")
-love.window.setTitle("Castle")
-
+love.window.setTitle("First Person Game")
 love.mouse.setRelativeMode(true)
 
 --settings
 local projectDir = "examples/firstpersongame/"
 dream:init()
 
+--load all materials
 dream:loadMaterialLibrary(projectDir .. "materials")
 
-castle = dream:loadObject(projectDir .. "objects/scene", {splitMaterials = true, export3do = false, skip3do = true})
+--load object
+local scene = dream:loadObject(projectDir .. "objects/scene", "PBR")
 
+--activate the global rain shader module
 dream:activateShaderModule("rain")
 
 player = {
@@ -32,16 +34,10 @@ dream.cam.ry = 0
 
 local time = 0
 local timeAnimate = true
-
 local hideTooltips = false
-local weather = 0.25
+local rain = 0.45
 
 function love.draw()
-	dream:setDaytime(time)
-	
-	--weather
-	dream:setWeather(weather, 1.0 - weather)
-	
 	--update camera
 	dream.cam:reset()
 	dream.cam:translate(-player.x, -player.y, -player.z)
@@ -56,14 +52,13 @@ function love.draw()
 	
 	dream:prepare()
 	
-	castle:reset()
-	dream:draw(castle)
-
+	dream:draw(scene)
+	
 	dream:present()
 	
 	if not hideTooltips then
 		love.graphics.setColor(1, 1, 1)
-		love.graphics.print("R to toggle rain (" .. tostring(dream:getShaderModule("rain").isRaining) .. ")\nT to toggle daytime animation (" .. tostring(timeAnimate) .. ")\nU to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")", 10, 10)
+		love.graphics.print("R to toggle rain (" .. tostring(dream:getShaderModule("rain").isRaining) .. ")\nT to toggle daytime animation (" .. tostring(timeAnimate) .. ")\nU to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")" .. "\nheight: " .. player.y, 10, 10)
 	end
 end
 
@@ -83,12 +78,15 @@ function love.update(dt)
 	local d = love.keyboard.isDown
 	local speed = 10*dt
 	
+	--daytime
 	if timeAnimate then
 		time = time + dt * 0.05
 	end
+	dream:setDaytime(time)
 	
-	--gravity
-	--player.ay = player.ay - dt * 15
+	--weather
+	local oldRain = dream:getWeather()
+	dream:setWeather(math.clamp(oldRain + (rain > oldRain and 1 or -1) * dt * 0.05, 0.25, 0.85))
 	
 	--collision
 	local oldX = player.x
@@ -177,13 +175,10 @@ function love.keypressed(key)
 	end
 	
 	if key == "r" then
-		if weather > 0.5 then
-			weather = 0.25
-			dream:getShaderModule("rain").isRaining = false
+		if rain > 0.5 then
+			rain = 0.25
 		else
-			weather = 0.75
-			dream:getShaderModule("rain").isRaining = true
-			dream:getShaderModule("rain").strength = 5
+			rain = 0.9
 		end
 	end
 	

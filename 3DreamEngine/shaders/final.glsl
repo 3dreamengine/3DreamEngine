@@ -6,16 +6,21 @@ extern Image canvas_SSR;
 
 extern Image canvas_exposure;
 
-extern mat4 transform;
-extern vec3 lookNormal;
 extern vec3 viewPos;
 
 extern float gamma;
 extern float exposure;
 
 #ifdef FOG_ENABLED
+varying vec3 viewVec;
+extern mat4 transformInverse;
 extern float fog_density;
+extern float fog_scatter;
 extern vec3 fog_color;
+extern vec3 fog_sun;
+extern vec3 fog_sunColor;
+extern float fog_max;
+extern float fog_min;
 #endif
 
 #ifdef AUTOEXPOSURE_ENABLED
@@ -113,8 +118,39 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 	//fog
 #ifdef FOG_ENABLED
 	float depth = Texel(canvas_depth, tc_final).r;
+	
+	if (fog_max > fog_min) {
+		vec3 vec = viewVec * depth;
+		vec3 stepVec = vec / vec.y;
+		
+		//ray
+		vec3 pos_near = viewPos;
+		vec3 pos_far = viewPos + vec;
+		
+		//find entry/exit heights
+		float height_near = clamp(pos_near.y, fog_min, fog_max);
+		float height_far = clamp(pos_far.y, fog_min, fog_max);
+		
+		//find points
+		pos_near += stepVec * (height_near - pos_near.y);
+		pos_far += stepVec * (height_far - pos_far.y);
+		
+		//get average density
+		float heightDiff = fog_max - fog_min;
+		float nearDensity = 1.0 - (height_near - fog_min) / heightDiff;
+		float farDensity = 1.0 - (height_far - fog_min) / heightDiff;
+		depth = distance(pos_far, pos_near) * (farDensity + nearDensity) * 0.5;
+	}
+	
+	//finish fog
 	float fog = 1.0 - exp(-depth * fog_density);
-	c.rgb = mix(c.rgb, fog_color, fog);
+	if (fog_scatter > 0.0) {
+		float fog_sunStrength = max(dot(fog_sun, normalize(viewVec)), 0.0);
+		vec3 fogColor = fog_color + fog_sunColor * pow(fog_sunStrength, 8.0) * fog_scatter;
+		c.rgb = mix(c.rgb, fogColor, fog);
+	} else {
+		c.rgb = mix(c.rgb, fog_color, fog);
+	}
 #endif
 	
 	//additional post effects
@@ -143,6 +179,10 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 #ifdef AUTOEXPOSURE_ENABLED
 		eyeAdaption = Texel(canvas_exposure, vec2(0.5, 0.5)).r;
 #endif
-		return transform_projection * vertex_position;
+		vec4 pos = transform_projection * vertex_position;
+#ifdef FOG_ENABLED
+		viewVec = (transformInverse * vec4(pos.x, - pos.y, 1.0, 1.0)).xyz;
+#endif
+		return pos;
 	}
 #endif

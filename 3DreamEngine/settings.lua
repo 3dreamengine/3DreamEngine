@@ -44,6 +44,7 @@ function lib:setFog(density, color, scatter)
 	if density then
 		check(density, "number", 1)
 		check(color, "table", 2)
+		check(scatter, "number", 3)
 		assert(#color == 3, "vec3 color expected")
 		
 		self.fog_enabled = true
@@ -53,6 +54,19 @@ function lib:setFog(density, color, scatter)
 	else
 		self.fog_enabled = false
 	end
+end
+function lib:getFog()
+	return self.fog_enabled, self.fog_density, self.fog_color, self.fog_scatter
+end
+
+function lib:setFogHeight(min, max)
+	check(min, "number", 1)
+	check(max, "number", 1)
+	self.fog_min = min
+	self.fog_max = max
+end
+function lib:getFogHeight(min, max)
+	return self.fog_min, self.fog_max
 end
 
 --default shadow resolution
@@ -124,8 +138,8 @@ function lib:getDaytime()
 	return self.sky_time, self.sky_day
 end
 
---0 is the happiest day ever and 1 the end of the world
-function lib:setWeather(rain, temp)
+--sets the rain value and temparature
+function lib:setWeather(rain, temp, raining)
 	check(rain, "number", 1)
 	temp = temp or (1.0 - rain)
 	
@@ -140,8 +154,11 @@ function lib:setWeather(rain, temp)
 	self.sky_color = darkBlue * 0.25 * color + vec3(1.0, 1.0, 1.0) * (1.0 - color)
 	
 	--set module settings
-	self:getShaderModule("rain").isRaining = rain > 0.4
-	self:getShaderModule("rain").strength = math.ceil(math.clamp((rain-0.4) / 0.6 * 5.0, 0.001, 5.0))
+	if raining == nil then
+		raining = rain > 0.5
+	end
+	self:getShaderModule("rain").isRaining = raining
+	self:getShaderModule("rain").strength = math.ceil(math.clamp((rain-0.5) / 0.5 * 5.0, 0.001, 5.0))
 end
 function lib:getWeather()
 	return self.weather_rain, self.weather_temperature

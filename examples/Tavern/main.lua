@@ -13,10 +13,8 @@ dream.sun_ambient = {0.1, 0.1, 0.1}
 dream.sky_as_reflection = false
 dream.defaultReflection = dream:newReflection(cimg:load(projectDir .. "sky.cimg"))
 
-dream.fog_enabled = true
-dream.fog_distance = 10.0
-dream.fog_density = 0.1
-dream.fog_color = {0.7, 0.6, 0.5}
+dream:setFog(0.05, {0.7, 0.6, 0.5}, 0.0)
+dream:setFogHeight(0.0, 4.0)
 
 --load materials
 dream:loadMaterialLibrary(projectDir .. "materials")
