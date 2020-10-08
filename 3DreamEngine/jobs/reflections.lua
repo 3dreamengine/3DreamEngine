@@ -28,7 +28,7 @@ function job:queue(times, operations)
 	end
 end
 
-function job:execute(times, obj, pos, face)
+function job:execute(times, delta, obj, pos, face)
 	local lookNormals = lib.lookNormals
 	
 	local transformations = {

@@ -96,6 +96,14 @@ function lib:loadObject(path, shaderType, args)
 	end
 	
 	
+	--remove empty objects
+	for d,s in pairs(obj.objects) do
+		if s.vertices and #s.vertices == 0 then
+			obj.objects[d] = nil
+		end
+	end
+	
+	
 	--extract positions
 	for d,s in pairs(obj.objects) do
 		local pos = s.name:find("POS_")

@@ -22,7 +22,7 @@ function job:queue(times, operations)
 	end
 end
 
-function job:execute(times, light, pos, cascade)
+function job:execute(times, delta, light, pos, cascade)
 	local cam = lib.lastUsedCam
 	light.shadow.lastPos = pos
 	

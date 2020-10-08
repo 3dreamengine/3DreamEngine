@@ -72,12 +72,10 @@ for d,s in ipairs(scene.positions) do
 	if s.name == "LIGHT" then
 		lights[d] = dream:newLight(s.x, s.y + 0.1, s.z, 1.0, 0.75, 0.3)
 		lights[d].shadow = dream:newShadow("point", true)
-		lights[d].shadow.size = 0.1
 		lights[d].shadow.noAlphaPass = true
 	elseif s.name == "FIRE" then
 		lights[d] = dream:newLight(s.x, s.y + 0.1, s.z, 1.0, 0.75, 0.2)
 		lights[d].shadow = dream:newShadow("point", true)
-		lights[d].shadow.size = 0.1
 		lights[d].shadow.noAlphaPass = true
 	end
 end
@@ -145,8 +143,9 @@ function love.draw()
 			"F to toggle fog (" .. tostring(dream.fog_enabled) .. ")",
 			"L to toggle looking at check (" .. tostring(lookingAtCheck) .. ")",
 			"K to toggle relative mode (" .. tostring(rotateCamera) .. ")",
-			love.graphics.getStats().texturememory / 1024^2,
-			love.timer.getFPS() .. " FPS"
+			math.ceil(love.graphics.getStats().texturememory / 1024^2) .. " MB VRAM",
+			love.timer.getFPS() .. " FPS",
+			dream.mainShaderCount .. " shaders loaded"
 			}, "\n"), 10, 10)
 	end
 	

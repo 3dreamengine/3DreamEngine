@@ -43,7 +43,7 @@ function job:queue(times, operations)
 	end
 end
 
-function job:execute(times, id)
+function job:execute(times, delta, id)
 	local lookNormals = lib.lookNormals
 	if id then
 		lib.cache["sky_tex"] = id

@@ -109,7 +109,7 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 	if not canvases.direct then
 		love.graphics.setCanvas({canvases.depth, depthstencil = canvases.depth_buffer})
 		love.graphics.clear(255, 255, 255)
-		if self.deferred and pass == 1 then
+		if canvases.deferred and pass == 1 then
 			love.graphics.setCanvas({canvases.position, canvases.normaö, canvases.material, canvases.albedo})
 			love.graphics.clear()
 		end
@@ -130,7 +130,7 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 		
 		--set canvases
 		if not canvases.direct then
-			if self.deferred and pass == 1 then
+			if canvases.deferred and pass == 1 then
 				love.graphics.setCanvas({canvases.color, canvases.depth, canvases.position, canvases.normal, canvases.material, canvases.albedo, depthstencil = canvases.depth_buffer})
 			else
 				love.graphics.setCanvas({canvases.color, canvases.depth, depthstencil = canvases.depth_buffer})

@@ -58,40 +58,35 @@ lib.canvasFormats = love.graphics and love.graphics.getCanvasFormats() or { }
 --default material library
 lib.materialLibrary = { }
 
+--default settings
+lib:setAO(16, 0.75)
+lib:setBloom(1.0, 1.5, 0.5)
+
+--TODO, replace sun and moon with particle-like billboarding
 lib.sun_offset = 0.25
 lib.sun = vec3(-0.3, 0.6, 0.5)
 lib.sun_color = vec3(0.63529411764706, 0.69411764705882, 0.71764705882353)
 lib.sun_ambient = vec3(1.0, 1.0, 1.0)
 lib.sun_shadow = true
 
+--TODO, see website
 lib.fog_enabled = false
 lib.fog_distance = 20.0
 lib.fog_density = 0.75
 lib.fog_color = {0.5, 0.5, 0.5}
 
-lib.AO_enabled = true
-lib.AO_quality = 16
-lib.AO_resolution = 0.75
-
-lib.bloom_enabled = true
-lib.bloom_size = 1.5
-lib.bloom_resolution = 0.5
-lib.bloom_strength = 1.0
-
+--TODO
 lib.refraction_enabled = true
 lib.refraction_disableCulling = false
 
+--TODO
 lib.textures_fastLoading = true
 lib.textures_fastLoadingProgress = false
 lib.textures_mipmaps = true
 lib.textures_filter = "linear"
 lib.textures_generateThumbnails = true
 
-lib.colorFormat = "rgba16f"
-lib.msaa = 4
-lib.fxaa = false
-lib.deferred = false
-lib.direct = false
+--TODO
 lib.deferredShaderType = "PBR"
 lib.max_lights = 16
 lib.nameDecoder = "blender"
@@ -107,6 +102,7 @@ lib.shadow_smooth = true
 
 --canvas set settings
 lib.default_settings = lib:newSetSettings()
+lib.default_settings:setPostEffects(true)
 
 lib.reflections_settings = lib:newSetSettings()
 lib.reflections_settings:setDirect(true)
@@ -114,17 +110,21 @@ lib.reflections_settings:setDirect(true)
 lib.mirror_settings = lib:newSetSettings()
 lib.mirror_settings:setDirect(true)
 
+--TODO
 lib.reflections_levels = 5
 
+--TODO, add to direct shader, directly into base
 lib.gamma = 1.0
 lib.exposure = 1.0
 
+--TODO
 lib.autoExposure_enabled = false
 lib.autoExposure_resolution = 128
 lib.autoExposure_targetBrightness = 0.25
 lib.autoExposure_interval = 1 / 15
 lib.autoExposure_adaptionSpeed = 0.4
 
+--TODO, move sky_refreshRate to FPS, remove sky_as_reflection and add setSky() which accepts a cubemap, an hdri and a boolean wether to use the sky
 lib.sky_as_reflection = true
 lib.sky_refreshRate = 1/15
 lib.sky_refreshRateTexture = 0
@@ -140,18 +140,16 @@ lib.sky_color = vec3(1.0, 1.0, 1.0)
 lib.stars_enabled = true
 lib.sunMoon_enabled = true
 
+--TODO, resolution missing
 lib.clouds_enabled = true
+lib.clouds_resolution = 1024
 lib.clouds_scale = 2.0
-lib.clouds_threshold = 0.5
-lib.clouds_thresholdPackets = 0.3
-lib.clouds_sharpness = 0.15
-lib.clouds_detail = 0.0
-lib.clouds_packets = 0.25
-lib.clouds_weight = 1.25
-lib.clouds_thickness = 0.2
+lib.clouds_wind = vec2(0.01, 0.0)
+lib.clouds_pos = vec2(0.0, 0.0)
 
-lib.weather_rain = 0.0
-lib.weather_temperature = 0.0
+--TODO move to settings
+lib.weather_rain = 0.5
+lib.weather_temperature = 0.5
 
 --default camera
 lib.cam = lib:newCam()
@@ -159,19 +157,20 @@ lib.cam = lib:newCam()
 --default scene
 lib.scene = lib:newScene()
 
+--delton, disabled when not in debug mode
 lib.delton = require((...) .. "/libs/delton"):new(512)
-
 if not _DEBUGMODE then
 	lib.delton.start = function() end
 	lib.delton.stop = lib.delton.start
 	lib.delton.step = lib.delton.start
 end
 
---default textures
+--default objects
 lib.object_sky = lib:loadObject(lib.root .. "/objects/sky", "Phong", {splitMaterials = false})
 lib.object_cube = lib:loadObject(lib.root .. "/objects/cube", "simple", {splitMaterials = false})
 lib.object_plane = lib:loadObject(lib.root .. "/objects/plane", "Phong", {splitMaterials = false})
 
+--default textures
 local pix = love.image.newImageData(2, 2)
 lib.textures = {
 	default = love.graphics.newImage(lib.root .. "/res/default.png"),
@@ -187,10 +186,11 @@ lib.textures = {
 	moon_normal = lib.root .. "/res/moon_normal.png",
 	sun = lib.root .. "/res/sun.png",
 	
-	clouds = love.graphics.newImage(lib.root .. "/res/clouds.png", {mipmaps = true}),
-	clouds_base = love.graphics.newImage(lib.root .. "/res/clouds_base.png", {mipmaps = true}),
+	clouds = love.graphics.newImage(lib.root .. "/res/clouds.png"),
+	clouds_base = love.graphics.newImage(lib.root .. "/res/clouds_base.png"),
 }
 
+--TODO use this for moon,clouds, ...
 lib.textures.get = function(self, path)
 	if type(self[path]) == "string" then
 		self[path] = love.graphics.newImage(self[path])
@@ -223,7 +223,7 @@ function lib.newCanvasSet(self, settings, w, h)
 		set.depth_buffer = love.graphics.newCanvas(w, h, {format = self.canvasFormats["depth32f"] and "depth32f" or self.canvasFormats["depth24"] and "depth24" or "depth16", readable = false, msaa = set.msaa})
 		
 		--temporary HDR color
-		set.color = love.graphics.newCanvas(w, h, {format = self.colorFormat, readable = true, msaa = set.msaa})
+		set.color = love.graphics.newCanvas(w, h, {format = settings.format, readable = true, msaa = set.msaa})
 		
 		--depth
 		set.depth = love.graphics.newCanvas(w, h, {format = "r16f", readable = true, msaa = set.msaa})
@@ -231,10 +231,10 @@ function lib.newCanvasSet(self, settings, w, h)
 	
 	--deferred rendering
 	if set.deferred then
-		set.position = love.graphics.newCanvas(w, h, {format = self.colorFormat, readable = true, msaa = set.msaa})
-		set.normal = love.graphics.newCanvas(w, h, {format = self.colorFormat, readable = true, msaa = set.msaa})
-		set.material = love.graphics.newCanvas(w, h, {format = self.colorFormat, readable = true, msaa = set.msaa})
-		set.albedo = love.graphics.newCanvas(w, h, {format = self.colorFormat, readable = true, msaa = set.msaa})
+		set.position = love.graphics.newCanvas(w, h, {format = settings.format, readable = true, msaa = set.msaa})
+		set.normal = love.graphics.newCanvas(w, h, {format = settings.format, readable = true, msaa = set.msaa})
+		set.material = love.graphics.newCanvas(w, h, {format = settings.format, readable = true, msaa = set.msaa})
+		set.albedo = love.graphics.newCanvas(w, h, {format = settings.format, readable = true, msaa = set.msaa})
 	end
 	
 	--screen space ambient occlusion blurring canvases
@@ -247,14 +247,15 @@ function lib.newCanvasSet(self, settings, w, h)
 	if set.postEffects then
 		--bloom blurring canvases
 		if self.bloom_enabled then
-			set.canvas_bloom_1 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = self.colorFormat, readable = true, msaa = 0})
-			set.canvas_bloom_2 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = self.colorFormat, readable = true, msaa = 0})
+			set.canvas_bloom_1 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = settings.format, readable = true, msaa = 0})
+			set.canvas_bloom_2 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = settings.format, readable = true, msaa = 0})
 		end
 	end
 	
 	return set
 end
 
+--release set and free memory
 function lib:unloadCanvasSet(set)
 	if set then
 		for d,s in pairs(set) do
@@ -275,19 +276,6 @@ function lib.resize(self, w, h)
 	self.canvases = self:newCanvasSet(self.default_settings, w, h)
 	self.canvases_reflections = self:newCanvasSet(self.reflections_settings)
 	
-	--auto exposure scaling canvas
-	if self.autoExposure_enabled then
-		self.canvas_exposure = love.graphics.newCanvas(self.autoExposure_resolution, self.autoExposure_resolution, {format = "r16f", readable = true, msaa = 0, mipmaps = "auto"})
-		self.canvas_exposure_fetch = love.graphics.newCanvas(1, 1, {format = "r16f", readable = true, msaa = 0, mipmaps = "none"})
-		
-		self.canvas_exposure:setFilter("linear")
-		self.canvas_exposure:setMipmapFilter("linear")
-		
-		love.graphics.setCanvas(self.canvas_exposure_fetch)
-		love.graphics.clear(1, 1, 1)
-		love.graphics.setCanvas()
-	end
-	
 	--sky box
 	if self.sky_as_reflection then
 		assert(not self.defaultReflection or self.defaultReflection.canvas, "defaultReflection seems to be a static reflection, disable dream.sky_as_reflection!")
@@ -303,7 +291,7 @@ end
 
 --applies settings and load canvases
 function lib.init(self, w, h)
-	if self.direct then
+	if self.default_settings.direct then
 		local width, height, flags = love.window.getMode()
 		if flags.depth == 0 then
 			print("Direct render is enabled, but there is no depth buffer! Using 16-bit depth from now on.")
@@ -311,7 +299,7 @@ function lib.init(self, w, h)
 		end
 	end
 	
-	if self.autoExposure_enabled and self.direct then
+	if self.autoExposure_enabled and self.default_settings.direct then
 		print("Autoexposure does not work with direct render! Autoexposure has been disabled.")
 		self.autoExposure_enabled = false
 	end
@@ -328,14 +316,13 @@ function lib.init(self, w, h)
 	self.cache = { }
 	
 	--create sun shadow if requested
-	self.sunObject = lib:newLight(1, 1, 1, 1, 1, 1, 5, "sun")
+	--TODO sun strength should receive setting
+	self.sunObject = lib:newLight(1, 1, 1, 1, 1, 1, 3, "sun")
 	if self.sun_shadow then
 		self.sunObject.shadow = lib:newShadow("sun")
 	else
 		self.sunObject.shadow = nil
 	end
-	
-	self.cloudCanvas = love.graphics.newCanvas(1024, 1024, {format = "r8"})
 end
 
 --clears the current scene

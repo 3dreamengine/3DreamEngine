@@ -6,8 +6,10 @@ sh.batchable = true
 
 function sh:constructDefinesGlobal(dream, info)
 	return [[
-		extern int firstSimpleLight;
-		extern int lastSimpleLight;
+		extern int point_simple_count;
+		
+		extern vec3 point_simple_pos[]] .. dream.max_lights .. [[];
+		extern vec3 point_simple_color[]] .. dream.max_lights .. [[];
 	]]
 end
 
@@ -17,12 +19,12 @@ end
 
 function sh:constructPixelGlobal(dream, info)
 	return ([[
-		for (int i = firstSimpleLight; i <= lastSimpleLight; i++) {
-			vec3 lightVecRaw = lightPos[i] - vertexPos;
+		for (int i = 0; i < pint_simple_count; i++) {
+			vec3 lightVecRaw = point_simple_pos[i] - vertexPos;
 			vec3 lightVec = normalize(lightVecRaw);
 			float distance = length(lightVecRaw);
 			float power = 1.0 / (0.1 + distance * distance);
-			light += getLight(lightColor[i] * power, viewVec, lightVec, normal, albedo.rgb, material.x, material.y);
+			light += getLight(point_simple_color[i] * power, viewVec, lightVec, normal, albedo.rgb, material.x, material.y);
 		}
 	]])
 end
@@ -31,16 +33,18 @@ function sh:constructPixel(dream, info, ID)
 
 end
 
-function sh:sendGlobalUniforms(dream, shader, info, lighting, lightRequirements)
-	local first, last = math.huge, -1
+function sh:sendGlobalUniforms(dream, shader, info, count)
+	local colors = { }
+	local pos = {}
 	for d,s in ipairs(lighting) do
 		if s.light_typ == "point_simple" then
-			first = math.min(first, d)
-			last = math.max(last, d)
+			colors[#colors+1] = {s.r * s.brightness, s.g * s.brightness, s.b * s.brightness}
+			pos[#pos+1] = {s.x, s.y, s.z}
 		end
 	end
-	shader:send("firstSimpleLight", first-1)
-	shader:send("lastSimpleLight", math.min(last, first + dream.max_lights - 1)-1)
+	shader:send("point_simple_count", count)
+	shader:send("point_simple_pos", pos)
+	shader:send("point_simple_color", colors)
 end
 
 function sh:sendUniforms(dream, shader, info, light, ID)

@@ -12,7 +12,7 @@ function job:queue(times, operations)
 	for d,s in ipairs(lib.lighting) do
 		if s.shadow and s.active and s.shadow.typ == "point" then
 			local pos = vec3(s.x, s.y, s.z)
-			local dist = (pos - cam.pos):length() / 10.0 + 1.0
+			local dist = (pos - lib.lastUsedCam.pos):length() / 10.0 + 1.0
 			
 			if not s.shadow.static or not s.shadow.done[1] then
 				local id = "shadow_point_" .. tostring(s.shadow)
@@ -22,7 +22,7 @@ function job:queue(times, operations)
 	end
 end
 
-function job:execute(times, light, pos)
+function job:execute(times, delta, light, pos)
 	local lookNormals = lib.lookNormals
 	light.shadow.lastPos = pos
 	

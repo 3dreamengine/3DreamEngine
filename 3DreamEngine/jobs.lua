@@ -18,6 +18,7 @@ function lib:initJobs()
 	executions = { }
 	executionsTemp = { }
 	lastExecutionSwap = 0
+	frames = 0
 	optimalSlots = 10
 	learningRate = 0.1
 	
@@ -83,10 +84,10 @@ function lib.executeJobs(self)
 	
 	--swap debug buffer
 	local i = math.floor(t)
-	if i ~= self.lastExecutionSwap then
-		self.lastExecutionSwap = i
-		self.executions = self.executionsTemp
-		self.executionsTemp = { }
+	if i ~= lastExecutionSwap then
+		lastExecutionSwap = i
+		executions = executionsTemp
+		executionsTemp = { }
 	end
 	
 	--learn
@@ -130,9 +131,9 @@ function lib.executeJobs(self)
 		
 		--execute
 		if type(o[1]) == "function" then
-			o[1](o, delta)
+			o[1](times, delta, unpack(o, 4))
 		else
-			self.jobs[o[1]]:execute(times, unpack(o, 4))
+			self.jobs[o[1]]:execute(times, delta, unpack(o, 4))
 		end
 		
 		--count executions

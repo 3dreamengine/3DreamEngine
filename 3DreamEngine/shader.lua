@@ -130,7 +130,7 @@ function lib.loadShader(self)
 	
 	--create light shaders
 	self.lightShaders = { }
-	if self.deferred then
+	if self.default_settings.deferred or self.reflections_settings.deferred then
 		local sh_light = love.filesystem.read(lib.root .. "/shaders/light.glsl")
 		for d,s in pairs(self.shaderLibrary.light) do
 			local lighting, lightRequirements
@@ -169,7 +169,7 @@ function lib.getFinalShader(self, canvases)
 	parts[#parts+1] = self.AO_enabled and "#define AO_ENABLED" or nil
 	parts[#parts+1] = self.SSR_enabled and "#define SSR_ENABLED" or nil
 	
-	parts[#parts+1] = (self.fxaa and canvases.msaa == 0) and "#define FXAA_ENABLED" or nil
+	parts[#parts+1] = (canvases.fxaa and canvases.msaa == 0) and "#define FXAA_ENABLED" or nil
 	
 	local ID = table.concat(parts, "\n")
 	if not self.shaders.final[ID] then
@@ -331,31 +331,20 @@ function lib:getLightComponents(lighting, lightRequirements)
 	local lcInit = { }
 	local lc = { }
 	
-	--light positions and colors
-	lcInit[#lcInit+1] = [[
-		extern vec3 lightPos[]] .. #lighting .. [[];
-		extern vec3 lightColor[]] .. #lighting .. [[];
-	]]
-	
-	--global defines
+	--global defines and code
 	for d,s in pairs(lightRequirements) do
 		assert(self.shaderLibrary.light[d], "Light of type '" .. d .. "' does not exist!")
 		lcInit[#lcInit+1] = self.shaderLibrary.light[d]:constructDefinesGlobal(self, info)
-	end
-	
-	--global code
-	for d,s in pairs(lightRequirements) do
 		lc[#lc+1] = self.shaderLibrary.light[d]:constructPixelGlobal(self, info)
 	end
 	
-	--defines
+	--defines and code
+	local IDs = { }
 	for	d,s in ipairs(lighting) do
-		lcInit[#lcInit+1] = self.shaderLibrary.light[s.light_typ]:constructDefines(self, info, d-1)
-	end
-	
-	--code
-	for d,s in ipairs(lighting) do
-		local px = self.shaderLibrary.light[s.light_typ]:constructPixel(self, info, d-1)
+		IDs[s.light_typ] = (IDs[s.light_typ] or -1) + 1
+		lcInit[#lcInit+1] = self.shaderLibrary.light[s.light_typ]:constructDefines(self, info, IDs[s.light_typ])
+		
+		local px = self.shaderLibrary.light[s.light_typ]:constructPixel(self, info, IDs[s.light_typ])
 		if px then
 			lc[#lc+1] = "{\n" .. px .. "\n}"
 		end

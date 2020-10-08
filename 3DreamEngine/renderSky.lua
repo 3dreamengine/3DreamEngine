@@ -15,7 +15,7 @@ function lib:renderSky(transformProj)
 		--given hdri sphere
 		love.graphics.setShader(self.shaders.sky_hdri)
 		self.shaders.sky_hdri:send("exposure", self.sky_hdri_exposure)
-		self.shaders.sky_hdri:send("transformProj", transformProj * mat4:getRotateY(love.timer.getTime()*0.01))
+		self.shaders.sky_hdri:send("transformProj", transformProj)
 		self.object_sky.objects.Sphere.mesh:setTexture(self.sky_hdri)
 		love.graphics.draw(self.object_sky.objects.Sphere.mesh)
 	else
@@ -102,10 +102,12 @@ function lib:renderSky(transformProj)
 			local sun = self.sun:normalize()
 			self.shaders.clouds:send("sunVec", {sun:unpack()})
 			self.shaders.clouds:send("sunStrength", math.max(0.0, 1.0 - math.abs(sun.y) * (sun.y > 0 and 3.0 or 10.0)) * 10.0)
-			self.shaders.clouds:send("roughnessOffset", {love.timer.getTime() * 0.01, love.math.noise(love.timer.getTime() * 0.01)})
+			self.shaders.clouds:send("roughnessOffset", self.clouds_pos)
 			
 			self.shaders.clouds:send("scale", self.clouds_scale)
-			self.shaders.clouds:send("scale_base", self.clouds_scale / 27.0)
+			self.shaders.clouds:send("scale_base", self.clouds_scale / 17.0)
+			self.shaders.clouds:send("scale_roughness", self.clouds_scale * 0.7)
+			self.shaders.clouds:send("base_impact", 0.5 + self.weather_temperature * 5.0)
 			
 			self.textures.clouds_base:setWrap("repeat")
 			self.shaders.clouds:send("tex_base", self.textures.clouds_base)

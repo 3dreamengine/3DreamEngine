@@ -118,7 +118,7 @@ function sh:jobCreator(dream, operations)
 	operations[#operations+1] = {self.jobExecuter, 1.0}
 end
 
-function sh.jobExecuter(s, delta)
+function sh:jobExecuter(times, delta)
 	local lastRender = sh.rain > 0
 	if sh.isRaining then
 		sh.rain = math.min(1.0, sh.rain + delta * sh.adaptRain)

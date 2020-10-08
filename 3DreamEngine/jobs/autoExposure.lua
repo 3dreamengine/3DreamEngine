@@ -4,16 +4,27 @@ local lib = _3DreamEngine
 job.cost = 1
 
 function job:init()
-
+	if lib.autoExposure_enabled then
+		lib.canvas_exposure = love.graphics.newCanvas(lib.autoExposure_resolution, lib.autoExposure_resolution, {format = "r16f", readable = true, msaa = 0, mipmaps = "auto"})
+		lib.canvas_exposure_fetch = love.graphics.newCanvas(1, 1, {format = "r16f", readable = true, msaa = 0, mipmaps = "none"})
+		
+		lib.canvas_exposure:setFilter("linear")
+		lib.canvas_exposure:setMipmapFilter("linear")
+		
+		love.graphics.setCanvas(lib.canvas_exposure_fetch)
+		love.graphics.clear(1, 1, 1)
+		love.graphics.setCanvas()
+	end
 end
 
 function job:queue(times, operations)
+	local t = love.timer.getTime()
 	if lib.autoExposure_enabled and (t - (times["autoExposure"] or 0)) > lib.autoExposure_interval then
 		operations[#operations+1] = {"autoExposure", 0.25}
 	end
 end
 
-function job:execute(times)
+function job:execute(times, delta)
 	love.graphics.push("all")
 	love.graphics.reset()
 	

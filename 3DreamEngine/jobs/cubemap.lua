@@ -11,7 +11,7 @@ function job:queue(times, operations)
 
 end
 
-function job:execute(times, cubemap, level)
+function job:execute(times, delta, cubemap, level)
 	lib:blurCubeMap(cubemap, level)
 end
 

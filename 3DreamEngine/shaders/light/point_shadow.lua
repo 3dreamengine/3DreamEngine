@@ -49,8 +49,10 @@ end
 
 function sh:constructDefines(dream, info, ID)
 	return ([[
-		extern samplerCube tex_shadow_#ID#;
-		extern bool smooth_#ID#;
+		extern samplerCube point_shadow_tex_#ID#;
+		extern bool point_shadow_smooth_#ID#;
+		extern vec3 point_shadow_pos_#ID#;
+		extern vec3 point_shadow_color_#ID#;
 	]]):gsub("#ID#", ID)
 end
 
@@ -60,17 +62,19 @@ end
 
 function sh:constructPixel(dream, info, ID)
 	return ([[
-		vec3 lightVec = lightPos[#ID#] - vertexPos;
+		vec3 lightVec = point_shadow_pos_#ID# - vertexPos;
+		
 		float shadow;
-		if (smooth_#ID#) {
-			shadow = sampleShadowPointSmooth(lightVec, tex_shadow_#ID#);
+		if (point_shadow_smooth_#ID#) {
+			shadow = sampleShadowPointSmooth(lightVec, point_shadow_tex_#ID#);
 		} else {
-			shadow = sampleShadowPoint(lightVec, tex_shadow_#ID#);
+			shadow = sampleShadowPoint(lightVec, point_shadow_tex_#ID#);
 		}
+		
 		if (shadow > 0.0) {
 			float distance = length(lightVec);
 			float power = 1.0 / (0.1 + distance * distance);
-			light += getLight(lightColor[#ID#] * shadow * power, viewVec, normalize(lightVec), normal, albedo.rgb, material.x, material.y);
+			light += getLight(point_shadow_color_#ID# * shadow * power, viewVec, normalize(lightVec), normal, albedo.rgb, material.x, material.y);
 		}
 	]]):gsub("#ID#", ID)
 end
@@ -82,13 +86,15 @@ end
 function sh:sendUniforms(dream, shader, info, light, ID)
 	if light.shadow.canvas then
 		if light.smooth == nil then
-			shader:send("smooth_" .. ID, dream.shadow_smooth)
+			shader:send("point_shadow_smooth_" .. ID, dream.shadow_smooth)
 		else
-			shader:send("smooth_" .. ID, light.smooth)
+			shader:send("point_shadow_smooth_" .. ID, light.smooth)
 		end
-		shader:send("tex_shadow_" .. ID, light.shadow.canvas)
+		shader:send("point_shadow_tex_" .. ID, light.shadow.canvas)
+		shader:send("point_shadow_color_" .. ID, {light.r * light.brightness, light.g * light.brightness, light.b * light.brightness})
+		shader:send("point_shadow_pos_" .. ID, {light.x, light.y, light.z})
 	else
-		return true
+		shader:send("point_shadow_color_" .. ID, {0, 0, 0})
 	end
 end
 

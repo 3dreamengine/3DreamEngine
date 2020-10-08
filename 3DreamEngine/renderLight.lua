@@ -5,13 +5,15 @@ a collection of lighting helper functions for the rendering process
 
 local lib = _3DreamEngine
 
-local lightTypes = { }
-local lastLightTyp = 0
+--creates a subset of light sources, optimized for the current scene, cam and alpha pass
 function lib:getLightOverview(cam, alphaPass)
 	--select the most important lights
 	for d,s in ipairs(self.lighting) do
 		s.active = false
-		s.priority = s.brightness * (s.meter == 0 and 100.0 or 1.0) * (s.shadow and 2.0 or 1.0) / (cam.pos - vec3(s.x, s.y, s.z)):length()
+		s.priority = s.brightness * (s.shadow and 2.0 or 1.0)
+		if s.typ ~= "sun" then
+			s.priority = s.priority / (1.0 + (cam.pos - vec3(s.x, s.y, s.z)):length())
+		end
 	end
 	table.sort(self.lighting, function(a, b) return a.priority > b.priority end)
 	
@@ -20,26 +22,14 @@ function lib:getLightOverview(cam, alphaPass)
 	local lightRequirements = { }
 	for d,s in ipairs(self.lighting) do
 		local typ = s.typ .. "_" .. (s.shadow and (not alphaPass or not s.shadow.noAlphaPass) and "shadow" or "simple")
-		if not lightTypes[typ] then
-			lightTypes[typ] = lastLightTyp
-			lastLightTyp = lastLightTyp + 1
-		end
-		
 		s.light_typ = typ
-		s.light_typ_id = lightTypes[typ]
 		
-		if not alphaPass or not s.noAlphaPass then
+		if (not alphaPass or not s.noAlphaPass) and (lightRequirements[typ] or 0) < self.max_lights then
 			lightRequirements[typ] = (lightRequirements[typ] or 0) + 1
 			lighting[#lighting+1] = s
-			
 			s.active = true
-			if #lighting == self.max_lights then
-				break
-			end
 		end
 	end
-	
-	table.sort(lighting, function(a, b) return a.light_typ_id > b.light_typ_id end)
 	
 	return lighting, lightRequirements
 end
@@ -51,25 +41,13 @@ function lib:sendLightUniforms(lighting, lightRequirements, shader, overwriteTyp
 	
 	--global uniforms
 	for d,s in pairs(lightRequirements) do
-		self.shaderLibrary.light[d]:sendGlobalUniforms(self, shader, info, lighting, lightRequirements)
+		self.shaderLibrary.light[d]:sendGlobalUniforms(self, shader, info, s)
 	end
 	
 	--uniforms
+	local IDs = { }
 	for d,s in ipairs(lighting) do
-		local hide = self.shaderLibrary.light[overwriteTyp or s.light_typ]:sendUniforms(self, shader, info, s, d-1)
-		if hide then
-			lightColor[d] = {0, 0, 0}
-			lightPos[d] = {0, 0, 0}
-		else
-			lightColor[d] = {s.r * s.brightness, s.g * s.brightness, s.b * s.brightness}
-			if s.shadow then
-				lightPos[d] = {s.shadow.lastPos.x, s.shadow.lastPos.y, s.shadow.lastPos.z}
-			else
-				lightPos[d] = {s.x, s.y, s.z}
-			end
-		end
+		IDs[s.light_typ] = (IDs[s.light_typ] or -1) + 1
+		self.shaderLibrary.light[overwriteTyp or s.light_typ]:sendUniforms(self, shader, info, s, IDs[s.light_typ])
 	end
-	
-	shader:send("lightColor", unpack(lightColor))
-	shader:send("lightPos", unpack(lightPos))
 end

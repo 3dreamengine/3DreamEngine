@@ -465,7 +465,7 @@ end
 function lib:take3DScreenshot(pos, resolution, path)
 	local lookNormals = self.lookNormals
 	resolution = resolution or 512
-	local canvases = self:newCanvasSet(resolution, resolution, 8, self.deferred, false)
+	local canvases = self:newCanvasSet(self.default_settings, resolution, resolution)
 	local results = love.graphics.newCanvas(resolution, resolution, {format = "rgba16f", type = "cube", mipmaps = "manual"})
 	
 	--view matrices
