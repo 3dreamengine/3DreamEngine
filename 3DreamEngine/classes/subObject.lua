@@ -29,7 +29,7 @@ function lib:newSubObject(name, obj, mat)
 		faces = { },
 		
 		shaderType = shaderType,
-		meshType = obj.meshType or self.shaderLibrary.base[shaderType].meshType,
+		meshType = obj.args.meshType or self.shaderLibrary.base[shaderType].meshType,
 	}
 	
 	return setmetatable(o, self.meta.subObject)

@@ -93,8 +93,11 @@ function lib.executeJobs(self)
 	--learn
 	local totalCost = 0
 	for _,o in ipairs(operations) do
-		local dat = self.jobs[o[1]]
-		totalCost = totalCost + dat.cost / (dat.FPS or 1)
+		if type(o[1]) == "string" then
+			local dat = self.jobs[o[1]]
+			assert(dat, "job " .. tostring(o[1]) .. " does not exist")
+			totalCost = totalCost + dat.cost / (dat.FPS or 1)
+		end
 	end
 	optimalSlots = math.max(5, optimalSlots * (1.0 - learningRate) + totalCost * learningRate)
 	
@@ -130,17 +133,18 @@ function lib.executeJobs(self)
 		times[o[3] or o[1]] = t
 		
 		--execute
+		local cost
 		if type(o[1]) == "function" then
-			o[1](times, delta, unpack(o, 4))
+			cost = o[1](times, delta, unpack(o, 4))
 		else
-			self.jobs[o[1]]:execute(times, delta, unpack(o, 4))
+			cost = self.jobs[o[1]]:execute(times, delta, unpack(o, 4))
 		end
 		
 		--count executions
 		executionsTemp[o[1]] = (executionsTemp[o[1]] or 0) + 1
 		
 		--limit processing time
-		slots = slots - self.jobs[o[1]].cost
+		slots = slots - (cost or type(o[1]) == "string" and self.jobs[o[1]].cost or 1)
 		if slots <= 0 then
 			break
 		end

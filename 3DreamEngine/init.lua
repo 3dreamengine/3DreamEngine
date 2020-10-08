@@ -52,6 +52,10 @@ for d,s in pairs(love.filesystem.getDirectoryItems((...) .. "/loader")) do
 	lib.loader[s:sub(1, #s-4)] = require((...) .. "/loader/" .. s:sub(1, #s-4))
 end
 
+--get color of sun based on sunrise sky texture
+lib.sunlight = require(lib.root .. "/res/sunlight")
+lib.skylight = require(lib.root .. "/res/skylight")
+
 --supported canvas formats
 lib.canvasFormats = love.graphics and love.graphics.getCanvasFormats() or { }
 
@@ -61,19 +65,12 @@ lib.materialLibrary = { }
 --default settings
 lib:setAO(16, 0.75)
 lib:setBloom(1.0, 1.5, 0.5)
+lib:setFog()
+lib:setDaytime(0.3)
 
 --TODO, replace sun and moon with particle-like billboarding
 lib.sun_offset = 0.25
-lib.sun = vec3(-0.3, 0.6, 0.5)
-lib.sun_color = vec3(0.63529411764706, 0.69411764705882, 0.71764705882353)
-lib.sun_ambient = vec3(1.0, 1.0, 1.0)
 lib.sun_shadow = true
-
---TODO, see website
-lib.fog_enabled = false
-lib.fog_distance = 20.0
-lib.fog_density = 0.75
-lib.fog_color = {0.5, 0.5, 0.5}
 
 --TODO
 lib.refraction_enabled = true
@@ -133,9 +130,6 @@ lib.sky_hdri = false
 lib.sky_hdri_exposure = 1.0
 lib.sky_resolution = 512
 lib.sky_format = "rgba16f"
-lib.sky_time = 0.3
-lib.sky_day = 0.0
-lib.sky_color = vec3(1.0, 1.0, 1.0)
 
 lib.stars_enabled = true
 lib.sunMoon_enabled = true
@@ -148,8 +142,7 @@ lib.clouds_wind = vec2(0.01, 0.0)
 lib.clouds_pos = vec2(0.0, 0.0)
 
 --TODO move to settings
-lib.weather_rain = 0.5
-lib.weather_temperature = 0.5
+lib:setWeather(0.5)
 
 --default camera
 lib.cam = lib:newCam()
@@ -197,10 +190,6 @@ lib.textures.get = function(self, path)
 	end
 	return self[path]
 end
-
---get color of sun based on sunrise sky texture
-lib.sunlight = require(lib.root .. "/res/sunlight")
-lib.skylight = require(lib.root .. "/res/skylight")
 
 --a canvas set is used to render a scene to
 function lib.newCanvasSet(self, settings, w, h)
@@ -317,7 +306,7 @@ function lib.init(self, w, h)
 	
 	--create sun shadow if requested
 	--TODO sun strength should receive setting
-	self.sunObject = lib:newLight(1, 1, 1, 1, 1, 1, 3, "sun")
+	self.sunObject = lib:newLight(1, 1, 1, 1, 1, 1, 5, "sun")
 	if self.sun_shadow then
 		self.sunObject.shadow = lib:newShadow("sun")
 	else

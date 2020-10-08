@@ -433,8 +433,7 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 	if shader:hasUniform("gamma") then shader:send("gamma", self.gamma) end
 	if shader:hasUniform("exposure") then shader:send("exposure", self.exposure) end
 	
-	if shader:hasUniform("fog_distance") then
-		shader:send("fog_distance", self.fog_distance)
+	if shader:hasUniform("fog_density") then
 		shader:send("fog_density", self.fog_density)
 		shader:send("fog_color", self.fog_color)
 	end

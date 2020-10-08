@@ -224,53 +224,6 @@ function lib:pixelToPoint(point, cam, canvases)
 	return vec3(near) * (1.0 - depth) + vec3(far) * depth
 end
 
-function lib:setDaytime(time)
-	--time, 0.0 is sunrise, 0.5 is sunset
-	self.sky_time = time % 1.0
-	self.sky_day = math.floor(time % 30.0)
-	
-	--position
-	self.sun = mat4:getRotateZ(self.sun_offset) * vec3(
-		0,
-		math.sin(self.sky_time * math.pi * 2),
-		-math.cos(self.sky_time * math.pi * 2)
-	):normalize()
-	
-	local c = #self.sunlight
-	local p = self.sky_time * c
-	self.sun_color_raw = (
-		self.sunlight[math.max(1, math.min(c, math.ceil(p)))] * (1.0 - p % 1) +
-		self.sunlight[math.max(1, math.min(c, math.ceil(p+1)))] * (p % 1)
-	)
-	self.sun_color = self.sun_color_raw
-	
-	self.sun_ambient_raw = (
-		self.skylight[math.max(1, math.min(c, math.ceil(p)))] * (1.0 - p % 1) +
-		self.skylight[math.max(1, math.min(c, math.ceil(p+1)))] * (p % 1)
-	)
-	self.sun_ambient = self.sun_ambient_raw
-end
-
---0 is the happiest day ever and 1 the end of the world
-function lib:setWeather(rain, temp)
-	rain = rain or 0.0
-	temp = temp or (1.0 - rain)
-	
-	self.weather_rain = rain
-	self.weather_temperature = temp
-	
-	--blue-darken ambient and sun color
-	local color = rain * 0.75
-	local darkBlue = vec3(30, 40, 60):normalize() * self.sun_color:length()
-	self.sun_color = darkBlue * 0.2 * color + self.sun_color * (1.0 - color)
-	self.sun_ambient = darkBlue * 0.1 * color + self.sun_ambient * (1.0 - color)
-	self.sky_color = darkBlue * 0.25 * color + vec3(1.0, 1.0, 1.0) * (1.0 - color)
-	
-	--set module settings
-	self:getShaderModule("rain").isRaining = rain > 0.4
-	self:getShaderModule("rain").strength = math.ceil(math.clamp((rain-0.4) / 0.6 * 5.0, 0.001, 5.0))
-end
-
 function lib:inFrustum(cam, pos, radius)
 	local dir = pos - cam.pos
 	local dist = dir:length()

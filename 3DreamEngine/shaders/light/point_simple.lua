@@ -19,7 +19,7 @@ end
 
 function sh:constructPixelGlobal(dream, info)
 	return ([[
-		for (int i = 0; i < pint_simple_count; i++) {
+		for (int i = 0; i < point_simple_count; i++) {
 			vec3 lightVecRaw = point_simple_pos[i] - vertexPos;
 			vec3 lightVec = normalize(lightVecRaw);
 			float distance = length(lightVecRaw);
@@ -33,7 +33,7 @@ function sh:constructPixel(dream, info, ID)
 
 end
 
-function sh:sendGlobalUniforms(dream, shader, info, count)
+function sh:sendGlobalUniforms(dream, shader, info, count, lighting)
 	local colors = { }
 	local pos = {}
 	for d,s in ipairs(lighting) do
@@ -43,8 +43,8 @@ function sh:sendGlobalUniforms(dream, shader, info, count)
 		end
 	end
 	shader:send("point_simple_count", count)
-	shader:send("point_simple_pos", pos)
-	shader:send("point_simple_color", colors)
+	shader:send("point_simple_pos", unpack(pos))
+	shader:send("point_simple_color", unpack(colors))
 end
 
 function sh:sendUniforms(dream, shader, info, light, ID)

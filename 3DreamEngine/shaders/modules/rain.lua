@@ -15,7 +15,7 @@ sh.wetness_decrease = 0.01
 local root = (string.match((...), "(.*[/\\])") or "") .. "rain/"
 
 function sh:init(dream)
-	sh.object_rain = dream:loadObject(root .. "rain", {meshType = "textured"})
+	sh.object_rain = dream:loadObject(root .. "rain", "Phong", {splitMaterials = false})
 	
 	--rain textures
 	self.tex_rain = { }
@@ -59,7 +59,7 @@ function sh:constructPixel(dream, info)
 		float rainNoise = Texel(tex_wetness, vertexPos.xz * 0.17).r;
 		float rain = clamp((normal.y * 1.1 - 0.1) * clamp(wetness * 1.5 - rainNoise + (1.0 - rainNormal.z) * 2.0, 0.0, 1.0), 0.0, 1.0);
 	]] .. (info.shaderType == "PBR" and [[
-		roughness = mix(roughness, 0.0, rain * 0.75);
+		material.r = mix(material.r, 0.0, rain * 0.75);
 	]] or "")
 end
 
@@ -104,10 +104,11 @@ function sh:render(dream, cam, canvases, scene, noSky)
 	local translate = vec3(math.floor(cam.pos.x), math.floor(cam.pos.y), math.floor(cam.pos.z))
 	
 	love.graphics.setShader(self.shader_rain)
-	self.shader_rain:send("time", love.timer.getTime() * 5.0)
+	self.shader_rain:send("time", love.timer.getTime() * 3.0)
 	self.shader_rain:send("transformProj", cam.transformProj)
 	self.shader_rain:send("transform", mat4:getIdentity():translate(translate))
 	self.shader_rain:send("rain", self.rain)
+	
 	self.object_rain.objects.Plane.mesh:setTexture(t)
 	love.graphics.draw(self.object_rain.objects.Plane.mesh)
 	
@@ -118,7 +119,7 @@ function sh:jobCreator(dream, operations)
 	operations[#operations+1] = {self.jobExecuter, 1.0}
 end
 
-function sh:jobExecuter(times, delta)
+function sh.jobExecuter(times, delta)
 	local lastRender = sh.rain > 0
 	if sh.isRaining then
 		sh.rain = math.min(1.0, sh.rain + delta * sh.adaptRain)

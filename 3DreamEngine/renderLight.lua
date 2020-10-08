@@ -41,7 +41,7 @@ function lib:sendLightUniforms(lighting, lightRequirements, shader, overwriteTyp
 	
 	--global uniforms
 	for d,s in pairs(lightRequirements) do
-		self.shaderLibrary.light[d]:sendGlobalUniforms(self, shader, info, s)
+		self.shaderLibrary.light[d]:sendGlobalUniforms(self, shader, info, s, lighting)
 	end
 	
 	--uniforms

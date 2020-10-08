@@ -14,7 +14,6 @@ extern float gamma;
 extern float exposure;
 
 #ifdef FOG_ENABLED
-extern float fog_distance;
 extern float fog_density;
 extern vec3 fog_color;
 #endif
@@ -114,11 +113,8 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 	//fog
 #ifdef FOG_ENABLED
 	float depth = Texel(canvas_depth, tc_final).r;
-#ifdef AVERAGE_ALPHA
-	depth = mix(depth, 0.0, c2.a);
-#endif
-	float d = min(depth / fog_distance, 1.0);
-	c.rgb = mix(c.rgb, fog_color, d * fog_density);
+	float fog = 1.0 - exp(-depth * fog_density);
+	c.rgb = mix(c.rgb, fog_color, fog);
 #endif
 	
 	//additional post effects
