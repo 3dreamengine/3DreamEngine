@@ -34,8 +34,8 @@ return function(self, obj, path)
 	end
 	
 	--insert in loader
-	table.insert(self.jobs, obj)
+	table.insert(self.resourceJobs, obj)
 	for d, o in pairs(obj.objects) do
-		self.channel_jobs_priority:push({"3do", #self.jobs, d, path, dataOffset + o.meshDataIndex, o.meshDataSize, compressed})
+		self.channel_jobs_priority:push({"3do", #self.resourceJobs, d, path, dataOffset + o.meshDataIndex, o.meshDataSize, compressed})
 	end
 end

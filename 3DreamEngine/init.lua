@@ -71,16 +71,20 @@ lib:setDaytime(0.3)
 lib:setGamma(false)
 lib:setExposure(1.0)
 
+--shadows
+lib:setShadowResolution(1024, 512)
+lib:setShadowSmoothing(false)
+lib:setShadowCascade(8, 4)
+
+--loader settings
+lib:setResourceLoader(true, true)
+lib:setSmoothLoading(1 / 1000)
+lib:setSmoothLoadingBufferSize(128)
+lib:setMipmaps(true)
+
 --TODO, replace sun and moon with particle-like billboarding
 lib.sun_offset = 0.25
 lib.sun_shadow = true
-
---TODO
-lib.textures_fastLoading = true
-lib.textures_fastLoadingProgress = false
-lib.textures_mipmaps = true
-lib.textures_filter = "linear"
-lib.textures_generateThumbnails = true
 
 --TODO
 lib.deferredShaderType = "PBR"
@@ -88,13 +92,6 @@ lib.max_lights = 16
 lib.nameDecoder = "blender"
 lib.frustumCheck = true
 lib.LoDDistance = 100
-
---SHADOWS
-lib.shadow_resolution = 1024
-lib.shadow_cube_resolution = 512
-lib.shadow_distance = 8
-lib.shadow_factor = 4
-lib.shadow_smooth = true
 
 --canvas set settings
 lib.default_settings = lib:newSetSettings()

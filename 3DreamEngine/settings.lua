@@ -22,6 +22,7 @@ function lib:getExposure()
 	return self.exposure
 end
 
+
 --gamma
 function lib:setGamma(g)
 	if g then
@@ -34,6 +35,7 @@ end
 function lib:getGamma()
 	return self.gamma
 end
+
 
 --AO settings
 function lib:setAO(samples, resolution)
@@ -48,6 +50,10 @@ function lib:setAO(samples, resolution)
 		self.AO_enabled = false
 	end
 end
+function lib:getAO()
+	return self.AO_enabled, self.AO_quality, self.AO_resolution
+end
+
 
 --bloom settings
 function lib:setBloom(strength, size, resolution)
@@ -64,6 +70,10 @@ function lib:setBloom(strength, size, resolution)
 		self.bloom_enabled = false
 	end
 end
+function lib:getBloom()
+	return self.bloom_enabled, self.bloom_size, self.bloom_resolution, self.bloom_strength
+end
+
 
 --Fog
 function lib:setFog(density, color, scatter)
@@ -95,6 +105,7 @@ function lib:getFogHeight(min, max)
 	return self.fog_min, self.fog_max
 end
 
+
 --default shadow resolution
 function lib:setShadowResolution(sun, point)
 	check(sun, "number", 1)
@@ -107,6 +118,7 @@ function lib:getShadowResolution()
 	return self.shadow_resolution, self.shadow_cube_resolution
 end
 
+
 --default shadow smoothing mode
 function lib:setShadowSmoothing(enabled)
 	check(enabled, "boolean", 1)
@@ -115,6 +127,7 @@ end
 function lib:getShadowSmoothing()
 	return self.shadow_smooth
 end
+
 
 --sun shadow cascade
 function lib:setShadowCascade(distance, factor)
@@ -127,6 +140,7 @@ end
 function lib:getShadowCascade()
 	return self.shadow_distance, self.shadow_factor
 end
+
 
 --day time
 function lib:setDaytime(time)
@@ -164,6 +178,7 @@ function lib:getDaytime()
 	return self.sky_time, self.sky_day
 end
 
+
 --sets the rain value and temparature
 function lib:setWeather(rain, temp, raining)
 	check(rain, "number", 1)
@@ -188,4 +203,47 @@ function lib:setWeather(rain, temp, raining)
 end
 function lib:getWeather()
 	return self.weather_rain, self.weather_temperature
+end
+
+--set resource loader settings
+function lib:setResourceLoader(threaded, thumbnails)
+	if threaded then
+		check(thumbnails, "boolean", 2)
+		self.textures_threaded = true
+		self.textures_generateThumbnails = thumbnails
+	else
+		self.textures_threaded = false
+	end
+end
+function lib:getResourceLoader()
+	return self.textures_threaded, self.textures_generateThumbnails
+end
+
+function lib:setSmoothLoading(time)
+	if time then
+		check(time, "number", 1)
+		self.textures_smoothLoading = true
+		self.textures_smoothLoadingTime = time
+	else
+		self.textures_smoothLoading = false
+	end
+end
+function lib:getSmoothLoading(time)
+	return self.textures_smoothLoading, self.textures_smoothLoadingTime
+end
+
+function lib:setSmoothLoadingBufferSize(size)
+	check(size, "number", 1)
+	self.textures_bufferSize = size
+end
+function lib:getSmoothLoadingBufferSize(time)
+	return self.textures_bufferSize
+end
+
+function lib:setMipmaps(mm)
+	check(mm, "boolean", 1)
+	self.textures_mipmaps = mm
+end
+function lib:getMipmaps()
+	return self.textures_mipmaps
 end

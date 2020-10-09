@@ -330,7 +330,6 @@ function lib:getShader(info, canvases, pass, lighting, lightRequirements)
 		code = code:gsub("#import modulesPixel", table.concat(pixel, "\n"))
 		
 		--fog engine
-		print(self.fog_enabled, canvases.direct)
 		if self.fog_enabled and canvases.direct then
 			code = code:gsub("#import fog", codes.fog)
 		end
