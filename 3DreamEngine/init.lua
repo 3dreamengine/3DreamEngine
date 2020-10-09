@@ -68,14 +68,12 @@ lib:setBloom(1.0, 1.5, 0.5)
 lib:setFog()
 lib:setFogHeight(1, -1)
 lib:setDaytime(0.3)
+lib:setGamma(false)
+lib:setExposure(1.0)
 
 --TODO, replace sun and moon with particle-like billboarding
 lib.sun_offset = 0.25
 lib.sun_shadow = true
-
---TODO
-lib.refraction_enabled = true
-lib.refraction_disableCulling = false
 
 --TODO
 lib.textures_fastLoading = true
@@ -101,6 +99,7 @@ lib.shadow_smooth = true
 --canvas set settings
 lib.default_settings = lib:newSetSettings()
 lib.default_settings:setPostEffects(true)
+lib.default_settings:setRefractions(true)
 
 lib.reflections_settings = lib:newSetSettings()
 lib.reflections_settings:setDirect(true)
@@ -110,10 +109,6 @@ lib.mirror_settings:setDirect(true)
 
 --TODO
 lib.reflections_levels = 5
-
---TODO, add to direct shader, directly into base
-lib.gamma = 1.0
-lib.exposure = 1.0
 
 --TODO
 lib.autoExposure_enabled = false
@@ -204,7 +199,9 @@ function lib.newCanvasSet(self, settings, w, h)
 	set.msaa = settings.msaa
 	set.direct = settings.direct
 	set.deferred = settings.deferred and not set.direct
-	set.postEffects = settings.postEffects and not set.direct
+	set.postEffects = settings.postEffects
+	set.refractions = settings.refractions and not set.direct
+	set.format = settings.format
 	
 	assert(not set.deferred or not set.direct, "Deferred rendering is not compatible with direct rendering!")
 	
@@ -214,6 +211,11 @@ function lib.newCanvasSet(self, settings, w, h)
 		
 		--temporary HDR color
 		set.color = love.graphics.newCanvas(w, h, {format = settings.format, readable = true, msaa = set.msaa})
+		
+		--additional color if using refractions
+		if set.refractions then
+			set.colorAlpha = love.graphics.newCanvas(w, h, {format = settings.format, readable = true, msaa = set.msaa})
+		end
 		
 		--depth
 		set.depth = love.graphics.newCanvas(w, h, {format = "r16f", readable = true, msaa = set.msaa})
@@ -237,8 +239,8 @@ function lib.newCanvasSet(self, settings, w, h)
 	if set.postEffects then
 		--bloom blurring canvases
 		if self.bloom_enabled then
-			set.canvas_bloom_1 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = settings.format, readable = true, msaa = 0})
-			set.canvas_bloom_2 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = settings.format, readable = true, msaa = 0})
+			set.bloom_1 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = settings.format, readable = true, msaa = 0})
+			set.bloom_2 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = settings.format, readable = true, msaa = 0})
 		end
 	end
 	

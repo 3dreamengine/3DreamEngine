@@ -9,6 +9,32 @@ local function check(value, typ, argNr)
 	assert(type(value) == typ, "bad argument #" .. argNr .. " (number expected, got nil)")
 end
 
+--exposure
+function lib:setExposure(e)
+	if e then
+		check(e, "number", 1)
+		self.exposure = e
+	else
+		self.exposure = false
+	end
+end
+function lib:getExposure()
+	return self.exposure
+end
+
+--gamma
+function lib:setGamma(g)
+	if g then
+		check(g, "number", 1)
+		self.gamma = g
+	else
+		self.gamma = false
+	end
+end
+function lib:getGamma()
+	return self.gamma
+end
+
 --AO settings
 function lib:setAO(samples, resolution)
 	if samples then

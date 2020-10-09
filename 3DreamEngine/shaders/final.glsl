@@ -4,6 +4,8 @@ extern Image canvas_bloom;
 extern Image canvas_ao;
 extern Image canvas_SSR;
 
+extern Image canvas_alpha;
+
 extern Image canvas_exposure;
 
 extern vec3 viewPos;
@@ -14,13 +16,6 @@ extern float exposure;
 #ifdef FOG_ENABLED
 varying vec3 viewVec;
 extern mat4 transformInverse;
-extern float fog_density;
-extern float fog_scatter;
-extern vec3 fog_color;
-extern vec3 fog_sun;
-extern vec3 fog_sunColor;
-extern float fog_max;
-extern float fog_min;
 #endif
 
 #ifdef AUTOEXPOSURE_ENABLED
@@ -92,65 +87,44 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 	
 	//color
 #ifdef FXAA_ENABLED
-	vec4 c = fxaa(canvas_color, tc_final);
+	vec4 col = fxaa(canvas_color, tc_final);
 #else
-	vec4 c = Texel(canvas_color, tc_final);
+	vec4 col = Texel(canvas_color, tc_final);
+#endif
+
+	//alpha
+#ifdef REFRACTIONS_ENABLED
+#ifdef FXAA_ENABLED
+	vec4 ca = fxaa(canvas_alpha, tc_final);
+#else
+	vec4 ca = Texel(canvas_alpha, tc_final);
+#endif
+	col = mix(col, ca, ca.a);
 #endif
 	
 	//ao
 #ifdef AO_ENABLED
 	float ao = Texel(canvas_ao, tc_final).r;
-	c.rgb *= ao;
+	col.rgb *= ao;
 #endif
 	
 	//bloom
 #ifdef BLOOM_ENABLED
 	vec3 bloom = Texel(canvas_bloom, tc_final).rgb;
-	c.rgb += bloom;
+	col.rgb += bloom;
 #endif
 	
 	//screen space reflections merge
 #ifdef SSR_ENABLED
 	vec3 ref = Texel(canvas_SSR, tc_final).rgb;
-	c.rgb += ref;
+	col.rgb += ref;
 #endif
 
 	//fog
 #ifdef FOG_ENABLED
 	float depth = Texel(canvas_depth, tc_final).r;
-	
-	if (fog_max > fog_min) {
-		vec3 vec = viewVec * depth;
-		vec3 stepVec = vec / vec.y;
-		
-		//ray
-		vec3 pos_near = viewPos;
-		vec3 pos_far = viewPos + vec;
-		
-		//find entry/exit heights
-		float height_near = clamp(pos_near.y, fog_min, fog_max);
-		float height_far = clamp(pos_far.y, fog_min, fog_max);
-		
-		//find points
-		pos_near += stepVec * (height_near - pos_near.y);
-		pos_far += stepVec * (height_far - pos_far.y);
-		
-		//get average density
-		float heightDiff = fog_max - fog_min;
-		float nearDensity = 1.0 - (height_near - fog_min) / heightDiff;
-		float farDensity = 1.0 - (height_far - fog_min) / heightDiff;
-		depth = distance(pos_far, pos_near) * (farDensity + nearDensity) * 0.5;
-	}
-	
-	//finish fog
-	float fog = 1.0 - exp(-depth * fog_density);
-	if (fog_scatter > 0.0) {
-		float fog_sunStrength = max(dot(fog_sun, normalize(viewVec)), 0.0);
-		vec3 fogColor = fog_color + fog_sunColor * pow(fog_sunStrength, 8.0) * fog_scatter;
-		c.rgb = mix(c.rgb, fogColor, fog);
-	} else {
-		c.rgb = mix(c.rgb, fog_color, fog);
-	}
+	vec4 fogColor = getFog(depth, viewVec, viewPos);
+	col.rgb = mix(col.rgb, fogColor.rgb, fogColor.a);
 #endif
 	
 	//additional post effects
@@ -158,19 +132,21 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 	
 	//eye adaption
 #ifdef AUTOEXPOSURE_ENABLED
-	c.rgb *= eyeAdaption;
+	col.rgb *= eyeAdaption;
 #endif
 	
 	//exposure
 #ifdef EXPOSURE_ENABLED
-	c.rgb = vec3(1.0) - exp(-c.rgb * exposure);
+	col.rgb = vec3(1.0) - exp(-col.rgb * exposure);
 #endif
 	
 	//gamma correction
-	c.rgb = pow(c.rgb, vec3(1.0 / gamma));
+#ifdef GAMMA_ENABLED
+	col.rgb = pow(col.rgb, vec3(1.0 / gamma));
+#endif
 #endif
 	
-	return vec4(c.rgb, c.a);
+	return col;
 }
 #endif
 

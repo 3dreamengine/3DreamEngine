@@ -16,6 +16,16 @@ local function sortFunction(a, b)
 	return (a.pos - sortPosition):lengthSquared() > (b.pos - sortPosition):lengthSquared()
 end
 
+function lib:sendFogData(shader)
+	shader:send("fog_density", self.fog_density)
+	shader:send("fog_color", self.fog_color)
+	shader:send("fog_sun", self.sun)
+	shader:send("fog_sunColor", self.sun_color)
+	shader:send("fog_scatter", self.fog_scatter)
+	shader:send("fog_min", self.fog_min)
+	shader:send("fog_max", self.fog_max)
+end
+
 --use the filled drawTable to build a scene
 --a scene is a subset of the draw table, ordered and prepared for rendering
 --typ is the scene typ and may be 'render', 'shadows' or 'reflections'
@@ -90,6 +100,7 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 		love.graphics.reset()
 	end
 	
+	--render sky
 	if canvases.direct then
 		if not noSky then
 			self:renderSky(cam.transformProjOrigin)
@@ -107,11 +118,11 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 	
 	--clear
 	if not canvases.direct then
-		love.graphics.setCanvas({canvases.depth, depthstencil = canvases.depth_buffer})
-		love.graphics.clear(255, 255, 255)
-		if canvases.deferred and pass == 1 then
-			love.graphics.setCanvas({canvases.position, canvases.normaö, canvases.material, canvases.albedo})
-			love.graphics.clear()
+		love.graphics.setCanvas({canvases.depth, canvases.colorAlpha, depthstencil = canvases.depth_buffer})
+		love.graphics.clear({255, 255, 255, 255}, {0, 0, 0, 0})
+		if canvases.deferred then
+			love.graphics.setCanvas(canvases.position, canvases.normal, canvases.material, canvases.albedo)
+			love.graphics.clear(0, 0, 0, 0)
 		end
 	end
 	
@@ -132,6 +143,8 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 		if not canvases.direct then
 			if canvases.deferred and pass == 1 then
 				love.graphics.setCanvas({canvases.color, canvases.depth, canvases.position, canvases.normal, canvases.material, canvases.albedo, depthstencil = canvases.depth_buffer})
+			elseif canvases.refractions and pass == 2 then
+				love.graphics.setCanvas({canvases.colorAlpha, canvases.depth, depthstencil = canvases.depth_buffer})
 			else
 				love.graphics.setCanvas({canvases.color, canvases.depth, depthstencil = canvases.depth_buffer})
 			end
@@ -140,7 +153,7 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 		--final draw
 		for shaderInfo, shaderGroup in pairs(scene) do
 			self.delton:start("shader")
-			local shader = noLight and self:getShader(shaderInfo, false) or self:getShader(shaderInfo, lighting, lightRequirements)
+			local shader = noLight and self:getShader(shaderInfo, canvases, pass) or self:getShader(shaderInfo, canvases, pass, lighting, lightRequirements)
 			
 			--output settings
 			love.graphics.setShader(shader)
@@ -157,6 +170,21 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 			if not noLight then
 				self:sendLightUniforms(lighting, lightRequirements, shader)
 			end
+			
+			--fog
+			if shader:hasUniform("fog_density") then
+				self:sendFogData(shader)
+			end
+			
+			--framebuffer
+			if canvases.refractions and pass == 2 then
+				shader:send("tex_depth", canvases.depth)
+				shader:send("tex_color", canvases.color)
+				shader:send("screenScale", {1 / canvases.width, 1 / canvases.height})
+			end
+			
+			if shader:hasUniform("gamma") then shader:send("gamma", self.gamma) end
+			if shader:hasUniform("exposure") then shader:send("exposure", self.exposure) end
 			
 			--camera
 			shader:send("transformProj", cam.transformProj)
@@ -184,7 +212,7 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 				end
 				
 				--culling
-				love.graphics.setMeshCullMode(canvases.cullMode or material.cullMode or (material.alpha and self.refraction_disableCulling) and "none" or "back")
+				love.graphics.setMeshCullMode(canvases.cullMode or material.cullMode or "back")
 				
 				--draw objects
 				for _,task in pairs(materialGroup) do
@@ -274,7 +302,7 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 		end
 	end
 	
-	--particles
+	--particles on the alpha pass
 	self.delton:start("particles")
 	love.graphics.setShader(self.shaders.particle)
 	self.shaders.particle:send("transform", cam.transformProj)
@@ -379,7 +407,7 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 	--bloom
 	if canvases.postEffects and self.bloom_enabled then
 		--down sample
-		love.graphics.setCanvas(canvases.canvas_bloom_1)
+		love.graphics.setCanvas(canvases.bloom_1)
 		love.graphics.clear()
 		love.graphics.setShader(self.shaders.bloom)
 		self.shaders.bloom:send("strength", self.bloom_strength)
@@ -391,15 +419,15 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 		for i = 1, 0, -1 do
 			local size = (self.bloom_size * self.bloom_resolution) * 5 ^ i
 			
-			self.shaders.blur:send("dir", {size / canvases.canvas_bloom_1:getWidth(), 0})
-			love.graphics.setCanvas(canvases.canvas_bloom_2)
+			self.shaders.blur:send("dir", {size / canvases.bloom_1:getWidth(), 0})
+			love.graphics.setCanvas(canvases.bloom_2)
 			love.graphics.clear()
-			love.graphics.draw(canvases.canvas_bloom_1)
+			love.graphics.draw(canvases.bloom_1)
 			
-			self.shaders.blur:send("dir", {0, size / canvases.canvas_bloom_1:getHeight()})
-			love.graphics.setCanvas(canvases.canvas_bloom_1)
+			self.shaders.blur:send("dir", {0, size / canvases.bloom_1:getHeight()})
+			love.graphics.setCanvas(canvases.bloom_1)
 			love.graphics.clear()
-			love.graphics.draw(canvases.canvas_bloom_2)
+			love.graphics.draw(canvases.bloom_2)
 		end
 	end
 	
@@ -420,9 +448,11 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 	
 	if shader:hasUniform("canvas_depth") then shader:send("canvas_depth", canvases.depth) end
 	
-	if shader:hasUniform("canvas_bloom") then shader:send("canvas_bloom", canvases.canvas_bloom_1) end
+	if shader:hasUniform("canvas_bloom") then shader:send("canvas_bloom", canvases.bloom_1) end
 	if shader:hasUniform("canvas_ao") then shader:send("canvas_ao", canvases.AO_1) end
 	if shader:hasUniform("canvas_SSR") then shader:send("canvas_SSR", canvases.canvas_SSR_1) end
+	
+	if shader:hasUniform("canvas_alpha") then shader:send("canvas_alpha", canvases.colorAlpha) end
 	
 	if shader:hasUniform("canvas_exposure") then shader:send("canvas_exposure", self.canvas_exposure_fetch) end
 	
@@ -433,13 +463,7 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 	if shader:hasUniform("exposure") then shader:send("exposure", self.exposure) end
 	
 	if shader:hasUniform("fog_density") then
-		shader:send("fog_density", self.fog_density)
-		shader:send("fog_color", self.fog_color)
-		shader:send("fog_sun", self.sun)
-		shader:send("fog_sunColor", self.sun_color)
-		shader:send("fog_scatter", self.fog_scatter)
-		shader:send("fog_min", self.fog_min)
-		shader:send("fog_max", self.fog_max)
+		self:sendFogData(shader)
 	end
 	
 	love.graphics.draw(canvases.color)

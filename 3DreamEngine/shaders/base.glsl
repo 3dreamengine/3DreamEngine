@@ -20,6 +20,22 @@ extern bool ditherAlpha;
 #import modulesDefines
 #import mainDefines
 
+#ifdef REFRACTIONS_ENABLED
+extern Image tex_depth;
+extern Image tex_color;
+extern vec2 screenScale;
+#endif
+
+#ifdef EXPOSURE_ENABLED
+extern float exposure;
+#endif
+
+#ifdef GAMMA_ENABLED
+extern float gamma;
+#endif
+
+#import fog
+
 #ifdef PIXEL
 
 //reflection engine
@@ -61,6 +77,43 @@ void effect() {
 	col += light * albedo.a;
 	
 #import modulesPixelPost
+#endif
+
+	//calculate refractions
+#ifdef REFRACTIONS_ENABLED
+	vec2 startPixel = love_PixelCoord.xy * screenScale;
+	
+	//refract and transform back to pixel coord
+	vec3 endPoint = vertexPos + normalize(refract(-viewVec, normal, ior)) * 0.25;
+	vec4 endPixel = transformProj * vec4(endPoint, 1.0);
+	endPixel /= endPixel.w;
+	endPixel.xy = endPixel.xy * 0.5 + 0.5;
+	
+	//uv translation
+	vec2 vec = endPixel.xy - startPixel;
+	
+	//depth check
+	float d = Texel(tex_depth, startPixel + vec).r;
+	if (d > depth) {
+		vec3 nc = Texel(tex_color, startPixel + vec).xyz;
+		col = mix(col, nc, albedo.a);
+		albedo.a = 1.0;
+	}
+#endif
+
+#ifdef FOG_ENABLED
+	vec4 fogColor = getFog(depth, -viewVec, viewPos);
+	col.rgb = mix(col.rgb, fogColor.rgb, fogColor.a);
+#endif
+
+	//exposure
+#ifdef EXPOSURE_ENABLED
+	col.rgb = vec3(1.0) - exp(-col.rgb * exposure);
+#endif
+	
+	//gamma correction
+#ifdef GAMMA_ENABLED
+	col.rgb = pow(col.rgb, vec3(1.0 / gamma));
 #endif
 	
 	//returns color

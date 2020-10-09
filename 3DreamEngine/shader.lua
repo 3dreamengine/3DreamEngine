@@ -161,15 +161,21 @@ function lib.getFinalShader(self, canvases)
 	local parts = { }
 	parts[#parts+1] = canvases.postEffects and "#define POSTEFFECTS_ENABLED" or nil
 	parts[#parts+1] = canvases.postEffects and self.autoExposure_enabled and "#define AUTOEXPOSURE_ENABLED" or nil
-	parts[#parts+1] = canvases.postEffects and self.exposure > 0 and "#define EXPOSURE_ENABLED" or nil
+	parts[#parts+1] = canvases.postEffects and self.exposure and "#define EXPOSURE_ENABLED" or nil
+	parts[#parts+1] = canvases.postEffects and self.gamma and "#define GAMMA_ENABLED" or nil
 	parts[#parts+1] = canvases.postEffects and self.bloom_enabled and "#define BLOOM_ENABLED" or nil
 	
 	parts[#parts+1] = self.fog_enabled and "#define FOG_ENABLED" or nil
-	
 	parts[#parts+1] = self.AO_enabled and "#define AO_ENABLED" or nil
 	parts[#parts+1] = self.SSR_enabled and "#define SSR_ENABLED" or nil
 	
+	parts[#parts+1] = canvases.refractions and "#define REFRACTIONS_ENABLED" or nil
+	
 	parts[#parts+1] = (canvases.fxaa and canvases.msaa == 0) and "#define FXAA_ENABLED" or nil
+	
+	if self.fog_enabled then
+		parts[#parts+1] = codes.fog
+	end
 	
 	local ID = table.concat(parts, "\n")
 	if not self.shaders.final[ID] then
@@ -253,29 +259,48 @@ end
 local baseShader = love.filesystem.read(lib.root .. "/shaders/base.glsl")
 local lastID = 0
 local lightRequirementIDs = { }
-function lib:getShader(info, lighting, lightRequirements)
+function lib:getShader(info, canvases, pass, lighting, lightRequirements)
 	--get a unique ID for this specific light setup
-	local ID = lighting == false and -1 or 0
+	local ID = 0
 	if lighting then
 		for d,s in pairs(lightRequirements) do
 			if not lightRequirementIDs[d] then
 				lightRequirementIDs[d] = 16 ^ lastID
 				lastID = lastID + 1
 			end
-			ID = ID + lightRequirementIDs[d] * (dream.shaderLibrary.light[d].batchable and 1 or s)
+			ID = ID + lightRequirementIDs[d] * (self.shaderLibrary.light[d].batchable and 1 or s)
 		end
 	end
+	
+	--additional settings
+	local globalDefines = { }
+	if canvases.deferred and pass == 1 then
+		ID = ID + 0.5
+		table.insert(globalDefines, "#define DEFERRED")
+	end
+	if canvases.refractions and pass == 2 then
+		ID = ID + 0.25
+		table.insert(globalDefines, "#define REFRACTIONS_ENABLED")
+	end
+	if canvases.postEffects and self.exposure and (canvases.direct or canvases.format == "rgba8") then
+		ID = ID + 0.125
+		table.insert(globalDefines, "#define EXPOSURE_ENABLED")
+	end
+	if canvases.postEffects and self.gamma and (canvases.direct or canvases.format == "rgba8") then
+		ID = ID + 0.0625
+		table.insert(globalDefines, "#define GAMMA_ENABLED")
+	end
+	if self.fog_enabled and canvases.direct then
+		ID = ID + 1 / 32
+		table.insert(globalDefines, "#define FOG_ENABLED")
+	end
+	
 	if not info.shaders[ID] then
 		--construct shader
 		local code = baseShader
 		
 		--setting specific defines
-		code = code:gsub("#import globalDefines", 
-		lighting == false and [[
-			#define DEFERRED
-		]] or [[
-			
-		]])
+		code = code:gsub("#import globalDefines", table.concat(globalDefines, "\n"))
 		
 		--the shader might need additional code
 		code = code:gsub("#import mainDefines", self.shaderLibrary.base[info.shaderType]:constructDefines(self, info) or "")
@@ -303,6 +328,12 @@ function lib:getShader(info, lighting, lightRequirements)
 		code = code:gsub("#import modulesVertex", table.concat(vertex, "\n"))
 		code = code:gsub("#import modulesPixelPost", table.concat(pixelPost, "\n"))
 		code = code:gsub("#import modulesPixel", table.concat(pixel, "\n"))
+		
+		--fog engine
+		print(self.fog_enabled, canvases.direct)
+		if self.fog_enabled and canvases.direct then
+			code = code:gsub("#import fog", codes.fog)
+		end
 		
 		--construct forward lighting system
 		if lighting and #lighting > 0 then

@@ -10,6 +10,7 @@ function lib:newSetSettings()
 		postEffects = false,
 		msaa = 4,
 		fxaa = false,
+		refractions = false,
 	}, self.meta.setSettings)
 end
 
@@ -24,5 +25,6 @@ return {
 		direct = "boolean",
 		msaa = "number",
 		fxaa = "boolean",
+		refractions = "boolean",
 	},
 }

@@ -14,7 +14,7 @@ dream.sky_as_reflection = false
 dream.defaultReflection = dream:newReflection(cimg:load(projectDir .. "sky.cimg"))
 
 dream:setFog(0.05, {0.7, 0.6, 0.5}, 0.0)
-dream:setFogHeight(0.0, 4.0)
+dream:setFogHeight(0.0, 1.0)
 
 --load materials
 dream:loadMaterialLibrary(projectDir .. "materials")
