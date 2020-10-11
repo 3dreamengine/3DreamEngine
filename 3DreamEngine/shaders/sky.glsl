@@ -28,7 +28,7 @@ vec4 effect(vec4 ambient, Image sky, vec2 tc, vec2 sc) {
 	
 	//stars
 	if (starsStrength > 0.0) {
-		vec3 starsColor = Texel(stars, starsVec).rgb;
+		vec3 starsColor = Texel(stars, starsVec.xzy).rgb;
 		starsColor.rgb = vec3(1.0) - exp(-starsColor.rgb * starsStrength);
 		col += starsColor;
 	}

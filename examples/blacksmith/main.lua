@@ -6,14 +6,13 @@ love.mouse.setRelativeMode(true)
 --settings
 local projectDir = "examples/blacksmith/"
 dream.defaultShaderType = "PBR"
-dream.sky_as_reflection = false
 
 --set reflection cubemap with local corrections
 local r = dream:newReflection(cimg:load(projectDir .. "sky.cimg"))
 r.pos = vec3(0, 0, 0)
 r.first = vec3(-2, -1, -2)
 r.second = vec3(2, 1, 2)
-dream.defaultReflection = r
+dream:setReflection(r)
 
 dream:init()
 
@@ -35,7 +34,7 @@ local lastParticleID = 0
 
 --create new particle batch
 local particleBatch = dream:newParticleBatch(texture_candle)
-particleBatch.vertical = true
+particleBatch:setVertical(1.0)
 
 local player = {
 	x = 0,
@@ -88,7 +87,7 @@ function love.draw()
 	--particles
 	particleBatch:clear()
 	for d,s in pairs(particles) do
-		particleBatch:add(s[1], s[2], s[3], s[4]*0.075, 2.0, quads[math.ceil(d + s[4]*25) % 25 + 1])
+		particleBatch:addQuad(quads[math.ceil(d + s[4]*25) % 25 + 1], s[1], s[2], s[3], s[4]*0.075, nil, 2.0)
 	end
 	
 	dream:prepare()
@@ -104,7 +103,7 @@ function love.draw()
 	dream:draw(torch, 1.25, 0, 1.9, 0.075)
 	dream:draw(torch, -1.25, 0, 1.9, 0.075)
 
-	dream:present(true)
+	dream:present()
 	
 	if not hideTooltips then
 		love.graphics.setColor(1, 1, 1)
@@ -190,7 +189,8 @@ function love.keypressed(key)
 	end
 	
 	if key == "u" then
-		dream.autoExposure_enabled = not dream.autoExposure_enabled
+		local enabled = dream:getAutoExposure()
+		dream:setAutoExposure(not enabled)
 		dream:init()
 	end
 	

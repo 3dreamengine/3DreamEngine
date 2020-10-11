@@ -7,7 +7,7 @@ function job:init()
 
 end
 
-function job:queue(times, operations)
+function job:queue(times)
 
 end
 

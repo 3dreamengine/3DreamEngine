@@ -93,7 +93,7 @@ function sh:perObject(dream, shader, info, task)
 
 end
 
-function sh:render(dream, cam, canvases, scene, noSky)
+function sh:render(dream, cam, canvases, scene)
 	love.graphics.push("all")
 	
 	love.graphics.setBlendMode("alpha")
@@ -115,8 +115,8 @@ function sh:render(dream, cam, canvases, scene, noSky)
 	love.graphics.pop()
 end
 
-function sh:jobCreator(dream, operations)
-	operations[#operations+1] = {self.jobExecuter, 1.0}
+function sh:jobCreator(dream)
+	dream:addOperation(self.jobExecuter)
 end
 
 function sh.jobExecuter(times, delta)

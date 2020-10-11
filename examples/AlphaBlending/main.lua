@@ -8,8 +8,7 @@ local projectDir = "examples/AlphaBlending/"
 
 --settings
 dream.defaultShaderType = "PBR"
-dream.sky_hdri = love.graphics.newImage(projectDir .. "sky.hdr")
-dream.sky_hdri_exposure = 0.25
+dream:setSky(love.graphics.newImage(projectDir .. "sky.hdr"), 0.25)
 dream:init()
 
 --scene
@@ -47,7 +46,7 @@ function love.draw()
 	
 	dream:prepare()
 	dream:draw(scene)
-	dream:present(true)
+	dream:present()
 	
 	love.graphics.print("use H to toggle deferred rendering .. (" .. tostring(dream.deferred) .. ")", 5, 5)
 end

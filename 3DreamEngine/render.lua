@@ -88,7 +88,7 @@ function lib:buildScene(cam, typ, blacklist)
 end
 
 --render the scene onto a canvas set using a specific view camera
-function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
+function lib:render(sceneSolid, sceneAlpha, canvases, cam)
 	self.delton:start("prepare")
 	
 	--love shader friendly
@@ -102,18 +102,11 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 	
 	--render sky
 	if canvases.direct then
-		if not noSky then
-			self:renderSky(cam.transformProjOrigin, cam.transform)
-		end
+		self:renderSky(cam.transformProjOrigin, cam.transform)
 	else
-		if noSky then
-			love.graphics.setCanvas(canvases.color)
-			love.graphics.clear()
-		else
-			--render sky
-			love.graphics.setCanvas(canvases.color)
-			self:renderSky(cam.transformProjOrigin, cam.transform)
-		end
+		--render sky
+		love.graphics.setCanvas(canvases.color)
+		self:renderSky(cam.transformProjOrigin, cam.transform)
 	end
 	
 	--clear
@@ -218,15 +211,18 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 				for _,task in pairs(materialGroup) do
 					--sky texture
 					if shaderInfo.reflection then
-						local ref = task.s.reflection or task.obj.reflection or self.defaultReflection
-						local tex = ref.image or ref.canvas
-						assert(tex, "invalid reflection, make sure to use dream:newReflection()")
+						local ref = task.s.reflection or task.obj.reflection or (type(self.sky_reflection) == "table" and self.sky_reflection)
+						local tex = ref and (ref.image or ref.canvas)
+						if not tex and self.sky_reflection then
+							--use sky dome
+							tex = self.sky_reflectionCanvas
+						end
 						
-						shader:send("tex_background", tex)
-						shader:send("reflections_levels", (ref.levels or self.reflections_levels) - 1)
+						shader:send("tex_background", tex or self.textures.sky_fallback)
+						shader:send("reflections_levels", (ref and ref.levels or self.reflections_levels) - 1)
 						
 						--box for local cubemaps
-						if ref.first then
+						if ref and ref.first then
 							shader:send("reflections_enabled", true)
 							shader:send("reflections_pos", ref.pos)
 							shader:send("reflections_first", ref.first)
@@ -430,7 +426,7 @@ function lib:renderShadows(scene, cam, canvas, blacklist)
 end
 
 --full render, including bloom, fxaa, exposure and gamma correction
-function lib:renderFull(cam, canvases, noSky, blacklist)
+function lib:renderFull(cam, canvases, blacklist)
 	love.graphics.push("all")
 	if not canvases.direct then
 		love.graphics.reset()
@@ -443,7 +439,7 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 	
 	--render
 	self.delton:start("render")
-	self:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
+	self:render(sceneSolid, sceneAlpha, canvases, cam)
 	self.delton:stop()
 	
 	if canvases.direct then
@@ -511,7 +507,7 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 	self.delton:start("modules")
 	for d,s in pairs(self.allActiveShaderModules) do
 		if s.render then
-			s:render(self, cam, canvases, scene, noSky)
+			s:render(self, cam, canvases, scene)
 		end
 	end
 	self.delton:stop()
@@ -530,7 +526,7 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 	
 	if shader:hasUniform("canvas_alpha") then shader:send("canvas_alpha", canvases.colorAlpha) end
 	
-	if shader:hasUniform("canvas_exposure") then shader:send("canvas_exposure", self.canvas_exposure_fetch) end
+	if shader:hasUniform("canvas_exposure") then shader:send("canvas_exposure", self.canvas_exposure) end
 	
 	if shader:hasUniform("transformInverse") then shader:send("transformInverse", cam.transformProj:invert()) end
 	if shader:hasUniform("viewPos") then shader:send("viewPos", cam.pos) end
@@ -546,13 +542,13 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 	love.graphics.setShader()
 end
 
-function lib:presentLite(noSky, cam, canvases)
+function lib:presentLite(cam, canvases)
 	cam = cam or self.cam
 	canvases = canvases or self.canvases
-	self:renderFull(cam, canvases, noSky)
+	self:renderFull(cam, canvases)
 end
 
-function lib:present(noSky, cam, canvases)
+function lib:present(cam, canvases)
 	self.delton:start("present")
 	self.stats.shadersInUse = 0
 	self.stats.materialDraws = 0
@@ -597,7 +593,7 @@ function lib:present(noSky, cam, canvases)
 	
 	--render
 	self.delton:start("renderFull")
-	self:renderFull(cam, canvases, noSky)
+	self:renderFull(cam, canvases)
 	self.delton:stop()
 	self.delton:stop()
 	

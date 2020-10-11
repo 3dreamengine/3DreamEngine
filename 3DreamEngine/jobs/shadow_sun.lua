@@ -7,7 +7,7 @@ function job:init()
 
 end
 
-function job:queue(times, operations)
+function job:queue(times)
 	--shadows
 	for d,s in ipairs(lib.lighting) do
 		if s.shadow and s.active and s.shadow.typ == "sun" then
@@ -15,7 +15,7 @@ function job:queue(times, operations)
 			for cascade = 1, 3 do
 				if not s.shadow.static or not s.shadow.done[cascade] then
 					local id = "shadow_sun_" .. tostring(s.shadow) .. tostring(cascade)
-					operations[#operations+1] = {"shadow_sun", 1.0 / 2^cascade, id, s, pos, cascade}
+					lib:addOperation("shadow_sun", 1.0 / 2^cascade, id, s.frameSkip, s, pos, cascade)
 				end
 			end
 		end

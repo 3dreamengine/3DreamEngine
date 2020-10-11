@@ -7,7 +7,7 @@ love.graphics.setBackgroundColor(0.8, 0.8, 0.8)
 local projectDir = "examples/Lamborghini/"
 
 dream.defaultShaderType = "PBR"
-dream.sky_hdri = love.graphics.newImage(projectDir .. "garage.hdr")
+dream:setSky(love.graphics.newImage(projectDir .. "garage.hdr"))
 
 dream.cam.fov = 70
 
@@ -38,7 +38,7 @@ function love.draw()
 	dream:draw(socket, 0, -1, -4.5, 4, 0.25, 4)
 	
 	--render without sky
-	dream:present(true)
+	dream:present()
 end
 
 function love.keypressed(key)

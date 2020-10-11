@@ -187,7 +187,8 @@ function love.keypressed(key)
 	end
 	
 	if key == "u" then
-		dream.autoExposure_enabled = not dream.autoExposure_enabled
+		local enabled = dream:getAutoExposure()
+		dream:setAutoExposure(not enabled)
 		dream:init()
 	end
 end

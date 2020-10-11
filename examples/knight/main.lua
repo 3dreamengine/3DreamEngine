@@ -5,7 +5,6 @@ love.window.setTitle("Knight Example")
 --settings
 local projectDir = "examples/knight/"
 
-dream.clouds_enabled = false
 dream.AO_enabled = false
 
 dream:init()

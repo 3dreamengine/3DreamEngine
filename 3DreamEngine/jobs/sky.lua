@@ -7,37 +7,20 @@ function job:init()
 
 end
 
-function job:queue(times, operations)
+function job:queue(times)
 	local t = love.timer.getTime()
 	
 	--re render sky cube
-	if lib.sky_as_reflection then
-		local changes = false
-		local tex = lib.sky_cube or lib.sky_hdri
-		if tex then
-			--HDRI texture
-			if lib.sky_refreshRateTexture > 0 and t - (times["sky"] or 0) > lib.sky_refreshRateTexture or tostring(tex) ~= lib.cache["sky_tex"] then
-				changes = true
-			end
-		else
-			--sky dome
-			if lib.sky_refreshRate > 0 and t - (times["sky"] or 0) > lib.sky_refreshRate or lib.sky_refreshRate == 0 and not times["sky"] then
-				changes = true
-			end
-		end
-		
+	if lib.sky_reflection == true then
 		--request rerender
-		if changes then
-			operations[#operations+1] = {"sky", 1.0, false, tostring(tex)}
-		end
+		lib:addOperation("sky", 1.0, false, lib.sky_frameSkip)
 		
 		--blur sky reflection cubemap
 		for level = 2, lib.reflections_levels do
 			local id = "cubemap_sky" .. level
 			local time = times[id]
 			if (times["sky"] or 0) > (time or 0) then
-				operations[#operations+1] = {"cubemap", time and (1.0 / level) or 1.0, id, lib.defaultReflection.canvas, level}
-				break
+				lib:addOperation("cubemap", time and (1.0 / level) or 1.0, id, false, lib.sky_reflectionCanvas, level)
 			end
 		end
 	end
@@ -65,7 +48,7 @@ function job:execute(times, delta, id)
 
 	for side = 1, 6 do
 		love.graphics.setBlendMode("replace", "premultiplied")
-		love.graphics.setCanvas(lib.defaultReflection.canvas, side)
+		love.graphics.setCanvas(lib.sky_reflectionCanvas, side)
 		love.graphics.clear(1.0, 1.0, 1.0)
 		love.graphics.setDepthMode()
 		

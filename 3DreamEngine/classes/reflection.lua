@@ -1,6 +1,6 @@
 local lib = _3DreamEngine
 
-function lib:newReflection(static, res)
+function lib:newReflection(static, res, noRoughness)
 	assert(not res or self.reflections_settings.direct, "Custom reflection resolutions are too expensive unless direct render on them has been enabled.")
 	res = res or self.reflections_settings.resolution
 	
@@ -11,8 +11,7 @@ function lib:newReflection(static, res)
 		static = true
 	else
 		--create new canvas
-		canvas = love.graphics.newCanvas(res, res,
-			{format = self.reflections_format, readable = true, msaa = 0, type = "cube", mipmaps = "manual"})
+		canvas = love.graphics.newCanvas(res, res, {format = self.reflections_format, readable = true, msaa = 0, type = "cube", mipmaps = noRoughness and "none" or "manual"})
 	end
 	
 	return setmetatable({
@@ -24,6 +23,8 @@ function lib:newReflection(static, res)
 		lastUpdate = 0,
 		pos = pos,
 		levels = false,
+		frameSkip = false,
+		roughness = not noRoughness,
 		id = math.random(), --used for the job render
 	}, self.meta.reflection)
 end
@@ -33,6 +34,7 @@ return {
 	
 	setterGetter = {
 		priority = "number",
+		frameSkip = "number",
 	},
 	
 	refresh = function(self)

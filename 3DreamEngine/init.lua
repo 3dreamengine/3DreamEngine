@@ -92,28 +92,17 @@ lib:setRainbow(0.0)
 lib:setRainbowDir(1.0, -0.25, 1.0)
 
 --sky
+lib:setReflection(true)
+lib:setSky(true)
+lib:setSkyReflectionFormat(512, "rgba16f", 4)
 
---TODO, move sky_refreshRate to FPS, remove sky_as_reflection and add setSky() which accepts a cubemap, an hdri and a boolean wether to use the sky
-lib.sky_as_reflection = true
-lib.sky_refreshRate = 1/15
-lib.sky_refreshRateTexture = 0
-lib.sky_cube = false
-lib.sky_hdri = false
-lib.sky_hdri_exposure = 1.0
-lib.sky_resolution = 512
-lib.sky_format = "rgba16f"
+--clouds
+lib:setClouds(true, 1024, 2.0)
+lib:setWind(0.01, 0.0)
+lib:setCloudsStretch(0, 20, 0)
 
-lib.stars_enabled = true
-lib.sunMoon_enabled = true
-
---TODO, resolution missing
-lib.clouds_enabled = true
-lib.clouds_resolution = 1024
-lib.clouds_scale = 2.0
-lib.clouds_wind = vec2(0.01, 0.0)
-lib.clouds_pos = vec2(0.0, 0.0)
-lib.clouds_stretch = 20
-lib.clouds_angle = 0
+--auto exposure
+lib:setAutoExposure(false)
 
 --TODO
 lib.deferredShaderType = "Phong"
@@ -133,21 +122,14 @@ lib.reflections_settings:setDirect(true)
 lib.mirror_settings = lib:newSetSettings()
 lib.mirror_settings:setDirect(true)
 
---TODO
-lib.reflections_levels = 5
-
---TODO
-lib.autoExposure_enabled = false
-lib.autoExposure_resolution = 128
-lib.autoExposure_targetBrightness = 0.25
-lib.autoExposure_interval = 1 / 15
-lib.autoExposure_adaptionSpeed = 0.4
-
 --default camera
 lib.cam = lib:newCam()
 
 --default scene
 lib.scene = lib:newScene()
+
+--hardcoded mipmap count, do not change
+lib.reflections_levels = 5
 
 --delton, disabled when not in debug mode
 lib.delton = require((...) .. "/libs/delton"):new(512)
@@ -278,12 +260,10 @@ function lib.resize(self, w, h)
 	self.canvases_reflections = self:newCanvasSet(self.reflections_settings)
 	
 	--sky box
-	if self.sky_as_reflection then
-		assert(not self.defaultReflection or self.defaultReflection.canvas, "defaultReflection seems to be a static reflection, disable dream.sky_as_reflection!")
-		
-		self.defaultReflection = {
-			canvas = love.graphics.newCanvas(self.sky_resolution, self.sky_resolution, {format = self.sky_format, readable = true, msaa = 0, type = "cube", mipmaps = "manual"})
-		}
+	if self.sky_reflection == true then
+		self.sky_reflectionCanvas = love.graphics.newCanvas(self.sky_resolution, self.sky_resolution, {format = self.sky_format, readable = true, msaa = 0, type = "cube", mipmaps = "manual"})
+	else
+		self.sky_reflectionCanvas = false
 	end
 	
 	self:loadShader()
@@ -302,7 +282,7 @@ function lib.init(self, w, h)
 	
 	if self.autoExposure_enabled and self.default_settings.direct then
 		print("Autoexposure does not work with direct render! Autoexposure has been disabled.")
-		self.autoExposure_enabled = false
+		dream:setAutoExposure(false)
 	end
 	
 	self:resize(w or love.graphics.getWidth(), h or love.graphics.getHeight())

@@ -7,11 +7,11 @@ love.window.setVSync(false)
 --settings
 local projectDir = "examples/Tavern/"
 dream.nameDecoder = false
-dream.autoExposure_enabled = true
-dream.sun_ambient = {0.1, 0.1, 0.1}
 
-dream.sky_as_reflection = false
-dream.defaultReflection = dream:newReflection(cimg:load(projectDir .. "sky.cimg"))
+dream:setSky(false)
+dream:setReflection(cimg:load(projectDir .. "sky.cimg"))
+
+dream:setAutoExposure(true)
 
 dream:setFog(0.05, {0.7, 0.6, 0.5}, 0.0)
 dream:setFogHeight(0.0, 2.5)
@@ -134,7 +134,7 @@ function love.draw()
 	dream:drawParticleBatch(particleBatch)
 	dream:drawParticleBatch(particleBatchDust)
 
-	dream:present(true)
+	dream:present()
 	
 	if not hideTooltips then
 		love.graphics.setColor(1, 1, 1)
@@ -270,11 +270,13 @@ function love.keypressed(key)
 			dream:deactivateShaderModule("rain")
 		else
 			dream:activateShaderModule("rain")
+			dream:setWeather(1.0)
 		end
 	end
 	
 	if key == "u" then
-		dream.autoExposure_enabled = not dream.autoExposure_enabled
+		local enabled = dream:getAutoExposure()
+		dream:setAutoExposure(not enabled)
 		dream:init()
 	end
 	

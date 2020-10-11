@@ -208,7 +208,7 @@ end
 function lib:getShaderInfo(s, obj)
 	local mat = s.material
 	local shaderType = s.shaderType
-	local reflection = s.reflection or obj.reflection or self.defaultReflection
+	local reflection = s.reflection or obj.reflection or self.sky_reflection
 	local modules = s.modules or obj.modules or mat.modules
 	
 	--group shader and vertex shader

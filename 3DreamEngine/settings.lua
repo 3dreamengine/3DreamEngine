@@ -23,6 +23,26 @@ function lib:getExposure()
 end
 
 
+--auto exposure
+function lib:setAutoExposure(target, speed, skip)
+	if target == true then
+		self:setAutoExposure(0.25, 1.0, 4)
+	elseif target then
+		check(target, "number", 1)
+		check(speed, "number", 2)
+		self.autoExposure_enabled = true
+		self.autoExposure_targetBrightness = target
+		self.autoExposure_adaptionSpeed = speed
+		self.autoExposure_frameSkip = skip
+	else
+		self.autoExposure_enabled = false
+	end
+end
+function lib:getAutoExposure(target, speed, skip)
+	return self.autoExposure_enabled, self.autoExposure_targetBrightness, self.autoExposure_adaptionSpeed, self.autoExposure_frameSkip
+end
+
+
 --gamma
 function lib:setGamma(g)
 	if g then
@@ -75,7 +95,7 @@ function lib:getBloom()
 end
 
 
---Fog
+--fog
 function lib:setFog(density, color, scatter)
 	if density then
 		check(density, "number", 1)
@@ -142,44 +162,7 @@ function lib:getShadowCascade()
 end
 
 
---day time
-function lib:setDaytime(time)
-	check(time, "number", 1)
-	
-	local c = #self.sunlight
-	
-	--time, 0.0 is sunrise, 0.5 is sunset
-	self.sky_time = time % 1.0
-	self.sky_day = time % c
-	
-	--position
-	self.sun = mat4:getRotateZ(self.sun_offset) * vec3(
-		0,
-		math.sin(self.sky_time * math.pi * 2),
-		-math.cos(self.sky_time * math.pi * 2)
-	):normalize()
-	
-	--current sample
-	local p = self.sky_time * c
-	
-	--direct sun color
-	self.sun_color = (
-		self.sunlight[math.max(1, math.min(c, math.ceil(p)))] * (1.0 - p % 1) +
-		self.sunlight[math.max(1, math.min(c, math.ceil(p+1)))] * (p % 1)
-	)
-	
-	--sky color
-	self.sun_ambient = (
-		self.skylight[math.max(1, math.min(c, math.ceil(p)))] * (1.0 - p % 1) +
-		self.skylight[math.max(1, math.min(c, math.ceil(p+1)))] * (p % 1)
-	)
-end
-function lib:getDaytime()
-	return self.sky_time, self.sky_day
-end
-
-
---rainbow visuals
+--rainbow
 function lib:setRainbow(strength, size, thickness)
 	check(strength, "number", 1)
 	self.rainbow_strength = strength
@@ -218,6 +201,43 @@ function lib:setSunOffset(o)
 end
 function lib:getSunOffset(o)
 	return self.sun_offset
+end
+
+
+--day time
+function lib:setDaytime(time)
+	check(time, "number", 1)
+	
+	local c = #self.sunlight
+	
+	--time, 0.0 is sunrise, 0.5 is sunset
+	self.sky_time = time % 1.0
+	self.sky_day = time % c
+	
+	--position
+	self.sun = mat4:getRotateZ(self.sun_offset) * vec3(
+		0,
+		math.sin(self.sky_time * math.pi * 2),
+		-math.cos(self.sky_time * math.pi * 2)
+	):normalize()
+	
+	--current sample
+	local p = self.sky_time * c
+	
+	--direct sun color
+	self.sun_color = (
+		self.sunlight[math.max(1, math.min(c, math.ceil(p)))] * (1.0 - p % 1) +
+		self.sunlight[math.max(1, math.min(c, math.ceil(p+1)))] * (p % 1)
+	)
+	
+	--sky color
+	self.sun_ambient = (
+		self.skylight[math.max(1, math.min(c, math.ceil(p)))] * (1.0 - p % 1) +
+		self.skylight[math.max(1, math.min(c, math.ceil(p+1)))] * (p % 1)
+	)
+end
+function lib:getDaytime()
+	return self.sky_time, self.sky_day
 end
 
 
@@ -265,6 +285,110 @@ function lib:updateWeather(rain, temp, dt)
 	--set rainbow
 	local strength = math.max(0.0, self.weather_mist * (1.0 - self.weather_rain * 2.0))
 	self:setRainbow(strength)
+end
+
+
+--sets the reflection type used to reflections
+function lib:setReflection(tex)
+	if tex == true then
+		--use sky
+		self.sky_reflection = true
+	elseif tex == false then
+		--use ambient
+		self.sky_reflection = false
+	elseif type(tex) == "table" then
+		self.sky_reflection = tex
+	elseif type(tex) == "userdata" and tex:getTextureType() == "cube" then
+		--cubemap, wrap in reflection object
+		self.sky_reflection = lib:newReflection(tex)
+	elseif type(tex) == "userdata" and tex:getTextureType() == "2d" then
+		--HDRI
+		error("HDRI not supported, please convert to cubemap first")
+	end
+end
+function lib:getReflection(tex)
+	return self.sky_reflection
+end
+
+function lib:setSkyReflectionFormat(resolution, format, skip)
+	check(resolution, "number", 1)
+	check(format, "string", 2)
+	self.sky_resolution = resolution
+	self.sky_format = format
+	self.sky_frameSkip = skip
+end
+function lib:getSkyReflectionFormat()
+	return self.sky_resolution, self.sky_format, self.sky_frameSkip
+end
+
+
+--sets the sky HDRI, cubemap or just sky dome
+function lib:setSky(tex, exposure)
+	if tex == true then
+		--use sky
+		self.sky_texture = true
+	elseif tex == false then
+		--disable sky
+		self.sky_texture = false
+	elseif type(tex) == "userdata" and tex:getTextureType() == "cube" then
+		--cubemap
+		self.sky_texture = tex
+		
+		--also sets reflections
+		self:setReflection(tex)
+	elseif type(tex) == "userdata" and tex:getTextureType() == "2d" then
+		--HDRI
+		self.sky_texture = tex
+	end
+	self.sky_hdri_exposure = exposure or 1.0
+end
+function lib:getSky(tex)
+	return self.sky_texture, self.sky_hdri_exposure
+end
+
+
+--sets clouds and settings
+function lib:setClouds(enabled, resolution, scale)
+	if enabled then
+		check(resolution, "number", 2)
+		check(scale, "number", 3)
+		
+		self.clouds_enabled = true
+		self.clouds_resolution = resolution
+		self.clouds_scale = scale
+	else
+		self.clouds_enabled = false
+	end
+end
+function lib:getClouds()
+	return self.clouds_enabled, self.clouds_resolution, self.clouds_scale
+end
+
+
+--sets strength of wind, affecting the clouds
+function lib:setWind(x, y)
+	assert(x, "number", 1)
+	assert(y, "number", 2)
+	self.clouds_wind = vec2(x, y)
+	self.clouds_pos = self.clouds_pos or vec2(0.0, 0.0)
+end
+function lib:getWind()
+	return self.clouds_wind.x, self.clouds_wind.y
+end
+
+
+--sets the stretch of the clouds caused by wind
+function lib:setCloudsStretch(stretch, stretch_wind, angle)
+	check(stretch, "number", 1)
+	check(stretch_wind, "number", 2)
+	check(angle, "number", 3)
+	
+	self.clouds_stretch = stretch
+	self.clouds_stretch_wind = stretch_wind
+	self.clouds_angle = angle
+end
+function lib:getCloudsStretch()
+	return self.clouds_stretch, self.clouds_angle
 end
 
 

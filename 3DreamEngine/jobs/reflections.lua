@@ -7,22 +7,32 @@ function job:init()
 
 end
 
-function job:queue(times, operations)
+function job:queue(times)
 	for reflection, task in pairs(lib.reflections_last) do
 		--render reflections
 		for face = 1, 6 do
 			if not reflection.static or not reflection.done[face] then
 				local id = "reflections_" .. (reflection.id + face)
-				operations[#operations+1] = {"reflections", reflection.priority / (task.dist / 10 + 1), id, task.obj, task.pos, face}
+				lib:addOperation("reflections", reflection.priority / (task.dist / 10 + 1), id, reflection.frameSkip, task.obj, task.pos, face)
 			end
 		end
 		
 		--blur mipmaps
-		for level = 2, lib.reflections_levels do
-			local id_blur = "cubemap_" .. (reflection.id + level)
-			if (times[id] or 0) > (times[id_blur] or 0) then
-				operations[#operations+1] = {"cubemap", times[id_blur] and (1.0 / level) or 1.0, id_blur, reflection.canvas, level}
-				break
+		if reflection.roughness then
+			local time
+			--render reflections
+			for face = 1, 6 do
+				local id = "reflections_" .. (reflection.id + face)
+				if times[id] then
+					time = math.min(time or times[id], times[id])
+				end
+			end
+			
+			for level = 2, reflection.levels or lib.reflections_levels do
+				local id_blur = "cubemap_" .. (reflection.id + level)
+				if (time or 0) > (times[id_blur] or 0) then
+					lib:addOperation("cubemap", times[id_blur] and (1.0 / level) or 1.0, id_blur, false, reflection.canvas, level)
+				end
 			end
 		end
 	end
@@ -51,7 +61,7 @@ function job:execute(times, delta, obj, pos, face)
 	obj.reflection.canvas = nil
 	
 	--render
-	lib:renderFull(cam, lib.canvases_reflections, false, {[obj] = true})
+	lib:renderFull(cam, lib.canvases_reflections, {[obj] = true})
 	
 	obj.reflection.canvas = canvas
 	love.graphics.pop()

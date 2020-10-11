@@ -30,10 +30,10 @@ function job:init()
 	lib.cloudCanvas = love.graphics.newCanvas(lib.clouds_resolution, lib.clouds_resolution, {format = "r8"})
 end
 
-function job:queue(times, operations)
+function job:queue(times)
 	if lib.skyInUse then
 		spritebatch = spritebatch or love.graphics.newSpriteBatch(lib.textures.clouds)
-		operations[#operations+1] = {"clouds", 1.0}
+		lib:addOperation("clouds")
 		lib.skyInUse = false
 	end
 end
@@ -43,7 +43,11 @@ function job:execute(times, delta)
 	local amount = 32
 	
 	local a = math.atan2(lib.clouds_wind.y, lib.clouds_wind.x) + lib.clouds_angle
-	local strength = lib.clouds_wind:length() * lib.clouds_stretch
+	local strength = lib.clouds_wind:length() * lib.clouds_stretch_wind + lib.clouds_stretch
+	if strength < 0 then
+		a = a + math.pi / 2
+		strength = -strength
+	end
 	local stretch = vec2(
 		1.0 + math.abs(math.cos(a)) * strength,
 		1.0 + math.abs(math.sin(a)) * strength
@@ -60,7 +64,7 @@ function job:execute(times, delta)
 		local wp = lib.clouds_pos * (1.0 + random(i * 1/8)*0.2)
 		local x, y = (random(i + 0.5) + wp.x) % 1, (random(i + 0.25) + wp.y) % 1
 		local r = random(i + 0.125) * math.pi * 2
-		local brightness = 0.5 + random(i + 1 / 16)
+		local brightness = 0.25 + random(i + 1 / 16) * 0.5
 		
 		spritebatch:setColor(brightness, brightness, brightness)
 		for xx = -1, 1 do
@@ -72,6 +76,7 @@ function job:execute(times, delta)
 	
 	--render
 	love.graphics.push("all")
+	love.graphics.setColor(1, 1, 1)
 	love.graphics.setCanvas(lib.cloudCanvas)
 	love.graphics.clear(0, 0, 0, 1)
 	love.graphics.setBlendMode("screen", "premultiplied")
