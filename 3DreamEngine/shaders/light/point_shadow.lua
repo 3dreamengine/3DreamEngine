@@ -60,6 +60,10 @@ function sh:constructPixelGlobal(dream, info)
 
 end
 
+function sh:constructPixelBasicGlobal(dream, info)
+
+end
+
 function sh:constructPixel(dream, info, ID)
 	return ([[
 		vec3 lightVec = point_shadow_pos_#ID# - vertexPos;
@@ -75,6 +79,25 @@ function sh:constructPixel(dream, info, ID)
 			float distance = length(lightVec);
 			float power = 1.0 / (0.1 + distance * distance);
 			light += getLight(point_shadow_color_#ID# * shadow * power, viewVec, normalize(lightVec), normal, albedo.rgb, material.x, material.y);
+		}
+	]]):gsub("#ID#", ID)
+end
+
+function sh:constructPixelBasic(dream, info, ID)
+	return ([[
+		vec3 lightVec = point_shadow_pos_#ID# - vertexPos;
+		
+		float shadow;
+		if (point_shadow_smooth_#ID#) {
+			shadow = sampleShadowPointSmooth(lightVec, point_shadow_tex_#ID#);
+		} else {
+			shadow = sampleShadowPoint(lightVec, point_shadow_tex_#ID#);
+		}
+		
+		if (shadow > 0.0) {
+			float distance = length(lightVec);
+			float power = 1.0 / (0.1 + distance * distance);
+			light += point_shadow_color_#ID# * shadow * power;
 		}
 	]]):gsub("#ID#", ID)
 end

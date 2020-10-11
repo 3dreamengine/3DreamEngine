@@ -29,7 +29,22 @@ function sh:constructPixelGlobal(dream, info)
 	]])
 end
 
+function sh:constructPixelBasicGlobal(dream, info)
+	return ([[
+		for (int i = 0; i < point_simple_count; i++) {
+			vec3 lightVecRaw = point_simple_pos[i] - vertexPos;
+			float distance = length(lightVecRaw);
+			float power = 1.0 / (0.1 + distance * distance);
+			light += point_simple_color[i] * power;
+		}
+	]])
+end
+
 function sh:constructPixel(dream, info, ID)
+
+end
+
+function sh:constructPixelBasic(dream, info, ID)
 
 end
 

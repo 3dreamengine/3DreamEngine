@@ -14,7 +14,7 @@ dream.sky_as_reflection = false
 dream.defaultReflection = dream:newReflection(cimg:load(projectDir .. "sky.cimg"))
 
 dream:setFog(0.05, {0.7, 0.6, 0.5}, 0.0)
-dream:setFogHeight(0.0, 1.0)
+dream:setFogHeight(0.0, 2.5)
 
 --load materials
 dream:loadMaterialLibrary(projectDir .. "materials")
@@ -60,10 +60,10 @@ end
 
 --create new particle batch
 local particleBatch = dream:newParticleBatch(texture_candle)
-particleBatch.vertical = true
+particleBatch:setVertical(0.75)
 
 local particleBatchDust = dream:newParticleBatch(love.graphics.newImage(projectDir .. "dust.png"))
-particleBatchDust.sort = false
+particleBatchDust:setSorting(false)
 
 local lights = { }
 for d,s in ipairs(scene.positions) do
@@ -100,29 +100,33 @@ function love.draw()
 	particleBatchDust:clear()
 	local c = love.timer.getTime() * 0.0003
 	for i = 1, 200 do
-		local x = noise(i, 1 + c) * 100 % 11 - 5.5
-		local y = noise(i, 2 + c) * 100 % 5 - 0.5
-		local z = noise(i, 3 + c) * 100 % 11 - 5.5
+		local x = noise(i, 1 + c) * 100 % 10.5 - 5.25
+		local y = noise(i, 2 + c) * 100 % 4.5 - 0.25
+		local z = noise(i, 3 + c) * 100 % 10.5 - 5.25
 		particleBatchDust:add(x, y, z, (i % 10 + 10) * 0.002)
 	end
 	
 	--update lights
 	dream:resetLight(true)
+	
+	--make the particles black so it only emits light
+	love.graphics.setColor(0, 0, 0, 1)
 	for d,s in ipairs(scene.positions) do
 		if s.name == "LIGHT" then
 			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 200.0
 			lights[d]:setBrightness(power)
 			dream:addLight(lights[d])
-			particleBatch:add(s.x, s.y + 0.02, s.z, power * 0.015, 2.0, quads[math.ceil(d + love.timer.getTime() * 24) % 25 + 1])
+			particleBatch:addQuad(quads[math.ceil(d + love.timer.getTime() * 24) % 25 + 1], s.x, s.y + 0.02, s.z, power * 0.015, nil, 2.0)
 		elseif s.name == "CANDLE" then
 			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 200.0
-			particleBatch:add(s.x, s.y + 0.02, s.z, power * 0.015, 2.0, quads[math.ceil(d + love.timer.getTime() * 24) % 25 + 1])
+			particleBatch:addQuad(quads[math.ceil(d + love.timer.getTime() * 24) % 25 + 1], s.x, s.y + 0.02, s.z, power * 0.015, nil, 2.0)
 		elseif s.name == "FIRE" then
 			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 200.0
 			lights[d]:setBrightness(power)
 			dream:addLight(lights[d])
 		end
 	end
+	love.graphics.setColor(1, 1, 1, 1)
 	
 	scene:reset()
 	dream:draw(scene)

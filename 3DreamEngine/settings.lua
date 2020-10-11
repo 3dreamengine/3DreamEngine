@@ -112,7 +112,7 @@ function lib:setShadowResolution(sun, point)
 	check(point, "number", 2)
 	
 	self.shadow_resolution = sun
-	self.shadow_cube_resolution = sun
+	self.shadow_cube_resolution = point
 end
 function lib:getShadowResolution()
 	return self.shadow_resolution, self.shadow_cube_resolution

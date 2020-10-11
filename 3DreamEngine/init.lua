@@ -72,7 +72,7 @@ lib:setGamma(false)
 lib:setExposure(1.0)
 
 --shadows
-lib:setShadowResolution(1024, 512)
+lib:setShadowResolution(1024, 256)
 lib:setShadowSmoothing(false)
 lib:setShadowCascade(8, 4)
 
@@ -87,7 +87,7 @@ lib.sun_offset = 0.25
 lib.sun_shadow = true
 
 --TODO
-lib.deferredShaderType = "PBR"
+lib.deferredShaderType = "Phong"
 lib.max_lights = 16
 lib.nameDecoder = "blender"
 lib.frustumCheck = true
@@ -321,7 +321,10 @@ function lib.prepare(self)
 	lib:drawScene(self.scene)
 	self.scene:clear()
 	
+	self.particleBatches = { }
+	self.particleBatchesActive = { }
 	self.particles = { }
+	self.particlesEmissive = { }
 	
 	--keep track of reflections
 	self.reflections_last = self.reflections or { }
@@ -364,12 +367,54 @@ function lib:draw(obj, x, y, z, sx, sy, sz)
 	self.delton:stop()
 end
 
+--will render this scene
 function lib:drawScene(scene)
 	self.scenes[scene] = true
 end
 
+--will render this batch
 function lib:drawParticleBatch(batch)
-	self.particles[batch] = true
+	self.particleBatchesActive[batch.emissionTexture and true or false] = true
+	self.particleBatches[batch] = true
+end
+
+--set vertical level of next particles
+local vertical = 0.0
+function lib:setParticleVertical(v)
+	assert(type(v) == "number", "number expected, got " .. type(v))
+	vertical = v
+end
+function lib:getParticleVertical()
+	return vertical
+end
+
+--set emission multiplier of next particles
+local emission = false
+function lib:setParticleEmission(e)
+	emission = e or false
+end
+function lib:getParticleEmission()
+	return emission
+end
+
+--draw a particle
+function lib:drawParticle(drawable, quad, x, y, z, ...)
+	local r, g, b, a = love.graphics.getColor()
+	if type(quad) == "userdata" and quad:typeOf("Quad") then
+		self.particles[#self.particles+1] = {drawable, quad, {x, y, z}, {r, g, b, a}, vertical, emission or 0.0, {...}}
+	else
+		self.particles[#self.particles+1] = {drawable, {quad, x, y}, {r, g, b, a}, vertical, emission or 0.0, {z, ...}}
+	end
+end
+
+--draw a particle with emission texture
+function lib:drawEmissionParticle(drawable, emissionDrawable, quad, x, y, z, ...)
+	local r, g, b, a = love.graphics.getColor()
+	if type(quad) == "userdata" and quad:typeOf("Quad") then
+		self.particlesEmissive[#self.particlesEmissive+1] = {drawable, emissionDrawable, quad, {x, y, z}, {r, g, b, a}, vertical, emission or 0.0, {...}}
+	else
+		self.particlesEmissive[#self.particlesEmissive+1] = {drawable, emissionDrawable, {quad, x, y}, {r, g, b, a}, vertical, emission or 0.0, {z, ...}}
+	end
 end
 
 return lib

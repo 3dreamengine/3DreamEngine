@@ -113,6 +113,10 @@ function sh:constructPixelGlobal(dream, info)
 
 end
 
+function sh:constructPixelBasicGlobal(dream, info)
+
+end
+
 function sh:constructPixel(dream, info, ID)
 	return ([[
 		float shadow;
@@ -124,6 +128,19 @@ function sh:constructPixel(dream, info, ID)
 		if (shadow > 0.0) {
 			light += getLight(sun_shadow_color_#ID# * shadow, viewVec, sun_shadow_vec_#ID#, normal, albedo.rgb, material.x, material.y);
 		}
+	]]):gsub("#ID#", ID)
+end
+
+function sh:constructPixelBasic(dream, info, ID)
+	return ([[
+		float shadow;
+		if (sun_shadow_smooth_#ID#) {
+			shadow = sampleShadowSunSmooth(vertexPos, sun_shadow_proj_1_#ID#, sun_shadow_proj_2_#ID#, sun_shadow_proj_3_#ID#, sun_shadow_tex_1_#ID#, sun_shadow_tex_2_#ID#, sun_shadow_tex_3_#ID#);
+		} else {
+			shadow = sampleShadowSun(vertexPos, sun_shadow_proj_1_#ID#, sun_shadow_proj_2_#ID#, sun_shadow_proj_3_#ID#, sun_shadow_tex_1_#ID#, sun_shadow_tex_2_#ID#, sun_shadow_tex_3_#ID#);
+		}
+		
+		light += sun_shadow_color_#ID# * shadow;
 	]]):gsub("#ID#", ID)
 end
 
@@ -150,7 +167,10 @@ function sh:sendUniforms(dream, shader, info, light, ID)
 		end
 		
 		shader:send("sun_shadow_color_" .. ID,  {light.r * light.brightness, light.g * light.brightness, light.b * light.brightness})
-		shader:send("sun_shadow_vec_" .. ID, {vec3(light.x, light.y, light.z):normalize():unpack()})
+		
+		if shader:hasUniform("sun_shadow_vec_" .. ID) then
+			shader:send("sun_shadow_vec_" .. ID, {vec3(light.x, light.y, light.z):normalize():unpack()})
+		end
 	else
 		shader:send("sun_shadow_color_" .. ID, {0, 0, 0})
 	end

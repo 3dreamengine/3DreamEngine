@@ -47,18 +47,23 @@ local meta = {
 	end,
 	
 	--add a new particle to this batch
-	add = function(self, px, py, pz, size, emission, quad)
+	add = function(self, x, y, z, sx, sy, emission)
 		local n = #self.instances
 		if n < maxCount then
 			local r, g, b, a = love.graphics.getColor()
-			if quad then
-				local x, y, w, h = quad:getViewport()
-				local sw, sh = quad:getTextureDimensions()
-				local ratio = h / w
-				self.instances[n+1] = {px, py, pz, size, size * ratio, x / sw, y / sh, w / sw, h / sh, emission or 0, r, g, b, a}
-			else
-				self.instances[n+1] = {px, py, pz, size, size, 0, 0, 1, 1, emission or 0, r, g, b, a}
-			end
+			self.instances[n+1] = {x, y, z, sx, sy or sx, 0, 0, 1, 1, emission or (self.emissionTexture and 1 or 0), r, g, b, a}
+		end
+	end,
+	
+	--add a new particle with quad to this batch
+	addQuad = function(self, quad, x, y, z, sx, sy, emission)
+		local n = #self.instances
+		if n < maxCount then
+			local qx, qy, w, h = quad:getViewport()
+			local sw, sh = quad:getTextureDimensions()
+			local ratio = h / w
+			local r, g, b, a = love.graphics.getColor()
+			self.instances[n+1] = {x, y, z, sx, (sy or sx) * ratio, qx / sw, qy / sh, w / sw, h / sh, emission or (self.emissionTexture and 1 or 0), r, g, b, a}
 		end
 	end,
 	
@@ -92,13 +97,56 @@ local meta = {
 		--draw
 		love.graphics.drawInstanced(mesh, #self.instances)
 	end,
+	
+	--sets texture for diffuse lighting
+	setTexture = function(self, tex)
+		assert(tex, "expected texture, got nil")
+		self.texture = tex
+	end,
+	getTexture = function(self)
+		return self.texture
+	end,
+	
+	--sets texture for emission
+	setEmissionTexture = function(self, tex)
+		assert(tex, "expected texture, got nil")
+		self.emissionTexture = emissionTexture
+	end,
+	getEmissionTexture = function(self)
+		return self.emissionTexture
+	end,
+	
+	--toggle sorting
+	setSorting = function(self, enabled)
+		self.sort = enabled or false
+	end,
+	getSorting = function(self)
+		return self.sort
+	end,
+	
+	--set vertical alignment
+	setVertical = function(self, vertical)
+		assert(type(vertical) == "number", "expected number, got " .. type(vertical))
+		self.vertical = vertical
+	end,
+	getVertical = function(self)
+		return self.vertical
+	end,
+	
+	--returns current amount of instances
+	getCount = function(self)
+		return #self.instance
+	end,
 }
 
-function lib:newParticleBatch(texture)
+function lib:newParticleBatch(texture, emissionTexture)
 	local p = { }
 	
-	p.texture = texture or 2
+	p.texture = texture
+	p.emissionTexture = emissionTexture
+	
 	p.sort = true
+	p.vertical = 0.0
 	
 	p.instances = { }
 	

@@ -115,7 +115,7 @@ end
 
 function sh:constructLightFunction(dream, info)
 	return [[
-	//the PBR model is darker than the Phong shading, the use the same light intensities the Phong shading will be adapted
+	//the PBR model is darker than the Phong shading, to use the same light intensities the Phong shading will be adapted
 	const float adaptToPBR = 0.25;
 
 	vec3 getLight(vec3 lightColor, vec3 viewVec, vec3 lightVec, vec3 normal, vec3 albedo, float specular, float glossiness) {

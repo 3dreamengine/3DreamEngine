@@ -304,24 +304,94 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 	
 	--particles on the alpha pass
 	self.delton:start("particles")
-	love.graphics.setShader(self.shaders.particle)
-	self.shaders.particle:send("transform", cam.transformProj)
-	
-	for d,s in pairs(self.particles) do
-		local right, up
-		if self.vertical then
-			up = vec3(0, 1, 0)
-			right = vec3(right.x, 0, right.z):normalize()
-		else
-			right = vec3(cam.transform[1], cam.transform[2], cam.transform[3])
-			up = vec3(cam.transform[5], cam.transform[6], cam.transform[7])
+	for e = 1, 2 do
+		local emissive = e == 1
+		
+		--batches
+		if self.particleBatchesActive[emissive] then
+			local shader = lib:getParticlesShader(canvases, lighting, lightRequirements, emissive)
+			love.graphics.setShader(shader)
+			
+			shader:send("transformProj", cam.transformProj)
+			if shader:hasUniform("viewPos") then shader:send("viewPos", {cam.pos:unpack()}) end
+			if shader:hasUniform("gamma") then shader:send("gamma", self.gamma) end
+			if shader:hasUniform("exposure") then shader:send("exposure", self.exposure) end
+			
+			--light if using forward lighting
+			self:sendLightUniforms(lighting, lightRequirements, shader)
+			
+			--fog
+			if shader:hasUniform("fog_density") then
+				self:sendFogData(shader)
+			end
+			
+			--render particle batches
+			for batch,_ in pairs(self.particleBatches) do
+				if (batch.emissionTexture and true or false) == emissive then
+					local v = 1.0 - batch.vertical
+					local right = vec3(cam.transform[1], cam.transform[2] * v, cam.transform[3]):normalize()
+					local up = vec3(cam.transform[5] * v, cam.transform[6], cam.transform[7] * v)
+					shader:send("up", {up:unpack()})
+					shader:send("right", {right:unpack()})
+					
+					--emission texture
+					if shader:hasUniform("tex_emission") then
+						shader:send("tex_emission", batch.emissionTexture)
+					end
+					
+					batch:present(cam.pos)
+				end
+			end
 		end
 		
-		self.shaders.particle:send("up", {up:unpack()})
-		self.shaders.particle:send("right", {right:unpack()})
-		d:present(cam.pos)
+		--single particles on the alpha pass
+		local p = emissive and self.particlesEmissive or self.particles
+		if p[1] then
+			local shader = lib:getParticlesShader(canvases, lighting, lightRequirements, emissive, true)
+			love.graphics.setShader(shader)
+			
+			shader:send("transformProj", cam.transformProj)
+			if shader:hasUniform("viewPos") then shader:send("viewPos", {cam.pos:unpack()}) end
+			if shader:hasUniform("gamma") then shader:send("gamma", self.gamma) end
+			if shader:hasUniform("exposure") then shader:send("exposure", self.exposure) end
+			
+			--light if using forward lighting
+			self:sendLightUniforms(lighting, lightRequirements, shader)
+			
+			--fog
+			if shader:hasUniform("fog_density") then
+				self:sendFogData(shader)
+			end
+			
+			--render particles
+			for d,s in ipairs(p) do
+				local nr = #s - 6
+				local v = 1.0 - s[4 + nr]
+				local right = vec3(cam.transform[1], cam.transform[2] * v, cam.transform[3]):normalize()
+				local up = vec3(cam.transform[5] * v, cam.transform[6], cam.transform[7] * v)
+				
+				shader:send("up", {up:unpack()})
+				shader:send("right", {right:unpack()})
+				
+				--position, size and emission multiplier
+				shader:send("InstanceCenter", s[2 + nr])
+				shader:send("InstanceEmission", s[5 + nr])
+				
+				--emission texture
+				if shader:hasUniform("tex_emission") then
+					shader:send("tex_emission", s[2])
+				end
+				
+				--draw
+				love.graphics.setColor(s[3 + nr])
+				if s[1 + nr].getViewport then
+					love.graphics.draw(s[1], s[1 + nr], 0, 0, unpack(s[6 + nr]))
+				else
+					love.graphics.draw(s[1], 0, 0, unpack(s[6 + nr]))
+				end
+			end
+		end
 	end
-	
 	self.delton:stop()
 	
 	love.graphics.pop()
@@ -413,6 +483,12 @@ function lib:renderFull(cam, canvases, noSky, blacklist)
 		self.shaders.bloom:send("strength", self.bloom_strength)
 		love.graphics.setBlendMode("replace", "premultiplied")
 		love.graphics.draw(canvases.color, 0, 0, 0, self.bloom_resolution)
+		
+		if canvases.colorAlpha then
+			love.graphics.setBlendMode("add", "premultiplied")
+			love.graphics.draw(canvases.colorAlpha, 0, 0, 0, self.bloom_resolution)
+		love.graphics.setBlendMode("replace", "premultiplied")
+		end
 		
 		--blur
 		love.graphics.setShader(self.shaders.blur)

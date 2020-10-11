@@ -101,19 +101,20 @@ void effect() {
 	}
 #endif
 
+	//fog
 #ifdef FOG_ENABLED
 	vec4 fogColor = getFog(depth, -viewVec, viewPos);
-	col.rgb = mix(col.rgb, fogColor.rgb, fogColor.a);
+	col = mix(col, fogColor.rgb, fogColor.a);
 #endif
 
 	//exposure
 #ifdef EXPOSURE_ENABLED
-	col.rgb = vec3(1.0) - exp(-col.rgb * exposure);
+	col = vec3(1.0) - exp(-col * exposure);
 #endif
 	
 	//gamma correction
 #ifdef GAMMA_ENABLED
-	col.rgb = pow(col.rgb, vec3(1.0 / gamma));
+	col = pow(col, vec3(1.0 / gamma));
 #endif
 	
 	//returns color
@@ -143,7 +144,7 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	vertexPos = (transform * vec4(vertexPos, 1.0)).xyz;
 	
 	//projection transform for the vertex
-	highp vec4 vPos = transformProj * vec4(vertexPos, 1.0);
+	vec4 vPos = transformProj * vec4(vertexPos, 1.0);
 	
 	//extract and pass depth
 	depth = vPos.z;

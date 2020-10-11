@@ -30,14 +30,13 @@ extern float gamma;
 
 vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords) {
 	vec3 viewVec = normalize(viewPos - vertexPos);
-	vec2 tc = vec2(texture_coords.x, 1.0 - texture_coords.y);
 	
 	//fetch color
-	vec4 albedo = Texel(tex, tc);
+	vec4 albedo = Texel(tex, VaryingTexCoord.xy);
 	
 	//emission
 #ifdef TEX_EMISSION
-	vec3 emission = Texel(tex_emission, tc).rgb;
+	vec3 emission = Texel(tex_emission, VaryingTexCoord.xy).rgb;
 	vec3 col = emission * VaryingEmission;
 #else
 	vec3 col = albedo.rgb * VaryingEmission;
@@ -72,17 +71,24 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords) {
 #endif
 
 #ifdef VERTEX
-extern vec3 InstanceCenter;
-extern float InstanceEmission;
+attribute vec3 InstanceCenter;
+attribute vec2 InstanceSize;
+attribute vec2 InstanceTexScale;
+attribute vec2 InstanceTexOffset;
+attribute float InstanceEmission;
+attribute vec4 InstanceColor;
 
 extern mat4 transformProj;
 extern vec3 up;
 extern vec3 right;
 
 vec4 position(mat4 transform_projection, vec4 vertex_position) {
+	//pass to fragment shader
+	VaryingTexCoord = vec4(VertexTexCoord.xy * InstanceTexScale + InstanceTexOffset, 0.0, 0.0);
+	VaryingColor = InstanceColor;
 	VaryingEmission = InstanceEmission;
 	
-	vertexPos = InstanceCenter + (right * vertex_position.x + up * vertex_position.y);
+	vertexPos = InstanceCenter + (right * vertex_position.x * InstanceSize.x + up * vertex_position.y * InstanceSize.y);
 	
 	vec4 vPos = transformProj * vec4(vertexPos, 1.0);
 	
