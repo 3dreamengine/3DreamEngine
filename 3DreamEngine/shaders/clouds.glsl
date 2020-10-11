@@ -30,7 +30,8 @@ vec4 effect(vec4 c, Image tex, vec2 tc, vec2 sc) {
 	float roughness = Texel(tex_base, pos.xz * scale_roughness - roughnessOffset).r;
 	
 	//density
-	float density = cloud * base * pos.y;
+	float density = cloud * base * pos.y * 4.0;
+	density = 1.0 - exp(-density);
 	
 	//direct sun
 	float directDot = max(dot(sunVec, dir), 0.0);

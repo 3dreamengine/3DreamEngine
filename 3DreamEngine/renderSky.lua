@@ -4,12 +4,12 @@
 
 local lib = _3DreamEngine
 
-function lib:renderSky(transformProj)
+function lib:renderSky(transformProj, camTransform)
 	love.graphics.push("all")
 	if self.sky_cube then
-		love.graphics.setShader(self.shaders.sky)
-		self.shaders.sky:send("transformProj", transformProj)
-		self.shaders.sky:send("sky", self.sky_cube)
+		love.graphics.setShader(self.shaders.sky_cube)
+		self.shaders.sky_cube:send("transformProj", transformProj)
+		self.shaders.sky_cube:send("sky", self.sky_cube)
 		love.graphics.draw(self.object_cube.objects.Cube.mesh)
 	elseif self.sky_hdri then
 		--given hdri sphere
@@ -19,47 +19,40 @@ function lib:renderSky(transformProj)
 		self.object_sky.objects.Sphere.mesh:setTexture(self.sky_hdri)
 		love.graphics.draw(self.object_sky.objects.Sphere.mesh)
 	else
-		--simple wilkie hosek sky
-		love.graphics.setShader(self.shaders.sky_WilkieHosek)
-		self.shaders.sky_WilkieHosek:send("transformProj", transformProj)
-		self.shaders.sky_WilkieHosek:send("time", self.sky_time)
-		love.graphics.setColor(self.sky_color:unpack())
-		self.object_sky.objects.Sphere.mesh:setTexture(self.textures:get("sky"))
-		love.graphics.draw(self.object_sky.objects.Sphere.mesh)
+		lib.skyInUse = true
+		lib.initTextures:sky()
 		
-		--stars
-		if self.stars_enabled then
-			local stars = -math.sin(self.sky_time * math.pi * 2)
-			if stars > 0 then
-				local starTex = self:getTexture(self.textures.stars_hdri)
-				if starTex then
-					love.graphics.setBlendMode("add", "premultiplied")
-					love.graphics.setShader(self.shaders.sky_hdri)
-					self.shaders.sky_hdri:send("exposure", stars)
-					self.shaders.sky_hdri:send("transformProj", transformProj)
-					self.object_sky.objects.Sphere.mesh:setTexture(starTex)
-					love.graphics.draw(self.object_sky.objects.Sphere.mesh)
-				end
-			end
-		end
+		--simple wilkie hosek sky
+		love.graphics.setShader(self.shaders.sky)
+		self.shaders.sky:send("transformProj", transformProj)
+		self.shaders.sky:send("time", self.sky_time)
+		self.shaders.sky:send("sunColor", self.sun_color)
+		self.shaders.sky:send("cloudsBrightness", self.sun_color:length() * 0.5)
+		
+		self.shaders.sky:send("clouds", self.textures.clouds_top)
+		self.shaders.sky:send("cloudsTransform", mat4:getRotateY(love.timer.getTime() * 0.01):subm())
+		
+		self.shaders.sky:send("stars", self.textures.stars)
+		self.shaders.sky:send("starsStrength", -math.sin(self.sky_time * math.pi * 2))
+		self.shaders.sky:send("starsTransform", mat4:getRotateZ(love.timer.getTime() * 0.0025):subm())
+		
+		self.shaders.sky:send("rainbow", self.textures.rainbow)
+		self.shaders.sky:send("rainbowStrength", self.rainbow_strength * self.sun_color:length())
+		self.shaders.sky:send("rainbowSize", self.rainbow_size)
+		self.shaders.sky:send("rainbowThickness", 1 / self.rainbow_thickness)
+		self.shaders.sky:send("rainbowDir", {self.rainbow_dir:unpack()})
+		
+		love.graphics.setColor(self.sky_color:unpack())
+		self.object_sky.objects.Sphere.mesh:setTexture(self.textures.sky)
+		love.graphics.draw(self.object_sky.objects.Sphere.mesh)
 		
 		--moon and sun
 		if self.sunMoon_enabled then
 			--moon
 			for sunMoon = 1, 2 do
-				local x, y, z = (-self.sun):normalize():unpack()
-				local l = math.sqrt(x^2+z^2)
-				
-				local a2 = self.sky_time * math.pi * 2.0 + (sunMoon-1) * math.pi
-				local c2 = math.cos(a2)
-				local s2 = math.sin(a2)
-				
-				local a1 = self.sun_offset
-				local c1 = math.cos(a1)
-				local s1 = math.sin(a1)
-				
 				local distance = sunMoon == 1 and 4.0 or (2.0 + math.sin(self.sky_time * math.pi * 2.0))
-				local transform = mat4:getIdentity():translate(0, 0, distance):rotateX(a2):rotateZ(a1)
+				local right = vec3(camTransform[1], camTransform[2], camTransform[3]):normalize()
+				local up = vec3(camTransform[5], camTransform[6], camTransform[7])
 				
 				if sunMoon == 1 then
 					local moon = self:getTexture(self.textures.moon)
@@ -68,11 +61,17 @@ function lib:renderSky(transformProj)
 					if moon and moon_normal then
 						love.graphics.setColor(1.0, 1.0, 1.0)
 						love.graphics.setBlendMode("alpha")
-						love.graphics.setShader(self.shaders.billboard_moon)
-						self.shaders.billboard_moon:send("transform", transform)
-						self.shaders.billboard_moon:send("transformProj", transformProj)
-						self.shaders.billboard_moon:send("normalTex", moon_normal)
-						self.shaders.billboard_moon:send("sun", {math.cos(self.sky_day / 30 * math.pi * 2), math.sin(self.sky_day / 30 * math.pi * 2), 0})
+						
+						local shader = self.shaders.billboard_moon
+						love.graphics.setShader(shader)
+						
+						shader:send("transformProj", transformProj)
+						shader:send("up", {up:unpack()})
+						shader:send("right", {right:unpack()})
+						shader:send("InstanceCenter", {(-self.sun*distance):unpack()})
+						shader:send("sun", {math.cos(self.sky_day / 30 * math.pi * 2), math.sin(self.sky_day / 30 * math.pi * 2), 0})
+						shader:send("normalTex", moon_normal)
+						
 						self.object_plane.objects.Plane.mesh:setTexture(moon)
 					end
 				else
@@ -81,9 +80,15 @@ function lib:renderSky(transformProj)
 					if sun then
 						love.graphics.setColor(self.sun_color)
 						love.graphics.setBlendMode("add")
-						love.graphics.setShader(self.shaders.billboard_sun)
-						self.shaders.billboard_sun:send("transform", transform)
-						self.shaders.billboard_sun:send("transformProj", transformProj)
+						
+						local shader = self.shaders.billboard_sun
+						love.graphics.setShader(shader)
+						
+						shader:send("transformProj", transformProj)
+						shader:send("up", {up:unpack()})
+						shader:send("right", {right:unpack()})
+						shader:send("InstanceCenter", {(self.sun*distance):unpack()})
+						
 						self.object_plane.objects.Plane.mesh:setTexture(sun)
 					end
 				end

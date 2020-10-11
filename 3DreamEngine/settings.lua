@@ -150,7 +150,7 @@ function lib:setDaytime(time)
 	
 	--time, 0.0 is sunrise, 0.5 is sunset
 	self.sky_time = time % 1.0
-	self.sky_day = math.floor(time % c)
+	self.sky_day = time % c
 	
 	--position
 	self.sun = mat4:getRotateZ(self.sun_offset) * vec3(
@@ -179,31 +179,94 @@ function lib:getDaytime()
 end
 
 
+--rainbow visuals
+function lib:setRainbow(strength, size, thickness)
+	check(strength, "number", 1)
+	self.rainbow_strength = strength
+	self.rainbow_size = size or self.rainbow_size or math.cos(42 / 180 * math.pi)
+	self.rainbow_thickness = thickness or self.rainbow_thickness or 0.2
+end
+function lib:getRainbow()
+	return self.rainbow_strength, self.rainbow_size, self.rainbow_thickness
+end
+
+function lib:setRainbowDir(x, y, z)
+	check(x, "number", 1)
+	check(y, "number", 2)
+	check(z, "number", 3)
+	self.rainbow_dir = vec3(x, y, z):normalize()
+end
+function lib:getRainbowDir()
+	return self.rainbow_dir:unpack()
+end
+
+
+--set sun shadow
+function lib:setSunShadow(e)
+	check(e, "boolean", 1)
+	self.sun_shadow = e
+end
+function lib:getSunShadow(o)
+	return self.sun_shadow
+end
+
+
+--set sun offset
+function lib:setSunOffset(o)
+	check(o, "number", 1)
+	self.sun_offset = o
+end
+function lib:getSunOffset(o)
+	return self.sun_offset
+end
+
+
 --sets the rain value and temparature
-function lib:setWeather(rain, temp, raining)
-	check(rain, "number", 1)
-	temp = temp or (1.0 - rain)
-	
-	self.weather_rain = rain
-	self.weather_temperature = temp
+function lib:setWeather(rain, temp, raining, noRainbow)
+	if rain then
+		temp = temp or (1.0 - rain)
+		self.weather_rain = rain
+		self.weather_temperature = temp
+	end
 	
 	--blue-darken ambient and sun color
-	local color = rain * 0.75
+	local color = self.weather_rain * 0.75
 	local darkBlue = vec3(30, 40, 60):normalize() * self.sun_color:length()
 	self.sun_color = darkBlue * 0.2 * color + self.sun_color * (1.0 - color)
 	self.sun_ambient = darkBlue * 0.1 * color + self.sun_ambient * (1.0 - color)
-	self.sky_color = darkBlue * 0.25 * color + vec3(1.0, 1.0, 1.0) * (1.0 - color)
+	self.sky_color = darkBlue * 0.2 * color + vec3(0.6, 0.8, 1.0) * (1.0 - color)
 	
 	--set module settings
 	if raining == nil then
-		raining = rain > 0.5
+		raining = self.weather_rain > 0.5
 	end
+	self.weather_rainStrength = raining and (self.weather_rain-0.5) / 0.5 or 0.0
 	self:getShaderModule("rain").isRaining = raining
-	self:getShaderModule("rain").strength = math.ceil(math.clamp((rain-0.5) / 0.5 * 5.0, 0.001, 5.0))
+	self:getShaderModule("rain").strength = math.ceil(math.clamp(self.weather_rainStrength * 5.0, 0.001, 5.0))
 end
 function lib:getWeather()
 	return self.weather_rain, self.weather_temperature
 end
+
+
+--updates weather slowly
+function lib:updateWeather(rain, temp, dt)
+	self.weather_rain = self.weather_rain + (rain > self.weather_rain and 1 or -1) * dt * 0.1
+	self.weather_temperature = self.weather_temperature + (temp > self.weather_temperature and 1 or -1) * dt * 0.1
+	
+	self:setWeather()
+	
+	--mist level
+	self.weather_mist = math.clamp((self.weather_mist or 0) + (self.weather_rainStrength > 0 and self.weather_rainStrength or -0.1) * dt * 0.1, 0.0, 1.0)
+	
+	--set fog
+	self:setFog(self.weather_mist * 0.005, self.sky_color, 1.0)
+	
+	--set rainbow
+	local strength = math.max(0.0, self.weather_mist * (1.0 - self.weather_rain * 2.0))
+	self:setRainbow(strength)
+end
+
 
 --set resource loader settings
 function lib:setResourceLoader(threaded, thumbnails)
@@ -219,6 +282,8 @@ function lib:getResourceLoader()
 	return self.textures_threaded, self.textures_generateThumbnails
 end
 
+
+--lag-free texture loading
 function lib:setSmoothLoading(time)
 	if time then
 		check(time, "number", 1)
@@ -232,6 +297,8 @@ function lib:getSmoothLoading(time)
 	return self.textures_smoothLoading, self.textures_smoothLoadingTime
 end
 
+
+--stepsize of lag free loader
 function lib:setSmoothLoadingBufferSize(size)
 	check(size, "number", 1)
 	self.textures_bufferSize = size
@@ -240,6 +307,8 @@ function lib:getSmoothLoadingBufferSize(time)
 	return self.textures_bufferSize
 end
 
+
+--default mipmapping mode for textures
 function lib:setMipmaps(mm)
 	check(mm, "boolean", 1)
 	self.textures_mipmaps = mm

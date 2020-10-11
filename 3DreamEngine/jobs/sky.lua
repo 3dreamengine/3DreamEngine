@@ -55,12 +55,12 @@ function job:execute(times, delta, id)
 
 	local pos = vec3(0.0, 0.0, 0.0)
 	local transformations = {
-		lib.cubeMapProjection * lib:lookAt(pos, lookNormals[1], vec3(0, -1, 0)),
-		lib.cubeMapProjection * lib:lookAt(pos, lookNormals[2], vec3(0, -1, 0)),
-		lib.cubeMapProjection * lib:lookAt(pos, lookNormals[3], vec3(0, 0, -1)),
-		lib.cubeMapProjection * lib:lookAt(pos, lookNormals[4], vec3(0, 0, 1)),
-		lib.cubeMapProjection * lib:lookAt(pos, lookNormals[5], vec3(0, -1, 0)),
-		lib.cubeMapProjection * lib:lookAt(pos, lookNormals[6], vec3(0, -1, 0)),
+		lib:lookAt(pos, lookNormals[1], vec3(0, -1, 0)),
+		lib:lookAt(pos, lookNormals[2], vec3(0, -1, 0)),
+		lib:lookAt(pos, lookNormals[3], vec3(0, 0, -1)),
+		lib:lookAt(pos, lookNormals[4], vec3(0, 0, 1)),
+		lib:lookAt(pos, lookNormals[5], vec3(0, -1, 0)),
+		lib:lookAt(pos, lookNormals[6], vec3(0, -1, 0)),
 	}
 
 	for side = 1, 6 do
@@ -69,7 +69,7 @@ function job:execute(times, delta, id)
 		love.graphics.clear(1.0, 1.0, 1.0)
 		love.graphics.setDepthMode()
 		
-		lib:renderSky(transformations[side])
+		lib:renderSky(lib.cubeMapProjection * transformations[side], transformations[side])
 	end
 
 	love.graphics.pop()

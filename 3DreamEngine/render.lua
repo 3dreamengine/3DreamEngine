@@ -103,7 +103,7 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 	--render sky
 	if canvases.direct then
 		if not noSky then
-			self:renderSky(cam.transformProjOrigin)
+			self:renderSky(cam.transformProjOrigin, cam.transform)
 		end
 	else
 		if noSky then
@@ -112,7 +112,7 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 		else
 			--render sky
 			love.graphics.setCanvas(canvases.color)
-			self:renderSky(cam.transformProjOrigin)
+			self:renderSky(cam.transformProjOrigin, cam.transform)
 		end
 	end
 	
@@ -269,7 +269,7 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 				local typ = s.typ .. "_" .. (s.shadow and "shadow" or "simple")
 				types[typ] = (types[typ] or 0) + 1
 				
-				local dat = dream.shaderLibrary.light[typ]
+				local dat = lib.shaderLibrary.light[typ]
 				local b = batches[#batches]
 				if not b or b.typ ~= typ or #b >= (dat.batchable and self.max_lights or 1) then
 					batches[#batches+1] = {typ = typ}
@@ -284,7 +284,7 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam, noSky)
 			love.graphics.setDepthMode()
 			local lastTyp
 			for _,batch in ipairs(batches) do
-				local dat = dream.shaderLibrary.light[batch.typ]
+				local dat = lib.shaderLibrary.light[batch.typ]
 				local shader = self.lightShaders[batch.typ]
 				
 				if lastTyp ~= batch.typ then

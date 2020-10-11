@@ -79,9 +79,9 @@ lib.shaders.blur_cube = love.graphics.newShader(lib.root .. "/shaders/blur_cube.
 lib.shaders.bloom = love.graphics.newShader(lib.root .. "/shaders/bloom.glsl")
 
 --the sky sphere shader
-lib.shaders.sky = love.graphics.newShader(lib.root .. "/shaders/sky.glsl")
+lib.shaders.sky_cube = love.graphics.newShader(lib.root .. "/shaders/sky_cube.glsl")
 lib.shaders.sky_hdri = love.graphics.newShader(lib.root .. "/shaders/sky_hdri.glsl")
-lib.shaders.sky_WilkieHosek = love.graphics.newShader(lib.root .. "/shaders/sky_WilkieHosek.glsl")
+lib.shaders.sky = love.graphics.newShader(lib.root .. "/shaders/sky.glsl")
 
 --the shadow shader
 lib.shaders.shadow = love.graphics.newShader(lib.root .. "/shaders/shadow.glsl")

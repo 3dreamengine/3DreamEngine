@@ -9,11 +9,15 @@ vec4 effect(vec4 color, Image tex, vec2 tc, vec2 sc) {
 
 #ifdef VERTEX
 extern mat4 transformProj;
-extern mat4 transform;
+
+extern vec3 InstanceCenter;
+
+extern vec3 up;
+extern vec3 right;
 
 vec4 position(mat4 transform_projection, vec4 vertex_position) {
-	vec4 vPos = transform * vertex_position;
+	vec3 vPos = InstanceCenter + (right * vertex_position.x + up * vertex_position.y);
 	height = vPos.y;
-	return transformProj * vPos;
+	return transformProj * vec4(vPos, 1.0);
 }
 #endif

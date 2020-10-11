@@ -193,7 +193,8 @@ end
 
 function sh:perShader(dream, shader, info)
 	if shader:hasUniform("brdfLUT") then
-		shader:send("brdfLUT", dream.textures:get("brdfLUT"))
+		dream.initTextures:PBR()
+		shader:send("brdfLUT", dream.textures.brdfLUT)
 	end
 end
 

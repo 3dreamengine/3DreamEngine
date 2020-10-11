@@ -82,9 +82,38 @@ lib:setSmoothLoading(1 / 1000)
 lib:setSmoothLoadingBufferSize(128)
 lib:setMipmaps(true)
 
---TODO, replace sun and moon with particle-like billboarding
-lib.sun_offset = 0.25
-lib.sun_shadow = true
+--sun
+lib:setSunOffset(0.0)
+lib:setSunShadow(true)
+
+--weather
+lib:setWeather(0.5)
+lib:setRainbow(0.0)
+lib:setRainbowDir(1.0, -0.25, 1.0)
+
+--sky
+
+--TODO, move sky_refreshRate to FPS, remove sky_as_reflection and add setSky() which accepts a cubemap, an hdri and a boolean wether to use the sky
+lib.sky_as_reflection = true
+lib.sky_refreshRate = 1/15
+lib.sky_refreshRateTexture = 0
+lib.sky_cube = false
+lib.sky_hdri = false
+lib.sky_hdri_exposure = 1.0
+lib.sky_resolution = 512
+lib.sky_format = "rgba16f"
+
+lib.stars_enabled = true
+lib.sunMoon_enabled = true
+
+--TODO, resolution missing
+lib.clouds_enabled = true
+lib.clouds_resolution = 1024
+lib.clouds_scale = 2.0
+lib.clouds_wind = vec2(0.01, 0.0)
+lib.clouds_pos = vec2(0.0, 0.0)
+lib.clouds_stretch = 20
+lib.clouds_angle = 0
 
 --TODO
 lib.deferredShaderType = "Phong"
@@ -114,29 +143,6 @@ lib.autoExposure_targetBrightness = 0.25
 lib.autoExposure_interval = 1 / 15
 lib.autoExposure_adaptionSpeed = 0.4
 
---TODO, move sky_refreshRate to FPS, remove sky_as_reflection and add setSky() which accepts a cubemap, an hdri and a boolean wether to use the sky
-lib.sky_as_reflection = true
-lib.sky_refreshRate = 1/15
-lib.sky_refreshRateTexture = 0
-lib.sky_cube = false
-lib.sky_hdri = false
-lib.sky_hdri_exposure = 1.0
-lib.sky_resolution = 512
-lib.sky_format = "rgba16f"
-
-lib.stars_enabled = true
-lib.sunMoon_enabled = true
-
---TODO, resolution missing
-lib.clouds_enabled = true
-lib.clouds_resolution = 1024
-lib.clouds_scale = 2.0
-lib.clouds_wind = vec2(0.01, 0.0)
-lib.clouds_pos = vec2(0.0, 0.0)
-
---TODO move to settings
-lib:setWeather(0.5)
-
 --default camera
 lib.cam = lib:newCam()
 
@@ -161,27 +167,33 @@ local pix = love.image.newImageData(2, 2)
 lib.textures = {
 	default = love.graphics.newImage(lib.root .. "/res/default.png"),
 	default_normal = love.graphics.newImage(lib.root .. "/res/default_normal.png"),
-	
-	brdfLUT = lib.root .. "/res/brdfLut.png",
-	
 	sky_fallback = love.graphics.newCubeImage({pix, pix, pix, pix, pix, pix}),
-	
-	sky = lib.root .. "/res/sky.png",
-	stars_hdri = lib.root .. "/res/stars_hdri.png",
-	moon = lib.root .. "/res/moon.png",
-	moon_normal = lib.root .. "/res/moon_normal.png",
-	sun = lib.root .. "/res/sun.png",
-	
-	clouds = love.graphics.newImage(lib.root .. "/res/clouds.png"),
-	clouds_base = love.graphics.newImage(lib.root .. "/res/clouds_base.png"),
 }
 
---TODO use this for moon,clouds, ...
-lib.textures.get = function(self, path)
-	if type(self[path]) == "string" then
-		self[path] = love.graphics.newImage(self[path])
+--load textures once actually needed
+lib.initTextures = { }
+function lib.initTextures:PBR()
+	if not self.PBR_done then
+		self.PBR_done = true
+		lib.textures.brdfLUT = love.graphics.newImage(lib.root .. "/res/brdfLut.png")
 	end
-	return self[path]
+end
+
+function lib.initTextures:sky()
+	if not self.sky_done then
+		self.sky_done = true
+		
+		lib.textures.sky = love.graphics.newImage(lib.root .. "/res/sky.png")
+		lib.textures.moon = love.graphics.newImage(lib.root .. "/res/moon.png")
+		lib.textures.moon_normal = love.graphics.newImage(lib.root .. "/res/moon_normal.png")
+		lib.textures.sun = love.graphics.newImage(lib.root .. "/res/sun.png")
+		lib.textures.rainbow = love.graphics.newImage(lib.root .. "/res/rainbow.png")
+		
+		lib.textures.clouds = love.graphics.newImage(lib.root .. "/res/clouds.png")
+		lib.textures.clouds_base = love.graphics.newImage(lib.root .. "/res/clouds_base.png")
+		lib.textures.clouds_top = love.graphics.newCubeImage("3DreamEngine/res/clouds_top.png")
+		lib.textures.stars = love.graphics.newCubeImage("3DreamEngine/res/stars.png")
+	end
 end
 
 --a canvas set is used to render a scene to
