@@ -35,12 +35,12 @@ function lib:buildScene(cam, typ, blacklist)
 	local noFrustumCheck = cam.noFrustumCheck or not self.frustumCheck
 	
 	--add to scene
-	local LoDFactor = 10 / self.LoDDistance
+	local LODFactor = 10 / self.LODDistance
 	for sc,_ in pairs(self.scenes) do
 		for _,task in ipairs(sc.tasks) do
 			if not blacklist or not (blacklist[task.obj] or blacklist[task.s]) then
-				local LoD = task.s.LoD or task.obj.LoD
-				if not LoD or LoD[math.min( math.floor((task.pos - cam.pos):length() * LoDFactor)+1, 9 )] then
+				local LOD = task.s.LOD or task.obj.LOD
+				if not LOD or LOD[math.min( math.floor((task.pos - cam.pos):length() * LODFactor) + 1, 9 )] then
 					if noFrustumCheck or not task.s.boundingBox or self:inFrustum(cam, task.pos, task.s.boundingBox.size) then
 						local mat = task.s.material
 						local scene = mat.alpha and sceneAlpha or sceneSolid

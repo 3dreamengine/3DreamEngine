@@ -1,9 +1,6 @@
 print("visibility functions not implemented yet")
 return {
-	setLoD = function(self, map)
-		
-	end,
-	setLoDDistance = function(self, distance)
+	setLOD = function(self, map)
 		
 	end,
 	setVisibility = function(self, render, shadow, reflections)

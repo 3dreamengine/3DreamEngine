@@ -105,11 +105,11 @@ lib:setCloudsStretch(0, 20, 0)
 lib:setAutoExposure(false)
 
 --TODO
-lib.deferredShaderType = "Phong"
-lib.max_lights = 16
-lib.nameDecoder = "blender"
-lib.frustumCheck = true
-lib.LoDDistance = 100
+lib:setDeferredShaderType("Phong")
+lib:setMaxLights(16)
+lib:setNameDecoder("^(.+)_([^_]+)$")
+lib:setFrustumCheck(true)
+lib:setLODDistance(100)
 
 --canvas set settings
 lib.default_settings = lib:newSetSettings()

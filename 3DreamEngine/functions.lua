@@ -179,12 +179,9 @@ function lib:RGBtoHSV(r, g, b)
 end
 
 function lib:decodeObjectName(name)
-	if self.nameDecoder == "blender" then
-		local last, f = 0, false
-		while last and string.find(name, "_", last+1) do
-			f, last = string.find(name, "_", last+1)
-		end
-		return name:sub(1, f and (f-1) or #name)
+	if self.nameDecoder then
+		local n = string.match(name, self.nameDecoder)
+		return n or name
 	else
 		return name
 	end

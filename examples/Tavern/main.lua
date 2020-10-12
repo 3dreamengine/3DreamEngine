@@ -6,7 +6,7 @@ love.window.setVSync(false)
 
 --settings
 local projectDir = "examples/Tavern/"
-dream.nameDecoder = false
+dream:setNameDecoder()
 
 dream:setSky(false)
 dream:setReflection(cimg:load(projectDir .. "sky.cimg"))

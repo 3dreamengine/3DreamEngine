@@ -6,13 +6,13 @@ settings.lua - a bunch of setter and getter to set global settings
 local lib = _3DreamEngine
 
 local function check(value, typ, argNr)
-	assert(type(value) == typ, "bad argument #" .. argNr .. " (number expected, got nil)")
+	assert(type(value) == typ, "bad argument #" .. (argNr or 1) .. " (number expected, got nil)")
 end
 
 --exposure
 function lib:setExposure(e)
 	if e then
-		check(e, "number", 1)
+		check(e, "number")
 		self.exposure = e
 	else
 		self.exposure = false
@@ -46,7 +46,7 @@ end
 --gamma
 function lib:setGamma(g)
 	if g then
-		check(g, "number", 1)
+		check(g, "number")
 		self.gamma = g
 	else
 		self.gamma = false
@@ -117,7 +117,7 @@ end
 
 function lib:setFogHeight(min, max)
 	check(min, "number", 1)
-	check(max, "number", 1)
+	check(max, "number", 2)
 	self.fog_min = min
 	self.fog_max = max
 end
@@ -141,7 +141,7 @@ end
 
 --default shadow smoothing mode
 function lib:setShadowSmoothing(enabled)
-	check(enabled, "boolean", 1)
+	check(enabled, "boolean")
 	self.shadow_smooth = enabled
 end
 function lib:getShadowSmoothing()
@@ -152,7 +152,7 @@ end
 --sun shadow cascade
 function lib:setShadowCascade(distance, factor)
 	check(distance, "number", 1)
-	check(factor, "number", 1)
+	check(factor, "number", 2)
 	
 	self.shadow_distance = distance
 	self.shadow_factor = factor
@@ -164,7 +164,7 @@ end
 
 --rainbow
 function lib:setRainbow(strength, size, thickness)
-	check(strength, "number", 1)
+	check(strength, "number")
 	self.rainbow_strength = strength
 	self.rainbow_size = size or self.rainbow_size or math.cos(42 / 180 * math.pi)
 	self.rainbow_thickness = thickness or self.rainbow_thickness or 0.2
@@ -186,7 +186,7 @@ end
 
 --set sun shadow
 function lib:setSunShadow(e)
-	check(e, "boolean", 1)
+	check(e, "boolean")
 	self.sun_shadow = e
 end
 function lib:getSunShadow(o)
@@ -196,7 +196,7 @@ end
 
 --set sun offset
 function lib:setSunOffset(o)
-	check(o, "number", 1)
+	check(o, "number")
 	self.sun_offset = o
 end
 function lib:getSunOffset(o)
@@ -206,7 +206,7 @@ end
 
 --day time
 function lib:setDaytime(time)
-	check(time, "number", 1)
+	check(time, "number")
 	
 	local c = #self.sunlight
 	
@@ -410,7 +410,7 @@ end
 --lag-free texture loading
 function lib:setSmoothLoading(time)
 	if time then
-		check(time, "number", 1)
+		check(time, "number")
 		self.textures_smoothLoading = true
 		self.textures_smoothLoadingTime = time
 	else
@@ -424,7 +424,7 @@ end
 
 --stepsize of lag free loader
 function lib:setSmoothLoadingBufferSize(size)
-	check(size, "number", 1)
+	check(size, "number")
 	self.textures_bufferSize = size
 end
 function lib:getSmoothLoadingBufferSize(time)
@@ -434,9 +434,64 @@ end
 
 --default mipmapping mode for textures
 function lib:setMipmaps(mm)
-	check(mm, "boolean", 1)
+	check(mm, "boolean")
 	self.textures_mipmaps = mm
 end
 function lib:getMipmaps()
 	return self.textures_mipmaps
+end
+
+
+--sets the shader to take the light function from when using the deferred pipeline
+function lib:setDeferredShaderType(typ)
+	check(typ, "string")
+	assert(self.shaderLibrary.base[typ].constructLightFunction, "shader " .. typ .. " has no constructLightFunction!")
+	self.deferredShaderType = typ
+end
+function lib:getDeferredShaderType()
+	return self.deferredShaderType
+end
+
+
+--sets the max count of lights per type
+function lib:setMaxLights(nr)
+	check(nr, "number")
+	self.max_lights = nr
+end
+function lib:getMaxLights()
+	return self.max_lights
+end
+
+
+--sets the regex decoder strings for object names
+function lib:setNameDecoder(regex)
+	if regex then
+		check(regex, "string")
+		self.nameDecoder = regex
+	else
+		self.nameDecoder = false
+	end
+end
+function lib:getNameDecoder()
+	return self.nameDecoder
+end
+
+
+--enable/disable in frustum check
+function lib:setFrustumCheck(c)
+	check(c, "boolean")
+	self.frustumCheck = c
+end
+function lib:getFrustumCheck()
+	return self.frustumCheck
+end
+
+
+--sets the distance of the lowest LOD level
+function lib:setLODDistance(d)
+	check(d, "number")
+	self.LODDistance = d
+end
+function lib:getLODDistance()
+	return self.LODDistance
 end
