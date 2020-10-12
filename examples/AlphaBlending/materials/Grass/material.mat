@@ -1,5 +1,5 @@
 return {
-	alpha = 1,
+	alpha = false,
 	extra = 0.02,
 	cullMode = "none",
 	

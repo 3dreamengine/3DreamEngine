@@ -111,8 +111,8 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam)
 	
 	--clear
 	if not canvases.direct then
-		love.graphics.setCanvas({canvases.depth, canvases.colorAlpha, depthstencil = canvases.depth_buffer})
-		love.graphics.clear({255, 255, 255, 255}, {0, 0, 0, 0})
+		love.graphics.setCanvas({canvases.depth, canvases.colorAlpha, canvases.dataAlpha, depthstencil = canvases.depth_buffer})
+		love.graphics.clear({255, 255, 255, 255}, {0, 0, 0, 0}, {0, 0, 0, 0})
 		if canvases.deferred then
 			love.graphics.setCanvas(canvases.position, canvases.normal, canvases.material, canvases.albedo)
 			love.graphics.clear(0, 0, 0, 0)
@@ -129,16 +129,27 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam)
 		local noLight = canvases.deferred and pass == 1 or #lighting == 0
 		
 		--only first pass writes depth
-		love.graphics.setDepthMode("less", pass == 1)
-		love.graphics.setBlendMode("alpha")
+		love.graphics.setDepthMode("less", pass == 1 or not canvases.averageAlpha)
+		if canvases.averageAlpha and pass == 2 then
+			love.graphics.setBlendMode("add")
+		else
+			love.graphics.setBlendMode("alpha")
+		end
 		
 		--set canvases
+		local dataAlpha = canvases.averageAlpha and pass == 2
 		if not canvases.direct then
 			if canvases.deferred and pass == 1 then
+				--deferred pass 1
 				love.graphics.setCanvas({canvases.color, canvases.depth, canvases.position, canvases.normal, canvases.material, canvases.albedo, depthstencil = canvases.depth_buffer})
+			elseif dataAlpha then
+				--average alpha
+				love.graphics.setCanvas({canvases.colorAlpha, canvases.dataAlpha, depthstencil = canvases.depth_buffer})
 			elseif canvases.refractions and pass == 2 then
+				--refractions only
 				love.graphics.setCanvas({canvases.colorAlpha, canvases.depth, depthstencil = canvases.depth_buffer})
 			else
+				--no refractions or default pass
 				love.graphics.setCanvas({canvases.color, canvases.depth, depthstencil = canvases.depth_buffer})
 			end
 		end
@@ -151,6 +162,9 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam)
 			--output settings
 			love.graphics.setShader(shader)
 			shader:send("ditherAlpha", pass == 1)
+			if shader:hasUniform("dataAlpha") then
+				shader:send("dataAlpha", dataAlpha)
+			end
 			
 			--shader
 			local shaderEntry = self.shaderLibrary.base[shaderInfo.shaderType]
@@ -205,7 +219,7 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam)
 				end
 				
 				--culling
-				love.graphics.setMeshCullMode(canvases.cullMode or material.cullMode or "back")
+				love.graphics.setMeshCullMode((pass == 2 and dream.alphaCullMode) or canvases.cullMode or material.cullMode or "back")
 				
 				--draw objects
 				for _,task in pairs(materialGroup) do
@@ -309,6 +323,7 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam)
 			love.graphics.setShader(shader)
 			
 			shader:send("transformProj", cam.transformProj)
+			shader:send("dataAlpha", canvases.averageAlpha)
 			if shader:hasUniform("viewPos") then shader:send("viewPos", {cam.pos:unpack()}) end
 			if shader:hasUniform("gamma") then shader:send("gamma", self.gamma) end
 			if shader:hasUniform("exposure") then shader:send("exposure", self.exposure) end
@@ -347,6 +362,7 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam)
 			love.graphics.setShader(shader)
 			
 			shader:send("transformProj", cam.transformProj)
+			shader:send("dataAlpha", canvases.averageAlpha)
 			if shader:hasUniform("viewPos") then shader:send("viewPos", {cam.pos:unpack()}) end
 			if shader:hasUniform("gamma") then shader:send("gamma", self.gamma) end
 			if shader:hasUniform("exposure") then shader:send("exposure", self.exposure) end
@@ -452,22 +468,22 @@ function lib:renderFull(cam, canvases, blacklist)
 		love.graphics.setCanvas(canvases.AO_1)
 		love.graphics.clear()
 		love.graphics.setBlendMode("replace", "premultiplied")
-		
 		love.graphics.setShader(self.shaders.SSAO)
 		love.graphics.draw(canvases.depth, 0, 0, 0, self.AO_resolution)
 		
 		--blur
-		love.graphics.setShader(self.shaders.blur)
-		
-		self.shaders.blur:send("dir", {1.0 / canvases.AO_1:getWidth(), 0.0})
-		love.graphics.setCanvas(canvases.AO_2)
-		love.graphics.clear()
-		love.graphics.draw(canvases.AO_1)
-		
-		self.shaders.blur:send("dir", {0.0, 1.0 / canvases.AO_1:getHeight()})
-		love.graphics.setCanvas(canvases.AO_1)
-		love.graphics.clear()
-		love.graphics.draw(canvases.AO_2)
+		if self.AO_blur then
+			love.graphics.setShader(self.shaders.blur)
+			self.shaders.blur:send("dir", {1.0 / canvases.AO_1:getWidth(), 0.0})
+			love.graphics.setCanvas(canvases.AO_2)
+			love.graphics.clear()
+			love.graphics.draw(canvases.AO_1)
+			
+			self.shaders.blur:send("dir", {0.0, 1.0 / canvases.AO_1:getHeight()})
+			love.graphics.setCanvas(canvases.AO_1)
+			love.graphics.clear()
+			love.graphics.draw(canvases.AO_2)
+		end
 	end
 	
 	--bloom
@@ -522,9 +538,9 @@ function lib:renderFull(cam, canvases, blacklist)
 	
 	if shader:hasUniform("canvas_bloom") then shader:send("canvas_bloom", canvases.bloom_1) end
 	if shader:hasUniform("canvas_ao") then shader:send("canvas_ao", canvases.AO_1) end
-	if shader:hasUniform("canvas_SSR") then shader:send("canvas_SSR", canvases.canvas_SSR_1) end
 	
 	if shader:hasUniform("canvas_alpha") then shader:send("canvas_alpha", canvases.colorAlpha) end
+	if shader:hasUniform("canvas_alphaData") then shader:send("canvas_alphaData", canvases.dataAlpha) end
 	
 	if shader:hasUniform("canvas_exposure") then shader:send("canvas_exposure", self.canvas_exposure) end
 	

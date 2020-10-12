@@ -7,7 +7,7 @@ love.mouse.setRelativeMode(true)
 local projectDir = "examples/AlphaBlending/"
 
 --settings
-dream.defaultShaderType = "PBR"
+dream:setDefaultShaderType("PBR")
 dream:setSky(love.graphics.newImage(projectDir .. "sky.hdr"), 0.25)
 dream:init()
 
@@ -42,13 +42,16 @@ function love.draw()
 	--light (no daylight) with two custom light sources
 	dream:resetLight(true)
 	dream:addLight(light)
-	dream:addNewLight(dream.cam.x, dream.cam.y, dream.cam.z, 1, 1, 1, 1)
 	
 	dream:prepare()
 	dream:draw(scene)
 	dream:present()
 	
-	love.graphics.print("use H to toggle deferred rendering .. (" .. tostring(dream.deferred) .. ")", 5, 5)
+	love.graphics.print(table.concat({
+		"1 to toggle refractions .. (" .. tostring(dream.default_settings:getRefractions()) .. ")",
+		"2 to toggle average alpha .. (" .. tostring(dream.default_settings:getAverageAlpha()) .. ")",
+		"3 to toggle alpha backface culling .. (" .. tostring(dream:getAlphaCullMode()) .. ")",
+	}, "\n"), 5, 5)
 end
 
 function love.mousemoved(_, _, x, y)
@@ -102,8 +105,19 @@ function love.keypressed(key)
 		dream:takeScreenshot()
 	end
 	
-	if key == "h" then
-		dream.deferred = not dream.deferred
+	if key == "1" then
+		dream.default_settings:setRefractions(not dream.default_settings:getRefractions())
+		dream:init()
+	end
+	
+	if key == "2" then
+		dream.default_settings:setAverageAlpha(not dream.default_settings:getAverageAlpha())
+		dream:init()
+	end
+	
+	if key == "3" then
+		local cullMode = dream:getAlphaCullMode()
+		dream:setAlphaCullMode(cullMode == "none" and "back" or "none")
 		dream:init()
 	end
 

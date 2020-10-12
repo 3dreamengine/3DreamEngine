@@ -2,9 +2,9 @@ extern Image canvas_depth;
 
 extern Image canvas_bloom;
 extern Image canvas_ao;
-extern Image canvas_SSR;
 
 extern Image canvas_alpha;
+extern Image canvas_alphaData;
 
 extern Image canvas_exposure;
 
@@ -83,46 +83,64 @@ vec4 fxaa(Image tex, vec2 tc) {
 
 #ifdef PIXEL
 vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
-	vec2 tc_final = tc;
-	
 	//color
 #ifdef FXAA_ENABLED
-	vec4 col = fxaa(canvas_color, tc_final);
+	vec4 col = fxaa(canvas_color, tc);
 #else
-	vec4 col = Texel(canvas_color, tc_final);
-#endif
-
-	//alpha
-#ifdef REFRACTIONS_ENABLED
-#ifdef FXAA_ENABLED
-	vec4 ca = fxaa(canvas_alpha, tc_final);
-#else
-	vec4 ca = Texel(canvas_alpha, tc_final);
-#endif
-	col = mix(col, ca, ca.a);
+	vec4 col = Texel(canvas_color, tc);
 #endif
 	
 	//ao
 #ifdef AO_ENABLED
-	float ao = Texel(canvas_ao, tc_final).r;
+	float ao = Texel(canvas_ao, tc).r;
 	col.rgb *= ao;
+#endif
+	
+	//fetch depth for fog
+#ifdef FOG_ENABLED
+	float depth = Texel(canvas_depth, tc).r;
+#endif
+
+	//alpha
+#ifdef ALPHAPASS_ENABLED
+#ifdef AVERAGE_ALPHA
+	//average alpha
+	vec3 dat = Texel(canvas_alphaData, tc).xyz;
+	if (dat.x > 0.0) {
+#ifdef FXAA_ENABLED
+		vec4 ca = fxaa(canvas_alpha, tc);
+#else
+		vec4 ca = Texel(canvas_alpha, tc);
+#endif
+		ca.rgb = ca.rgb / dat.y;
+		ca.a = dat.y / dat.x;
+		col = mix(col, ca, ca.a);
+		
+#ifdef FOG_ENABLED
+		//blend between alpha and background depth
+		depth = mix(depth, dat.z / dat.x, ca.a);
+#endif
+	}
+#else
+	//no average alpha
+#ifdef FXAA_ENABLED
+	vec4 ca = fxaa(canvas_alpha, tc);
+#else
+	vec4 ca = Texel(canvas_alpha, tc);
+#endif
+	col = mix(col, ca, ca.a);
+#endif
+
 #endif
 	
 	//bloom
 #ifdef BLOOM_ENABLED
-	vec3 bloom = Texel(canvas_bloom, tc_final).rgb;
+	vec3 bloom = Texel(canvas_bloom, tc).rgb;
 	col.rgb += bloom;
-#endif
-	
-	//screen space reflections merge
-#ifdef SSR_ENABLED
-	vec3 ref = Texel(canvas_SSR, tc_final).rgb;
-	col.rgb += ref;
 #endif
 
 	//fog
 #ifdef FOG_ENABLED
-	float depth = Texel(canvas_depth, tc_final).r;
 	vec4 fogColor = getFog(depth, viewVec, viewPos);
 	col.rgb = mix(col.rgb, fogColor.rgb, fogColor.a);
 #endif

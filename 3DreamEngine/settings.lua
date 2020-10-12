@@ -58,14 +58,16 @@ end
 
 
 --AO settings
-function lib:setAO(samples, resolution)
+function lib:setAO(samples, resolution, blur)
 	if samples then
 		check(samples, "number", 1)
 		check(resolution, "number", 2)
+		check(blur, "boolean", 3)
 		
 		self.AO_enabled = true
 		self.AO_quality = samples
 		self.AO_resolution = resolution
+		self.AO_blur = blur
 	else
 		self.AO_enabled = false
 	end
@@ -442,6 +444,20 @@ function lib:getMipmaps()
 end
 
 
+--default mipmapping mode for textures
+function lib:setAlphaCullMode(cm)
+	if cm then
+	check(cm, "string")
+	self.alphaCullMode = cm
+	else
+	self.alphaCullMode = false
+	end
+end
+function lib:getAlphaCullMode()
+	return self.alphaCullMode
+end
+
+
 --sets the shader to take the light function from when using the deferred pipeline
 function lib:setDeferredShaderType(typ)
 	check(typ, "string")
@@ -450,6 +466,21 @@ function lib:setDeferredShaderType(typ)
 end
 function lib:getDeferredShaderType()
 	return self.deferredShaderType
+end
+
+
+--sets the shader to take the light function from when using the deferred pipeline
+function lib:setDefaultShaderType(typ)
+	if typ then
+		check(typ, "string")
+		assert(self.shaderLibrary.base[typ], "shader " .. typ .. " does not exist!")
+		self.defaultShaderType = typ
+	else
+		self.defaultShaderType = false
+	end
+end
+function lib:getDefaultShaderType()
+	return self.defaultShaderType
 end
 
 

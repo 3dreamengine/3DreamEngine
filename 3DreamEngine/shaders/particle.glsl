@@ -28,12 +28,19 @@ extern float gamma;
 //uniforms required by the lighting
 #import lightingSystemInit
 
-vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords) {
+extern Image MainTex;
+extern bool dataAlpha;
+
+void effect() {
 	vec3 viewVec = normalize(viewPos - vertexPos);
 	vec2 tc = vec2(texture_coords.x, 1.0 - texture_coords.y);
 	
 	//fetch color
-	vec4 albedo = Texel(tex, tc);
+	vec4 albedo = Texel(MainTex, tc);
+	
+	if (albedo.a <= 0.0) {
+		discard;
+	}
 	
 	//emission
 #ifdef TEX_EMISSION
@@ -66,8 +73,13 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords) {
 #ifdef GAMMA_ENABLED
 	col = pow(col, vec3(1.0 / gamma));
 #endif
-	
-	return vec4(col, albedo.a);
+
+	love_Canvases[0] = vec4(col, albedo.a);
+	if (dataAlpha) {
+		love_Canvases[1] = vec4(1.0, albedo.a, depth, 1.0);
+	} else {
+		love_Canvases[1] = vec4(depth, 1.0, 1.0, albedo.a);
+	}
 }
 #endif
 

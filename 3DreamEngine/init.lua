@@ -63,16 +63,22 @@ lib.canvasFormats = love.graphics and love.graphics.getCanvasFormats() or { }
 lib.materialLibrary = { }
 
 --default settings
-lib:setAO(16, 0.75)
+lib:setAO(32, 0.75, true)
 lib:setBloom(1.0, 1.5, 0.5)
 lib:setFog()
 lib:setFogHeight(1, -1)
 lib:setDaytime(0.3)
 lib:setGamma(false)
 lib:setExposure(1.0)
+lib:setAlphaCullMode(false)
+lib:setDeferredShaderType("Phong")
+lib:setMaxLights(16)
+lib:setNameDecoder("^(.+)_([^_]+)$")
+lib:setFrustumCheck(true)
+lib:setLODDistance(100)
 
 --shadows
-lib:setShadowResolution(1024, 256)
+lib:setShadowResolution(1024, 512)
 lib:setShadowSmoothing(false)
 lib:setShadowCascade(8, 4)
 
@@ -104,17 +110,11 @@ lib:setCloudsStretch(0, 20, 0)
 --auto exposure
 lib:setAutoExposure(false)
 
---TODO
-lib:setDeferredShaderType("Phong")
-lib:setMaxLights(16)
-lib:setNameDecoder("^(.+)_([^_]+)$")
-lib:setFrustumCheck(true)
-lib:setLODDistance(100)
-
 --canvas set settings
 lib.default_settings = lib:newSetSettings()
 lib.default_settings:setPostEffects(true)
 lib.default_settings:setRefractions(true)
+lib.default_settings:setAverageAlpha(false)
 
 lib.reflections_settings = lib:newSetSettings()
 lib.reflections_settings:setDirect(true)
@@ -192,6 +192,7 @@ function lib.newCanvasSet(self, settings, w, h)
 	set.deferred = settings.deferred and not set.direct
 	set.postEffects = settings.postEffects
 	set.refractions = settings.refractions and not set.direct
+	set.averageAlpha = settings.averageAlpha and not set.direct
 	set.format = settings.format
 	
 	assert(not set.deferred or not set.direct, "Deferred rendering is not compatible with direct rendering!")
@@ -203,9 +204,13 @@ function lib.newCanvasSet(self, settings, w, h)
 		--temporary HDR color
 		set.color = love.graphics.newCanvas(w, h, {format = settings.format, readable = true, msaa = set.msaa})
 		
-		--additional color if using refractions
-		if set.refractions then
-			set.colorAlpha = love.graphics.newCanvas(w, h, {format = settings.format, readable = true, msaa = set.msaa})
+		--additional color if using refractions or averageAlpha
+		if set.averageAlpha or settings.refractions then
+			set.colorAlpha = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = set.msaa})
+			
+			if set.averageAlpha then
+				set.dataAlpha = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = set.msaa})
+			end
 		end
 		
 		--depth
@@ -223,7 +228,9 @@ function lib.newCanvasSet(self, settings, w, h)
 	--screen space ambient occlusion blurring canvases
 	if self.AO_enabled and not set.direct then
 		set.AO_1 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
-		set.AO_2 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
+		if self.AO_blur then
+			set.AO_2 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
+		end
 	end
 	
 	--post effects

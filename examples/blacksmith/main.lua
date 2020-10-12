@@ -5,7 +5,7 @@ love.mouse.setRelativeMode(true)
 
 --settings
 local projectDir = "examples/blacksmith/"
-dream.defaultShaderType = "PBR"
+dream:setDefaultShaderType("PBR")
 
 --set reflection cubemap with local corrections
 local r = dream:newReflection(cimg:load(projectDir .. "sky.cimg"))

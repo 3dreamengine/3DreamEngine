@@ -297,6 +297,22 @@ function love.keypressed(key)
 		rotateCamera = not rotateCamera
 	end
 	
+	if key == "1" then
+		dream.default_settings:setRefractions(not dream.default_settings:getRefractions())
+		dream:init()
+	end
+	
+	if key == "2" then
+		dream.default_settings:setAverageAlpha(not dream.default_settings:getAverageAlpha())
+		dream:init()
+	end
+	
+	if key == "3" then
+		local cullMode = dream:getAlphaCullMode()
+		dream:setAlphaCullMode(cullMode == "none" and "back" or "none")
+		dream:init()
+	end
+	
 	if key == "f3" then
 		dream:take3DScreenshot(vec3(player.x, player.y, player.z), 128)
 	end

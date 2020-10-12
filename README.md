@@ -382,7 +382,7 @@ return {
 	{
 		name = "grass",      --extend material Grass
 		
-		alpha = 0,           --the alpha passes required as explained in alpah blending chapter
+		alpha = false,       --the alpha pass required as explained in alpah blending chapter
 		cullMode = "back",   --the cullmode to render the mesh with
 		shadow = nil,        --false would disable this object in the shadow pass
 		

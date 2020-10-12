@@ -11,6 +11,7 @@ varying float depth;               //depth
 
 //shader settings
 extern bool ditherAlpha;
+extern bool dataAlpha;
 
 //setting specific defines
 #import globalDefines
@@ -55,11 +56,13 @@ void effect() {
 	
 	//dither alpha
 	if (ditherAlpha) {
-		if (albedo.a < fract(love_PixelCoord.x * 0.37 + love_PixelCoord.y * 73.73 + depth * 3.73)) {
+		if (albedo.a <= fract(love_PixelCoord.x * 0.37 + love_PixelCoord.y * 73.73 + depth * 3.73)) {
 			discard;
 		} else {
 			albedo.a = 1.0;
 		}
+	} else if (albedo.a <= 0.0) {
+		discard;
 	}
 	
 	vec3 viewVec = normalize(viewPos - vertexPos);
@@ -74,7 +77,7 @@ void effect() {
 	//forward lighting
 	vec3 light = vec3(0.0);
 #import lightingSystem
-	col += light * albedo.a;
+	col += light;
 	
 #import modulesPixelPost
 #endif
@@ -84,7 +87,7 @@ void effect() {
 	vec2 startPixel = love_PixelCoord.xy * screenScale;
 	
 	//refract and transform back to pixel coord
-	vec3 endPoint = vertexPos + normalize(refract(-viewVec, normal, ior)) * 0.25;
+	vec3 endPoint = vertexPos + normalize(refract(-viewVec, normal, ior)) * 0.15;
 	vec4 endPixel = transformProj * vec4(endPoint, 1.0);
 	endPixel /= endPixel.w;
 	endPixel.xy = endPixel.xy * 0.5 + 0.5;
@@ -96,8 +99,10 @@ void effect() {
 	float d = Texel(tex_depth, startPixel + vec).r;
 	if (d > depth) {
 		vec3 nc = Texel(tex_color, startPixel + vec).xyz;
-		col = mix(col, nc, albedo.a);
-		albedo.a = 1.0;
+		col = mix(nc, col, albedo.a);
+	} else {
+		vec3 nc = Texel(tex_color, startPixel).xyz;
+		col = mix(nc, col, albedo.a);
 	}
 #endif
 
@@ -118,8 +123,21 @@ void effect() {
 #endif
 	
 	//returns color
+#ifdef REFRACTIONS_ENABLED
+	love_Canvases[0] = vec4(col, 1.0);
+#else
 	love_Canvases[0] = vec4(col, albedo.a);
+#endif
 	love_Canvases[1] = vec4(depth, 1.0, 1.0, albedo.a);
+	
+	//alpha data
+	if (dataAlpha) {
+#ifdef REFRACTIONS_ENABLED
+		love_Canvases[1] = vec4(1.0, 1.0, depth, 1.0);
+#else
+		love_Canvases[1] = vec4(1.0, albedo.a, depth, 1.0);
+#endif
+	}
 	
 #ifdef DEFERRED
 	love_Canvases[2] = vec4(vertexPos, albedo.a);

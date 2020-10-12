@@ -6,14 +6,16 @@ love.graphics.setBackgroundColor(0.8, 0.8, 0.8)
 --settings
 local projectDir = "examples/Lamborghini/"
 
-dream.defaultShaderType = "PBR"
+dream:setDefaultShaderType("PBR")
 dream:setSky(love.graphics.newImage(projectDir .. "garage.hdr"))
 
 dream.cam.fov = 70
 
 dream:init()
 
-car = dream:loadObject(projectDir .. "Lamborghini Aventador", {splitMaterials = true})
+car = dream:loadObject(projectDir .. "Lamborghini Aventador", "PBR")
+car.materials["Lamborghini_Aventador:GlassSG"].color = {0, 0, 0, 0.4}
+
 socket = dream:loadObject(projectDir .. "socket")
 
 function love.draw()
