@@ -1,10 +1,12 @@
 return {
 	link = {"clone", "shader", "material"},
 	
+	setterGetter = {
+		setAlpha = "boolean",
+		setSolid = "boolean",
+	},
+	
 	--general settings
-	useAlphaPass = function(self, alpha)
-		self.alpha = alpha or false
-	end,
 	setIOR = function(self, ior)
 		self.ior = ior or 1.0
 	end,

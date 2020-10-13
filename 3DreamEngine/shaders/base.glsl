@@ -10,8 +10,9 @@ varying highp vec3 vertexPos;      //vertex position for pixel shader
 varying float depth;               //depth
 
 //shader settings
-extern bool ditherAlpha;
 extern bool dataAlpha;
+extern bool alphaPass;
+extern bool isSemi;
 
 //setting specific defines
 #import globalDefines
@@ -55,14 +56,27 @@ void effect() {
 #import mainPixelPre
 	
 	//dither alpha
-	if (ditherAlpha) {
-		if (albedo.a <= fract(love_PixelCoord.x * 0.37 + love_PixelCoord.y * 73.73 + depth * 3.73)) {
-			discard;
-		} else {
-			albedo.a = 1.0;
+	if (alphaPass) {
+		if (isSemi) {
+			//no fully opaque or fully transparent
+			if (albedo.a <= 0.0 || albedo.a >= 0.99) {
+				discard;
+			}
 		}
-	} else if (albedo.a <= 0.0) {
-		discard;
+	} else {
+		if (isSemi) {
+			//only fully opaque
+			if (albedo.a < 0.99) {
+				discard;
+			}
+		} else {
+			//dither
+			if (albedo.a <= fract(love_PixelCoord.x * 0.37 + love_PixelCoord.y * 73.73 + depth * 3.73)) {
+				discard;
+			} else {
+				albedo.a = 1.0;
+			}
+		}
 	}
 	
 	vec3 viewVec = normalize(viewPos - vertexPos);
@@ -99,10 +113,10 @@ void effect() {
 	float d = Texel(tex_depth, startPixel + vec).r;
 	if (d > depth) {
 		vec3 nc = Texel(tex_color, startPixel + vec).xyz;
-		col = mix(nc, col, albedo.a);
+		col = mix(mix(nc, nc * albedo.rgb, albedo.a), col, albedo.a);
 	} else {
 		vec3 nc = Texel(tex_color, startPixel).xyz;
-		col = mix(nc, col, albedo.a);
+		col = mix(mix(nc, nc * albedo.rgb, albedo.a), col, albedo.a);
 	}
 #endif
 
@@ -128,7 +142,6 @@ void effect() {
 #else
 	love_Canvases[0] = vec4(col, albedo.a);
 #endif
-	love_Canvases[1] = vec4(depth, 1.0, 1.0, albedo.a);
 	
 	//alpha data
 	if (dataAlpha) {
@@ -137,6 +150,8 @@ void effect() {
 #else
 		love_Canvases[1] = vec4(1.0, albedo.a, depth, 1.0);
 #endif
+	} else {
+		love_Canvases[1] = vec4(depth, 1.0, 1.0, albedo.a);
 	}
 	
 #ifdef DEFERRED

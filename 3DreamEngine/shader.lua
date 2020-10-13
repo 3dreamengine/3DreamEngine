@@ -77,6 +77,7 @@ lib.shaders.blur_cube = love.graphics.newShader(lib.root .. "/shaders/blur_cube.
 
 --applies bloom at a given strength
 lib.shaders.bloom = love.graphics.newShader(lib.root .. "/shaders/bloom.glsl")
+lib.shaders.bloom_average = love.graphics.newShader(lib.root .. "/shaders/bloom_average.glsl")
 
 --the sky sphere shader
 lib.shaders.sky_cube = love.graphics.newShader(lib.root .. "/shaders/sky_cube.glsl")
@@ -209,7 +210,7 @@ function lib:getShaderInfo(s, obj)
 	local mat = s.material
 	local shaderType = s.shaderType
 	local reflection = s.reflection or obj.reflection or self.sky_reflection
-	local refraction = mat.ior ~= 1.0 and self.refraction
+	local refractions = mat.ior ~= 1.0
 	local modules = s.modules or obj.modules or mat.modules
 	
 	--group shader and vertex shader
@@ -226,7 +227,7 @@ function lib:getShaderInfo(s, obj)
 	
 	--reflection module
 	ID = ID + (reflection and 1024 or 0)
-	ID = ID + (refraction and 2048 or 0)
+	ID = ID + (refractions and 2048 or 0)
 	
 	--global modules
 	local m = { }
@@ -250,7 +251,7 @@ function lib:getShaderInfo(s, obj)
 		shs[ID] = self.shaderLibrary.base[shaderType]:getShaderInfo(self, mat, shaderType, reflection)
 		shs[ID].shaderType = shaderType
 		shs[ID].reflection = reflection
-		shs[ID].refraction = refraction
+		shs[ID].refractions = refractions
 		shs[ID].shaders = { }
 		shs[ID].modules = m
 	end
@@ -286,7 +287,7 @@ function lib:getShader(info, canvases, pass, lighting, lightRequirements)
 		ID = ID + 0.5
 		table.insert(globalDefines, "#define DEFERRED")
 	end
-	if info.refraction and pass == 2 then
+	if canvases.refractions and info.refractions and pass == 2 then
 		ID = ID + 0.25
 		table.insert(globalDefines, "#define REFRACTIONS_ENABLED")
 	end

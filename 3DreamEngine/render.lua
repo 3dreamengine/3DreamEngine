@@ -43,8 +43,8 @@ function lib:buildScene(cam, typ, blacklist)
 					local visibility = task.s.visibility or task.obj.visibility
 					if not visibility or visibility[typ] then
 						local mat = task.s.material
-						local scene = mat.alpha and sceneAlpha or sceneSolid
-						if scene then
+						for alpha = mat.solid and 1 or 2, mat.alpha and typ ~= "shadows" and 2 or 1 do
+							local scene = alpha == 1 and sceneSolid or sceneAlpha
 							local LOD = task.s.LOD or task.obj.LOD
 							if not LOD or LOD[math.min( math.floor((task.pos - cam.pos):length() * LODFactor) + 1, 9 )] then
 								if noFrustumCheck or not task.s.boundingBox or self:inFrustum(cam, task.pos, task.s.boundingBox.size) then
@@ -166,7 +166,6 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam)
 			
 			--output settings
 			love.graphics.setShader(shader)
-			shader:send("ditherAlpha", pass == 1)
 			if shader:hasUniform("dataAlpha") then
 				shader:send("dataAlpha", dataAlpha)
 			end
@@ -189,7 +188,7 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam)
 			end
 			
 			--framebuffer
-			if shaderInfo.refraction then
+			if shader:hasUniform("tex_depth") then
 				shader:send("tex_depth", canvases.depth)
 				shader:send("tex_color", canvases.color)
 				shader:send("screenScale", {1 / canvases.width, 1 / canvases.height})
@@ -211,6 +210,10 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam)
 			--for each material
 			for material, materialGroup in pairs(shaderGroup) do
 				self.delton:start("material")
+				
+				--alpha
+				shader:send("alphaPass", pass == 2)
+				shader:send("isSemi", material.solid and material.alpha)
 				
 				--ior
 				if shader:hasUniform("ior") then
@@ -496,15 +499,26 @@ function lib:renderFull(cam, canvases, blacklist)
 		--down sample
 		love.graphics.setCanvas(canvases.bloom_1)
 		love.graphics.clear()
-		love.graphics.setShader(self.shaders.bloom)
-		self.shaders.bloom:send("strength", self.bloom_strength)
-		love.graphics.setBlendMode("replace", "premultiplied")
-		love.graphics.draw(canvases.color, 0, 0, 0, self.bloom_resolution)
 		
-		if canvases.colorAlpha then
-			love.graphics.setBlendMode("alpha", "premultiplied")
-			love.graphics.draw(canvases.colorAlpha, 0, 0, 0, self.bloom_resolution)
+		if canvases.averageAlpha then
+			love.graphics.setShader(self.shaders.bloom_average)
+			self.shaders.bloom_average:send("canvas_alpha", canvases.colorAlpha)
+			self.shaders.bloom_average:send("canvas_alphaData", canvases.dataAlpha)
+			self.shaders.bloom_average:send("strength", self.bloom_strength)
 			love.graphics.setBlendMode("replace", "premultiplied")
+			love.graphics.draw(canvases.color, 0, 0, 0, self.bloom_resolution)
+		else
+			love.graphics.setShader(self.shaders.bloom)
+			self.shaders.bloom:send("strength", self.bloom_strength)
+			love.graphics.setBlendMode("replace", "premultiplied")
+			love.graphics.draw(canvases.color, 0, 0, 0, self.bloom_resolution)
+			
+			--also include alpha pass
+			if canvases.colorAlpha then
+				love.graphics.setBlendMode("alpha", "premultiplied")
+				love.graphics.draw(canvases.colorAlpha, 0, 0, 0, self.bloom_resolution)
+				love.graphics.setBlendMode("replace", "premultiplied")
+			end
 		end
 		
 		--blur

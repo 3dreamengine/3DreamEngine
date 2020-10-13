@@ -14,6 +14,7 @@ function lib.newMaterial(self, name, dir)
 		emission = {0.0, 0.0, 0.0},
 		roughness = 0.5,
 		metallic = 0.0,
+		solid = true,
 		alpha = false,
 		name = name or "None",        --name, used for texture linking
 		dir = dir,                    --directory, used for texture linking

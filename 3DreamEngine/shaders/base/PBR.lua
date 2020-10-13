@@ -82,6 +82,10 @@ end
 
 function sh:constructPixelPost(dream, info)
 	return [[
+	if (dot(normal, viewVec) < 0.0) {
+		normal = -normal;
+	}
+	
 	//PBR model data
 	vec3 reflectVec = reflect(-viewVec, normal); 
 	float cosTheta = clamp(dot(normal, viewVec), 0.0, 1.0);
