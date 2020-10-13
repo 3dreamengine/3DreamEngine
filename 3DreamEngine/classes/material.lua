@@ -15,14 +15,19 @@ return {
 	end,
 	setAlbedoTex = function(self, tex)
 		self.tex_albedo = tex
-		self.color = {1.0, 1.0, 1.0, 1.0}
+		
+		if not self.mat or not self.mat.color then
+			self.color = {1.0, 1.0, 1.0, 1.0}
+		end
 	end,
 	setEmission = function(self, r, g, b)
 		self.emission = {r or 0.0, g or r or 0.0, b or r or 0.0}
 	end,
 	setEmissionTex = function(self, tex)
 		self.tex_emission = tex
-		self.emission = {1.0, 1.0, 1.0}
+		if not self.mat or not self.mat.emission then
+			self.emission = {1.0, 1.0, 1.0}
+		end
 	end,
 	setAOTex = function(self, tex)
 		self.tex_ao = tex
@@ -40,11 +45,17 @@ return {
 	end,
 	setGlossinessTex = function(self, tex)
 		self.tex_glossiness = tex
-		self.glossiness = 1.0
+		
+		if not self.mat or not self.mat.glossiness then
+			self.glossiness = 1.0
+		end
 	end,
 	setSpecularTex = function(self, tex)
 		self.tex_specular = tex
-		self.specular = 1.0
+		
+		if not self.mat or not self.mat.specular then
+			self.specular = 1.0
+		end
 	end,
 	
 	--roughness-metallic workflow
@@ -56,10 +67,16 @@ return {
 	end,
 	setRoughnessTex = function(self, tex)
 		self.tex_roughness = tex
-		self.roughness = 1.0
+		
+		if not self.mat or not self.mat.roughness then
+			self.roughness = 1.0
+		end
 	end,
 	setMetallicTex = function(self, tex)
 		self.tex_metallic = tex
-		self.metallic = 1.0
+		
+		if not self.mat or not self.mat.metallic then
+			self.metallic = 1.0
+		end
 	end,
 }

@@ -1,4 +1,5 @@
 return {
+	alpha = true,
 	shadow = false,
 	extra = 0.02,
 	cullMode = "none",

@@ -137,7 +137,11 @@ function lib:finishMaterial(mat, obj)
 		end
 	end
 	
+	--last callback
 	if mat.onFinish then
 		mat:onFinish(obj)
 	end
+	
+	--release original mat file
+	mat.mat = nil
 end

@@ -83,7 +83,7 @@ lib:setShadowSmoothing(false)
 lib:setShadowCascade(8, 4)
 
 --loader settings
-lib:setResourceLoader(true, true)
+lib:setResourceLoader(false, true)
 lib:setSmoothLoading(1 / 1000)
 lib:setSmoothLoadingBufferSize(128)
 lib:setMipmaps(true)

@@ -37,34 +37,39 @@ function lib:buildScene(cam, typ, blacklist)
 	--add to scene
 	local LODFactor = 10 / self.LODDistance
 	for sc,_ in pairs(self.scenes) do
-		for _,task in ipairs(sc.tasks) do
-			if not blacklist or not (blacklist[task.obj] or blacklist[task.s]) then
-				local LOD = task.s.LOD or task.obj.LOD
-				if not LOD or LOD[math.min( math.floor((task.pos - cam.pos):length() * LODFactor) + 1, 9 )] then
-					if noFrustumCheck or not task.s.boundingBox or self:inFrustum(cam, task.pos, task.s.boundingBox.size) then
+		if not sc.visibility or sc.visibility[typ] then
+			for _,task in ipairs(sc.tasks) do
+				if not blacklist or not (blacklist[task.obj] or blacklist[task.s]) then
+					local visibility = task.s.visibility or task.obj.visibility
+					if not visibility or visibility[typ] then
 						local mat = task.s.material
 						local scene = mat.alpha and sceneAlpha or sceneSolid
 						if scene then
-							--group shader and materials together to reduce shader switches
-							if not scene[task.s.shader] then
-								scene[task.s.shader] = { }
-							end
-							if not scene[task.s.shader][mat] then
-								scene[task.s.shader][mat] = { }
-							end
-							
-							--add
-							table.insert(scene[task.s.shader][mat], task)
-							
-							--reflections
-							if typ == "render" then
-								local reflection = task.s.reflection or task.obj.reflection
-								if reflection and reflection.canvas then
-									self.reflections[task.s.reflection or task.obj.reflection] = {
-										dist = (task.pos - cam.pos):length(),
-										obj = task.s.reflection and task.s or task.obj,
-										pos = reflection.pos or task.pos,
-									}
+							local LOD = task.s.LOD or task.obj.LOD
+							if not LOD or LOD[math.min( math.floor((task.pos - cam.pos):length() * LODFactor) + 1, 9 )] then
+								if noFrustumCheck or not task.s.boundingBox or self:inFrustum(cam, task.pos, task.s.boundingBox.size) then
+									--group shader and materials together to reduce shader switches
+									if not scene[task.s.shader] then
+										scene[task.s.shader] = { }
+									end
+									if not scene[task.s.shader][mat] then
+										scene[task.s.shader][mat] = { }
+									end
+									
+									--add
+									table.insert(scene[task.s.shader][mat], task)
+									
+									--reflections
+									if typ == "render" then
+										local reflection = task.s.reflection or task.obj.reflection
+										if reflection and reflection.canvas then
+											self.reflections[task.s.reflection or task.obj.reflection] = {
+												dist = (task.pos - cam.pos):length(),
+												obj = task.s.reflection and task.s or task.obj,
+												pos = reflection.pos or task.pos,
+											}
+										end
+									end
 								end
 							end
 						end
@@ -129,7 +134,7 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam)
 		local noLight = canvases.deferred and pass == 1 or #lighting == 0
 		
 		--only first pass writes depth
-		love.graphics.setDepthMode("less", pass == 1 or not canvases.averageAlpha)
+		love.graphics.setDepthMode("less", pass == 1)
 		if canvases.averageAlpha and pass == 2 then
 			love.graphics.setBlendMode("add")
 		else
@@ -184,7 +189,7 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam)
 			end
 			
 			--framebuffer
-			if canvases.refractions and pass == 2 then
+			if shaderInfo.refraction then
 				shader:send("tex_depth", canvases.depth)
 				shader:send("tex_color", canvases.color)
 				shader:send("screenScale", {1 / canvases.width, 1 / canvases.height})
@@ -497,9 +502,9 @@ function lib:renderFull(cam, canvases, blacklist)
 		love.graphics.draw(canvases.color, 0, 0, 0, self.bloom_resolution)
 		
 		if canvases.colorAlpha then
-			love.graphics.setBlendMode("add", "premultiplied")
+			love.graphics.setBlendMode("alpha", "premultiplied")
 			love.graphics.draw(canvases.colorAlpha, 0, 0, 0, self.bloom_resolution)
-		love.graphics.setBlendMode("replace", "premultiplied")
+			love.graphics.setBlendMode("replace", "premultiplied")
 		end
 		
 		--blur

@@ -1,10 +1,6 @@
 return {
-	setLOD = function(self, render, shadow, reflections)
-		self.LOD = render and {
-			render = render,
-			shadow = shadow or render,
-			reflections = reflections or render,
-		}
+	setLOD = function(self, LOD)
+		self.LOD = LOD
 	end,
 	
 	setVisibility = function(self, render, shadow, reflections)

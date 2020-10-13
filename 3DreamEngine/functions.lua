@@ -60,7 +60,7 @@ end
 function lib:calcTangents(o)
 	o.tangents = { }
 	for i = 1, #o.vertices do
-		o.tangents[i] = {0, 0, 0}
+		o.tangents[i] = {0, 0, 0, 0}
 	end
 	
 	for i,f in ipairs(o.faces) do
@@ -84,6 +84,9 @@ function lib:calcTangents(o)
 		local cp = edge1uv[1] * edge2uv[2] - edge1uv[2] * edge2uv[1]
 		
 		if cp ~= 0.0 then
+			--handle clockwise-uvs
+			local clockwise = mat3(uv1[1], uv1[2], 1, uv2[1], uv2[2], 1, uv3[1], uv3[2], 1):det() > 0
+			
 			for i = 1, 3 do
 				tangent[i] = (edge1[i] * edge2uv[2] - edge2[i] * edge1uv[2]) / cp
 			end
@@ -93,6 +96,7 @@ function lib:calcTangents(o)
 				o.tangents[f[i]][1] = o.tangents[f[i]][1] + tangent[1]
 				o.tangents[f[i]][2] = o.tangents[f[i]][2] + tangent[2]
 				o.tangents[f[i]][3] = o.tangents[f[i]][3] + tangent[3]
+				o.tangents[f[i]][4] = o.tangents[f[i]][4] + (clockwise and 1 or 0)
 			end
 		end
 	end

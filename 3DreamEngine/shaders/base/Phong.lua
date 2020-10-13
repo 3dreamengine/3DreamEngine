@@ -21,7 +21,7 @@ function sh:constructDefines(dream, info)
 	local code = { }
 	if info.tex_normal then
 		code[#code+1] = "#define TEX_NORMAL"
-		code[#code+1] = "varying mat3 TNB;"
+		code[#code+1] = "varying mat3 TBN;"
 	else
 		code[#code+1] = "varying vec3 normalV;"
 	end
@@ -44,7 +44,7 @@ function sh:constructDefines(dream, info)
 		//additional vertex attributes
 		#ifdef VERTEX
 		attribute vec3 VertexNormal;
-		attribute vec3 VertexTangent;
+		attribute vec4 VertexTangent;
 		#endif
 	]]
 	
@@ -61,7 +61,7 @@ function sh:constructPixel(dream, info)
 	return [[
 	//transform normal to world space
 	#ifdef TEX_NORMAL
-		vec3 normal = normalize(TNB * normalize(Texel(tex_normal, VaryingTexCoord.xy).rgb - 0.5));
+		vec3 normal = normalize(TBN * (Texel(tex_normal, VaryingTexCoord.xy).rgb - 0.5));
 	#else
 		vec3 normal = normalize(normalV);
 	#endif
@@ -99,11 +99,17 @@ function sh:constructVertex(dream, info)
 	//transform from tangential space into world space
 	mat3 normalTransform = mat3(transform);
 	#ifdef TEX_NORMAL
-		vec3 T = normalize(normalTransform * (VertexTangent*2.0-1.0));
-		vec3 N = normalize(normalTransform * (VertexNormal*2.0-1.0));
-		vec3 B = cross(N, T);
+		vec3 T = normalize(normalTransform * (VertexTangent.xyz - 0.5));
+		vec3 N = normalize(normalTransform * (VertexNormal - 0.5));
 		
-		TNB = mat3(T, B, N);
+		vec3 B;
+		if (VertexTangent.w > 0.5) {
+			B = cross(T, N);
+		} else {
+			B = cross(N, T);
+		}
+		
+		TBN = mat3(T, B, N);
 	#else
 		normalV = normalTransform * (VertexNormal*2.0-1.0);
 	#endif

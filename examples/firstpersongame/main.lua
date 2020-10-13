@@ -17,9 +17,9 @@ local scene = dream:loadObject(projectDir .. "objects/scene", "PBR")
 dream:activateShaderModule("rain")
 
 player = {
-	x = 8,
-	y = 10,
-	z = 2,
+	x = 2,--8,
+	y = 2,--10,
+	z = 2,--2,
 	ax = 0,
 	ay = 0,
 	az = 0,
@@ -45,9 +45,9 @@ function love.draw()
 	dream.cam:rotateX(dream.cam.rx)
 	
 	--update light
-	dream:resetLight()
+	dream:resetLight(true)
 	if love.mouse.isDown(1) then
-		dream:addNewLight(player.x, player.y, player.z, 1.0, 0.75, 0.1, 5.0 + love.math.noise(love.timer.getTime()*2))
+		dream:addNewLight(player.x + dream.cam.normal.x, player.y + dream.cam.normal.y, player.z + dream.cam.normal.z, 1.0, 0.75, 0.1, 5.0 + love.math.noise(love.timer.getTime()*2))
 	end
 	
 	dream:prepare()

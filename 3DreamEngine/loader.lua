@@ -387,7 +387,7 @@ function lib.createMesh(self, o)
 				vertex[1], vertex[2], vertex[3], o.extras[i] or 1,
 				texCoord[1], texCoord[2],
 				normal[1]*0.5+0.5, normal[2]*0.5+0.5, normal[3]*0.5+0.5, 0.0,
-				tangent[1]*0.5+0.5, tangent[2]*0.5+0.5, tangent[3]*0.5+0.5, 0.0
+				tangent[1]*0.5+0.5, tangent[2]*0.5+0.5, tangent[3]*0.5+0.5, tangent[4] or 0.0
 			)
 		elseif o.meshType == "textured_array" then
 			local tangent = o.tangents[i] or empty
@@ -395,7 +395,7 @@ function lib.createMesh(self, o)
 				vertex[1], vertex[2], vertex[3], o.extras[i] or 1,
 				texCoord[1], texCoord[2], texCoord[3], 
 				normal[1]*0.5+0.5, normal[2]*0.5+0.5, normal[3]*0.5+0.5, 0.0,
-				tangent[1]*0.5+0.5, tangent[2]*0.5+0.5, tangent[3]*0.5+0.5, 0.0
+				tangent[1]*0.5+0.5, tangent[2]*0.5+0.5, tangent[3]*0.5+0.5, tangent[4] or 0.0
 			)
 		elseif o.meshType == "simple" then
 			local material = o.materials[i] or empty

@@ -145,7 +145,8 @@ function lib:getTexture(path)
 	--skip threaded loading
 	if not self.textures_threaded and type(path) == "string" then
 		if not self.texturesLoaded[path] then
-			self.texturesLoaded[path] = love.graphics.newImage(path)
+			self.texturesLoaded[path] = love.graphics.newImage(path, {mipmaps = self.textures_mipmaps})
+			self.texturesLoaded[path]:setWrap("repeat", "repeat")
 		end
 		return self.texturesLoaded[path]
 	end

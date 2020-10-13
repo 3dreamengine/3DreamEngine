@@ -19,5 +19,8 @@ return function(self, obj, path)
 		for i,v in pairs(s) do
 			mat[i] = v
 		end
+		
+		--remember mat file and prevent overwrite when textures are found
+		mat.mat = s
 	end
 end

@@ -209,6 +209,7 @@ function lib:getShaderInfo(s, obj)
 	local mat = s.material
 	local shaderType = s.shaderType
 	local reflection = s.reflection or obj.reflection or self.sky_reflection
+	local refraction = mat.ior ~= 1.0 and self.refraction
 	local modules = s.modules or obj.modules or mat.modules
 	
 	--group shader and vertex shader
@@ -225,6 +226,7 @@ function lib:getShaderInfo(s, obj)
 	
 	--reflection module
 	ID = ID + (reflection and 1024 or 0)
+	ID = ID + (refraction and 2048 or 0)
 	
 	--global modules
 	local m = { }
@@ -248,6 +250,7 @@ function lib:getShaderInfo(s, obj)
 		shs[ID] = self.shaderLibrary.base[shaderType]:getShaderInfo(self, mat, shaderType, reflection)
 		shs[ID].shaderType = shaderType
 		shs[ID].reflection = reflection
+		shs[ID].refraction = refraction
 		shs[ID].shaders = { }
 		shs[ID].modules = m
 	end
@@ -283,7 +286,7 @@ function lib:getShader(info, canvases, pass, lighting, lightRequirements)
 		ID = ID + 0.5
 		table.insert(globalDefines, "#define DEFERRED")
 	end
-	if canvases.refractions and pass == 2 then
+	if info.refraction and pass == 2 then
 		ID = ID + 0.25
 		table.insert(globalDefines, "#define REFRACTIONS_ENABLED")
 	end
