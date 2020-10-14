@@ -98,7 +98,7 @@ function sh:constructPixelPost(dream, mat)
 	vec2 brdf = Texel(brdfLUT, vec2(cosTheta, material.x)).rg;
 	vec3 specular = ref * (F * brdf.x + vec3(brdf.y));
 	
-	vec3 col = (kD * diffuse + specular) * material.z;
+	col += (kD * diffuse + specular) * material.z;
 	
 	//emission
 	col += emission;

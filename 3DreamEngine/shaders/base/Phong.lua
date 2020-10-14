@@ -78,7 +78,7 @@ function sh:constructPixelPost(dream, mat)
 	
 	//final ambient color and reflection
 	vec3 ref = reflection(reflectVec, 1.0 - material.x);
-	vec3 col = (diffuse + ref * material.y) * albedo.rgb * material.z;
+	col += (diffuse + ref * material.y) * albedo.rgb * material.z;
 	
 	//emission
 	col += emission;

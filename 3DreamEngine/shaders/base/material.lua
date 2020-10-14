@@ -41,7 +41,7 @@ function sh:constructPixelPost(dream, mat)
 	vec3 diffuse = reflection(normal, 1.0);
 	
 	vec3 ref = reflection(reflectVec, 1.0 - material.x);
-	vec3 col = (diffuse + ref * material.y) * albedo.rgb + material.z * albedo.rgb;
+	col += (diffuse + ref * material.y) * albedo.rgb + material.z * albedo.rgb;
 	]]
 end
 

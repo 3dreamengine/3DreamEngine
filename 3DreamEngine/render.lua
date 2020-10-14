@@ -42,8 +42,11 @@ function lib:buildScene(cam, canvases, typ, blacklist)
 	for sc,_ in pairs(self.scenes) do
 		if not sc.visibility or sc.visibility[typ] then
 			--get light setup per scene
-			local light = self:getLightOverview(cam)
-			scene.lights[light.ID] = light
+			local light
+			if typ ~= "shadow" then
+				light = self:getLightOverview(cam)
+				scene.lights[light.ID] = light
+			end
 			
 			for _,task in ipairs(sc.tasks) do
 				if not blacklist or not (blacklist[task.obj] or blacklist[task.s]) then
@@ -55,32 +58,37 @@ function lib:buildScene(cam, canvases, typ, blacklist)
 							local LOD = task.s.LOD or task.obj.LOD
 							if not LOD or LOD[math.min( math.floor((task.pos - cam.pos):length() * LODFactor) + 1, 9 )] then
 								if noFrustumCheck or not task.s.boundingBox or self:inFrustum(cam, task.pos, task.s.boundingBox.size) then
-									local shader = self:getShader(task.s, pass, canvases, light)
+									local shader = self:getShader(task.s, pass, canvases, light, typ == "shadows")
 									local lightID = pass == 1 and canvases.deferred and "" or light.ID
 									
 									--group shader and materials together to reduce shader switches
 									if not scene[shader] then
 										scene[shader] = { }
 									end
-									if not scene[shader][lightID] then
-										scene[shader][lightID] = { }
-									end
-									if not scene[shader][lightID][mat] then
-										scene[shader][lightID][mat] = { }
-									end
 									
-									--add
-									table.insert(scene[shader][lightID][mat], task)
-									
-									--reflections
-									if typ == "render" then
-										local reflection = task.s.reflection or task.obj.reflection
-										if reflection and reflection.canvas then
-											self.reflections[reflection] = {
-												dist = (task.pos - cam.pos):length(),
-												obj = task.s.reflection and task.s or task.obj,
-												pos = reflection.pos or task.pos,
-											}
+									if typ == "shadows" then
+										table.insert(scene[shader], task)
+									else
+										if not scene[shader][lightID] then
+											scene[shader][lightID] = { }
+										end
+										if not scene[shader][lightID][mat] then
+											scene[shader][lightID][mat] = { }
+										end
+										
+										--add
+										table.insert(scene[shader][lightID][mat], task)
+										
+										--reflections
+										if typ == "render" then
+											local reflection = task.s.reflection or task.obj.reflection
+											if reflection and reflection.canvas then
+												self.reflections[reflection] = {
+													dist = (task.pos - cam.pos):length(),
+													obj = task.s.reflection and task.s or task.obj,
+													pos = reflection.pos or task.pos,
+												}
+											end
 										end
 									end
 								end
@@ -444,35 +452,52 @@ end
 
 --only renders a depth variant
 function lib:renderShadows(scene, cam, canvas, blacklist)
+	self.delton:start("renderShadows")
+	
 	love.graphics.push("all")
 	love.graphics.reset()
 	love.graphics.setMeshCullMode("none")
 	love.graphics.setDepthMode("less", true)
 	love.graphics.setBlendMode("darken", "premultiplied")
-	
 	love.graphics.setCanvas(canvas)
 	love.graphics.clear(255, 255, 255, 255)
 	
-	love.graphics.setShader(self.shaders.shadow)
-	self.shaders.shadow:send("viewPos", {cam.pos:unpack()})
-	self.shaders.shadow:send("transformProj", cam.transformProj)
+	--love shader friendly
+	local viewPos = {cam.pos:unpack()}
 	
+	--final draw
 	for shaderObject, shaderGroup in pairs(scene.solid) do
-		for lightID, lightGroup in pairs(shaderGroup) do
-			for material, materialGroup in pairs(lightGroup) do
-				--this should be part of the materials visibility settings, then masked out by the scene builder
-				if not material.alpha and material.shadow ~= false then
-					for _,task in pairs(materialGroup) do
-						if not blacklist or not (blacklist[task.obj] or blacklist[task.s]) then
-							self.shaders.shadow:send("transform", task.transform)
-							love.graphics.draw(task.s.mesh)
-						end
-					end
-				end
+		local shader = shaderObject.shader
+		love.graphics.setShader(shader)
+		
+		--shader
+		for d,s in pairs(shaderObject.modules) do
+			s:perShader(self, shaderObject)
+		end
+		
+		--camera
+		shader:send("transformProj", cam.transformProj)
+		if shader:hasUniform("viewPos") then
+			shader:send("viewPos", viewPos)
+		end
+		
+		--for each task
+		for _, task in ipairs(shaderGroup) do
+			--object transformation
+			shader:send("transform", task.transform)
+			
+			--shader
+			for d,s in pairs(shaderObject.modules) do
+				s:perTask(self, shaderObject, task)
 			end
+			
+			--render
+			love.graphics.setColor(task.color)
+			love.graphics.draw(task.s.mesh)
 		end
 	end
 	
+	self.delton:stop()
 	love.graphics.pop()
 end
 

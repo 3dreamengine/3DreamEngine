@@ -10,13 +10,6 @@ varying highp vec3 vertexPos;      //vertex position for pixel shader
 varying float depth;               //depth
 varying vec3 normalRawV;           //depth
 
-//shader settings
-extern bool dataAlpha;
-extern bool alphaPass;
-extern bool isSemi;
-
-extern float translucent;
-
 //setting specific defines
 #import globalDefines
 
@@ -43,6 +36,11 @@ extern float gamma;
 
 #ifdef PIXEL
 
+//shader settings
+extern bool dataAlpha;
+extern bool alphaPass;
+extern bool isSemi;
+
 //reflection engine
 #import reflections
 
@@ -54,6 +52,7 @@ extern float gamma;
 
 //material
 extern float ior;
+extern float translucent;
 
 void effect() {
 #import mainPixelPre
@@ -84,20 +83,19 @@ void effect() {
 	vec3 normalRaw = normalize(normalRawV);
 	vec3 viewVec = normalize(viewPos - vertexPos);
 	
-#import vertexPixel
 #import mainPixel
 #import modulesPixel
-
-#import mainPixelPost
+vec3 col;
 	
 #ifndef DEFERRED
 	//forward lighting
 	vec3 light = vec3(0.0);
 #import lightingSystem
 	col += light;
-	
-#import modulesPixelPost
 #endif
+	
+#import mainPixelPost
+#import modulesPixelPost
 
 	//calculate refractions
 #ifdef REFRACTIONS_ENABLED
