@@ -18,6 +18,7 @@ function lib:newSubObject(name, obj, mat)
 	local o = {
 		name = name,
 		material = mat,
+		obj = obj,
 		
 		--common data arrays
 		vertices = { },

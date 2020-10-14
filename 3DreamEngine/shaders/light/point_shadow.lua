@@ -2,7 +2,7 @@ local sh = { }
 
 sh.type = "light"
 
-function sh:constructDefinesGlobal(dream, info)
+function sh:constructDefinesGlobal(dream)
 	return [[
 	//modified version of https://learnopengl.com/Advanced-Lighting/Shadows/Point-Shadows
 	vec3 sampleOffsetDirections[20] = vec3[] (
@@ -47,7 +47,7 @@ function sh:constructDefinesGlobal(dream, info)
 	]]
 end
 
-function sh:constructDefines(dream, info, ID)
+function sh:constructDefines(dream, ID)
 	return ([[
 		extern samplerCube point_shadow_tex_#ID#;
 		extern bool point_shadow_smooth_#ID#;
@@ -56,15 +56,15 @@ function sh:constructDefines(dream, info, ID)
 	]]):gsub("#ID#", ID)
 end
 
-function sh:constructPixelGlobal(dream, info)
+function sh:constructPixelGlobal(dream)
 
 end
 
-function sh:constructPixelBasicGlobal(dream, info)
+function sh:constructPixelBasicGlobal(dream)
 
 end
 
-function sh:constructPixel(dream, info, ID)
+function sh:constructPixel(dream, ID)
 	return ([[
 		vec3 lightVec = point_shadow_pos_#ID# - vertexPos;
 		
@@ -91,7 +91,7 @@ function sh:constructPixel(dream, info, ID)
 	]]):gsub("#ID#", ID)
 end
 
-function sh:constructPixelBasic(dream, info, ID)
+function sh:constructPixelBasic(dream, ID)
 	return ([[
 		vec3 lightVec = point_shadow_pos_#ID# - vertexPos;
 		
@@ -110,11 +110,13 @@ function sh:constructPixelBasic(dream, info, ID)
 	]]):gsub("#ID#", ID)
 end
 
-function sh:sendGlobalUniforms(dream, shader, info)
+function sh:sendGlobalUniforms(dream, shaderObject)
 	
 end
 
-function sh:sendUniforms(dream, shader, info, light, ID)
+function sh:sendUniforms(dream, shaderObject, light, ID)
+	local shader = shaderObject.shader
+	
 	if light.shadow.canvas then
 		if light.smooth == nil then
 			shader:send("point_shadow_smooth_" .. ID, dream.shadow_smooth)

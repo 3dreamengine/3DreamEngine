@@ -63,7 +63,7 @@ lib.canvasFormats = love.graphics and love.graphics.getCanvasFormats() or { }
 lib.materialLibrary = { }
 
 --default settings
-lib:setAO(32, 0.75, true)
+lib:setAO(32, 0.75, false)
 lib:setBloom(1.0, 1.5, 0.5)
 lib:setFog()
 lib:setFogHeight(1, -1)

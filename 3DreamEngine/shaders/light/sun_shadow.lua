@@ -2,7 +2,7 @@ local sh = { }
 
 sh.type = "light"
 
-function sh:constructDefinesGlobal(dream, info)
+function sh:constructDefinesGlobal(dream)
 	return [[
 		extern float factor;
 		extern float shadowDistance;
@@ -91,7 +91,7 @@ function sh:constructDefinesGlobal(dream, info)
 	]]
 end
 
-function sh:constructDefines(dream, info, ID)
+function sh:constructDefines(dream, ID)
 	return ([[
 		extern mat4 sun_shadow_proj_1_#ID#;
 		extern mat4 sun_shadow_proj_2_#ID#;
@@ -107,15 +107,15 @@ function sh:constructDefines(dream, info, ID)
 	]]):gsub("#ID#", ID)
 end
 
-function sh:constructPixelGlobal(dream, info)
+function sh:constructPixelGlobal(dream)
 
 end
 
-function sh:constructPixelBasicGlobal(dream, info)
+function sh:constructPixelBasicGlobal(dream)
 
 end
 
-function sh:constructPixel(dream, info, ID)
+function sh:constructPixel(dream, ID)
 	return ([[
 		float shadow;
 		float bias = max(0.01 * (1.0 - dot(normal, sun_shadow_vec_#ID#)), 0.0005);
@@ -138,7 +138,7 @@ function sh:constructPixel(dream, info, ID)
 	]]):gsub("#ID#", ID)
 end
 
-function sh:constructPixelBasic(dream, info, ID)
+function sh:constructPixelBasic(dream, ID)
 	return ([[
 		float shadow;
 		if (sun_shadow_smooth_#ID#) {
@@ -151,13 +151,17 @@ function sh:constructPixelBasic(dream, info, ID)
 	]]):gsub("#ID#", ID)
 end
 
-function sh:sendGlobalUniforms(dream, shader, info)
+function sh:sendGlobalUniforms(dream, shaderObject)
+	local shader = shaderObject.shader
+	
 	shader:send("factor", dream.shadow_factor)
 	shader:send("shadowDistance", 2 / dream.shadow_distance)
 	shader:send("texelSize", 1.0 / dream.shadow_resolution)
 end
 
-function sh:sendUniforms(dream, shader, info, light, ID)
+function sh:sendUniforms(dream, shaderObject, light, ID)
+	local shader = shaderObject.shader
+	
 	if light.shadow.canvases and light.shadow.canvases[3] then
 		shader:send("sun_shadow_proj_1_" .. ID, light.shadow.transformation_1)
 		shader:send("sun_shadow_proj_2_" .. ID, light.shadow.transformation_2)

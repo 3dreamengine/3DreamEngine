@@ -4,11 +4,13 @@ sh.type = "module"
 
 sh.maxJoints = 32
 
+sh.shadow = true
+
 function sh:init(dream)
 	
 end
 
-function sh:constructDefines(dream, info)
+function sh:constructDefines(dream)
 	return [[
 		#ifdef VERTEX
 		#define BONE
@@ -24,7 +26,7 @@ function sh:constructDefines(dream, info)
 	]]
 end
 
-function sh:constructVertex(dream, info)
+function sh:constructVertex(dream)
 	return [==[
 		mat4 boneTransform = (
 			jointTransforms[int(VertexJoint[0]*255.0)] * VertexWeight[0] +
@@ -36,15 +38,17 @@ function sh:constructVertex(dream, info)
 	]==]
 end
 
-function sh:perShader(dream, shader, info)
+function sh:perShader(dream, shaderObject)
 	
 end
 
-function sh:perMaterial(dream, shader, info, material)
+function sh:perMaterial(dream, shaderObject, material)
 	
 end
 
-function sh:perObject(dream, shader, info, task)
+function sh:perTask(dream, shaderObject, task)
+	local shader = shaderObject.shader
+	
 	--initial prepare bone data
 	if not task.s.boneMesh then
 		task.s.boneMesh = love.graphics.newMesh({{"VertexJoint", "byte", 4}, {"VertexWeight", "byte", 4}}, task.s.mesh:getVertexCount(), "triangles", "static")

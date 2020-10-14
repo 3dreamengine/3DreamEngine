@@ -23,7 +23,7 @@ function lib:newReflection(static, res, noRoughness)
 		lastUpdate = 0,
 		pos = pos,
 		levels = false,
-		frameSkip = false,
+		frameSkip = 0,
 		roughness = not noRoughness,
 		id = math.random(), --used for the job render
 	}, self.meta.reflection)
@@ -34,7 +34,6 @@ return {
 	
 	setterGetter = {
 		priority = "number",
-		frameSkip = "number",
 	},
 	
 	refresh = function(self)

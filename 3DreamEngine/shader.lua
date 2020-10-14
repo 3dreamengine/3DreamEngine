@@ -134,23 +134,23 @@ function lib.loadShader(self)
 	if self.default_settings.deferred or self.reflections_settings.deferred then
 		local sh_light = love.filesystem.read(lib.root .. "/shaders/light.glsl")
 		for d,s in pairs(self.shaderLibrary.light) do
-			local lighting, lightRequirements
+			local lights = { }
 			if s.batchable then
-				lighting = { }
+				lights.lights = { }
 				for i = 1, self.max_lights do
-					lighting[#lighting+1] = {light_typ = d}
+					lights.lights[#lights.lights+1] = {light_typ = d}
 				end
-				lightRequirements = {[d] = self.max_lights}
+				lights.types = {[d] = self.max_lights}
 			else
-				lighting = {{light_typ = d}}
-				lightRequirements = {[d] = 1}
+				lights.lights = {{light_typ = d}}
+				lights.types = {[d] = 1}
 			end
 			
-			local lcInit, lc = self:getLightComponents(lighting, lightRequirements)
+			local lcInit, lc = self:getLightComponents(lights)
 			local code = sh_light
 			code = code:gsub("#import lightingSystemInit", table.concat(lcInit, "\n"))
 			code = code:gsub("#import lightingSystem", table.concat(lc, "\n"))
-			code = code:gsub("#import lightFunction", self.shaderLibrary.base[self.deferredShaderType]:constructLightFunction(self, info))
+			code = code:gsub("#import lightFunction", self.shaderLibrary.base[self.deferredShaderType]:constructLightFunction(self))
 			self.lightShaders[d] = love.graphics.newShader(code)
 		end
 	end
@@ -186,54 +186,72 @@ function lib.getFinalShader(self, canvases)
 end
 
 --returns and initializes if not already done
-local moduleIDs = { }
-local lastModuleID = 1
-function lib:getShaderModule(name)
-	if not moduleIDs[name] then
-		lastModuleID = lastModuleID + 1
-		moduleIDs[name] = 1.0 / lastModuleID
-	end
-	
-	local sh = self.shaderLibrary.module[name]
-	self.allActiveShaderModules[name] = sh
-	if not sh.initilized then
-		sh.initilized = true
-		if sh.init then
-			sh:init(self)
+do
+	local lastID = 0
+	function lib:getShaderModule(name)
+		local sh = self.shaderLibrary.module[name]
+		
+		--give unique bit ID
+		if not sh.ID then
+			sh.ID = 2 ^ lastID
+			lastID = lastID + 1
 		end
+		
+		--initilized module
+		self.allActiveShaderModules[name] = sh
+		if not sh.initilized then
+			sh.initilized = true
+			if sh.init then
+				sh:init(self)
+			end
+		end
+		return sh
 	end
-	return sh
 end
 
---returns a fitting shader construction instruction for the current material and meshtype
-function lib:getShaderInfo(s, obj)
-	local mat = s.material
-	local shaderType = s.shaderType
-	local reflection = s.reflection or obj.reflection or self.sky_reflection
-	local refractions = mat.ior ~= 1.0
-	local modules = s.modules or obj.modules or mat.modules
-	
-	--group shader and vertex shader
-	if not self.mainShaders[shaderType] then
-		self.mainShaders[shaderType] = { }
+--get a unique ID for this specific light setup
+do
+	local lastID = 0
+	local IDs = { }
+	function lib:getLightSetupID(lights, types)
+		local ID = {0, 0, 0, 0, 0, 0, 0, 0}
+		if lights then
+			for d,s in pairs(types) do
+				if not IDs[d] then
+					lastID = lastID + 1
+					IDs[d] = lastID
+				end
+				
+				ID[IDs[d]] = lib.shaderLibrary.light[d].batchable and 1 or s
+			end
+		end
+		return string.char(unpack(ID))
 	end
+end
+
+--construct a shader
+local baseShader = love.filesystem.read(lib.root .. "/shaders/base.glsl")
+function lib:getShader(o, pass, canvases, light)
+	local mat = o.material
+	local shaderType = o.shaderType
+	local reflection = o.reflection or o.obj.reflection or self.sky_reflection
+	local refractions = mat.ior ~= 1.0
+	local modules = o.modules or o.obj.modules or mat.modules
 	
-	--add new type of shader to list
-	local shs = self.mainShaders[shaderType]
-	
-	--get a unique ID
+	--check if required shader exists
 	assert(self.shaderLibrary.base[shaderType], "Shader '" .. shaderType .. "' does not exist!")
-	local ID = self.shaderLibrary.base[shaderType]:getShaderInfoID(self, mat, shaderType, reflection)
 	
-	--reflection module
-	ID = ID + (reflection and 1024 or 0)
-	ID = ID + (refractions and 2048 or 0)
+	--get unique IDs for the components
+	local ID_base = self.shaderLibrary.base[shaderType]:getTypeID(self, mat)
+	local ID_light = light.ID
+	local ID_settings = 0
+	local ID_modules = 0
 	
 	--global modules
 	local m = { }
 	for d,s in pairs(self.activeShaderModules) do
 		m[d] = self:getShaderModule(d)
-		ID = ID + moduleIDs[d]
+		ID_modules = ID_modules + m[d].ID
 	end
 	
 	--local modules
@@ -241,82 +259,61 @@ function lib:getShaderInfo(s, obj)
 		for d,s in pairs(modules) do
 			if not self.activeShaderModules[d] then
 				m[d] = self:getShaderModule(d)
-				ID = ID + moduleIDs[d]
+				ID_modules = ID_modules + m[d].ID
 			end
 		end
 	end
 	
-	--create new shader info object if necessary
-	if not shs[ID] then
-		shs[ID] = self.shaderLibrary.base[shaderType]:getShaderInfo(self, mat, shaderType, reflection)
-		shs[ID].shaderType = shaderType
-		shs[ID].reflection = reflection
-		shs[ID].refractions = refractions
-		shs[ID].shaders = { }
-		shs[ID].modules = m
-	end
-	
-	return shs[ID]
-end
-
---get a unique ID for this specific light setup
-local lastID = 0
-local lightRequirementIDs = { }
-local function getLightSetupID(lighting, lightRequirements)
-	local ID = 0
-	if lighting then
-		for d,s in pairs(lightRequirements) do
-			if not lightRequirementIDs[d] then
-				lightRequirementIDs[d] = 16 ^ lastID
-				lastID = lastID + 1
-			end
-			ID = ID + lightRequirementIDs[d] * (lib.shaderLibrary.light[d].batchable and 1 or s)
-		end
-	end
-	return ID
-end
-
---construct a shader
-local baseShader = love.filesystem.read(lib.root .. "/shaders/base.glsl")
-function lib:getShader(info, canvases, pass, lighting, lightRequirements)
-	local ID = getLightSetupID(lighting, lightRequirements)
-	
-	--additional settings
+	--settings
 	local globalDefines = { }
+	if reflection then
+		ID_settings = ID_settings + 2 ^ 0
+	end
 	if canvases.deferred and pass == 1 then
-		ID = ID + 0.5
+		ID_settings = ID_settings + 2 ^ 1
 		table.insert(globalDefines, "#define DEFERRED")
 	end
-	if canvases.refractions and info.refractions and pass == 2 then
-		ID = ID + 0.25
+	if canvases.refractions and refractions and pass == 2 then
+		ID_settings = ID_settings + 2 ^ 2
 		table.insert(globalDefines, "#define REFRACTIONS_ENABLED")
 	end
 	if canvases.postEffects and self.exposure and (canvases.direct or canvases.format == "rgba8") then
-		ID = ID + 0.125
+		ID_settings = ID_settings + 2 ^ 3
 		table.insert(globalDefines, "#define EXPOSURE_ENABLED")
 	end
 	if canvases.postEffects and self.gamma and (canvases.direct or canvases.format == "rgba8") then
-		ID = ID + 0.0625
+		ID_settings = ID_settings + 2 ^ 4
 		table.insert(globalDefines, "#define GAMMA_ENABLED")
 	end
 	if self.fog_enabled and canvases.direct then
-		ID = ID + 1 / 32
+		ID_settings = ID_settings + 2 ^ 5
 		table.insert(globalDefines, "#define FOG_ENABLED")
 	end
 	
-	if not info.shaders[ID] then
+	--construct full ID (8 bytes light, 1 byte base, 4 bytes modules and 1 byte settings
+	local ID = ID_light .. string.char(ID_base, (ID_modules / 256^3) % 256, (ID_modules / 256^2) % 256, (ID_modules / 256^1) % 256, (ID_modules / 256^0) % 256, ID_settings)
+	
+	if not self.mainShaders[ID] then
 		--construct shader
 		local code = baseShader
+		
+		--additional data
+		self.mainShaders[ID] = {
+			shaderType = shaderType,
+			modules = m,
+			reflection = reflection,
+		}
+		local info = self.mainShaders[ID]
 		
 		--setting specific defines
 		code = code:gsub("#import globalDefines", table.concat(globalDefines, "\n"))
 		
 		--the shader might need additional code
-		code = code:gsub("#import mainDefines", self.shaderLibrary.base[info.shaderType]:constructDefines(self, info) or "")
-		code = code:gsub("#import mainPixelPre", self.shaderLibrary.base[info.shaderType]:constructPixelPre(self, info) or "")
-		code = code:gsub("#import mainPixelPost", self.shaderLibrary.base[info.shaderType]:constructPixelPost(self, info) or "")
-		code = code:gsub("#import mainPixel", self.shaderLibrary.base[info.shaderType]:constructPixel(self, info) or "")
-		code = code:gsub("#import mainVertex", self.shaderLibrary.base[info.shaderType]:constructVertex(self, info) or "")
+		code = code:gsub("#import mainDefines", self.shaderLibrary.base[shaderType]:constructDefines(self, mat) or "")
+		code = code:gsub("#import mainPixelPre", self.shaderLibrary.base[shaderType]:constructPixelPre(self, mat) or "")
+		code = code:gsub("#import mainPixelPost", self.shaderLibrary.base[shaderType]:constructPixelPost(self, mat) or "")
+		code = code:gsub("#import mainPixel", self.shaderLibrary.base[shaderType]:constructPixel(self, mat) or "")
+		code = code:gsub("#import mainVertex", self.shaderLibrary.base[shaderType]:constructVertex(self, mat) or "")
 		
 		--import reflection function
 		code = code:gsub("#import reflections", info.reflection and codes.reflections or codes.ambientOnly)
@@ -326,7 +323,7 @@ function lib:getShader(info, canvases, pass, lighting, lightRequirements)
 		local vertex = { }
 		local pixel = { }
 		local pixelPost = { }
-		for d,s in pairs(info.modules) do
+		for d,s in pairs(m) do
 			assert(s, "Shader module '" .. d .. "' does not exist!")
 			table.insert(define, s.constructDefines and s:constructDefines(self, info) or "")
 			table.insert(vertex, s.constructVertex and s:constructVertex(self, info) or "")
@@ -344,12 +341,12 @@ function lib:getShader(info, canvases, pass, lighting, lightRequirements)
 		end
 		
 		--construct forward lighting system
-		if lighting and #lighting > 0 then
-			local lcInit, lc = self:getLightComponents(lighting, lightRequirements)
+		if #light.lights > 0 then
+			local lcInit, lc = self:getLightComponents(light)
 			
 			code = code:gsub("#import lightingSystemInit", table.concat(lcInit, "\n"))
 			code = code:gsub("#import lightingSystem", table.concat(lc, "\n"))
-			code = code:gsub("#import lightFunction", self.shaderLibrary.base[info.shaderType]:constructLightFunction(self, info))
+			code = code:gsub("#import lightFunction", self.shaderLibrary.base[shaderType]:constructLightFunction(self, info))
 		end
 		
 		--remove unused imports and remove tabs
@@ -357,45 +354,46 @@ function lib:getShader(info, canvases, pass, lighting, lightRequirements)
 		code = code:gsub("	", "")
 		
 		--compile
-		info.shaders[ID] = love.graphics.newShader(code)
+		info.shader = love.graphics.newShader(code)
 		
 		--count
 		self.mainShaderCount = self.mainShaderCount + 1
 	end
 	
-	return info.shaders[ID]
+	return self.mainShaders[ID]
 end
 
 local baseParticlesShader = love.filesystem.read(lib.root .. "/shaders/particles.glsl")
 local baseParticleShader = love.filesystem.read(lib.root .. "/shaders/particle.glsl")
-function lib:getParticlesShader(canvases, lighting, lightRequirements, emissive, single)
-	local ID = getLightSetupID(lighting, lightRequirements)
-	
+function lib:getParticlesShader(canvases, light, emissive, single)
 	--additional settings
 	local globalDefines = { }
+	local ID_settings = 0
 	if emissive then
-		ID = ID + 0.5
+		ID_settings = ID_settings + 2^0
 		table.insert(globalDefines, "#define TEX_EMISSION")
 	end
 	if canvases.postEffects and self.exposure and (canvases.direct or canvases.format == "rgba8") then
-		ID = ID + 0.125
+		ID_settings = ID_settings + 2^1
 		table.insert(globalDefines, "#define EXPOSURE_ENABLED")
 	end
 	if canvases.postEffects and self.gamma and (canvases.direct or canvases.format == "rgba8") then
-		ID = ID + 0.0625
+		ID_settings = ID_settings + 2^2
 		table.insert(globalDefines, "#define GAMMA_ENABLED")
 	end
 	if self.fog_enabled and canvases.direct then
-		ID = ID + 1 / 32
+		ID_settings = ID_settings + 2^4
 		table.insert(globalDefines, "#define FOG_ENABLED")
 	end
-	
-	--single particle
 	if single then
-		ID = -ID
+		ID_settings = ID_settings + 2^5
 	end
 	
+	local ID = light.ID .. string.char(ID_settings)
+	
 	if not self.particlesShader[ID] then
+		local info = { }
+		
 		--construct shader
 		local code = single and baseParticleShader or baseParticlesShader
 		
@@ -408,8 +406,8 @@ function lib:getParticlesShader(canvases, lighting, lightRequirements, emissive,
 		end
 		
 		--construct forward lighting system
-		if lighting and #lighting > 0 then
-			local lcInit, lc = self:getLightComponents(lighting, lightRequirements, true)
+		if light.lights and #light.lights > 0 then
+			local lcInit, lc = self:getLightComponents(light, true)
 			
 			code = code:gsub("#import lightingSystemInit", table.concat(lcInit, "\n"))
 			code = code:gsub("#import lightingSystem", table.concat(lc, "\n"))
@@ -420,39 +418,40 @@ function lib:getParticlesShader(canvases, lighting, lightRequirements, emissive,
 		code = code:gsub("	", "")
 		
 		--compile
-		self.particlesShader[ID] = love.graphics.newShader(code)
+		info.shader = love.graphics.newShader(code)
+		self.particlesShader[ID] = info
 	end
 	
 	return self.particlesShader[ID]
 end
 
-function lib:getLightComponents(lighting, lightRequirements, basic)
+function lib:getLightComponents(light, basic)
 	local lcInit = { }
 	local lc = { }
 	
 	--global defines and code
-	for d,s in pairs(lightRequirements) do
+	for d,s in pairs(light.types) do
 		assert(self.shaderLibrary.light[d], "Light of type '" .. d .. "' does not exist!")
-		lcInit[#lcInit+1] = self.shaderLibrary.light[d]:constructDefinesGlobal(self, info)
+		lcInit[#lcInit+1] = self.shaderLibrary.light[d]:constructDefinesGlobal(self)
 		
 		if basic then
-			lc[#lc+1] = self.shaderLibrary.light[d]:constructPixelBasicGlobal(self, info)
+			lc[#lc+1] = self.shaderLibrary.light[d]:constructPixelBasicGlobal(self)
 		else
-			lc[#lc+1] = self.shaderLibrary.light[d]:constructPixelGlobal(self, info)
+			lc[#lc+1] = self.shaderLibrary.light[d]:constructPixelGlobal(self)
 		end
 	end
 	
 	--defines and code
 	local IDs = { }
-	for	d,s in ipairs(lighting) do
+	for	d,s in ipairs(light.lights) do
 		IDs[s.light_typ] = (IDs[s.light_typ] or -1) + 1
-		lcInit[#lcInit+1] = self.shaderLibrary.light[s.light_typ]:constructDefines(self, info, IDs[s.light_typ])
+		lcInit[#lcInit+1] = self.shaderLibrary.light[s.light_typ]:constructDefines(self, IDs[s.light_typ])
 		
 		local px
 		if basic then
-			px = self.shaderLibrary.light[s.light_typ]:constructPixelBasic(self, info, IDs[s.light_typ])
+			px = self.shaderLibrary.light[s.light_typ]:constructPixelBasic(self, IDs[s.light_typ])
 		else
-			px = self.shaderLibrary.light[s.light_typ]:constructPixel(self, info, IDs[s.light_typ])
+			px = self.shaderLibrary.light[s.light_typ]:constructPixel(self, IDs[s.light_typ])
 		end
 		if px then
 			lc[#lc+1] = "{\n" .. px .. "\n}"

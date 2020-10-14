@@ -4,18 +4,11 @@ sh.type = "base"
 
 sh.meshType = "material"
 
-function sh:getShaderInfoID(dream, mat, shaderType)
+function sh:getTypeID(dream, mat)
 	return (mat.tex_normal and 0 or 1) + (mat.tex_emission and 0 or 2)
 end
 
-function sh:getShaderInfo(dream, mat, shaderType)
-	return {
-		tex_normal = mat.tex_normal ~= nil,
-		tex_emission = mat.tex_emission ~= nil,
-	}
-end
-
-function sh:constructDefines(dream, info)
+function sh:constructDefines(dream, mat)
 	local code = { }
 	code[#code+1] = [[
 		varying vec3 material;
@@ -30,19 +23,19 @@ function sh:constructDefines(dream, info)
 	return table.concat(code, "\n")
 end
 
-function sh:constructPixelPre(dream, info)
+function sh:constructPixelPre(dream, mat)
 	return [[
 	vec4 albedo = VaryingColor;
 	]]
 end
 
-function sh:constructPixel(dream, info)
+function sh:constructPixel(dream, mat)
 	return [[
 	vec3 normal = normalRaw;
 	]]
 end
 
-function sh:constructPixelPost(dream, info)
+function sh:constructPixelPost(dream, mat)
 	return [[
 	vec3 reflectVec = reflect(-viewVec, normal); 
 	vec3 diffuse = reflection(normal, 1.0);
@@ -52,7 +45,7 @@ function sh:constructPixelPost(dream, info)
 	]]
 end
 
-function sh:constructVertex(dream, info)
+function sh:constructVertex(dream, mat)
 	return [[
 	//extract normal vector
 	normalRawV = mat3(transform) * VertexTexCoord.xyz;
@@ -65,7 +58,7 @@ function sh:constructVertex(dream, info)
 	]]
 end
 
-function sh:constructLightFunction(dream, info)
+function sh:constructLightFunction(dream, mat)
 	return [[
 	//the PBR model is darker than the Phong shading, the use the same light intensities the Phong shading will be adapted
 	const float adaptToPBR = 0.25;
@@ -85,15 +78,17 @@ function sh:constructLightFunction(dream, info)
 	]]
 end
 
-function sh:perShader(dream, shader, info)
+function sh:perShader(dream, shaderObject)
 	
 end
 
-function sh:perMaterial(dream, shader, info, material)
+function sh:perMaterial(dream, shaderObject, material)
+	local shader = shaderObject.shader
+	
 	shader:send("tex_lookup", dream:getTexture(material.tex_lookup) or dream.textures.default)
 end
 
-function sh:perObject(dream, hader, info, task)
+function sh:perTask(dream, shaderObject, task)
 
 end
 

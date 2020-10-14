@@ -70,11 +70,9 @@ for d,s in ipairs(scene.positions) do
 	if s.name == "LIGHT" then
 		lights[d] = dream:newLight(s.x, s.y + 0.1, s.z, 1.0, 0.75, 0.3)
 		lights[d].shadow = dream:newShadow("point", true)
-		lights[d].shadow.noAlphaPass = true
 	elseif s.name == "FIRE" then
 		lights[d] = dream:newLight(s.x, s.y + 0.1, s.z, 1.0, 0.75, 0.2)
 		lights[d].shadow = dream:newShadow("point", true)
-		lights[d].shadow.noAlphaPass = true
 	end
 end
 
@@ -135,7 +133,6 @@ function love.draw()
 	dream:drawParticleBatch(particleBatchDust)
 
 	dream:present()
-	
 	if not hideTooltips then
 		love.graphics.setColor(1, 1, 1)
 		love.graphics.print(table.concat({

@@ -34,7 +34,7 @@ local lastParticleID = 0
 
 --create new particle batch
 local particleBatch = dream:newParticleBatch(texture_candle)
-particleBatch:setVertical(1.0)
+particleBatch:setVertical(0.75)
 
 local player = {
 	x = 0,
@@ -86,9 +86,11 @@ function love.draw()
 	
 	--particles
 	particleBatch:clear()
+	love.graphics.setColor(0, 0, 0, 1)
 	for d,s in pairs(particles) do
 		particleBatch:addQuad(quads[math.ceil(d + s[4]*25) % 25 + 1], s[1], s[2], s[3], s[4]*0.075, nil, 2.0)
 	end
+	love.graphics.setColor(1, 1, 1)
 	
 	dream:prepare()
 	dream:draw(scene)

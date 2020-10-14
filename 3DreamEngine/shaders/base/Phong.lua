@@ -6,24 +6,17 @@ sh.meshType = "textured"
 sh.splitMaterials = true
 sh.requireTangents = true
 
-function sh:getShaderInfoID(dream, mat, shaderType)
+function sh:getTypeID(dream, mat)
 	return (mat.tex_normal and 0 or 1) + (mat.tex_emission and 0 or 2)
 end
 
-function sh:getShaderInfo(dream, mat, shaderType)
-	return {
-		tex_normal = mat.tex_normal ~= nil,
-		tex_emission = mat.tex_emission ~= nil,
-	}
-end
-
-function sh:constructDefines(dream, info)
+function sh:constructDefines(dream, mat)
 	local code = { }
-	if info.tex_normal then
+	if mat.tex_normal then
 		code[#code+1] = "#define TEX_NORMAL"
 		code[#code+1] = "varying mat3 TBN;"
 	end
-	if info.tex_emission then
+	if mat.tex_emission then
 		code[#code+1] = "#define TEX_EMISSION"
 	end
 	
@@ -49,13 +42,13 @@ function sh:constructDefines(dream, info)
 	return table.concat(code, "\n")
 end
 
-function sh:constructPixelPre(dream, info)
+function sh:constructPixelPre(dream, mat)
 	return [[
 	vec4 albedo = Texel(tex_albedo, VaryingTexCoord.xy) * VaryingColor;
 	]]
 end
 
-function sh:constructPixel(dream, info)
+function sh:constructPixel(dream, mat)
 	return [[
 	//transform normal to world space
 	#ifdef TEX_NORMAL
@@ -76,7 +69,7 @@ function sh:constructPixel(dream, info)
 	]]
 end
 
-function sh:constructPixelPost(dream, info)
+function sh:constructPixelPost(dream, mat)
 	return [[
 	vec3 reflectVec = reflect(-viewVec, normal); 
 	
@@ -92,7 +85,7 @@ function sh:constructPixelPost(dream, info)
 	]]
 end
 
-function sh:constructVertex(dream, info)
+function sh:constructVertex(dream, mat)
 	return [[
 	//transform from tangential space into world space
 	mat3 normalTransform = mat3(transform);
@@ -119,7 +112,7 @@ function sh:constructVertex(dream, info)
 	]]
 end
 
-function sh:constructLightFunction(dream, info)
+function sh:constructLightFunction(dream, mat)
 	return [[
 	//the PBR model is darker than the Phong shading, to use the same light intensities the Phong shading will be adapted
 	const float adaptToPBR = 0.25;
@@ -139,11 +132,13 @@ function sh:constructLightFunction(dream, info)
 	]]
 end
 
-function sh:perShader(dream, shader, info)
+function sh:perShader(dream, shaderObject)
 	
 end
 
-function sh:perMaterial(dream, shader, info, material)
+function sh:perMaterial(dream, shaderObject, material)
+	local shader = shaderObject.shader
+	
 	local tex = dream.textures
 	
 	shader:send("tex_albedo", dream:getTexture(material.tex_albedo) or tex.default)
@@ -152,11 +147,11 @@ function sh:perMaterial(dream, shader, info, material)
 	shader:send("tex_combined", dream:getTexture(material.tex_combined) or tex.default)
 	shader:send("color_combined", {material.glossiness, material.specular, 1.0})
 	
-	if info.tex_normal then
+	if material.tex_normal then
 		shader:send("tex_normal", dream:getTexture(material.tex_normal) or tex.default_normal)
 	end
 	
-	if info.tex_emission then
+	if material.tex_emission then
 		shader:send("tex_emission", dream:getTexture(material.tex_emission) or tex.default)
 	end
 	if shader:hasUniform("color_emission") then
@@ -164,7 +159,7 @@ function sh:perMaterial(dream, shader, info, material)
 	end
 end
 
-function sh:perObject(dream, shader, info, task)
+function sh:perTask(dream, shaderObject, task)
 
 end
 

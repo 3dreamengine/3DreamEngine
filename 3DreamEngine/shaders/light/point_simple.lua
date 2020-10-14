@@ -4,7 +4,7 @@ sh.type = "light"
 
 sh.batchable = true
 
-function sh:constructDefinesGlobal(dream, info)
+function sh:constructDefinesGlobal(dream)
 	return [[
 		extern int point_simple_count;
 		
@@ -13,11 +13,11 @@ function sh:constructDefinesGlobal(dream, info)
 	]]
 end
 
-function sh:constructDefines(dream, info, ID)
+function sh:constructDefines(dream, ID)
 	
 end
 
-function sh:constructPixelGlobal(dream, info)
+function sh:constructPixelGlobal(dream)
 	return ([[
 		for (int i = 0; i < point_simple_count; i++) {
 			vec3 lightVecRaw = point_simple_pos[i] - vertexPos;
@@ -36,7 +36,7 @@ function sh:constructPixelGlobal(dream, info)
 	]])
 end
 
-function sh:constructPixelBasicGlobal(dream, info)
+function sh:constructPixelBasicGlobal(dream)
 	return ([[
 		for (int i = 0; i < point_simple_count; i++) {
 			vec3 lightVecRaw = point_simple_pos[i] - vertexPos;
@@ -47,15 +47,17 @@ function sh:constructPixelBasicGlobal(dream, info)
 	]])
 end
 
-function sh:constructPixel(dream, info, ID)
+function sh:constructPixel(dream, ID)
 
 end
 
-function sh:constructPixelBasic(dream, info, ID)
+function sh:constructPixelBasic(dream, ID)
 
 end
 
-function sh:sendGlobalUniforms(dream, shader, info, count, lighting)
+function sh:sendGlobalUniforms(dream, shaderObject, count, lighting)
+	local shader = shaderObject.shader
+	
 	local colors = { }
 	local pos = {}
 	for d,s in ipairs(lighting) do
@@ -64,12 +66,13 @@ function sh:sendGlobalUniforms(dream, shader, info, count, lighting)
 			pos[#pos+1] = {s.x, s.y, s.z}
 		end
 	end
+	
 	shader:send("point_simple_count", count)
 	shader:send("point_simple_pos", unpack(pos))
 	shader:send("point_simple_color", unpack(colors))
 end
 
-function sh:sendUniforms(dream, shader, info, light, ID)
+function sh:sendUniforms(dream, shaderObject, light, ID)
 	
 end
 

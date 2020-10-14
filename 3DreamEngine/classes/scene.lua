@@ -36,9 +36,6 @@ return {
 					end
 				end
 				
-				--get required shader
-				s.shader = lib:getShaderInfo(s, obj)
-				
 				--bounding box
 				local pos
 				local bb = s.boundingBox

@@ -44,7 +44,7 @@ function sh:init(dream)
 	self.shader_splashes = love.graphics.newShader(root .. "splashes.glsl")
 end
 
-function sh:constructDefines(dream, info)
+function sh:constructDefines(dream)
 	return [[
 		extern Image splashes;
 		extern Image tex_wetness;
@@ -63,7 +63,7 @@ function sh:constructPixel(dream, info)
 	]] or "")
 end
 
-function sh:constructPixelPost(dream, info)
+function sh:constructPixelPost(dream)
 	return [[
 		#ifdef TEX_NORMAL
 			vec3 reflectVecRain = reflect(-viewVec, normalize(normal * 0.25 + TBN * rainNormal.xyz * rain));
@@ -75,21 +75,22 @@ function sh:constructPixelPost(dream, info)
 	]]
 end
 
-function sh:constructVertex(dream, info)
+function sh:constructVertex(dream)
 	
 end
 
-function sh:perShader(dream, shader, info)
+function sh:perShader(dream, shaderObject)
+	local shader = shaderObject.shader
 	shader:send("splashes", sh.canvas_rain)
 	shader:send("tex_wetness", sh.tex_wetness)
 	shader:send("wetness", sh.wetness)
 end
 
-function sh:perMaterial(dream, shader, info, material)
+function sh:perMaterial(dream, shaderObject, material)
 	
 end
 
-function sh:perObject(dream, shader, info, task)
+function sh:perTask(dream, shaderObject, task)
 
 end
 

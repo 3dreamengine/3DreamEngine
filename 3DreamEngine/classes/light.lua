@@ -15,6 +15,7 @@ function lib:newLight(posX, posY, posZ, r, g, b, brightness, typ)
 		g = v == 0 and 0 or g / v,
 		b = v == 0 and 0 or b / v,
 		smooth = nil,
+		frameSkip = 0,
 		brightness = brightness or 1.0,
 	}
 	
@@ -23,6 +24,10 @@ end
 
 return {
 	link = {"light"},
+	
+	setterGetter = {
+		frameSkip = "number",
+	},
 	
 	setBrightness = function(self, brightness)
 		self.brightness = brightness
