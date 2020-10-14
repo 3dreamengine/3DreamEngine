@@ -20,8 +20,6 @@ function sh:constructDefines(dream, info)
 	code[#code+1] = [[
 		varying vec3 material;
 		
-		varying vec3 normalVec;
-		
 		//additional vertex attributes
 		#ifdef VERTEX
 		attribute vec3 VertexMaterial;
@@ -39,7 +37,7 @@ end
 
 function sh:constructPixel(dream, info)
 	return [[
-	vec3 normal = normalize(normalVec);
+	vec3 normal = normalRaw;
 	]]
 end
 
@@ -56,7 +54,7 @@ end
 function sh:constructVertex(dream, info)
 	return [[
 	//extract normal vector
-	normalVec = mat3(transform) * VertexTexCoord.xyz;
+	normalRawV = mat3(transform) * VertexTexCoord.xyz;
 	
 	//extract material
 	material = VertexMaterial;

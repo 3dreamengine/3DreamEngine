@@ -2,8 +2,9 @@ return {
 	link = {"clone", "shader", "material"},
 	
 	setterGetter = {
-		setAlpha = "boolean",
-		setSolid = "boolean",
+		alpha = "boolean",
+		solid = "boolean",
+		translucent = "number",
 	},
 	
 	--general settings

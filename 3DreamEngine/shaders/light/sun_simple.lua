@@ -24,6 +24,11 @@ end
 function sh:constructPixel(dream, info, ID)
 	return ([[
 		light += getLight(sun_simple_color_#ID#, viewVec, sun_simple_vec_#ID#, normal, albedo.rgb, material.x, material.y);
+		
+		//backface light
+		if (translucent > 0.0) {
+			light += getLight(sun_simple_color_#ID#, viewVec, sun_simple_vec_#ID#, reflect(normal, normalRaw), albedo.rgb, material.x, material.y) * translucent;
+		}
 	]]):gsub("#ID#", ID)
 end
 

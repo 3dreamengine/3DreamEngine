@@ -78,7 +78,15 @@ function sh:constructPixel(dream, info, ID)
 		if (shadow > 0.0) {
 			float distance = length(lightVec);
 			float power = 1.0 / (0.1 + distance * distance);
-			light += getLight(point_shadow_color_#ID# * shadow * power, viewVec, normalize(lightVec), normal, albedo.rgb, material.x, material.y);
+			vec3 lightColor = point_shadow_color_#ID# * shadow * power;
+			vec3 nLightVec = normalize(lightVec);
+			
+			light += getLight(lightColor, viewVec, nLightVec, normal, albedo.rgb, material.x, material.y);
+			
+			//backface light
+			if (translucent > 0.0) {
+				light += getLight(lightColor, viewVec, nLightVec, reflect(normal, normalRaw), albedo.rgb, material.x, material.y) * translucent;
+			}
 		}
 	]]):gsub("#ID#", ID)
 end

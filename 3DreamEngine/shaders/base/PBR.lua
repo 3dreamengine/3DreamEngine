@@ -22,8 +22,6 @@ function sh:constructDefines(dream, info)
 	if info.tex_normal then
 		code[#code+1] = "#define TEX_NORMAL"
 		code[#code+1] = "varying mat3 TBN;"
-	else
-		code[#code+1] = "varying vec3 normalV;"
 	end
 	if info.tex_emission then
 		code[#code+1] = "#define TEX_EMISSION"
@@ -65,7 +63,7 @@ function sh:constructPixel(dream, info)
 	#ifdef TEX_NORMAL
 		vec3 normal = normalize(TBN * (Texel(tex_normal, VaryingTexCoord.xy).rgb - 0.5));
 	#else
-		vec3 normal = normalize(normalV);
+		vec3 normal = normalRaw;
 	#endif
 	
 	//fetch material data
@@ -118,9 +116,13 @@ function sh:constructVertex(dream, info)
 	return [[
 	//transform from tangential space into world space
 	mat3 normalTransform = mat3(transform);
+	
+	//raw normal vector without normal map;
+	normalRawV = normalTransform * (VertexNormal - 0.5);
+	
 	#ifdef TEX_NORMAL
 		vec3 T = normalize(normalTransform * (VertexTangent.xyz - 0.5));
-		vec3 N = normalize(normalTransform * (VertexNormal - 0.5));
+		vec3 N = normalize(normalRawV);
 		
 		vec3 B;
 		if (VertexTangent.w > 0.5) {
@@ -130,8 +132,6 @@ function sh:constructVertex(dream, info)
 		}
 		
 		TBN = mat3(T, B, N);
-	#else
-		normalV = normalTransform * (VertexNormal*2.0-1.0);
 	#endif
 	
 	//color

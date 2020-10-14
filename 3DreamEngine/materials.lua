@@ -20,6 +20,7 @@ function lib.newMaterial(self, name, dir)
 		dir = dir,                    --directory, used for texture linking
 		obj = false,                  --object to which the material is assigned to. If it is false, it is most likely a public material from the material library.
 		ior = 1.0,
+		translucent = 0.0,
 	}
 end
 

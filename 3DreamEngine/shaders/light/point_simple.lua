@@ -24,7 +24,14 @@ function sh:constructPixelGlobal(dream, info)
 			vec3 lightVec = normalize(lightVecRaw);
 			float distance = length(lightVecRaw);
 			float power = 1.0 / (0.1 + distance * distance);
-			light += getLight(point_simple_color[i] * power, viewVec, lightVec, normal, albedo.rgb, material.x, material.y);
+			vec3 lightColor = point_simple_color[i] * power;
+			
+			light += getLight(lightColor, viewVec, lightVec, normal, albedo.rgb, material.x, material.y);
+			
+			//backface light
+			if (translucent > 0.0) {
+				light += getLight(lightColor, viewVec, lightVec, reflect(normal, normalRaw), albedo.rgb, material.x, material.y) * translucent;
+			}
 		}
 	]])
 end

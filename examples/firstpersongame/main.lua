@@ -17,9 +17,9 @@ local scene = dream:loadObject(projectDir .. "objects/scene", "PBR")
 dream:activateShaderModule("rain")
 
 player = {
-	x = 2,--8,
-	y = 2,--10,
-	z = 2,--2,
+	x = 8,
+	y = 10,
+	z = 2,
 	ax = 0,
 	ay = 0,
 	az = 0,

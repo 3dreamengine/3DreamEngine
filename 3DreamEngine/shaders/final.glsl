@@ -129,7 +129,7 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 	vec4 ca = Texel(canvas_alpha, tc);
 #endif
 	col.rgb = mix(col.rgb, ca.rgb, ca.a);
-	col.a += ca.a;
+	col.a = col.a * (1.0 - ca.a) + ca.a;
 #endif
 
 #endif

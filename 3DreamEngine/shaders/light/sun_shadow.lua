@@ -124,8 +124,16 @@ function sh:constructPixel(dream, info, ID)
 		} else {
 			shadow = sampleShadowSun(vertexPos, sun_shadow_proj_1_#ID#, sun_shadow_proj_2_#ID#, sun_shadow_proj_3_#ID#, sun_shadow_tex_1_#ID#, sun_shadow_tex_2_#ID#, sun_shadow_tex_3_#ID#, bias);
 		}
+		
 		if (shadow > 0.0) {
-			light += getLight(sun_shadow_color_#ID# * shadow, viewVec, sun_shadow_vec_#ID#, normal, albedo.rgb, material.x, material.y);
+			vec3 lightColor = sun_shadow_color_#ID# * shadow;
+			
+			light += getLight(lightColor, viewVec, sun_shadow_vec_#ID#, normal, albedo.rgb, material.x, material.y);
+			
+			//backface light
+			if (translucent > 0.0) {
+				light += getLight(lightColor, viewVec, sun_shadow_vec_#ID#, reflect(normal, normalRaw), albedo.rgb, material.x, material.y) * translucent;
+			}
 		}
 	]]):gsub("#ID#", ID)
 end

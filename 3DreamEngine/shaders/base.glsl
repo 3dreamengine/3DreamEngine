@@ -8,11 +8,14 @@ extern highp vec3 viewPos;         //camera position
 //varyings
 varying highp vec3 vertexPos;      //vertex position for pixel shader
 varying float depth;               //depth
+varying vec3 normalRawV;           //depth
 
 //shader settings
 extern bool dataAlpha;
 extern bool alphaPass;
 extern bool isSemi;
+
+extern float translucent;
 
 //setting specific defines
 #import globalDefines
@@ -73,12 +76,12 @@ void effect() {
 			//dither
 			if (albedo.a <= fract(love_PixelCoord.x * 0.37 + love_PixelCoord.y * 73.73 + depth * 3.73)) {
 				discard;
-			} else {
-				albedo.a = 1.0;
 			}
 		}
+		albedo.a = 1.0;
 	}
 	
+	vec3 normalRaw = normalize(normalRawV);
 	vec3 viewVec = normalize(viewPos - vertexPos);
 	
 #import vertexPixel

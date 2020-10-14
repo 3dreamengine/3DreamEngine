@@ -33,6 +33,7 @@ function lib:buildScene(cam, typ, blacklist)
 	local sceneSolid = { }
 	local sceneAlpha = typ ~= "shadows" and { } or false
 	local noFrustumCheck = cam.noFrustumCheck or not self.frustumCheck
+	--		let the scene builder request special shaders for shadows with the base only, no pixel. Since all base shader has no advanced vertex skip them too. Only modules.
 	
 	--add to scene
 	local LODFactor = 10 / self.LODDistance
@@ -138,7 +139,7 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam)
 		if canvases.averageAlpha and pass == 2 then
 			love.graphics.setBlendMode("add")
 		else
-			love.graphics.setBlendMode("alpha")
+			love.graphics.setBlendMode("alpha", canvases.averageAlpha and "premultiplied" or "alphamultiply")
 		end
 		
 		--set canvases
@@ -218,6 +219,10 @@ function lib:render(sceneSolid, sceneAlpha, canvases, cam)
 				--ior
 				if shader:hasUniform("ior") then
 					shader:send("ior", 1.0 / material.ior)
+				end
+				
+				if shader:hasUniform("translucent") then
+					shader:send("translucent", material.alpha and 1.0 or material.translucent)
 				end
 				
 				--shader
