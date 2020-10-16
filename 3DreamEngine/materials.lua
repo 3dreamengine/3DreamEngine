@@ -6,7 +6,7 @@ materials.lua - load and process materials
 local lib = _3DreamEngine
 
 --creates an empty material
-function lib.newMaterial(self, name, dir)
+function lib:newMaterial(name, dir)
 	return {
 		color = {0.5, 0.5, 0.5, 1.0},
 		glossiness = 0.1,
@@ -18,7 +18,6 @@ function lib.newMaterial(self, name, dir)
 		alpha = false,
 		name = name or "None",        --name, used for texture linking
 		dir = dir,                    --directory, used for texture linking
-		obj = false,                  --object to which the material is assigned to. If it is false, it is most likely a public material from the material library.
 		ior = 1.0,
 		translucent = 0.0,
 	}
@@ -26,7 +25,7 @@ end
 
 --recognise mat files and directories with an albedo texture or "material.mat" as materials
 --if the material is a directory it will skip the structured texture linking and uses the string.find to support extern material libraries
-function lib.loadMaterialLibrary(self, path, prefix)
+function lib:loadMaterialLibrary(path, prefix)
 	prefix = prefix or ""
 	for d,s in ipairs(love.filesystem.getDirectoryItems(path)) do
 		local p = path .. "/" .. s
@@ -39,8 +38,9 @@ function lib.loadMaterialLibrary(self, path, prefix)
 			--insert to material library
 			for i,v in pairs(dummyObj.materials) do
 				v.dir = path
+				v.name = prefix .. i
 				self:finishMaterial(v)
-				self.materialLibrary[prefix .. i] = v
+				self.materialLibrary[v.name] = v
 			end
 		elseif love.filesystem.getInfo(p .. "/material.mat") then
 			--directory is a material since it contains an anonymous material file (not nested, directly returns material without name)
@@ -49,13 +49,14 @@ function lib.loadMaterialLibrary(self, path, prefix)
 			
 			local mat = dummyObj.materials.material
 			mat.dir = p
+			mat.name = prefix .. s
 			self:finishMaterial(mat)
-			self.materialLibrary[prefix .. s] = mat
+			self.materialLibrary[mat.name] = mat
 		elseif self.imageDirectories[p] then
 			--directory is a material since it contains at least one texture
-			local mat = self:newMaterial(s, p)
+			local mat = self:newMaterial(prefix .. s, p)
 			self:finishMaterial(mat)
-			self.materialLibrary[prefix .. s] = mat
+			self.materialLibrary[mat.name] = mat
 		elseif love.filesystem.getInfo(p, "directory") then
 			--directory is not a material, but maybe its child directories
 			self:loadMaterialLibrary(p, prefix .. s .. "/")

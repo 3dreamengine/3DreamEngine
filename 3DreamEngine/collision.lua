@@ -18,10 +18,6 @@ c.meta_group = {
 			return
 		end
 		
-		if o.parent then
-			o.parent:remove(o)
-		end
-		
 		table.insert(self.children, o)
 		o.parent = self
 		
@@ -75,7 +71,7 @@ c.meta_group = {
 			transform = self.transform and self.transform:clone() or nil,
 			transformInverse = self.transformInverse and self.transformInverse:clone() or nil,
 			boundary = self.boundary,
-			children = children;
+			children = children,
 		}
 	end,
 	
@@ -189,7 +185,7 @@ end
 function c:newMesh(object, transform)
 	if not object then
 		return nil
-	elseif object.edges then
+	elseif object.point then
 		--this is a collision object, wrap it into a group
 		setmetatable(object, {__index = c.meta_basic})
 		local g = self:newGroup(transform)
@@ -377,7 +373,7 @@ local colliders = {
 				end
 			end
 			
-			if count % 2 == 1 then
+			if count > 0 then
 				return normal, avgPos / count
 			end
 			
@@ -393,7 +389,7 @@ local colliders = {
 					avgPos = avgPos + nearest
 				end
 			end
-			if count > 1 then
+			if count > 0 then
 				return normal, avgPos / count
 			end
 		end,
@@ -577,7 +573,6 @@ function c:collide(a, b, fast, bToA)
 				normal = normal + s[1]
 				pos = pos + s[2]
 			end
-			
 			return normal:normalize(), pos / #collisions
 		else
 			return false
@@ -587,6 +582,10 @@ end
 
 --returns physic relevant info
 function c:calculateImpact(velocity, normal, elastic, friction)
+	if velocity:lengthSquared() == 0 then
+		return vec3(), 0, vec3(), vec3()
+	end
+	
 	local dir = velocity:normalize()
 	local speed = velocity:length()
 	
@@ -599,12 +598,12 @@ function c:calculateImpact(velocity, normal, elastic, friction)
 	local directImpact = math.max(0, dir:dot(-normal))
 	
 	--final
-	local v = (reflect * elastic + slide * (1.0 - elastic) * (1.0 - friction) * (1.0 - directImpact)) * speed
+	local final = (reflect * elastic + slide * (1.0 - elastic) * (1.0 - friction) * (1.0 - directImpact)) * speed
 	
 	--impact
-	local impact = (velocity - v):length()
+	local impact = (velocity - final):length()
 	
-	return v, impact, reflect, slide
+	return final, impact, reflect, slide
 end
 
 --recursively prints a collision tree, its typ, boundary and typ specific extra information

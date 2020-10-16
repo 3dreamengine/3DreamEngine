@@ -5,7 +5,7 @@ local quat = { }
 local meta = { }
 
 function quat.new(a, b, c, d)
-	local q = {a or 1, b or 0, c or 0, d or 0}
+	local q = type(a) == "table" and a or {a or 1, b or 0, c or 0, d or 0}
 	return setmetatable(q, meta)
 end
 

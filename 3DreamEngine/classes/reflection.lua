@@ -34,6 +34,7 @@ return {
 	
 	setterGetter = {
 		priority = "number",
+		frameSkip = "number",
 	},
 	
 	refresh = function(self)

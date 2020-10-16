@@ -28,6 +28,7 @@ function lib:newSubObject(name, obj, mat)
 		materials = { },
 		extras = { },
 		faces = { },
+		edges = { },
 		
 		shaderType = shaderType,
 		meshType = obj.args.meshType or self.shaderLibrary.base[shaderType].meshType,

@@ -225,6 +225,7 @@ return function(self, obj, path)
 		local o
 		local lastMaterial
 		local index = 0
+		local edges = { }
 		for typ = 1, 3 do
 			local list
 			if typ == 1 then
@@ -281,6 +282,7 @@ return function(self, obj, path)
 					end
 					
 					--parse data arrays
+					local verticeIndex = { }
 					for d,input in ipairs(l.input) do
 						local f = translate[input._attr.semantic]
 						if f then
@@ -309,6 +311,10 @@ return function(self, obj, path)
 										s[id*3+3]
 									}
 									
+									if f == "vertices" then
+										verticeIndex[index+i] = id
+									end
+									
 									--also connect weight and joints
 									if f == "vertices" and o.weights then
 										o.weights[index+i] = armatures[o.name].weights[id+1]
@@ -325,6 +331,19 @@ return function(self, obj, path)
 					local i = index+1
 					for face = 1, count do
 						local verts = vcount[face] or 3
+						
+						--store edges
+						for v = 1, verts do
+							local a, b = i + v - 1, v == verts and i or (i + v)
+							local min = math.min(verticeIndex[a], verticeIndex[b])
+							local max = math.max(verticeIndex[a], verticeIndex[b])
+							local id = min * 65536 + max
+							if not edges[id] then
+								edges[id] = true
+								o.edges[#o.edges+1] = {a, b}
+							end
+						end
+						
 						if verts == 3 then
 							--tris
 							o.faces[#o.faces+1] = {i, i+1, i+2}
@@ -453,7 +472,7 @@ return function(self, obj, path)
 						local m = mat4(unpack(sources.OUTPUT, i*16-15, i*16))
 						frames[#frames+1] = {
 							time = sources.INPUT[i],
-							interpolations = sources.INTERPOLATION[i],
+							--interpolation = sources.INTERPOLATION[i],
 							rotation = quat.fromMatrix(m:subm()),
 							position = vec3(m[4], m[8], m[12]),
 						}

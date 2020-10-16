@@ -7,6 +7,7 @@ return function(self, obj, path, loadAsCollisions)
 	local vertices = { }
 	local normals = { }
 	local texture = { }
+	local edges = { }
 	
 	--load object
 	local material = obj.materials.None
@@ -43,16 +44,31 @@ return function(self, obj, path, loadAsCollisions)
 			local verts = #v-1
 			
 			--combine vertex and data into one
+			local index = #o.vertices
+			local edge = { }
+			local edgeID = { }
 			for i = 1, verts do
 				local v2 = self:split(v[i+1]:gsub("//", "/0/"), "/")
-				
-				local index = #o.vertices+1
+				index = index + 1
+				edge[i] = index
+				edgeID[i] = tonumber(v2[1])
 				o.vertices[index] = vertices[tonumber(v2[1])]
 				o.texCoords[index] = texture[tonumber(v2[2])]
 				if not loadAsCollisions then
 					o.normals[index] = normals[tonumber(v2[3])]
 					o.materials[index] = material
 					o.extras[index] = material.extra or o.extra or 1.0
+				end
+			end
+			
+			--store edges
+			for i = 1, verts do
+				local min = math.min(edgeID[i], edgeID[i+1] or edgeID[1])
+				local max = math.max(edgeID[i], edgeID[i+1] or edgeID[1])
+				local id = min * 65536 + max
+				if not edges[id] then
+					edges[id] = true
+					o.edges[#o.edges+1] = {edge[i], edge[i+1] or edge[1]}
 				end
 			end
 			

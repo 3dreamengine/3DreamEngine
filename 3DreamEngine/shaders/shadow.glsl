@@ -20,11 +20,6 @@ varying float depth;               //depth
 #ifdef PIXEL
 
 void effect() {
-	//dither
-//	if (albedo.a < 0.9) {
-//		discard;
-//	}
-	
 	vec3 viewVec = normalize(viewPos - vertexPos);
 	
 #import modulesPixel

@@ -245,11 +245,7 @@ function lib:inFrustum(cam, pos, radius)
 end
 
 --get the collision data from a mesh
---it moves the collider to its bounding box center, transform therefore should not be changed directly
-local hashes = { }
-local function hash(a, b)
-	return math.min(a, b) * 9999 + math.max(a, b)
-end
+--it moves the collider to its bounding box center based on its initial transform
 function lib:getCollisionData(object)
 	--its a subobject
 	local n = { }
@@ -269,12 +265,28 @@ function lib:getCollisionData(object)
 	n.edges = { }
 	n.point = vec3(0, 0, 0)
 	
-	hashes = { }
+	--transform vertices
+	local vertices = { }
+	for d,s in ipairs(object.vertices) do
+		vertices[d] = (object.transform and object.transform * vec3(s) or vec3(s)) - n.transform
+	end
+	
+	--edges
+	for d,s in ipairs(object.edges) do
+		--vertices
+		local a = vertices[s[1]]
+		local b = vertices[s[2]]
+		
+		--edge
+		table.insert(n.edges, {a, b})
+	end
+	
+	--faces
 	for d,s in ipairs(object.faces) do
 		--vertices
-		local a = (object.transform and object.transform * vec3(object.vertices[s[1]]) or vec3(object.vertices[s[1]])) - n.transform
-		local b = (object.transform and object.transform * vec3(object.vertices[s[2]]) or vec3(object.vertices[s[2]])) - n.transform
-		local c = (object.transform and object.transform * vec3(object.vertices[s[3]]) or vec3(object.vertices[s[3]])) - n.transform
+		local a = vertices[s[1]]
+		local b = vertices[s[2]]
+		local c = vertices[s[3]]
 		
 		--face normal
 		local normal = (b-a):cross(c-a):normalize()
@@ -287,26 +299,6 @@ function lib:getCollisionData(object)
 		
 		--face
 		table.insert(n.faces, {a, b, c})
-		
-		--edges
-		local id
-		id = hash(s[1], s[2])
-		if not hashes[id] then
-			table.insert(n.edges, {a, b})
-			hashes[id] = true
-		end
-		
-		id = hash(s[1], s[3])
-		if not hashes[id] then
-			table.insert(n.edges, {a, c})
-			hashes[id] = true
-		end
-		
-		id = hash(s[2], s[3])
-		if not hashes[id] then
-			table.insert(n.edges, {b, c})
-			hashes[id] = true
-		end
 	end
 	
 	return n

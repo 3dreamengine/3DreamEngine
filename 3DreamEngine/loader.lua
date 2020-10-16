@@ -80,11 +80,6 @@ function lib:loadObject(path, shaderType, args)
 			--skip furhter modifying and exporting if already packed as 3do
 			--also skips mesh loading since it is done manually
 			if typ == "3do" and not failed then
-				obj.args.noParticleSystem = true
-				obj.args.noMesh = true
-				obj.args.export3do = false
-				obj.args.centerMass = false
-				obj.args.grid = false
 				break
 			end
 		end
@@ -222,40 +217,42 @@ function lib:loadObject(path, shaderType, args)
 	
 	
 	--calculate bounding box
-	obj.boundingBox = newBoundaryBox()
-	local total = 0
-	for d,s in pairs(obj.objects) do
-		total = total + 1
-		if s.boundingBox then
-			--convert loaded boundaries (e.g. .3do files)
-			s.boundingBox.first = vec3(s.boundingBox.first)
-			s.boundingBox.second = vec3(s.boundingBox.first)
-			s.boundingBox.dimensions = vec3(s.boundingBox.first)
-			s.boundingBox.center = vec3(s.boundingBox.first)
-		else
-			s.boundingBox = newBoundaryBox()
-			
-			--scan all vertices
-			for i,v in ipairs(s.vertices) do
-				local pos = vec3(v)
-				s.boundingBox.first = s.boundingBox.first:min(pos)
-				s.boundingBox.second = s.boundingBox.second:max(pos)
-				s.boundingBox.center = s.boundingBox.center + pos
+	if not obj.boundingBox then
+		obj.boundingBox = newBoundaryBox()
+		local total = 0
+		for d,s in pairs(obj.objects) do
+			total = total + 1
+			if s.boundingBox then
+				--convert loaded boundaries (e.g. .3do files)
+				s.boundingBox.first = vec3(s.boundingBox.first)
+				s.boundingBox.second = vec3(s.boundingBox.first)
+				s.boundingBox.dimensions = vec3(s.boundingBox.first)
+				s.boundingBox.center = vec3(s.boundingBox.first)
+			else
+				s.boundingBox = newBoundaryBox()
+				
+				--scan all vertices
+				for i,v in ipairs(s.vertices) do
+					local pos = vec3(v)
+					s.boundingBox.first = s.boundingBox.first:min(pos)
+					s.boundingBox.second = s.boundingBox.second:max(pos)
+					s.boundingBox.center = s.boundingBox.center + pos
+				end
+				
+				s.boundingBox.center = s.boundingBox.center / #s.vertices
+				s.boundingBox.dimensions = s.boundingBox.second - s.boundingBox.first
+				s.boundingBox.size = math.max((s.boundingBox.dimensions * 0.5):length(), s.boundingBox.size)
 			end
 			
-			s.boundingBox.center = s.boundingBox.center / #s.vertices
-			s.boundingBox.dimensions = s.boundingBox.second - s.boundingBox.first
-			s.boundingBox.size = math.max((s.boundingBox.dimensions * 0.5):length(), s.boundingBox.size)
+			obj.boundingBox.first = s.boundingBox.first:min(obj.boundingBox.first)
+			obj.boundingBox.second = s.boundingBox.second:max(obj.boundingBox.second)
+			obj.boundingBox.center = s.boundingBox.center + obj.boundingBox.center
+			
+			obj.boundingBox.size = math.max(obj.boundingBox.size, s.boundingBox.size)
 		end
-		
-		obj.boundingBox.first = s.boundingBox.first:min(obj.boundingBox.first)
-		obj.boundingBox.second = s.boundingBox.second:max(obj.boundingBox.second)
-		obj.boundingBox.center = s.boundingBox.center + obj.boundingBox.center
-		
-		obj.boundingBox.size = math.max(obj.boundingBox.size, s.boundingBox.size)
+		obj.boundingBox.center = obj.boundingBox.center / total
+		obj.boundingBox.dimensions = obj.boundingBox.second - obj.boundingBox.first
 	end
-	obj.boundingBox.center = obj.boundingBox.center / total
-	obj.boundingBox.dimensions = obj.boundingBox.second - obj.boundingBox.first
 	
 	
 	--extract collisions
@@ -302,6 +299,7 @@ function lib:loadObject(path, shaderType, args)
 			if obj.args.cleanup then
 				s.vertices = nil
 				s.faces = nil
+				s.edges = nil
 			end
 			
 			s.normals = nil

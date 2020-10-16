@@ -24,7 +24,7 @@ vec4 = require((...) .. "/libs/luaVectors/vec4")
 quat = require((...) .. "/libs/quat")
 cimg = require((...) .. "/libs/cimg")
 utils = require((...) .. "/libs/utils")
-require((...) .. "/libs/saveTable")
+packTable = require((...) .. "/libs/packTable")
 lib.ffi = require("ffi")
 
 --load sub modules
@@ -83,7 +83,7 @@ lib:setShadowSmoothing(false)
 lib:setShadowCascade(8, 4)
 
 --loader settings
-lib:setResourceLoader(false, true)
+lib:setResourceLoader(true, true)
 lib:setSmoothLoading(1 / 1000)
 lib:setSmoothLoadingBufferSize(128)
 lib:setMipmaps(true)

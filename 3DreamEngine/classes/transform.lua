@@ -8,6 +8,11 @@ return {
 		return obj
 	end,
 
+	setTransform = function(obj, t)
+		obj.transform = t
+		return obj
+	end,
+
 	translate = function(obj, x, y, z)
 		assert(obj.transform, notInitError)
 		obj.transform = obj.transform:translate(x, y, z)

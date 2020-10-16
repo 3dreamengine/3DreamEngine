@@ -5,14 +5,22 @@ local utils = {
 	math = { },
 }
 
+local index = { }
 function utils.printTable(t, tab)
 	if not tab then
 		print()
+		index = { }
 	end
 	tab = tab or 0
 	local count = 0
 	for d,s in pairs(t) do
 		count = count + 1
+	end
+	if index[t] then
+		print(string.rep(" ", tab*2) .. (count == 0 and "└─" or "├─") .. " (repeat)")
+		return
+	else
+		index[t] = t
 	end
 	for d,s in pairs(t) do
 		count = count - 1

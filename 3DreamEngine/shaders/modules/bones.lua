@@ -50,15 +50,13 @@ function sh:perTask(dream, shaderObject, task)
 	local shader = shaderObject.shader
 	
 	--initial prepare bone data
-	if not task.s.boneMesh then
-		task.s.boneMesh = love.graphics.newMesh({{"VertexJoint", "byte", 4}, {"VertexWeight", "byte", 4}}, task.s.mesh:getVertexCount(), "triangles", "static")
+	if not task.s.boneMesh and task.s.joints then
+		task.s.boneMesh = love.graphics.newMesh({{"VertexJoint", "byte", 4}, {"VertexWeight", "byte", 4}}, #task.s.joints, "triangles", "static")
 		
 		--create mesh
-		if task.s.joints then
-			for d,s in ipairs(task.s.joints) do
-				local w = task.s.weights[d]
-				task.s.boneMesh:setVertex(d, (s[1] or 0) / 255, (s[2] or 0) / 255, (s[3] or 0) / 255, (s[4] or 0) / 255, w[1] or 0, w[2] or 0, w[3] or 0, w[4] or 0)
-			end
+		for d,s in ipairs(task.s.joints) do
+			local w = task.s.weights[d]
+			task.s.boneMesh:setVertex(d, (s[1] or 0) / 255, (s[2] or 0) / 255, (s[3] or 0) / 255, (s[4] or 0) / 255, w[1] or 0, w[2] or 0, w[3] or 0, w[4] or 0)
 		end
 		
 		--clear buffers

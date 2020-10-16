@@ -20,28 +20,65 @@ local function copy(first_table, skip)
 end
 
 function lib:export3do(obj)
-	do
-		print("3DO export WIP")
-		return
-	end
 	local compressed = "lz4"
 	local compressedLevel = 9
-	local meshHeaderData = { }
-	local meshDataStrings = { }
-	local meshDataIndex = 0
+	local dataStrings = { }
+	local dataIndex = 0
+	
+	local header = {
+		["args"] = table.copyPrimitive(obj.args),
+		["path"] = obj.path,
+		["dir"] = obj.dir,
+		["name"] = obj.name,
+		["boundingBox"] = obj.boundingBox,
+		["materials"] = table.copyPrimitive(obj.materials),
+		["lights"] = table.copyPrimitive(obj.lights),
+		["positions"] = table.copyPrimitive(obj.positions),
+		["transform"] = obj.transform,
+		["collisions"] = obj.collisions,
+		["animations"] = obj.animations,
+		["animationLengths"] = obj.animationLengths,
+		["joints"] = obj.joints,
+		["skeleton"] = obj.skeleton,
+		["objects"] = { },
+		["ordered"] = { },
+	}
+	
 	for d,o in pairs(obj.objects) do
+		local h = {
+			["name"] = o.name,
+			["shaderType"] = o.shaderType,
+			["meshType"] = o.meshType,
+			["material"] = o.material.name,
+			["boundingBox"] = table.copyPrimitive(o.boundingBox),
+			["transform"] = o.transform,
+			["jointIDs"] = o.jointIDs,
+			["weights"] = o.weights,
+			["joints"] = o.joints,
+		}
+		
+		if obj.args.export3doVertices then
+			h["vertices"] = o.vertices
+			h["edges"] = o.edges
+			h["faces"] = o.faces
+		end
+		
+		header.objects[d] = h
+		
 		if o.mesh then
 			local f = o.mesh:getVertexFormat()
-			meshHeaderData[d] = copy(o, {[o.material or false] = true, [o.final or false] = true, [o.faces or false] = true, [o.mesh or false] = true})
+			h.vertexCount = o.mesh:getVertexCount()
+			h.vertexMap = o.mesh:getVertexMap()
+			h.vertexFormat = f
 			
-			meshHeaderData[d].vertexCount = o.mesh:getVertexCount()
-			meshHeaderData[d].vertexMap = o.mesh:getVertexMap()
-			meshHeaderData[d].vertexFormat = f
-			meshHeaderData[d].material = o.material.name
+			--give a unique hash for the vertex format
+			local md5 = love.data.hash("md5", packTable.pack(f))
+			local hash = love.data.encode("string", "hex", md5)
+			--hash = "hah"
 			
-			local hash = love.data.encode("string", "hex", love.data.hash("md5", table.save(f)))
+			--build a C struct to make sure data match
 			local str = "typedef struct {" .. "\n"
-			local count = 0
+			local attrCount = 0
 			local types = { }
 			for _,ff in ipairs(f) do
 				if ff[2] == "float" then
@@ -51,40 +88,41 @@ function lib:export3do(obj)
 				else
 					error("unknown data type " .. ff[2])
 				end
+				
 				for i = 1, ff[3] do
-					count = count + 1
-					types[count] = ff[2]
-					str = str .. "x" .. count .. (i == ff[3] and ";" or ", ")
+					attrCount = attrCount + 1
+					types[attrCount] = ff[2]
+					str = str .. "x" .. attrCount .. (i == ff[3] and ";" or ", ")
 				end
 				str = str .. "\n"
 			end
 			str = str .. "} mesh_vertex_" .. hash .. ";"
-			--print(str)
+			self.ffi.cdef(str)
 			
 			--byte data
-			self.ffi.cdef(str)
 			local byteData = love.data.newByteData(o.mesh:getVertexCount() * self.ffi.sizeof("mesh_vertex_" .. hash))
 			local meshData = self.ffi.cast("mesh_vertex_" .. hash .. "*", byteData:getPointer())
 			
 			--fill data
 			for i = 1, o.mesh:getVertexCount() do
 				local v = {o.mesh:getVertex(i)}
-				for i2 = 1, count do
+				for i2 = 1, attrCount do
 					meshData[i-1]["x" .. i2] = (types[i2] == "byte" and math.floor(v[i2]*255) or v[i2])
 				end
 			end
 			
 			--convert to string and store
-			meshDataStrings[#meshDataStrings+1] = love.data.compress("string", compressed, byteData:getString(), compressedLevel)
-			meshHeaderData[d].meshDataIndex = meshDataIndex
-			meshHeaderData[d].meshDataSize = #meshDataStrings[#meshDataStrings]
-			meshDataIndex = meshDataIndex + meshHeaderData[d].meshDataSize
+			local c = love.data.compress("string", compressed, byteData:getString(), compressedLevel)
+			dataStrings[#dataStrings+1] = c
+			h.meshDataIndex = dataIndex
+			h.meshDataSize = #c
+			dataIndex = dataIndex + h.meshDataSize
 		end
 	end
 	
 	--export
-	local headerData = love.data.compress("string", compressed, table.save(meshHeaderData), compressedLevel)
-	local final = "3DO1" .. compressed .. " " .. string.format("%08d", #headerData) .. headerData .. table.concat(meshDataStrings, "")
+	local headerData = love.data.compress("string", compressed, packTable.pack(header), compressedLevel)
+	local final = "3DO2" .. compressed .. " " .. love.data.pack("string", "J", #headerData) .. headerData .. table.concat(dataStrings, "")
 	love.filesystem.createDirectory(obj.dir)
 	love.filesystem.write(obj.dir .. "/" .. obj.name .. ".3do", final)
 end
