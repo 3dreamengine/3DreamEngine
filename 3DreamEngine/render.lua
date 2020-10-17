@@ -58,38 +58,42 @@ function lib:buildScene(cam, canvases, typ, blacklist)
 							local LOD = task.s.LOD or task.obj.LOD
 							if not LOD or LOD[math.min( math.floor((task.pos - cam.pos):length() * LODFactor) + 1, 9 )] then
 								if noFrustumCheck or not task.s.boundingBox or self:inFrustum(cam, task.pos, task.s.boundingBox.size) then
-									local shader = self:getShader(task.s, pass, canvases, light, typ == "shadows")
-									local lightID = pass == 1 and canvases.deferred and "" or light.ID
-									
-									--group shader and materials together to reduce shader switches
-									if not scene[shader] then
-										scene[shader] = { }
-									end
-									
-									if typ == "shadows" then
-										table.insert(scene[shader], task)
-									else
-										if not scene[shader][lightID] then
-											scene[shader][lightID] = { }
-										end
-										if not scene[shader][lightID][mat] then
-											scene[shader][lightID][mat] = { }
+									if task.s.loaded then
+										local shader = self:getShader(task.s, pass, canvases, light, typ == "shadows")
+										local lightID = pass == 1 and canvases.deferred and "" or light.ID
+										
+										--group shader and materials together to reduce shader switches
+										if not scene[shader] then
+											scene[shader] = { }
 										end
 										
-										--add
-										table.insert(scene[shader][lightID][mat], task)
-										
-										--reflections
-										if typ == "render" then
-											local reflection = task.s.reflection or task.obj.reflection
-											if reflection and reflection.canvas then
-												self.reflections[reflection] = {
-													dist = (task.pos - cam.pos):length(),
-													obj = task.s.reflection and task.s or task.obj,
-													pos = reflection.pos or task.pos,
-												}
+										if typ == "shadows" then
+											table.insert(scene[shader], task)
+										else
+											if not scene[shader][lightID] then
+												scene[shader][lightID] = { }
+											end
+											if not scene[shader][lightID][mat] then
+												scene[shader][lightID][mat] = { }
+											end
+											
+											--add
+											table.insert(scene[shader][lightID][mat], task)
+											
+											--reflections
+											if typ == "render" then
+												local reflection = task.s.reflection or task.obj.reflection
+												if reflection and reflection.canvas then
+													self.reflections[reflection] = {
+														dist = (task.pos - cam.pos):length(),
+														obj = task.s.reflection and task.s or task.obj,
+														pos = reflection.pos or task.pos,
+													}
+												end
 											end
 										end
+									else
+										task.s:request()
 									end
 								end
 							end

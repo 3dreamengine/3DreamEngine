@@ -19,7 +19,7 @@ return {
 	add = function(self, obj, parentTransform, col)
 		--add to scene
 		for d,s in pairs(obj.objects or {obj}) do
-			if s.mesh and not s.disabled then
+			if not s.disabled then
 				--apply transformation
 				local transform
 				if parentTransform then

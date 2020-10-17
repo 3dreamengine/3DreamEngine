@@ -30,6 +30,8 @@ function lib:newSubObject(name, obj, mat)
 		faces = { },
 		edges = { },
 		
+		loaded = true,
+		
 		shaderType = shaderType,
 		meshType = obj.args.meshType or self.shaderLibrary.base[shaderType].meshType,
 	}
@@ -38,5 +40,33 @@ function lib:newSubObject(name, obj, mat)
 end
 
 return {
-	link = {"clone", "transform", "shader", "visibility"},
+	link = {"clone", "transform", "shader", "visibility", "subObject"},
+	
+	isLoaded = function(self)
+		return self.loaded
+	end,
+	
+	request = function(self)
+		if not self.loaded then
+			self.obj.loadRequests = self.obj.loadRequests or { }
+			
+			local index = self.obj.DO_dataOffset + self.meshDataIndex
+			if not self.obj.loadRequests[index] then
+				self.obj.loadRequests[index] = true
+				lib:addResourceJob("3do", self.obj, true, self.obj.DO_path, index, self.meshDataSize, self.obj.DO_compressed)
+				return true
+			else
+				return false
+			end
+		end
+	end,
+	
+	wait = function(self)
+		while not self:isLoaded() do
+			local worked = lib:update()
+			if not worked then
+				love.timer.sleep(10/1000)
+			end
+		end
+	end,
 }

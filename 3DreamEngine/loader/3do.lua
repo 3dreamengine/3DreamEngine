@@ -44,8 +44,6 @@ return function(self, obj, path)
 	local headerLength = love.data.unpack("J", l)
 	local headerData = file:read(headerLength)
 	
-	local dataOffset = 12 + headerLength
-	
 	local header = packTable.unpack(love.data.decompress("string", compressed, headerData))
 	table.merge(obj, header)
 	
@@ -54,6 +52,10 @@ return function(self, obj, path)
 	obj.args.export3do = false
 	obj.args.centerMass = false
 	obj.args.grid = false
+	
+	obj.DO_dataOffset = 12 + headerLength
+	obj.DO_compressed = compressed
+	obj.DO_path = path
 	
 	--recreate materials
 	for d,s in pairs(obj.materials) do
@@ -119,15 +121,19 @@ return function(self, obj, path)
 	end
 	convert(obj.skeleton)
 	
-	--insert in loader
-	table.insert(self.resourceJobs, obj)
+	--cleanup
 	for d,o in pairs(obj.objects) do
 		if o.meshDataIndex then
 			if #o.vertices == 0 then
 				o.vertices = nil
 			end
-			self.channel_jobs_priority:push({"3do", #self.resourceJobs, d, path, dataOffset + o.meshDataIndex, o.meshDataSize, compressed})
+			o.loaded = false
+			obj.loaded = false
 		end
+	end
+	
+	if not obj.args.no3doRequest then
+		obj:request()
 	end
 	file:close()
 end

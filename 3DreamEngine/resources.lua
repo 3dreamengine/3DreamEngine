@@ -7,7 +7,15 @@ local lib = _3DreamEngine
 
 --master resource loader
 lib.resourceJobs = { }
+lib.lastResourceJob = 0
 lib.threads = { }
+
+function lib:addResourceJob(typ, obj, priority, ...)
+	self.lastResourceJob = self.lastResourceJob + 1
+	self.resourceJobs[self.lastResourceJob] = obj
+	
+	self[priority and "channel_jobs_priority" or "channel_jobs"]:push({"3do", self.lastResourceJob, ...})
+end
 
 --start the threads
 for i = 1, math.max(1, require("love.system").getProcessorCount()-1) do
@@ -24,7 +32,7 @@ local bufferData, buffer
 local fastLoadingJob = false
 
 --updates active resource tasks (mesh loading, texture loading, ...)
-function lib.update(self, time)
+function lib:update()
 	local bufferSize = self.textures_bufferSize
 	if not bufferData or bufferData:getWidth() ~= self.textures_bufferSize then
 		bufferData = love.image.newImageData(bufferSize, bufferSize)
@@ -86,11 +94,24 @@ function lib.update(self, time)
 	if msg then
 		if msg[1] == "3do" then
 			--3do mesh data
-			local o = self.resourceJobs[msg[2]].objects[msg[3]]
-			o.mesh = love.graphics.newMesh(o.vertexFormat, o.vertexCount, "triangles", "static")
-			o.mesh:setVertexMap(o.vertexMap)
-			o.mesh:setVertices(msg[4])
-			o.vertexMap = nil
+			local obj = self.resourceJobs[msg[2]]
+			local mesh
+			
+			for d,o in pairs(obj.objects) do
+				local index = o.obj.DO_dataOffset + o.meshDataIndex
+				if msg[3] == index then
+					if not mesh then
+						mesh = love.graphics.newMesh(o.vertexFormat, o.vertexCount, "triangles", "static")
+						mesh:setVertexMap(o.vertexMap)
+						mesh:setVertices(msg[4])
+						vertexMap = nil
+					end
+					
+					o.mesh = mesh
+					o.loaded = true
+				end
+			end
+			self.resourceJobs[msg[2]] = nil
 		else
 			--image
 			local width, height = msg[3]:getDimensions()

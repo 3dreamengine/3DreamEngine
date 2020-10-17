@@ -85,10 +85,10 @@ while true do
 	if msg then
 		if msg[1] == "3do" then
 			--load 3do mesh
-			local file = love.filesystem.newFile(msg[4], "r")
-			file:seek(msg[5])
-			local byteData = love.data.newByteData(love.data.decompress("string", msg[7], file:read(msg[6])))
-			channel_results:push({"3do", msg[2], msg[3], byteData})
+			local file = love.filesystem.newFile(msg[3], "r")
+			file:seek(msg[4])
+			local byteData = love.data.newByteData(love.data.decompress("string", msg[6], file:read(msg[5])))
+			channel_results:push({"3do", msg[2], msg[4], byteData})
 		elseif msg[1] == "image" then
 			local info = love.filesystem.getInfo(msg[2])
 			assert(info, "Image " .. msg[2] .. " does not exist!")
