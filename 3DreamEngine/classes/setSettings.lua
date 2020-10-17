@@ -12,6 +12,7 @@ function lib:newSetSettings()
 		fxaa = false,
 		refractions = false,
 		averageAlpha = false,
+		alphaPass = true,
 	}, self.meta.setSettings)
 end
 
@@ -28,5 +29,6 @@ return {
 		fxaa = "boolean",
 		refractions = "boolean",
 		averageAlpha = "boolean",
+		alphaPass = "boolean",
 	},
 }

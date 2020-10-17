@@ -526,3 +526,13 @@ end
 function lib:getLODDistance()
 	return self.LODDistance
 end
+
+
+--sets the default dither
+function lib:setDither(d)
+	check(d, "boolean")
+	self.dither = d
+end
+function lib:getDither()
+	return self.dither
+end

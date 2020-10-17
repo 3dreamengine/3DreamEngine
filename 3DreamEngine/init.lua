@@ -76,6 +76,7 @@ lib:setMaxLights(16)
 lib:setNameDecoder("^(.+)_([^_]+)$")
 lib:setFrustumCheck(true)
 lib:setLODDistance(100)
+lib:setDither(false)
 
 --shadows
 lib:setShadowResolution(1024, 512)
@@ -191,9 +192,10 @@ function lib.newCanvasSet(self, settings, w, h)
 	set.direct = settings.direct
 	set.deferred = settings.deferred and not set.direct
 	set.postEffects = settings.postEffects
-	set.refractions = settings.refractions and not set.direct
-	set.averageAlpha = settings.averageAlpha and not set.direct
+	set.refractions = settings.alphaPass and settings.refractions and not set.direct
+	set.averageAlpha = settings.alphaPass and settings.averageAlpha and not set.direct
 	set.format = settings.format
+	set.alphaPass = settings.alphaPass
 	
 	assert(not set.deferred or not set.direct, "Deferred rendering is not compatible with direct rendering!")
 	
@@ -205,7 +207,7 @@ function lib.newCanvasSet(self, settings, w, h)
 		set.color = love.graphics.newCanvas(w, h, {format = settings.format, readable = true, msaa = set.msaa})
 		
 		--additional color if using refractions or averageAlpha
-		if set.averageAlpha or settings.refractions then
+		if set.averageAlpha or set.refractions then
 			set.colorAlpha = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = set.msaa})
 			
 			if set.averageAlpha then

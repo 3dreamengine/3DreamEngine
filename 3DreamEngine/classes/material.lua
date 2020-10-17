@@ -5,11 +5,29 @@ return {
 		alpha = "boolean",
 		solid = "boolean",
 		translucent = "number",
+		
+		IOR = "getter",
+		dither = "getter",
+		color = "getter",
+		albedoTex = "getter",
+		emission = "getter",
+		emissionTex = "getter",
+		glossiness = "getter",
+		glossinessTex = "getter",
+		specular = "getter",
+		specularTex = "getter",
+		roughness = "getter",
+		roughnessTex = "getter",
+		metallic = "getter",
+		metallicTex = "getter",
 	},
 	
 	--general settings
 	setIOR = function(self, ior)
 		self.ior = ior or 1.0
+	end,
+	setDither = function(self, dither)
+		self.dither = dither
 	end,
 	
 	--general material properties

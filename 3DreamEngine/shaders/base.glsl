@@ -40,6 +40,7 @@ extern float gamma;
 extern bool dataAlpha;
 extern bool alphaPass;
 extern bool isSemi;
+extern bool dither;
 
 //reflection engine
 #import reflections
@@ -73,8 +74,14 @@ void effect() {
 			}
 		} else {
 			//dither
-			if (albedo.a <= fract(love_PixelCoord.x * 0.37 + love_PixelCoord.y * 73.73 + depth * 3.73)) {
-				discard;
+			if (dither) {
+				if (albedo.a <= fract(love_PixelCoord.x * 0.37 + love_PixelCoord.y * 73.73 + depth * 3.73)) {
+					discard;
+				}
+			} else {
+				if (albedo.a < 0.5) {
+					discard;
+				}
 			}
 		}
 		albedo.a = 1.0;

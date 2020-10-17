@@ -53,8 +53,8 @@ function lib:buildScene(cam, canvases, typ, blacklist)
 					local visibility = task.s.visibility or task.obj.visibility
 					if not visibility or visibility[typ] then
 						local mat = task.s.material
-						for pass = mat.solid and 1 or 2, mat.alpha and typ ~= "shadows" and 2 or 1 do
-							local scene = pass == 1 and scene.solid or scene.alpha
+						for pass = (mat.solid or not canvases.alphaPass) and 1 or 2, canvases.alphaPass and mat.alpha and typ ~= "shadows" and 2 or 1 do
+							local scene = (not canvases.alphaPass or pass == 1) and scene.solid or scene.alpha
 							local LOD = task.s.LOD or task.obj.LOD
 							if not LOD or LOD[math.min( math.floor((task.pos - cam.pos):length() * LODFactor) + 1, 9 )] then
 								if noFrustumCheck or not task.s.boundingBox or self:inFrustum(cam, task.pos, task.s.boundingBox.size) then
@@ -149,7 +149,7 @@ function lib:render(scene, canvases, cam)
 	self.delton:stop()
 	
 	--start both passes
-	for pass = 1, 2 do
+	for pass = 1, canvases.alphaPass and 2 or 1 do
 		--only first pass writes depth
 		love.graphics.setDepthMode("less", pass == 1)
 		if canvases.averageAlpha and pass == 2 then
@@ -236,7 +236,12 @@ function lib:render(scene, canvases, cam)
 					self.delton:start("material")
 					
 					--alpha
-					shader:send("isSemi", material.solid and material.alpha)
+					shader:send("isSemi", canvases.alphaPass and material.solid and material.alpha or false)
+					if material.dither == nil then
+						shader:send("dither", self.dither)
+					else
+						shader:send("dither", material.dither)
+					end
 					
 					--ior
 					if shader:hasUniform("ior") then
