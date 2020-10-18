@@ -48,8 +48,8 @@ function love.draw()
 	dream:present()
 	
 	love.graphics.print(table.concat({
-		"1 to toggle refractions .. (" .. tostring(dream.default_settings:getRefractions()) .. ")",
-		"2 to toggle average alpha .. (" .. tostring(dream.default_settings:getAverageAlpha()) .. ")",
+		"1 to toggle refractions .. (" .. tostring(dream.renderSet:getRefractions()) .. ")",
+		"2 to toggle average alpha .. (" .. tostring(dream.renderSet:getAverageAlpha()) .. ")",
 		"3 to toggle alpha backface culling .. (" .. tostring(dream:getAlphaCullMode()) .. ")",
 	}, "\n"), 5, 5)
 end
@@ -106,18 +106,17 @@ function love.keypressed(key)
 	end
 	
 	if key == "1" then
-		dream.default_settings:setRefractions(not dream.default_settings:getRefractions())
+		dream.renderSet:setRefractions(not dream.renderSet:getRefractions())
 		dream:init()
 	end
 	
 	if key == "2" then
-		dream.default_settings:setAverageAlpha(not dream.default_settings:getAverageAlpha())
+		dream.renderSet:setAverageAlpha(not dream.renderSet:getAverageAlpha())
 		dream:init()
 	end
 	
 	if key == "3" then
 		local cullMode = dream:getAlphaCullMode()
-		dream:setAlphaCullMode(cullMode == "none" and "back" or "none")
 		dream:init()
 	end
 

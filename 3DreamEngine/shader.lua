@@ -128,7 +128,7 @@ function lib.loadShader(self)
 	
 	--create light shaders
 	self.lightShaders = { }
-	if self.default_settings.deferred or self.reflections_settings.deferred then
+	if self.renderSet.deferred or self.reflectionsSet.deferred then
 		local sh_light = love.filesystem.read(lib.root .. "/shaders/light.glsl")
 		for d,s in pairs(self.shaderLibrary.light) do
 			local lights = { }

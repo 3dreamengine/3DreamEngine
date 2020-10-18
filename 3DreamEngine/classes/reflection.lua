@@ -1,8 +1,8 @@
 local lib = _3DreamEngine
 
 function lib:newReflection(static, res, noRoughness)
-	assert(not res or self.reflections_settings.direct, "Custom reflection resolutions are too expensive unless direct render on them has been enabled.")
-	res = res or self.reflections_settings.resolution
+	assert(not res or self.reflectionsSet.direct, "Custom reflection resolutions are too expensive unless direct render on them has been enabled.")
+	res = res or self.reflectionsSet.resolution
 	
 	local canvas, image
 	if type(static) == "userdata" then

@@ -114,10 +114,10 @@ function love.draw()
 			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 200.0
 			lights[d]:setBrightness(power)
 			dream:addLight(lights[d])
-			particleBatch:addQuad(quads[math.ceil(d + love.timer.getTime() * 24) % 25 + 1], s.x, s.y + 0.02, s.z, power * 0.015, nil, 2.0)
+			particleBatch:addQuad(quads[math.ceil(d + love.timer.getTime() * 24) % 25 + 1], s.x, s.y + 0.02, s.z, power * 0.015, nil, 3.0)
 		elseif s.name == "CANDLE" then
 			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 200.0
-			particleBatch:addQuad(quads[math.ceil(d + love.timer.getTime() * 24) % 25 + 1], s.x, s.y + 0.02, s.z, power * 0.015, nil, 2.0)
+			particleBatch:addQuad(quads[math.ceil(d + love.timer.getTime() * 24) % 25 + 1], s.x, s.y + 0.02, s.z, power * 0.015, nil, 3.0)
 		elseif s.name == "FIRE" then
 			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 200.0
 			lights[d]:setBrightness(power)
@@ -247,6 +247,14 @@ function love.update(dt)
 end
 
 function love.keypressed(key)
+	if tonumber(key) then
+		if key == "9" then
+			dream:setBloom(false)
+		else
+			dream:setBloom(tonumber(key))
+		end
+	end
+	
 	--screenshots!
 	if key == "f2" then
 		dream:takeScreenshot()
@@ -294,19 +302,18 @@ function love.keypressed(key)
 		rotateCamera = not rotateCamera
 	end
 	
-	if key == "1" then
-		dream.default_settings:setRefractions(not dream.default_settings:getRefractions())
+	if key == "11" then
+		dream.renderSet:setRefractions(not dream.renderSet:getRefractions())
 		dream:init()
 	end
 	
-	if key == "2" then
-		dream.default_settings:setAverageAlpha(not dream.default_settings:getAverageAlpha())
+	if key == "21" then
+		dream.renderSet:setAverageAlpha(not dream.renderSet:getAverageAlpha())
 		dream:init()
 	end
 	
-	if key == "3" then
+	if key == "33" then
 		local cullMode = dream:getAlphaCullMode()
-		dream:setAlphaCullMode(cullMode == "none" and "back" or "none")
 		dream:init()
 	end
 	

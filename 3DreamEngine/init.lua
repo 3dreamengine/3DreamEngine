@@ -64,13 +64,12 @@ lib.materialLibrary = { }
 
 --default settings
 lib:setAO(32, 0.75, false)
-lib:setBloom(1.0, 1.5, 0.5)
+lib:setBloom(-1)
 lib:setFog()
-lib:setFogHeight(1, -1)
+lib:setFogHeight()
 lib:setDaytime(0.3)
 lib:setGamma(false)
 lib:setExposure(1.0)
-lib:setAlphaCullMode(false)
 lib:setDeferredShaderType("Phong")
 lib:setMaxLights(16)
 lib:setNameDecoder("^(.+)_([^_]+)$")
@@ -96,7 +95,7 @@ lib:setSunShadow(true)
 --weather
 lib:setWeather(0.5)
 lib:setRainbow(0.0)
-lib:setRainbowDir(1.0, -0.25, 1.0)
+lib:setRainbowDir(vec3(1.0, -0.25, 1.0))
 
 --sky
 lib:setReflection(true)
@@ -104,7 +103,7 @@ lib:setSky(true)
 lib:setSkyReflectionFormat(512, "rgba16f", 4)
 
 --clouds
-lib:setClouds(true, 1024, 2.0)
+lib:setClouds(true)
 lib:setWind(0.01, 0.0)
 lib:setCloudsStretch(0, 20, 0)
 
@@ -112,16 +111,16 @@ lib:setCloudsStretch(0, 20, 0)
 lib:setAutoExposure(false)
 
 --canvas set settings
-lib.default_settings = lib:newSetSettings()
-lib.default_settings:setPostEffects(true)
-lib.default_settings:setRefractions(true)
-lib.default_settings:setAverageAlpha(false)
+lib.renderSet = lib:newSetSettings()
+lib.renderSet:setPostEffects(true)
+lib.renderSet:setRefractions(true)
+lib.renderSet:setAverageAlpha(false)
 
-lib.reflections_settings = lib:newSetSettings()
-lib.reflections_settings:setDirect(true)
+lib.reflectionsSet = lib:newSetSettings()
+lib.reflectionsSet:setDirect(true)
 
-lib.mirror_settings = lib:newSetSettings()
-lib.mirror_settings:setDirect(true)
+lib.mirrorSet = lib:newSetSettings()
+lib.mirrorSet:setDirect(true)
 
 --default camera
 lib.cam = lib:newCam()
@@ -265,8 +264,8 @@ function lib.resize(self, w, h)
 	self:unloadCanvasSet(self.canvases_reflections)
 	
 	--canvases sets
-	self.canvases = self:newCanvasSet(self.default_settings, w, h)
-	self.canvases_reflections = self:newCanvasSet(self.reflections_settings)
+	self.canvases = self:newCanvasSet(self.renderSet, w, h)
+	self.canvases_reflections = self:newCanvasSet(self.reflectionsSet)
 	
 	--sky box
 	if self.sky_reflection == true then
@@ -281,7 +280,7 @@ end
 
 --applies settings and load canvases
 function lib.init(self, w, h)
-	if self.default_settings.direct then
+	if self.renderSet.direct then
 		local width, height, flags = love.window.getMode()
 		if flags.depth == 0 then
 			print("Direct render is enabled, but there is no depth buffer! Using 16-bit depth from now on.")
@@ -289,7 +288,7 @@ function lib.init(self, w, h)
 		end
 	end
 	
-	if self.autoExposure_enabled and self.default_settings.direct then
+	if self.autoExposure_enabled and self.renderSet.direct then
 		print("Autoexposure does not work with direct render! Autoexposure has been disabled.")
 		dream:setAutoExposure(false)
 	end

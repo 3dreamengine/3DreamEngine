@@ -9,6 +9,86 @@ local function check(value, typ, argNr)
 	assert(type(value) == typ, "bad argument #" .. (argNr or 1) .. " (number expected, got nil)")
 end
 
+
+--sets the shader to take the light function from when using the deferred pipeline
+function lib:setDefaultShaderType(typ)
+	if typ then
+		check(typ, "string")
+		assert(self.shaderLibrary.base[typ], "shader " .. typ .. " does not exist!")
+		self.defaultShaderType = typ
+	else
+		self.defaultShaderType = false
+	end
+end
+function lib:getDefaultShaderType()
+	return self.defaultShaderType
+end
+
+
+--sets the shader to take the light function from when using the deferred pipeline
+function lib:setDeferredShaderType(typ)
+	check(typ, "string")
+	assert(self.shaderLibrary.base[typ].constructLightFunction, "shader " .. typ .. " has no constructLightFunction!")
+	self.deferredShaderType = typ
+end
+function lib:getDeferredShaderType()
+	return self.deferredShaderType
+end
+
+
+--sets the max count of lights per type
+function lib:setMaxLights(nr)
+	check(nr, "number")
+	self.max_lights = nr
+end
+function lib:getMaxLights()
+	return self.max_lights
+end
+
+
+--sets the regex decoder strings for object names
+function lib:setNameDecoder(regex)
+	if regex then
+		check(regex, "string")
+		self.nameDecoder = regex
+	else
+		self.nameDecoder = false
+	end
+end
+function lib:getNameDecoder()
+	return self.nameDecoder
+end
+
+
+--enable/disable in frustum check
+function lib:setFrustumCheck(c)
+	check(c, "boolean")
+	self.frustumCheck = c
+end
+function lib:getFrustumCheck()
+	return self.frustumCheck
+end
+
+
+--sets the distance of the lowest LOD level
+function lib:setLODDistance(d)
+	check(d, "number")
+	self.LODDistance = d
+end
+function lib:getLODDistance()
+	return self.LODDistance
+end
+
+
+--sets the default dither
+function lib:setDither(d)
+	check(d, "boolean")
+	self.dither = d
+end
+function lib:getDither()
+	return self.dither
+end
+
 --exposure
 function lib:setExposure(e)
 	if e then
@@ -78,22 +158,21 @@ end
 
 
 --bloom settings
-function lib:setBloom(strength, size, resolution)
-	if strength then
-		check(strength, "number", 1)
-		check(size, "number", 2)
-		check(resolution, "number", 2)
+function lib:setBloom(quality, resolution, size, strength)
+	if quality then
+		check(quality, "number", 1)
 		
 		self.bloom_enabled = true
-		self.bloom_size = size
-		self.bloom_resolution = resolution
-		self.bloom_strength = strength
+		self.bloom_quality = quality
+		self.bloom_resolution = resolution or 0.5
+		self.bloom_size = size or 0.075
+		self.bloom_strength = strength or 1.0
 	else
 		self.bloom_enabled = false
 	end
 end
 function lib:getBloom()
-	return self.bloom_enabled, self.bloom_size, self.bloom_resolution, self.bloom_strength
+	return self.bloom_enabled, self.bloom_quality, self.bloom_resolution, self.bloom_size, self.bloom_strength
 end
 
 
@@ -118,13 +197,37 @@ function lib:getFog()
 end
 
 function lib:setFogHeight(min, max)
-	check(min, "number", 1)
-	check(max, "number", 2)
-	self.fog_min = min
-	self.fog_max = max
+	if min then
+		check(min, "number", 1)
+		check(max, "number", 2)
+		self.fog_min = min
+		self.fog_max = max
+	else
+		self.fog_min = 1
+		self.fog_max = -1
+	end
 end
-function lib:getFogHeight(min, max)
+function lib:getFogHeight()
 	return self.fog_min, self.fog_max
+end
+
+
+--rainbow
+function lib:setRainbow(strength, size, thickness)
+	check(strength, "number")
+	self.rainbow_strength = strength
+	self.rainbow_size = size or self.rainbow_size or math.cos(42 / 180 * math.pi)
+	self.rainbow_thickness = thickness or self.rainbow_thickness or 0.2
+end
+function lib:getRainbow()
+	return self.rainbow_strength, self.rainbow_size, self.rainbow_thickness
+end
+
+function lib:setRainbowDir(v)
+	self.rainbow_dir = v:normalize()
+end
+function lib:getRainbowDir()
+	return self.rainbow_dir:unpack()
 end
 
 
@@ -164,28 +267,6 @@ function lib:getShadowCascade()
 end
 
 
---rainbow
-function lib:setRainbow(strength, size, thickness)
-	check(strength, "number")
-	self.rainbow_strength = strength
-	self.rainbow_size = size or self.rainbow_size or math.cos(42 / 180 * math.pi)
-	self.rainbow_thickness = thickness or self.rainbow_thickness or 0.2
-end
-function lib:getRainbow()
-	return self.rainbow_strength, self.rainbow_size, self.rainbow_thickness
-end
-
-function lib:setRainbowDir(x, y, z)
-	check(x, "number", 1)
-	check(y, "number", 2)
-	check(z, "number", 3)
-	self.rainbow_dir = vec3(x, y, z):normalize()
-end
-function lib:getRainbowDir()
-	return self.rainbow_dir:unpack()
-end
-
-
 --set sun shadow
 function lib:setSunShadow(e)
 	check(e, "boolean")
@@ -197,11 +278,20 @@ end
 
 
 --set sun offset
+function lib:setSunDir(v)
+	self.sun = v:normalize()
+end
+function lib:getSunDir()
+	return self.sun
+end
+
+
+--set sun offset
 function lib:setSunOffset(o)
 	check(o, "number")
 	self.sun_offset = o
 end
-function lib:getSunOffset(o)
+function lib:getSunOffset()
 	return self.sun_offset
 end
 
@@ -244,7 +334,7 @@ end
 
 
 --sets the rain value and temparature
-function lib:setWeather(rain, temp, raining, noRainbow)
+function lib:setWeather(rain, temp, raining)
 	if rain then
 		temp = temp or (1.0 - rain)
 		self.weather_rain = rain
@@ -267,7 +357,7 @@ function lib:setWeather(rain, temp, raining, noRainbow)
 	self:getShaderModule("rain").strength = math.ceil(math.clamp(self.weather_rainStrength * 5.0, 0.001, 5.0))
 end
 function lib:getWeather()
-	return self.weather_rain, self.weather_temperature
+	return self.weather_rain, self.weather_temperature, self:getShaderModule("rain").isRaining
 end
 
 
@@ -352,12 +442,9 @@ end
 --sets clouds and settings
 function lib:setClouds(enabled, resolution, scale)
 	if enabled then
-		check(resolution, "number", 2)
-		check(scale, "number", 3)
-		
 		self.clouds_enabled = true
-		self.clouds_resolution = resolution
-		self.clouds_scale = scale
+		self.clouds_resolution = resolution or 1024
+		self.clouds_scale = scale or 2.0
 	else
 		self.clouds_enabled = false
 	end
@@ -441,98 +528,4 @@ function lib:setMipmaps(mm)
 end
 function lib:getMipmaps()
 	return self.textures_mipmaps
-end
-
-
---default mipmapping mode for textures
-function lib:setAlphaCullMode(cm)
-	if cm then
-	check(cm, "string")
-	self.alphaCullMode = cm
-	else
-	self.alphaCullMode = false
-	end
-end
-function lib:getAlphaCullMode()
-	return self.alphaCullMode
-end
-
-
---sets the shader to take the light function from when using the deferred pipeline
-function lib:setDeferredShaderType(typ)
-	check(typ, "string")
-	assert(self.shaderLibrary.base[typ].constructLightFunction, "shader " .. typ .. " has no constructLightFunction!")
-	self.deferredShaderType = typ
-end
-function lib:getDeferredShaderType()
-	return self.deferredShaderType
-end
-
-
---sets the shader to take the light function from when using the deferred pipeline
-function lib:setDefaultShaderType(typ)
-	if typ then
-		check(typ, "string")
-		assert(self.shaderLibrary.base[typ], "shader " .. typ .. " does not exist!")
-		self.defaultShaderType = typ
-	else
-		self.defaultShaderType = false
-	end
-end
-function lib:getDefaultShaderType()
-	return self.defaultShaderType
-end
-
-
---sets the max count of lights per type
-function lib:setMaxLights(nr)
-	check(nr, "number")
-	self.max_lights = nr
-end
-function lib:getMaxLights()
-	return self.max_lights
-end
-
-
---sets the regex decoder strings for object names
-function lib:setNameDecoder(regex)
-	if regex then
-		check(regex, "string")
-		self.nameDecoder = regex
-	else
-		self.nameDecoder = false
-	end
-end
-function lib:getNameDecoder()
-	return self.nameDecoder
-end
-
-
---enable/disable in frustum check
-function lib:setFrustumCheck(c)
-	check(c, "boolean")
-	self.frustumCheck = c
-end
-function lib:getFrustumCheck()
-	return self.frustumCheck
-end
-
-
---sets the distance of the lowest LOD level
-function lib:setLODDistance(d)
-	check(d, "number")
-	self.LODDistance = d
-end
-function lib:getLODDistance()
-	return self.LODDistance
-end
-
-
---sets the default dither
-function lib:setDither(d)
-	check(d, "boolean")
-	self.dither = d
-end
-function lib:getDither()
-	return self.dither
 end

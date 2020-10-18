@@ -263,7 +263,7 @@ function lib:render(scene, canvases, cam)
 					end
 					
 					--culling
-					love.graphics.setMeshCullMode((pass == 2 and dream.alphaCullMode) or canvases.cullMode or material.cullMode or "back")
+					love.graphics.setMeshCullMode(canvases.cullMode or material.cullMode or "back")
 					
 					--draw objects
 					for _,task in pairs(materialGroup) do
@@ -582,10 +582,16 @@ function lib:renderFull(cam, canvases, blacklist)
 			end
 		end
 		
+		--autochoose
+		local quality = self.bloom_quality
+		if quality < 0 then
+			quality = math.floor(math.log(self.bloom_resolution * self.bloom_size * canvases.width)-1.4)
+		end
+		
 		--blur
 		love.graphics.setShader(self.shaders.blur)
-		for i = 1, 0, -1 do
-			local size = (self.bloom_size * self.bloom_resolution) * 5 ^ i
+		for i = quality, 0, -1 do
+			local size = 2^i / 2^quality * self.bloom_size * canvases.width * self.bloom_resolution / 11
 			
 			self.shaders.blur:send("dir", {size / canvases.bloom_1:getWidth(), 0})
 			love.graphics.setCanvas(canvases.bloom_2)
