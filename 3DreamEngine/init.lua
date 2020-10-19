@@ -315,7 +315,7 @@ function lib.init(self, w, h)
 end
 
 --clears the current scene
-function lib.prepare(self)
+function lib:prepare()
 	self.scenes = { }
 	
 	lib:drawScene(self.scene)
@@ -332,6 +332,12 @@ function lib.prepare(self)
 	
 	--shader modules referenced this frame
 	self.allActiveShaderModules = { }
+	
+	--reset stats
+	self.stats.shadersInUse = 0
+	self.stats.lightSetups = 0
+	self.stats.materialDraws = 0
+	self.stats.draws = 0
 end
 
 --add an object to the default scene
@@ -411,9 +417,9 @@ end
 function lib:drawEmissionParticle(drawable, emissionDrawable, quad, x, y, z, ...)
 	local r, g, b, a = love.graphics.getColor()
 	if type(quad) == "userdata" and quad:typeOf("Quad") then
-		self.particlesEmissive[#self.particlesEmissive+1] = {drawable, emissionDrawable, quad, {x, y, z}, {r, g, b, a}, vertical, emission or 0.0, {...}}
+		self.particlesEmissive[#self.particlesEmissive+1] = {drawable, emissionDrawable, quad, {x, y, z}, {r, g, b, a}, vertical, emission or 1.0, {...}}
 	else
-		self.particlesEmissive[#self.particlesEmissive+1] = {drawable, emissionDrawable, {quad, x, y}, {r, g, b, a}, vertical, emission or 0.0, {z, ...}}
+		self.particlesEmissive[#self.particlesEmissive+1] = {drawable, emissionDrawable, {quad, x, y}, {r, g, b, a}, vertical, emission or 1.0, {z, ...}}
 	end
 end
 

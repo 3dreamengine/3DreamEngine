@@ -644,18 +644,8 @@ function lib:renderFull(cam, canvases, blacklist)
 	love.graphics.setShader()
 end
 
-function lib:presentLite(cam, canvases)
-	cam = cam or self.cam
-	canvases = canvases or self.canvases
-	self:renderFull(cam, canvases)
-end
-
-function lib:present(cam, canvases)
+function lib:present(cam, canvases, lite)
 	self.delton:start("present")
-	self.stats.shadersInUse = 0
-	self.stats.lightSetups = 0
-	self.stats.materialDraws = 0
-	self.stats.draws = 0
 	
 	--result canvases
 	canvases = canvases or self.canvases
@@ -690,9 +680,11 @@ function lib:present(cam, canvases)
 	self.lastUsedCam = cam
 	
 	--process render jobs
-	self.delton:start("jobs")
-	self:executeJobs()
-	self.delton:stop()
+	if not lite then
+		self.delton:start("jobs")
+		self:executeJobs()
+		self.delton:stop()
+	end
 	
 	--render
 	self.delton:start("renderFull")
@@ -703,6 +695,7 @@ function lib:present(cam, canvases)
 	--debug
 	local brightness = {
 		data_pass2 = 0.25,
+		depth = 0.1,
 	}
 	if _DEBUGMODE and love.keyboard.isDown(",") then
 		local w = 400
