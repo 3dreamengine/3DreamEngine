@@ -20,4 +20,10 @@ end
 
 return {
 	link = {"transform"},
+	
+	setterGetter = {
+		fov = "number",
+		near = "number",
+		far = "number",
+	},
 }

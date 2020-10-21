@@ -17,8 +17,9 @@ scene = dream:loadObject(projectDir .. "scene", {splitMaterials = true})
 
 --light
 local p = scene.positions[1]
-local light = dream:newLight(p.x, p.y, p.z, 1.4, 1.2, 1.0, 20.0)
+local light = dream:newLight("point", p.x, p.y, p.z, 1.4, 1.2, 1.0, 20.0)
 light.shadow = dream:newShadow("point")
+light:setSmoothing(true)
 light.blacklist = {[scene.objects.chandelier_glass_Chalendier] = true, [scene.objects.chandelier_WhiteGlass] = true}
 
 --custom position and rotation
@@ -50,7 +51,6 @@ function love.draw()
 	love.graphics.print(table.concat({
 		"1 to toggle refractions .. (" .. tostring(dream.renderSet:getRefractions()) .. ")",
 		"2 to toggle average alpha .. (" .. tostring(dream.renderSet:getAverageAlpha()) .. ")",
-		"3 to toggle alpha backface culling .. (" .. tostring(dream:getAlphaCullMode()) .. ")",
 	}, "\n"), 5, 5)
 end
 
@@ -112,11 +112,6 @@ function love.keypressed(key)
 	
 	if key == "2" then
 		dream.renderSet:setAverageAlpha(not dream.renderSet:getAverageAlpha())
-		dream:init()
-	end
-	
-	if key == "3" then
-		local cullMode = dream:getAlphaCullMode()
 		dream:init()
 	end
 

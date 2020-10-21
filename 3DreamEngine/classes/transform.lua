@@ -19,11 +19,6 @@ return {
 		return obj
 	end,
 
-	translateTo = function(obj, x, y, z)
-		obj.transform = mat4:getTranslate(x, y, z)
-		return obj
-	end,
-
 	scale = function(obj, x, y, z)
 		assert(obj.transform, notInitError)
 		obj.transform = obj.transform:scale(x, y, z)

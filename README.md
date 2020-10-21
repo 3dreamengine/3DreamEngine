@@ -11,20 +11,18 @@
 * proper blurred reflections on rough surfaces
 * particle batches
 * modular and extendable shaders
-* dynamic clouds, sun, moon and stars
-* rain with rain splashes, wetness and reflections
+* dynamic clouds, sun, moon, stars and rainbows
 * eye adaption effect
 * cascade shadow mapping
 * cubemap shadow mapping
 * smooth shadows
 * distance fog
-* static particle emitter (grass, leaves, random rocks, smaller details)
 * wind animation (leaves, grass, ...)
-* loading and rendering .obj files, supports materials and textures included in .mtl files
+* supports .obj, .mtl, .dae and .vox
 * threaded texture loading with automatic thumbnail generation
 * threaded object loading using 3DreamEngine specific object files (converter included)
 * included optimized vec2, vec3, vec4, mat2, mat3 and mat4 library
-* 3D transformation-tree-based collision extension, supports closed meshes collision
+* 3D transformation-tree based collision extension, supports closed mesh collisions
 
 ![screenshots](https://raw.githubusercontent.com/3dreamengine/3DreamEngine/master/screenshots.jpg)
 
@@ -35,7 +33,7 @@
 dream = require("3DreamEngine")
 
 --optionally set settings
-dream.bloom_enabled = false
+dream:setBloom(3)
 
 --inits (applies settings)
 dream:init()
@@ -43,19 +41,33 @@ dream:init()
 --loads a object
 yourObject = dream:loadObject("examples/monkey/object")
 
+--creates a light
+light = dream:newLight("point", 1, 2, 3, 1.0, 0.75, 0.2)
+
+--add shadow
+light:addShadow()
+
 function love.draw()
   --reset lighting to default sun
   dream:resetLight()
+
+  --add light
+  dream:addLight(light)  
   
   --prepare for rendering
-  dream:prepare()
+  dream:prepare()  
 
-  --rotate and draw and offset
+  --rotate, draw and offset
   yourObject:rotateY(love.timer.getDelta())
   dream:draw(yourObject, 0, 0, -5)
 
   --render
   dream:present()
+end
+
+function love.update()
+	--update resource loader
+	dream:update()
 end
 ```
 

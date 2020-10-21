@@ -14,7 +14,6 @@ function lib:newShadow(typ, static, res)
 		done = { },
 		priority = 1.0,
 		lastUpdate = 0,
-		size = 0.1,
 		lastPos = vec3(0, 0, 0)
 	}, self.meta.shadow)
 end
@@ -40,10 +39,6 @@ end
 
 return {
 	link = {"shadow"},
-	
-	setPriority = function(self, p)
-		self.priority = p or 1.0
-	end,
 	
 	refresh = function(self)
 		self.done = { }

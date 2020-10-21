@@ -1,6 +1,7 @@
 return {
 	alpha = false,
 	extra = 0.02,
+	translucent = 1.0,
 	cullMode = "none",
 	
 	onFinish = function(mat, obj)

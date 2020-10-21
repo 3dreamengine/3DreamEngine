@@ -5,6 +5,7 @@ return {
 		alpha = "boolean",
 		solid = "boolean",
 		translucent = "number",
+		cullMode = "string",
 		
 		IOR = "getter",
 		dither = "getter",
@@ -21,6 +22,14 @@ return {
 		metallic = "getter",
 		metallicTex = "getter",
 	},
+	
+	--translucent
+	setTranslucent = function(self, translucent)
+		self.translucent = translucent or 0.0
+		if self.translucent > 0.0 then
+			self:setMeshCullMode("none")
+		end
+	end,
 	
 	--general settings
 	setIOR = function(self, ior)

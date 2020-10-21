@@ -26,8 +26,8 @@ function lib:getPose(object, time, animation)
 	end
 	
 	--get frame of animation
-	local anim = object.animations[animation]
-	local length = object.animationLengths[animation]
+	local anim = object.animations[animation or "default"]
+	local length = object.animationLengths[animation or "default"]
 	assert(anim and length, "animation is nil")
 	for joint,frames in pairs(anim) do
 		--general data
@@ -88,8 +88,8 @@ function lib:setPose(object, time, first, second, blend)
 end
 
 --apply joints to mesh data directly
-function lib:applyJoints(obj)
-	for _,o in pairs(obj.objects) do
+function lib:applyJoints(object)
+	for _,o in pairs(object.objects) do
 		if o.joints then
 			--make a copy of vertices
 			if not o.verticesOld then
@@ -104,7 +104,7 @@ function lib:applyJoints(obj)
 				local m = mat4()
 				for jointNr = 1, #o.joints[i] do
 					local joint = o.jointIDs[ o.joints[i][jointNr] ]
-					m = m + obj.boneTransforms[ joint ] * o.weights[i][jointNr]
+					m = m + object.boneTransforms[ joint ] * o.weights[i][jointNr]
 				end
 				
 				o.vertices[i] = m * vec3(v)

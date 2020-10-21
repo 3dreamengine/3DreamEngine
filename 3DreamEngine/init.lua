@@ -306,7 +306,7 @@ function lib.init(self, w, h)
 	
 	--create sun shadow if requested
 	--TODO sun strength should receive setting
-	self.sunObject = lib:newLight(1, 1, 1, 1, 1, 1, 5, "sun")
+	self.sunObject = lib:newLight("sun", 1, 1, 1, 1, 1, 1, 5)
 	if self.sun_shadow then
 		self.sunObject.shadow = lib:newShadow("sun")
 	else

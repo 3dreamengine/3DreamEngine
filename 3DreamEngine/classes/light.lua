@@ -1,6 +1,6 @@
 local lib = _3DreamEngine
 
-function lib:newLight(posX, posY, posZ, r, g, b, brightness, typ)
+function lib:newLight(typ, posX, posY, posZ, r, g, b, brightness)
 	r = r or 1.0
 	g = g or 1.0
 	b = b or 1.0
@@ -32,6 +32,9 @@ return {
 	setBrightness = function(self, brightness)
 		self.brightness = brightness
 	end,
+	getBrightness = function(self)
+		return self.brightness
+	end,
 	
 	setColor = function(self, r, g, b)
 		if type(r) == "table" then
@@ -42,6 +45,9 @@ return {
 		self.g = v == 0 and 0 or g / v
 		self.b = v == 0 and 0 or b / v
 	end,
+	getColor = function(self)
+		return self.r, self.g, self.b
+	end,
 	
 	setPosition = function(self, x, y, z)
 		if type(x) == "table" then
@@ -51,19 +57,32 @@ return {
 		self.y = y
 		self.z = z
 	end,
+	getPosition = function(self)
+		return self.x, self.y, self.z
+	end,
 	
-	addShadow = function(self, shadow_static, res)
-		if type(shadow_static) == "table" then
-			assert(shadow_static.typ, "Provides shadow object does not seem to be a shadow.")
-			self.shadow = shadow_static
+	addShadow = function(self, static, res)
+		if type(static) == "table" then
+			assert(static.typ, "Provides shadow object does not seem to be a shadow.")
+			self.shadow = static
 			self.shadow:refresh()
 		else
-			self.shadow = lib:newShadow(self.typ, shadow_static or false, res)
+			self.shadow = lib:newShadow(self.typ, static or false, res)
 		end
 	end,
 	
 	setSmoothing = function(self, smooth)
 		assert(type(smooth) == "boolean", "boolean expected!")
 		self.smooth = smooth
+	end,
+	getSmoothing = function(self)
+		return self.smooth
+	end,
+	
+	setShadow = function(self, shadow)
+		self.shadow = shadow
+	end,
+	getShadow = function(self)
+		return self.shadow
 	end,
 }

@@ -33,11 +33,20 @@ return {
 	link = {"reflection"},
 	
 	setterGetter = {
-		priority = "number",
 		frameSkip = "number",
+		roughness = "boolean",
 	},
 	
 	refresh = function(self)
 		self.done = { }
+	end,
+	
+	setLocal = function(self, pos, first, second)
+		self.pos = pos
+		self.first = first
+		self.second = second
+	end,
+	getLocal = function(self)
+		return self.pos, self.first, self.second
 	end,
 }
