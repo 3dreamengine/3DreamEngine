@@ -66,13 +66,13 @@ function love.draw()
 end
 
 function love.update()
-	--update resource loader
-	dream:update()
+  --update resource loader
+  dream:update()
 end
 ```
 
 # documentation
-[Documentation hosted on GitHub](https://github.com/3dreamengine/3DreamEngine/index.md)
+[Documentation hosted on GitHub](https://3dreamengine.github.io/3DreamEngine/)
 
 # Examples
 We have examples in the examples folder. The provided main.lua contains a demo selection.
