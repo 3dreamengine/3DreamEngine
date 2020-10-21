@@ -53,47 +53,51 @@ function lib:buildScene(cam, canvases, typ, blacklist)
 					local visibility = task.s.visibility or task.obj.visibility
 					if not visibility or visibility[typ] then
 						local mat = task.s.material
-						for pass = (mat.solid or not canvases.alphaPass) and 1 or 2, canvases.alphaPass and mat.alpha and typ ~= "shadows" and 2 or 1 do
-							local scene = (not canvases.alphaPass or pass == 1) and scene.solid or scene.alpha
-							local LOD = task.s.LOD or task.obj.LOD
-							if not LOD or LOD[math.min( math.floor((task.pos - cam.pos):length() * LODFactor) + 1, 9 )] then
-								if noFrustumCheck or not task.s.boundingBox or self:inFrustum(cam, task.pos, task.s.boundingBox.size) then
-									if task.s.loaded then
-										local shader = self:getShader(task.s, pass, canvases, light, typ == "shadows")
-										local lightID = pass == 1 and canvases.deferred and "" or light.ID
-										
-										--group shader and materials together to reduce shader switches
-										if not scene[shader] then
-											scene[shader] = { }
-										end
-										
-										if typ == "shadows" then
-											table.insert(scene[shader], task)
-										else
-											if not scene[shader][lightID] then
-												scene[shader][lightID] = { }
-											end
-											if not scene[shader][lightID][mat] then
-												scene[shader][lightID][mat] = { }
+						if typ ~= "shadows" or mat.shadow ~= false then
+							local solid = (mat.solid or not canvases.alphaPass) and 1 or 2
+							local alpha = canvases.alphaPass and mat.alpha and typ ~= "shadows" and 2 or 1
+							for pass = solid, alpha do
+								local scene = (not canvases.alphaPass or pass == 1) and scene.solid or scene.alpha
+								local LOD = task.s.LOD or task.obj.LOD
+								if not LOD or LOD[math.min( math.floor((task.pos - cam.pos):length() * LODFactor) + 1, 9 )] then
+									if noFrustumCheck or not task.s.boundingBox or self:inFrustum(cam, task.pos, task.s.boundingBox.size) then
+										if task.s.loaded then
+											local shader = self:getShader(task.s, pass, canvases, light, typ == "shadows")
+											local lightID = pass == 1 and canvases.deferred and "" or light.ID
+											
+											--group shader and materials together to reduce shader switches
+											if not scene[shader] then
+												scene[shader] = { }
 											end
 											
-											--add
-											table.insert(scene[shader][lightID][mat], task)
-											
-											--reflections
-											if typ == "render" then
-												local reflection = task.s.reflection or task.obj.reflection
-												if reflection and reflection.canvas then
-													self.reflections[reflection] = {
-														dist = (task.pos - cam.pos):length(),
-														obj = task.s.reflection and task.s or task.obj,
-														pos = reflection.pos or task.pos,
-													}
+											if typ == "shadows" then
+												table.insert(scene[shader], task)
+											else
+												if not scene[shader][lightID] then
+													scene[shader][lightID] = { }
+												end
+												if not scene[shader][lightID][mat] then
+													scene[shader][lightID][mat] = { }
+												end
+												
+												--add
+												table.insert(scene[shader][lightID][mat], task)
+												
+												--reflections
+												if typ == "render" then
+													local reflection = task.s.reflection or task.obj.reflection
+													if reflection and reflection.canvas then
+														self.reflections[reflection] = {
+															dist = (task.pos - cam.pos):length(),
+															obj = task.s.reflection and task.s or task.obj,
+															pos = reflection.pos or task.pos,
+														}
+													end
 												end
 											end
+										else
+											task.s:request()
 										end
-									else
-										task.s:request()
 									end
 								end
 							end
@@ -511,16 +515,11 @@ function lib:renderShadows(scene, cam, canvas, blacklist)
 end
 
 --full render, including bloom, fxaa, exposure and gamma correction
-function lib:renderFull(cam, canvases, blacklist)
+function lib:renderFull(scene, cam, canvases)
 	love.graphics.push("all")
 	if not canvases.direct then
 		love.graphics.reset()
 	end
-	
-	--generate scene
-	self.delton:start("scene")
-	local scene = self:buildScene(cam, canvases, "render", blacklist)
-	self.delton:stop()
 	
 	--render
 	self.delton:start("render")
@@ -679,6 +678,11 @@ function lib:present(cam, canvases, lite)
 	cam.aspect = aspect
 	self.lastUsedCam = cam
 	
+	--generate scene
+	self.delton:start("scene")
+	local scene = self:buildScene(cam, canvases, "render", blacklist)
+	self.delton:stop()
+	
 	--process render jobs
 	if not lite then
 		self.delton:start("jobs")
@@ -688,7 +692,7 @@ function lib:present(cam, canvases, lite)
 	
 	--render
 	self.delton:start("renderFull")
-	self:renderFull(cam, canvases)
+	self:renderFull(scene, cam, canvases)
 	self.delton:stop()
 	self.delton:stop()
 	

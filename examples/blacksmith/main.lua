@@ -9,9 +9,7 @@ dream:setDefaultShaderType("PBR")
 
 --set reflection cubemap with local corrections
 local r = dream:newReflection(cimg:load(projectDir .. "sky.cimg"))
-r.pos = vec3(0, 0, 0)
-r.first = vec3(-2, -1, -2)
-r.second = vec3(2, 1, 2)
+r:setLocal(vec3(0, 0, 0), vec3(-2, -1, -2), vec3(2, 1, 2))
 dream:setReflection(r)
 
 dream:init()

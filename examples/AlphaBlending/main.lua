@@ -7,18 +7,19 @@ love.mouse.setRelativeMode(true)
 local projectDir = "examples/AlphaBlending/"
 
 --settings
+dream.renderSet:setAverageAlpha(true)
 dream:setDefaultShaderType("PBR")
 dream:setSky(love.graphics.newImage(projectDir .. "sky.hdr"), 0.25)
 dream:init()
 
 --scene
 dream:loadMaterialLibrary(projectDir .. "materials")
-scene = dream:loadObject(projectDir .. "scene", {splitMaterials = true})
+scene = dream:loadObject(projectDir .. "scene", "PBR")
 
 --light
 local p = scene.positions[1]
 local light = dream:newLight("point", p.x, p.y, p.z, 1.4, 1.2, 1.0, 20.0)
-light.shadow = dream:newShadow("point")
+light:addShadow()
 light:setSmoothing(true)
 light.blacklist = {[scene.objects.chandelier_glass_Chalendier] = true, [scene.objects.chandelier_WhiteGlass] = true}
 
@@ -100,11 +101,6 @@ function love.update(dt)
 end
 
 function love.keypressed(key)
-	--screenshots!
-	if key == "f2" then
-		dream:takeScreenshot()
-	end
-	
 	if key == "1" then
 		dream.renderSet:setRefractions(not dream.renderSet:getRefractions())
 		dream:init()
@@ -113,6 +109,11 @@ function love.keypressed(key)
 	if key == "2" then
 		dream.renderSet:setAverageAlpha(not dream.renderSet:getAverageAlpha())
 		dream:init()
+	end
+	
+	--screenshots!
+	if key == "f2" then
+		dream:takeScreenshot()
 	end
 
 	--fullscreen

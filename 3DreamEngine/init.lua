@@ -122,6 +122,8 @@ lib.reflectionsSet:setDirect(true)
 lib.mirrorSet = lib:newSetSettings()
 lib.mirrorSet:setDirect(true)
 
+lib.shadowSet = lib:newSetSettings()
+
 --default camera
 lib.cam = lib:newCam()
 

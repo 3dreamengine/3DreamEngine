@@ -59,7 +59,7 @@ function job:execute(times, delta, light, pos, cascade)
 	light.shadow.canvases[cascade] = light.shadow.canvases[cascade] or lib:newShadowCanvas("sun", light.shadow.res)
 	
 	local scene = lib:buildScene(shadowCam, "shadows", light.blacklist)
-	lib:renderShadows(scene, shadowCam, {}, {depthstencil = light.shadow.canvases[cascade]})
+	lib:renderShadows(scene, shadowCam, lib.shadowSet, {depthstencil = light.shadow.canvases[cascade]})
 	
 	light.shadow.done[cascade] = true
 end

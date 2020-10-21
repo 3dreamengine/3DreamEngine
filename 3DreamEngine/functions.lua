@@ -433,7 +433,9 @@ function lib:take3DScreenshot(pos, resolution, path)
 		
 		--render
 		local cam = self:newCam(transformations[face], self.cubeMapProjection, pos, lookNormals[face])
-		lib:renderFull(cam, canvases)
+		local scene = self:buildScene(cam, canvases, "render")
+		
+		lib:renderFull(scene, cam, canvases)
 		
 		love.graphics.pop()
 	end

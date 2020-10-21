@@ -58,7 +58,7 @@ function love.draw()
 	
 	if not hideTooltips then
 		love.graphics.setColor(1, 1, 1)
-		love.graphics.print("R to toggle rain (" .. tostring(dream:getShaderModule("rain").isRaining) .. ")\nT to toggle daytime animation (" .. tostring(timeAnimate) .. ")\nU to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")" .. "\nheight: " .. player.y, 10, 10)
+		love.graphics.print("R to toggle rain (" .. tostring(dream:getShaderModule("rain").isRaining) .. ")\nT to toggle daytime animation (" .. tostring(timeAnimate) .. ")\nU to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")", 10, 10)
 	end
 end
 
@@ -80,13 +80,12 @@ function love.update(dt)
 	
 	--daytime
 	if timeAnimate then
-		time = time + dt * 0.05
+		time = time + dt * 0.02
 	end
 	dream:setDaytime(time)
 	
 	--weather
-	local oldRain = dream:getWeather()
-	dream:setWeather(math.clamp(oldRain + (rain > oldRain and 1 or -1) * dt * 0.05, 0.25, 0.85))
+	dream:updateWeather(rain, 1.0-rain, dt)
 	
 	--collision
 	local oldX = player.x
