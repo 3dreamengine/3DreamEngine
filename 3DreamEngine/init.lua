@@ -104,8 +104,9 @@ lib:setSkyReflectionFormat(512, "rgba16f", 4)
 
 --clouds
 lib:setClouds(true)
-lib:setWind(0.01, 0.0)
+lib:setWind(0.005, 0.0)
 lib:setCloudsStretch(0, 20, 0)
+lib:setCloudsAnim(0.01, 0.25)
 
 --auto exposure
 lib:setAutoExposure(false)
@@ -173,10 +174,12 @@ function lib.initTextures:sky()
 		lib.textures.sun = love.graphics.newImage(lib.root .. "/res/sun.png")
 		lib.textures.rainbow = love.graphics.newImage(lib.root .. "/res/rainbow.png")
 		
-		lib.textures.clouds = love.graphics.newImage(lib.root .. "/res/clouds.png")
+		lib.textures.clouds = lib.textures.clouds or love.graphics.newImage(lib.root .. "/res/clouds.png")
 		lib.textures.clouds_base = love.graphics.newImage(lib.root .. "/res/clouds_base.png")
 		lib.textures.clouds_top = love.graphics.newCubeImage("3DreamEngine/res/clouds_top.png")
 		lib.textures.stars = love.graphics.newCubeImage("3DreamEngine/res/stars.png")
+		
+		lib.textures.clouds:setFilter("nearest")
 	end
 end
 

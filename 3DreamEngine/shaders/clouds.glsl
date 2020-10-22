@@ -13,7 +13,7 @@ extern float base_impact;
 
 extern vec3 sunVec;
 extern float sunStrength;
-extern vec2 roughnessOffset;
+extern vec2 offset;
 
 extern Image tex_base;
 
@@ -25,9 +25,9 @@ vec4 effect(vec4 c, Image tex, vec2 tc, vec2 sc) {
 	}
 	
 	//cloud
-	float cloud = Texel(tex, pos.xz * scale).r;
-	float base = clamp(0.5 + (Texel(tex_base, pos.xz * scale_base - roughnessOffset * 0.01).r - 0.5) * base_impact, 0.0, 1.0);
-	float roughness = Texel(tex_base, pos.xz * scale_roughness - roughnessOffset).r;
+	float cloud = Texel(tex, pos.xz * scale + offset).r;
+	float base = clamp(0.5 + (Texel(tex_base, pos.xz * scale_base - offset * 0.01).r - 0.5) * base_impact, 0.0, 1.0);
+	float roughness = Texel(tex_base, pos.xz * scale_roughness - offset).r;
 	
 	//density
 	float density = cloud * base * pos.y;

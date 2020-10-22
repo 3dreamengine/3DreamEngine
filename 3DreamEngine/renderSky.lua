@@ -108,7 +108,7 @@ function lib:renderSky(transformProj, camTransform)
 			local sun = self.sun:normalize()
 			self.shaders.clouds:send("sunVec", {sun:unpack()})
 			self.shaders.clouds:send("sunStrength", math.max(0.0, 1.0 - math.abs(sun.y) * (sun.y > 0 and 3.0 or 10.0)) * 10.0)
-			self.shaders.clouds:send("roughnessOffset", self.clouds_pos)
+			self.shaders.clouds:send("offset", self.clouds_pos)
 			
 			self.shaders.clouds:send("scale", self.clouds_scale)
 			self.shaders.clouds:send("scale_base", self.clouds_scale / 17.0)

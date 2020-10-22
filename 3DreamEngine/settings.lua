@@ -363,8 +363,17 @@ end
 
 --updates weather slowly
 function lib:updateWeather(rain, temp, dt)
-	self.weather_rain = self.weather_rain + (rain > self.weather_rain and 1 or -1) * dt * 0.1
-	self.weather_temperature = self.weather_temperature + (temp > self.weather_temperature and 1 or -1) * dt * 0.1
+	if rain > self.weather_rain then
+		self.weather_rain = math.min(rain, self.weather_rain + dt * dt)
+	else
+		self.weather_rain = math.max(rain, self.weather_rain - dt * dt)
+	end
+	
+	if temp > self.weather_temperature then
+		self.weather_temperature = math.min(temp, self.weather_temperature + dt * dt)
+	else
+		self.weather_temperature = math.max(temp, self.weather_temperature - dt * dt)
+	end
 	
 	self:setWeather()
 	
@@ -439,12 +448,23 @@ function lib:getSky(tex)
 end
 
 
+--sets cloud texture
+function lib:setCloudsTexture(tex)
+	self.textures.clouds = tex or love.graphics.newImage(self.root .. "/res/clouds.png")
+end
+function lib:getCloudsTexture(tex)
+	return self.textures.clouds
+end
+
+
 --sets clouds and settings
-function lib:setClouds(enabled, resolution, scale)
+function lib:setClouds(enabled, resolution, scale, amount, rotations)
 	if enabled then
 		self.clouds_enabled = true
 		self.clouds_resolution = resolution or 1024
 		self.clouds_scale = scale or 2.0
+		self.clouds_amount = amount or 32
+		self.clouds_rotations = rotations == nil or rotations
 	else
 		self.clouds_enabled = false
 	end
@@ -463,6 +483,19 @@ function lib:setWind(x, y)
 end
 function lib:getWind()
 	return self.clouds_wind.x, self.clouds_wind.y
+end
+
+
+--sets a few cloud animation parameters
+function lib:setCloudsAnim(size, position)
+	assert(size, "number", 1)
+	assert(position, "number", 2)
+	
+	self.clouds_anim_size = size
+	self.clouds_anim_position = position
+end
+function lib:getCloudsAnim()
+	return self.clouds_anim_size, self.clouds_anim_position
 end
 
 

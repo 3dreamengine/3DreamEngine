@@ -40,7 +40,7 @@ end
 
 function job:execute(times, delta)
 	local size = lib.weather_rain^2 + 0.2
-	local amount = 32
+	local amount = lib.clouds_amount
 	
 	local a = math.atan2(lib.clouds_wind.y, lib.clouds_wind.x) + lib.clouds_angle
 	local strength = lib.clouds_wind:length() * lib.clouds_stretch_wind + lib.clouds_stretch
@@ -59,11 +59,11 @@ function job:execute(times, delta)
 	spritebatch:clear()
 	for i = 1, amount do
 		local q = quads[i % 16 + 1]
-		local sz = random(i)*0.5 + love.math.noise(i, love.timer.getTime() * 0.01)*0.5
+		local sz = random(i)*0.5 + love.math.noise(i, love.timer.getTime() * lib.clouds_anim_size)*0.5
 		sz = sz * (1.0 - lib.weather_temperature * i / amount) + 0.0 * lib.weather_temperature * i / amount
-		local wp = lib.clouds_pos * (1.0 + random(i * 1/8)*0.2)
+		local wp = lib.clouds_pos * (random(i * 1/8)-0.5) * lib.clouds_anim_position
 		local x, y = (random(i + 0.5) + wp.x) % 1, (random(i + 0.25) + wp.y) % 1
-		local r = random(i + 0.125) * math.pi * 2
+		local r = lib.clouds_rotations and (random(i + 0.125) * math.pi * 2) or 0
 		local brightness = 0.25 + random(i + 1 / 16) * 0.5
 		
 		spritebatch:setColor(brightness, brightness, brightness)

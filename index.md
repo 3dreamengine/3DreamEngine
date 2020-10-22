@@ -486,12 +486,14 @@ If the sky dome is used weather based random clouds can be rendered.
 
 ```lua
 dream:setClouds(enabled)
-dream:setClouds(enabled, resolution, scale)
+dream:setClouds(enabled, resolution, scale, amount, rotations)
 enabled, resolution, scale = dream:getClouds()
 ```
 `enabled (true)`  
 `resolution (1024)` random cloud buffer canvas size  
 `scale (2.0)` scale of clouds  
+`amount (32)` amount of clouds per sector  
+`rotations (true)` if rotation should be used  
 
 <br />
 
@@ -500,6 +502,23 @@ dream:setWind(x, y)
 x, y = dream:getWind()
 ```
 `x, y` cloud movement direction  
+
+```lua
+dream:setCloudsStretch(stretch, stretch_wind, angle)
+stretch, stretch_wind, angle = dream:getCloudsStretch()
+```
+`stretch` stretch strength  
+`stretch_wind` stretch strength based on wind  
+`angle` angle offset  
+
+<br />
+
+```lua
+dream:setCloudsAnim(size, position)
+size, position = dream:setCloudsAnim()
+```
+`size (0.01)` randomize size speed  
+`position (0.25)` randomize position speed  
 
 ```lua
 dream:setCloudsStretch(stretch, stretch_wind, angle)
