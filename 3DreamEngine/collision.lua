@@ -2,12 +2,29 @@ local c = { }
 
 local dream = _3DreamEngine
 
+local I = mat4:getIdentity()
+local Z = vec3()
+
 --get the vec3 offset of a transform object (which can be a mat4 or vec3)
 local function getTranslate(s)
-	return s.type == "mat4" and vec3(s[4], s[8], s[12]) or s
+	return s.type == "vec3" and s or vec3(s[4], s[8], s[12])
 end
-local function getTransform(s)
-	return s.type == "mat4" and s or mat4:getTranslate(s)
+local function getTransform(x, y, z)
+	if x then
+		return y and vec3(x, y, z) or x
+	else
+		return Z
+	end
+end
+local function getInverseTransform(x, y, z)
+	if x then
+		return y and vec3(-x, -y, -z) or x.type == "mat4" and x:invert() or -x
+	else
+		return Z
+	end
+end
+local function applyTransform(t, v)
+	return t.type == "mat4" and (t * v) or (t + v)
 end
 
 --group meta
@@ -17,19 +34,25 @@ c.meta_group = {
 		if not o then
 			return
 		end
-		
+		self:addFast(o)
+		self:apply()
+	end,
+	
+	addFast = function(self, o)
+		if not o then
+			return
+		end
 		table.insert(self.children, o)
 		o.parent = self
-		
-		self:apply()
 	end,
 	
 	--remove object from group
 	remove = function(self, o)
 		o.parent = nil
-		for d,s in pairs(self.children) do
+		for d,s in ipairs(self.children) do
 			if s == o then
 				table.remove(self.children, d)
+				self:apply()
 				return true
 			end
 		end
@@ -42,6 +65,9 @@ c.meta_group = {
 		self.center = vec3(0, 0, 0)
 		for d,s in ipairs(self.children) do
 			self.center = self.center + getTranslate(s.transform)
+			if s.center then
+				self.center = self.center + s.center
+			end
 		end
 		self.center = self.center / #self.children
 		
@@ -49,6 +75,9 @@ c.meta_group = {
 		self.boundary = 0
 		for d,s in ipairs(self.children) do
 			local transform = getTranslate(s.transform)
+			if s.center then
+				transform = transform + s.center
+			end
 			local size = (transform - self.center):length()
 			self.boundary = math.max(self.boundary, size + s.boundary)
 		end
@@ -76,8 +105,9 @@ c.meta_group = {
 	end,
 	
 	--move object, recreating boundaries for parents
-	moveTo = function(self, pos, y, z)
-		self.transform = y and vec3(pos, y, z) or pos
+	moveTo = function(self, x, y, z)
+		self.transform = getTransform(x, y, z)
+		self.transformInverse = getInverseTransform(x, y, z)
 		
 		if self.parent then
 			self.parent:apply()
@@ -110,8 +140,9 @@ c.meta_basic = {
 	end,
 	
 	--move object, recreating boundaries for parents
-	moveTo = function(self, pos, y, z)
-		self.transform = y and vec3(pos, y, z) or pos
+	moveTo = function(self, x, y, z)
+		self.transform = getTransform(x)
+		self.transformInverse = getInverseTransform(x)
 		
 		if self.parent then
 			self.parent:apply()
@@ -124,7 +155,8 @@ function c:newGroup(transform)
 	local n = { }
 	
 	n.typ = "group"
-	n.transform = transform or vec3(0, 0, 0)
+	n.transform = getTransform(transform)
+	n.transformInverse = getInverseTransform(transform)
 	n.boundary = 0
 	n.center = vec3(0, 0, 0)
 	
@@ -139,7 +171,8 @@ function c:newSphere(size, transform)
 	
 	n.typ = "sphere"
 	n.size = size or 1
-	n.transform = transform or vec3(0, 0, 0)
+	n.transform = getTransform(transform)
+	n.transformInverse = getInverseTransform(transform)
 	n.boundary = n.size
 	
 	return setmetatable(n, {__index = c.meta_basic})
@@ -151,7 +184,8 @@ function c:newBox(size, transform)
 	
 	n.typ = "box"
 	n.size = size or vec3(1, 1, 1)
-	n.transform = transform or vec3(0, 0, 0)
+	n.transform = getTransform(transform)
+	n.transformInverse = getInverseTransform(transform)
 	n.boundary = n.size:length()
 	
 	return setmetatable(n, {__index = c.meta_basic})
@@ -162,7 +196,8 @@ function c:newPoint(transform)
 	local n = { }
 	
 	n.typ = "point"
-	n.transform = transform or vec3(0, 0, 0)
+	n.transform = getTransform(transform)
+	n.transformInverse = getInverseTransform(transform)
 	n.boundary = 0
 	
 	return setmetatable(n, {__index = c.meta_basic})
@@ -171,12 +206,14 @@ end
 --segment node
 function c:newSegment(a, b)
 	local n = { }
+	local center = (a + b) / 2
 	
 	n.typ = "segment"
-	n.transform = (a + b) / 2
+	n.transform = getTransform(center)
+	n.transformInverse = getInverseTransform(center)
 	n.boundary = (a - b):lengthSquared() / 2
-	n.a = a - n.transform
-	n.b = b - n.transform
+	n.a = a - center
+	n.b = b - center
 	
 	return setmetatable(n, {__index = c.meta_basic})
 end
@@ -202,8 +239,9 @@ function c:newMesh(object, transform)
 			--pack those into a group
 			local o = self:newGroup(transform)
 			for d,c in pairs(object.collisions) do
-				o:add(self:newMesh(c))
+				o:addFast(self:newMesh(c))
 			end
+			o:apply()
 			return o
 		end
 	elseif object.objects then
@@ -246,12 +284,12 @@ local function nearestPointToLine(v, w, p)
 end
 
 --take a ray R and test if it intersects with triangle T
-local function intersectTriangle(R, T)
+local function intersectTriangle(Ra, Rb, T)
 	--plane normal
 	local u = T[2] - T[1]
 	local v = T[3] - T[1]
 	local n = u:cross(v)
-	local dir = R[2] - R[1]
+	local dir = Rb - Ra
 	local b = n:dot(dir)
 	
 	--check if segment is parallel to plane, only returns true if on it
@@ -260,7 +298,7 @@ local function intersectTriangle(R, T)
 	end
 	
 	local d = n:dot(T[1])
-	local r = (d - n:dot(R[1])) / b
+	local r = (d - n:dot(Ra)) / b
 	
 	--segment to short
 	if r < 0.0 or r > 1.0 then
@@ -268,7 +306,7 @@ local function intersectTriangle(R, T)
 	end
 	
 	--get intersect point of segment with triangle plane
-	local intersectPoint = R[1] + r * dir;
+	local intersectPoint = Ra + r * dir;
 	
 	--is the intersect point inside T?
 	if (T[2] - T[1]):cross(intersectPoint - T[1]):dot(n) < 0 then
@@ -362,7 +400,7 @@ local colliders = {
 			local normal = vec3(0, 0, 0)
 			local avgPos = vec3(0, 0, 0)
 			for d,s in ipairs(b.faces) do
-				local p = intersectTriangle({pos - b.normals[d] * a.size, pos}, s)
+				local p = intersectTriangle(pos - b.normals[d] * a.size, pos, s)
 				if p then
 					if fast then
 						return b.normals[d], p
@@ -406,15 +444,15 @@ local colliders = {
 	},
 	segment = {
 		mesh = function(a, b, aToB, pos, fast)
-			local va = aToB * a.a
-			local vb = aToB * a.b
+			local va = applyTransform(aToB, a.a)
+			local vb = applyTransform(aToB, a.b)
 			
-			--other than usual segment-mesh collisions returns nearest point to a
+			--other than usual segment-mesh collisions we return nearest point to a
 			local best = math.huge
 			local normal, pos
 			
 			for d,s in ipairs(b.faces) do
-				local p = intersectTriangle({va, vb}, s)
+				local p = intersectTriangle(va, vb, s)
 				if p then
 					if fast then
 						return b.normals[d], p
@@ -437,23 +475,24 @@ local colliders = {
 			--edge check
 			--because of quadratic complexity fast mode is always used
 			for _, edge in ipairs(a.edges) do
-				local va = aToB * edge[1]
-				local vb = aToB * edge[2]
+				local va = applyTransform(edge[1])
+				local vb = applyTransform(edge[2])
 				for d,s in ipairs(b.faces) do
-					if intersectTriangle({va, vb}, s) then
+					if intersectTriangle(va, vb, s) then
 						return b.normals[d]
 					end
 				end
 			end
 			
 			--random sample in case mesh a is in mesh b (or vice verta)
-			local v = aToB * a.point
-			local segment = {v:normalize() * 10000.0, v}
+			local v = applyTransform(aToB, a.point)
+			local sa = v:normalize() * 10000.0
+			local sb = v
 			local count = 0
 			local normal = vec3(0, 0, 0)
 			local avgPos = vec3(0, 0, 0)
 			for d,s in ipairs(b.faces) do
-				local p = intersectTriangle(segment, s)
+				local p = intersectTriangle(sa, sb, s)
 				if p then
 					count = count + 1
 					normal = normal + b.normals[d]
@@ -473,37 +512,41 @@ function c:getCollisions()
 	return collisions
 end
 
-function c:collide(a, b, fast, bToA)
+function c:collide(a, b, fast, bToA, aToB)
 	--for the sake of performance we keep all return values in A space and only the top call transforms it back into global space
 	local root = not bToA
 	if root then
 		collisions = { }
 	end
 	
-	--unpack a in case its a group
-	local transformA
 	if root then
+		--unpack a in case its a group
 		if a.children then
-			transformA = getTransform(a.transform) * getTransform(a.children[1])
+			aToB = transformA:affineAdd(a.children[1].transform)
+			bToA = transformAInverse:affineAdd(a.children[1].transformInverse)
 			a = a.children[1]
 		else
-			transformA = getTransform(a.transform)
+			aToB = a.transform
+			bToA = a.transformInverse
 		end
 	end
 	
-	--transform (of b, recursive. TransformInverse therefore transforms "a" into the space of b)
-	bToA = bToA and (bToA * getTransform(b.transform)) or (getTransform(b.transform) * transformA:invert())
-	aToB = bToA:invert()
+	--transform
+	aToB = aToB:affineAdd(b.transformInverse)
+	
+	local earlyTransform = b.center and a.typ == "segment"
+	if earlyTransform then
+		bToA = bToA:affineAdd(b.transform)
+	end
 	
 	--the origin of a in the space of b
-	local originOfAInBSpace = vec3(aToB[4], aToB[8], aToB[12])
+	local originOfAInBSpace = aToB.type == "mat4" and vec3(aToB[4], aToB[8], aToB[12]) or aToB
 	
 	--boundary check for groups
 	if b.center then
 		if a.typ == "segment" then
-			local b = self:newSphere(b.boundary, b.center)
-			local bToA_new = bToA * getTransform(b.transform)
-			if not colliders[b.typ][a.typ](b, a, bToA_new, vec3(bToA_new[4], bToA_new[8], bToA_new[12]), true) then
+			local c = self:newSphere(b.boundary)
+			if not colliders[c.typ][a.typ](c, a, bToA, applyTransform(bToA, b.center), true) then
 				return false
 			end
 		else
@@ -514,27 +557,32 @@ function c:collide(a, b, fast, bToA)
 		end
 	end
 	
+	local firstColl = colliders[a.typ] and colliders[a.typ][b.typ]
+	local maySkipTransform = firstColl and fast
+	if not earlyTransform and not maySkipTransform then
+		bToA = bToA:affineAdd(b.transform)
+	end
+	
 	--collide
-	local normal, pos
-	if colliders[a.typ] and colliders[a.typ][b.typ] then
-		local normal, pos = colliders[a.typ][b.typ](a, b, aToB, originOfAInBSpace, fast)
+	if firstColl then
+		local normal, pos = firstColl(a, b, aToB, originOfAInBSpace, fast)
 		if normal then
 			if fast then
 				return true
 			end
-			normal = (bToA:subm() * normal):normalize()
-			pos = bToA * (pos or originOfAInBSpace)
+			normal = (bToA.type == "mat4" and bToA:subm() * normal or normal):normalize()
+			pos = applyTransform(bToA, pos or originOfAInBSpace)
 			table.insert(collisions, {normal, pos, b})
 		end
 	elseif colliders[b.typ] and colliders[b.typ][a.typ] then
-		local originOfBInASpace = vec3(bToA[4], bToA[8], bToA[12])
+		local originOfBInASpace = bToA.type == "mat4" and vec3(bToA[4], bToA[8], bToA[12]) or bToA
 		local normal, pos = colliders[b.typ][a.typ](b, a, bToA, originOfBInASpace, fast)
 		if normal then
 			if fast then
 				return true
 			end
-			normal = (aToB:subm() * normal):normalize()
-			pos = aToB * (pos or originOfBInASpace)
+			normal = (aToB.type == "mat4" and aToB:subm() * normal or normal):normalize()
+			pos = applyTransform(aToB, pos or originOfBInASpace)
 			table.insert(collisions, {normal, pos, b})
 		end
 	else
@@ -543,8 +591,11 @@ function c:collide(a, b, fast, bToA)
 	
 	--children
 	if b.children then
+		if not earlyTransform and  maySkipTransform then
+		bToA = bToA and bToA:affineMul(b.transform) or b.transform:affineMul(transformAInverse)
+	end
 		for d,s in ipairs(b.children) do
-			local done = self:collide(a, s, fast, bToA)
+			local done = self:collide(a, s, fast, bToA, aToB)
 			if done then
 				return true
 			end
@@ -564,12 +615,16 @@ function c:collide(a, b, fast, bToA)
 			
 			--transform from A to global
 			local m = getTransform(a.transform)
-			local subm = m:subm()
+			local subm = m.type == "mat4" and m:subm()
 			
 			--transform and average values
 			for d,s in ipairs(collisions) do
-				s[1] = subm * s[1]
-				s[2] = m * s[2]
+				if a.transform.type == "mat4" then
+					s[1] = a.transform:subm() * s[1]
+				end
+				
+				s[2] = applyTransform(a.transform, s[2])
+				
 				normal = normal + s[1]
 				pos = pos + s[2]
 			end
@@ -615,7 +670,7 @@ function c:print(o, indent)
 		extra = "mesh with " .. tostring(#o.faces) .. " faces"
 	end
 	
-	print(string.rep("\t", indent) .. o.typ .. " size: " .. math.floor(o.boundary*100)/100 ..  (extra and (" (" .. extra .. ")") or ""))
+	print(string.rep("\t", indent) .. o.typ .. " size: " .. math.floor(o.boundary*100)/100 .. " " .. tostring(o.transform.type) .. (extra and (" (" .. extra .. ")") or ""))
 	
 	if o.children then
 		for d,s in ipairs(o.children) do

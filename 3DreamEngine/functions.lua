@@ -247,17 +247,20 @@ end
 --get the collision data from a mesh
 --it moves the collider to its bounding box center based on its initial transform
 function lib:getCollisionData(object)
-	--its a subobject
 	local n = { }
 	
 	--data required by the collision extension
 	n.typ = "mesh"
-	n.transform = object.boundingBox and object.boundingBox.center or vec3(0, 0, 0)
 	n.boundary = 0
+	
+	--offset, a transformation will be directly applied
+	n.transform = object.boundingBox and object.boundingBox.center or vec3(0, 0, 0)
 	
 	if object.transform then
 		n.transform = object.transform * n.transform
 	end
+	
+	n.transformInverse = -n.transform
 	
 	--data
 	n.faces = { }

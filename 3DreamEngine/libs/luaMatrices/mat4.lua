@@ -497,6 +497,33 @@ metatable = {
 		return (I * (t*t*t - 3*t*t2 + 2*t3) - a * 0.5 * (t*t - t2) + a2 * t - a3) / d
 	end,
 	
+	affineAdd = function(a, b)
+		if b.type == "vec3" then
+			return mat({
+				a[1], a[2], a[3], a[4] + b[1],
+				a[5], a[6], a[7], a[8] + b[2],
+				a[9], a[10], a[11], a[12] + b[3],
+				0, 0, 0, 1
+			})
+		else
+			return mat({
+				a[1] * b[1] + a[2] * b[5] + a[3] * b[9],
+				a[1] * b[2] + a[2] * b[6] + a[3] * b[10],
+				a[1] * b[3] + a[2] * b[7] + a[3] * b[11],
+				a[1] * b[4] + a[2] * b[8] + a[3] * b[12] + a[4],
+				a[5] * b[1] + a[6] * b[5] + a[7] * b[9],
+				a[5] * b[2] + a[6] * b[6] + a[7] * b[10],
+				a[5] * b[3] + a[6] * b[7] + a[7] * b[11],
+				a[5] * b[4] + a[6] * b[8] + a[7] * b[12] + a[8],
+				a[9] * b[1] + a[10] * b[5] + a[11] * b[9],
+				a[9] * b[2] + a[10] * b[6] + a[11] * b[10],
+				a[9] * b[3] + a[10] * b[7] + a[11] * b[11],
+				a[9] * b[4] + a[10] * b[8] + a[11] * b[12] + a[12],
+				0, 0, 0, 1
+			})
+		end
+	end,
+	
 	--transformations
 	translate = function(a, x, y, z)
 		return mat:getTranslate(x, y, z) * a

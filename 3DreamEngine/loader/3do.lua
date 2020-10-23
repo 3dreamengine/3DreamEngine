@@ -117,6 +117,7 @@ return function(self, obj, path)
 			end
 			coll.point = vec3(coll.point)
 			coll.transform = #coll.transform == 16 and mat4(coll.transform) or vec3(coll.transform)
+			coll.transformInverse = #coll.transformInverse == 16 and mat4(coll.transformInverse) or vec3(coll.transformInverse)
 		end
 	end
 	convert(obj.skeleton)

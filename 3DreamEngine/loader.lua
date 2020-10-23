@@ -63,6 +63,11 @@ function lib:loadObject(path, shaderType, args)
 				if info2 and info2.modtime > info.modtime then
 					goto skip
 				end
+				
+				local info2 = love.filesystem.getInfo(obj.path .. ".dae")
+				if info2 and info2.modtime > info.modtime then
+					goto skip
+				end
 			end
 			
 			found = true

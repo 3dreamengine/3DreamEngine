@@ -155,6 +155,14 @@ metatable = {
 		return vec(math.max(a[1], b[1]), math.max(a[2], b[2]), math.max(a[3], b[3]))
 	end,
 	
+	affineAdd = function(a, b)
+		if b.type == "vec3" then
+			return vec(a[1] + b[1], a[2] + b[2], a[3] + b[3])
+		else
+			return b:affineAdd(a)
+		end
+	end,
+	
 	unpack = function(a)
 		return a[1], a[2], a[3]
 	end,
