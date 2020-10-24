@@ -911,23 +911,26 @@ canvases = newCanvasSet(set, w, h)
 
 All of the following functions have a getter too.
 ```lua
+set:setMode(renderMode)
 set:setResolution(res)
 set:setFormat(format)
 set:setDeferred(enabled)
 set:setPostEffects(enabled)
-set:setDirect(enabled)
 set:setMsaa(msaa)
 set:setFxaa(enabled)
 set:setRefractions(enabled)
 set:setAverageAlpha(enabled)
 set:setAlphaPass(enabled)
 ```
+`renderMode` String
+* `direct` fastest, very reduced features, requires set depth canvas via conf.lua. If missing it will add it, causing a short flicker, sets format to rgb8
+* `lite` fast, reduced features, does not output, but stores result on `canvases.color`, sets format to rgb8
+* `normal` full features, default, sets to rgba16f HDR canvas.
 `res (512)` resolution if not specified in `dream:newCanvasSet()`.
 `format ("rgba16f")` LÖVE pixel format.
 `enabled` features
 * deferred uses a G-Buffer and draws light as a posteffect. Large overhead, small light-performance. Future unclear.
 * post effects are effects like exposure, bloom, ... which are unwanted for temporary results (e.g. reflections)
-* direct rendering is fast and do not use any canvases. It also lacks most features (no AO, no bloom, no refractions, ...)
 * msaa is slower but more beatiful (consider hardware limit), fxaa is faster but blurry. Dont use both.
 * refractions simulate refractions for objects in the alpha pass and ior ~= 1.0
 * average alpha is slightly more heavy and simulates several objects in a row better. Depends on your scene if this makes sense.

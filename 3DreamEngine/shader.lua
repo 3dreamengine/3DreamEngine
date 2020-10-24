@@ -92,6 +92,9 @@ lib.shaders.billboard_sun = love.graphics.newShader(lib.root .. "/shaders/billbo
 --autoExposure vignette
 lib.shaders.autoExposure = love.graphics.newShader(lib.root .. "/shaders/autoExposure.glsl")
 
+--rrr1
+lib.shaders.rrr1 = love.graphics.newShader(lib.root .. "/shaders/rrr1.glsl")
+
 --clouds
 lib.shaders.clouds = love.graphics.newShader(lib.root .. "/shaders/clouds.glsl")
 
@@ -100,6 +103,10 @@ if _DEBUGMODE then
 	for d,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/debug")) do
 		lib.shaders[s:sub(1, #s-5)] = love.graphics.newShader(lib.root .. "/shaders/debug/" .. s)
 	end
+end
+
+local function earlyExposure(canvases)
+	return canvases.mode ~= "normal" or canvases.format == "rgba8"
 end
 
 --load all setting depending shaders
@@ -159,8 +166,8 @@ function lib.getFinalShader(self, canvases)
 	local parts = { }
 	parts[#parts+1] = canvases.postEffects and "#define POSTEFFECTS_ENABLED" or nil
 	parts[#parts+1] = canvases.postEffects and self.autoExposure_enabled and "#define AUTOEXPOSURE_ENABLED" or nil
-	parts[#parts+1] = canvases.postEffects and self.exposure and "#define EXPOSURE_ENABLED" or nil
-	parts[#parts+1] = canvases.postEffects and self.gamma and "#define GAMMA_ENABLED" or nil
+	parts[#parts+1] = canvases.postEffects and earlyExposure(canvases) and self.exposure and "#define EXPOSURE_ENABLED" or nil
+	parts[#parts+1] = canvases.postEffects and earlyExposure(canvases) and self.gamma and "#define GAMMA_ENABLED" or nil
 	parts[#parts+1] = canvases.postEffects and self.bloom_enabled and "#define BLOOM_ENABLED" or nil
 	
 	parts[#parts+1] = self.fog_enabled and "#define FOG_ENABLED" or nil
@@ -281,15 +288,15 @@ function lib:getShader(o, pass, canvases, light, shadows)
 			ID_settings = ID_settings + 2 ^ 2
 			table.insert(globalDefines, "#define REFRACTIONS_ENABLED")
 		end
-		if canvases.postEffects and self.exposure and (canvases.direct or canvases.format == "rgba8") then
+		if canvases.postEffects and self.exposure and earlyExposure(canvases) then
 			ID_settings = ID_settings + 2 ^ 3
 			table.insert(globalDefines, "#define EXPOSURE_ENABLED")
 		end
-		if canvases.postEffects and self.gamma and (canvases.direct or canvases.format == "rgba8") then
+		if canvases.postEffects and self.gamma and earlyExposure(canvases) then
 			ID_settings = ID_settings + 2 ^ 4
 			table.insert(globalDefines, "#define GAMMA_ENABLED")
 		end
-		if self.fog_enabled and canvases.direct then
+		if self.fog_enabled and canvases.mode ~= "normal" then
 			ID_settings = ID_settings + 2 ^ 5
 			table.insert(globalDefines, "#define FOG_ENABLED")
 		end
@@ -345,7 +352,7 @@ function lib:getShader(o, pass, canvases, light, shadows)
 		
 		if not shadows then
 			--fog engine
-			if self.fog_enabled and canvases.direct then
+			if self.fog_enabled and canvases.mode ~= "normal" then
 				code = code:gsub("#import fog", codes.fog)
 			end
 			
@@ -383,15 +390,15 @@ function lib:getParticlesShader(canvases, light, emissive, single)
 		ID_settings = ID_settings + 2^0
 		table.insert(globalDefines, "#define TEX_EMISSION")
 	end
-	if canvases.postEffects and self.exposure and (canvases.direct or canvases.format == "rgba8") then
+	if canvases.postEffects and self.exposure and earlyExposure(canvases) then
 		ID_settings = ID_settings + 2^1
 		table.insert(globalDefines, "#define EXPOSURE_ENABLED")
 	end
-	if canvases.postEffects and self.gamma and (canvases.direct or canvases.format == "rgba8") then
+	if canvases.postEffects and self.gamma and earlyExposure(canvases) then
 		ID_settings = ID_settings + 2^2
 		table.insert(globalDefines, "#define GAMMA_ENABLED")
 	end
-	if self.fog_enabled and canvases.direct then
+	if self.fog_enabled and canvases.mode ~= "normal" then
 		ID_settings = ID_settings + 2^4
 		table.insert(globalDefines, "#define FOG_ENABLED")
 	end
@@ -411,7 +418,7 @@ function lib:getParticlesShader(canvases, light, emissive, single)
 		code = code:gsub("#import globalDefines", table.concat(globalDefines, "\n"))
 		
 		--fog engine
-		if self.fog_enabled and canvases.direct then
+		if self.fog_enabled and canvases.mode ~= "normal" then
 			code = code:gsub("#import fog", codes.fog)
 		end
 		

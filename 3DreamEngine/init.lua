@@ -116,12 +116,13 @@ lib.renderSet = lib:newSetSettings()
 lib.renderSet:setPostEffects(true)
 lib.renderSet:setRefractions(true)
 lib.renderSet:setAverageAlpha(false)
+lib.renderSet:setMode("normal")
 
 lib.reflectionsSet = lib:newSetSettings()
-lib.reflectionsSet:setDirect(true)
+lib.reflectionsSet:setMode("direct")
 
 lib.mirrorSet = lib:newSetSettings()
-lib.mirrorSet:setDirect(true)
+lib.mirrorSet:setMode("lite")
 
 lib.shadowSet = lib:newSetSettings()
 
@@ -193,17 +194,17 @@ function lib.newCanvasSet(self, settings, w, h)
 	set.width = w
 	set.height = h
 	set.msaa = settings.msaa
-	set.direct = settings.direct
-	set.deferred = settings.deferred and not set.direct
-	set.postEffects = settings.postEffects
-	set.refractions = settings.alphaPass and settings.refractions and not set.direct
-	set.averageAlpha = settings.alphaPass and settings.averageAlpha and not set.direct
+	set.mode = settings.mode
+	set.deferred = settings.deferred and settings.mode ~= "direct"
+	set.postEffects = settings.postEffects and settings.mode == "normal"
+	set.refractions = settings.alphaPass and settings.refractions and settings.mode == "normal"
+	set.averageAlpha = settings.alphaPass and settings.averageAlpha and settings.mode == "normal"
 	set.format = settings.format
 	set.alphaPass = settings.alphaPass
 	
-	assert(not set.deferred or not set.direct, "Deferred rendering is not compatible with direct rendering!")
+	assert(not set.deferred or settings.mode ~= "direct", "Deferred rendering is not compatible with direct rendering!")
 	
-	if not set.direct then
+	if settings.mode ~= "direct" then
 		--depth
 		set.depth_buffer = love.graphics.newCanvas(w, h, {format = self.canvasFormats["depth32f"] and "depth32f" or self.canvasFormats["depth24"] and "depth24" or "depth16", readable = false, msaa = set.msaa})
 		
@@ -232,7 +233,7 @@ function lib.newCanvasSet(self, settings, w, h)
 	end
 	
 	--screen space ambient occlusion blurring canvases
-	if self.AO_enabled and not set.direct then
+	if self.AO_enabled and settings.mode ~= "direct" then
 		set.AO_1 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
 		if self.AO_blur then
 			set.AO_2 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
@@ -271,6 +272,7 @@ function lib.resize(self, w, h)
 	--canvases sets
 	self.canvases = self:newCanvasSet(self.renderSet, w, h)
 	self.canvases_reflections = self:newCanvasSet(self.reflectionsSet)
+	self.canvases_mirror = self:newCanvasSet(self.mirrorSet, w, h)
 	
 	--sky box
 	if self.sky_reflection == true then
@@ -285,7 +287,7 @@ end
 
 --applies settings and load canvases
 function lib.init(self, w, h)
-	if self.renderSet.direct then
+	if self.renderSet.mode == "direct" then
 		local width, height, flags = love.window.getMode()
 		if flags.depth == 0 then
 			print("Direct render is enabled, but there is no depth buffer! Using 16-bit depth from now on.")
@@ -293,7 +295,7 @@ function lib.init(self, w, h)
 		end
 	end
 	
-	if self.autoExposure_enabled and self.renderSet.direct then
+	if self.autoExposure_enabled and self.renderSet.mode == "direct" then
 		print("Autoexposure does not work with direct render! Autoexposure has been disabled.")
 		dream:setAutoExposure(false)
 	end

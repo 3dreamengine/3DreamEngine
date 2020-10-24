@@ -27,14 +27,14 @@ function lib:export3do(obj)
 	local meshCache = { }
 	
 	local header = {
-		["args"] = table.copyPrimitive(obj.args),
+		["args"] = obj.args,
 		["path"] = obj.path,
 		["dir"] = obj.dir,
 		["name"] = obj.name,
 		["boundingBox"] = obj.boundingBox,
-		["materials"] = table.copyPrimitive(obj.materials),
-		["lights"] = table.copyPrimitive(obj.lights),
-		["positions"] = table.copyPrimitive(obj.positions),
+		["materials"] = obj.materials,
+		["lights"] = obj.lights,
+		["positions"] = obj.positions,
 		["transform"] = obj.transform,
 		["collisions"] = obj.collisions,
 		["animations"] = obj.animations,

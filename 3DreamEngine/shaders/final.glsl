@@ -165,7 +165,7 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 #endif
 #endif
 	
-	return col;
+	return col * color;
 }
 #endif
 
