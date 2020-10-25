@@ -14,9 +14,12 @@ extern Image tex_position;
 extern Image tex_normal;
 extern Image tex_material;
 
+extern float translucent;
+
 vec4 effect(vec4 color, Image tex_albedo, vec2 tc, vec2 sc) {
 	vec3 vertexPos = Texel(tex_position, tc).xyz;
 	vec3 normal = normalize(Texel(tex_normal, tc).xyz);
+	vec3 normalRaw = normal;
 	vec3 material = Texel(tex_material, tc).xyz;
 	vec4 albedo = Texel(tex_albedo, tc);
 	

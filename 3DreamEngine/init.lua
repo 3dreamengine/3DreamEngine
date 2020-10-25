@@ -89,7 +89,7 @@ lib:setSmoothLoadingBufferSize(128)
 lib:setMipmaps(true)
 
 --sun
-lib:setSunOffset(0.0)
+lib:setSunOffset(0.0, 0,0)
 lib:setSunShadow(true)
 
 --weather
@@ -107,6 +107,7 @@ lib:setClouds(true)
 lib:setWind(0.005, 0.0)
 lib:setCloudsStretch(0, 20, 0)
 lib:setCloudsAnim(0.01, 0.25)
+lib:setUpperClouds(true)
 
 --auto exposure
 lib:setAutoExposure(false)

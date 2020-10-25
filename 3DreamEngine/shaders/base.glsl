@@ -37,10 +37,9 @@ extern float gamma;
 #ifdef PIXEL
 
 //shader settings
-extern bool dataAlpha;
-extern bool alphaPass;
-extern bool isSemi;
-extern bool dither;
+extern float dataAlpha;
+extern float isSemi;
+extern float dither;
 
 //reflection engine
 #import reflections
@@ -55,37 +54,34 @@ extern bool dither;
 extern float ior;
 extern float translucent;
 
+float whenLt(float x, float y) {
+	return max(sign(y - x), 0.0);
+}
+
 void effect() {
 #import mainPixelPre
 	
 	//dither alpha
-	if (alphaPass) {
-		if (isSemi) {
-			//no fully opaque or fully transparent
-			if (albedo.a <= 0.0 || albedo.a >= 0.99) {
-				discard;
-			}
-		}
-	} else {
-		if (isSemi) {
-			//only fully opaque
-			if (albedo.a < 0.99) {
-				discard;
-			}
-		} else {
-			//dither
-			if (dither) {
-				if (albedo.a <= fract(love_PixelCoord.x * 0.37 + love_PixelCoord.y * 73.73 + depth * 3.73)) {
-					discard;
-				}
-			} else {
-				if (albedo.a < 0.5) {
-					discard;
-				}
-			}
-		}
-		albedo.a = 1.0;
+#ifdef ALPHA_PASS
+	if (abs(albedo.a - 0.495) * isSemi > 0.5) {
+		discard;
 	}
+#else
+#ifdef DISCARD_ENABLED
+	if (albedo.a < mix(
+			mix(
+				0.5,
+				fract(love_PixelCoord.x * 0.37 + love_PixelCoord.y * 73.73 + depth * 3.73),
+				dither
+			),
+			0.99,
+			isSemi
+		)) {
+		discard;
+	}
+#endif
+	albedo.a = 1.0;
+#endif
 	
 	vec3 normalRaw = normalize(normalRawV);
 	vec3 viewVec = normalize(viewPos - vertexPos);
@@ -119,13 +115,8 @@ vec3 col;
 	
 	//depth check
 	float d = Texel(tex_depth, startPixel + vec).r;
-	if (d > depth) {
-		vec3 nc = Texel(tex_color, startPixel + vec).xyz;
-		col = mix(mix(nc, nc * albedo.rgb, albedo.a), col, albedo.a);
-	} else {
-		vec3 nc = Texel(tex_color, startPixel).xyz;
-		col = mix(mix(nc, nc * albedo.rgb, albedo.a), col, albedo.a);
-	}
+	vec3 nc = Texel(tex_color, startPixel + vec * whenLt(0.0, d - depth)).xyz;
+	col = mix(mix(nc, nc * albedo.rgb, albedo.a), col, albedo.a);
 #endif
 
 	//fog
@@ -152,15 +143,15 @@ vec3 col;
 #endif
 	
 	//alpha data
-	if (dataAlpha) {
+#ifdef AVERAGE_ENABLED
 #ifdef REFRACTIONS_ENABLED
 		love_Canvases[1] = vec4(1.0, 1.0, depth, 1.0);
 #else
 		love_Canvases[1] = vec4(1.0, albedo.a, depth, 1.0);
 #endif
-	} else {
-		love_Canvases[1] = vec4(depth, 1.0, 1.0, albedo.a);
-	}
+#else
+		love_Canvases[1] = vec4(depth, 0.0, 0.0, albedo.a);
+#endif
 	
 #ifdef DEFERRED
 	love_Canvases[2] = vec4(vertexPos, albedo.a);

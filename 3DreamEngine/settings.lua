@@ -287,12 +287,14 @@ end
 
 
 --set sun offset
-function lib:setSunOffset(o)
-	check(o, "number")
+function lib:setSunOffset(o, r)
+	check(o, "number", 1)
+	check(r, "number", 2)
 	self.sun_offset = o
+	self.sun_rotation = r
 end
 function lib:getSunOffset()
-	return self.sun_offset
+	return self.sun_offset, self.rotation
 end
 
 
@@ -307,7 +309,7 @@ function lib:setDaytime(time)
 	self.sky_day = time % c
 	
 	--position
-	self.sun = mat4:getRotateZ(self.sun_offset) * vec3(
+	self.sun = mat4:getRotateY(self.sun_rotation) * mat4:getRotateZ(self.sun_offset) * vec3(
 		0,
 		math.sin(self.sky_time * math.pi * 2),
 		-math.cos(self.sky_time * math.pi * 2)
@@ -471,6 +473,23 @@ function lib:setClouds(enabled, resolution, scale, amount, rotations)
 end
 function lib:getClouds()
 	return self.clouds_enabled, self.clouds_resolution, self.clouds_scale
+end
+
+
+--sets clouds and settings
+function lib:setUpperClouds(enabled, density, rotation)
+	if enabled then
+		self.clouds_upper_enabled = true
+		self.clouds_upper_density = density or 0.5
+		self.clouds_upper_rotation = rotation or 0.01
+	else
+		self.clouds_upper_enabled = false
+		self.clouds_upper_density = density or 0.0
+		self.clouds_upper_rotation = rotation or 0.01
+	end
+end
+function lib:getUpperClouds()
+	return self.clouds_upper_enabled, self.clouds_upper_density, self.clouds_upper_rotation
 end
 
 

@@ -131,9 +131,9 @@ function sh:constructPixel(dream, ID)
 			light += getLight(lightColor, viewVec, sun_shadow_vec_#ID#, normal, albedo.rgb, material.x, material.y);
 			
 			//backface light
-			if (translucent > 0.0) {
+			#ifdef TRANSLUCENT_ENABLED
 				light += getLight(lightColor, viewVec, sun_shadow_vec_#ID#, reflect(normal, normalRaw), albedo.rgb, material.x, material.y) * translucent;
-			}
+			#endif
 		}
 	]]):gsub("#ID#", ID)
 end

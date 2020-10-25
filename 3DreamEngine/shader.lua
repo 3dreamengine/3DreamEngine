@@ -288,22 +288,38 @@ function lib:getShader(o, pass, canvases, light, shadows)
 			ID_settings = ID_settings + 2 ^ 2
 			table.insert(globalDefines, "#define REFRACTIONS_ENABLED")
 		end
-		if canvases.postEffects and self.exposure and earlyExposure(canvases) then
+		if canvases.averageAlpha and pass == 2 then
 			ID_settings = ID_settings + 2 ^ 3
+			table.insert(globalDefines, "#define AVERAGE_ENABLED")
+		end
+		if canvases.postEffects and self.exposure and earlyExposure(canvases) then
+			ID_settings = ID_settings + 2 ^ 4
 			table.insert(globalDefines, "#define EXPOSURE_ENABLED")
 		end
 		if canvases.postEffects and self.gamma and earlyExposure(canvases) then
-			ID_settings = ID_settings + 2 ^ 4
+			ID_settings = ID_settings + 2 ^ 5
 			table.insert(globalDefines, "#define GAMMA_ENABLED")
 		end
 		if self.fog_enabled and canvases.mode ~= "normal" then
-			ID_settings = ID_settings + 2 ^ 5
+			ID_settings = ID_settings + 2 ^ 6
 			table.insert(globalDefines, "#define FOG_ENABLED")
+		end
+		if pass == 2 then
+			ID_settings = ID_settings + 2 ^ 7
+			table.insert(globalDefines, "#define ALPHA_PASS")
+		end
+		if pass == 1 and (mat.discard or mat.alpha or math.dither) then
+			ID_settings = ID_settings + 2 ^ 8
+			table.insert(globalDefines, "#define DISCARD_ENABLED")
+		end
+		if mat.translucent > 0 then
+			ID_settings = ID_settings + 2 ^ 9
+			table.insert(globalDefines, "#define TRANSLUCENT_ENABLED")
 		end
 	end
 	
 	--construct full ID (8 bytes light, 1 byte base, 4 bytes modules and 1 byte settings
-	local ID = ID_light .. string.char(ID_base, (ID_modules / 256^3) % 256, (ID_modules / 256^2) % 256, (ID_modules / 256^1) % 256, (ID_modules / 256^0) % 256, ID_settings)
+	local ID = ID_light .. string.char(ID_base, (ID_modules / 256^3) % 256, (ID_modules / 256^2) % 256, (ID_modules / 256^1) % 256, (ID_modules / 256^0) % 256, math.floor(ID_settings / 256), ID_settings % 256)
 	
 	if not self.mainShaders[ID] then
 		--construct shader

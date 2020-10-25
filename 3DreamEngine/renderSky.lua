@@ -31,10 +31,10 @@ function lib:renderSky(transformProj, camTransform)
 		self.shaders.sky:send("transformProj", transformProj)
 		self.shaders.sky:send("time", self.sky_time)
 		self.shaders.sky:send("sunColor", self.sun_color)
-		self.shaders.sky:send("cloudsBrightness", self.sun_color:length() * 0.5)
+		self.shaders.sky:send("cloudsBrightness", self.sun_color:length() * self.clouds_upper_density)
 		
 		self.shaders.sky:send("clouds", self.textures.clouds_top)
-		self.shaders.sky:send("cloudsTransform", mat4:getRotateY(love.timer.getTime() * 0.01):subm())
+		self.shaders.sky:send("cloudsTransform", mat4:getRotateY(love.timer.getTime() * self.clouds_upper_rotation):subm())
 		
 		self.shaders.sky:send("stars", self.textures.stars)
 		self.shaders.sky:send("starsStrength", -math.sin(self.sky_time * math.pi * 2))

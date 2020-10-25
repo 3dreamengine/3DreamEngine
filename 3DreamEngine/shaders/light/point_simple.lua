@@ -29,9 +29,9 @@ function sh:constructPixelGlobal(dream)
 			light += getLight(lightColor, viewVec, lightVec, normal, albedo.rgb, material.x, material.y);
 			
 			//backface light
-			if (translucent > 0.0) {
+			#ifdef TRANSLUCENT_ENABLED
 				light += getLight(lightColor, viewVec, lightVec, reflect(normal, normalRaw), albedo.rgb, material.x, material.y) * translucent;
-			}
+			#endif
 		}
 	]])
 end

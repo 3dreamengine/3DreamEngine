@@ -95,7 +95,7 @@ function lib:buildScene(cam, canvases, typ, blacklist)
 													end
 												end
 											end
-										else
+										elseif task.s.request then
 											task.s:request()
 										end
 									end
@@ -186,9 +186,6 @@ function lib:render(scene, canvases, cam)
 			self.delton:start("shader")
 			local shader = shaderObject.shader
 			
-			--pass
-			shader:send("alphaPass", pass == 2)
-			
 			--output settings
 			love.graphics.setShader(shader)
 			if shader:hasUniform("dataAlpha") then
@@ -241,11 +238,15 @@ function lib:render(scene, canvases, cam)
 					self.delton:start("material")
 					
 					--alpha
-					shader:send("isSemi", canvases.alphaPass and material.solid and material.alpha or false)
-					if material.dither == nil then
-						shader:send("dither", self.dither)
-					else
-						shader:send("dither", material.dither)
+					if shader:hasUniform("isSemi") then
+						shader:send("isSemi", canvases.alphaPass and material.solid and material.alpha and 1 or 0)
+					end
+					if shader:hasUniform("dither") then
+						if material.dither == nil then
+							shader:send("dither", self.dither and 1 or 0)
+						else
+							shader:send("dither", material.dither and 1 or 0)
+						end
 					end
 					
 					--ior
@@ -254,7 +255,7 @@ function lib:render(scene, canvases, cam)
 					end
 					
 					if shader:hasUniform("translucent") then
-						shader:send("translucent", material.alpha and 1.0 or material.translucent)
+						shader:send("translucent", material.translucent)
 					end
 					
 					--shader
@@ -351,9 +352,13 @@ function lib:render(scene, canvases, cam)
 					shader:send("tex_position", canvases.position)
 					shader:send("tex_normal", canvases.normal)
 					shader:send("tex_material", canvases.material)
+					
+					if shader:hasUniform("translucent") then
+						shader:send("translucent", 0.0)
+					end
 				end
 				
-				lib:sendLightUniforms(batch, {[batch.typ] = #batch}, shader, batch.typ)
+				lib:sendLightUniforms({lights = batch, types = {[batch.typ] = #batch}}, shader, batch.typ)
 				love.graphics.draw(canvases.albedo)
 			end
 			love.graphics.setBlendMode("alpha")
@@ -373,7 +378,6 @@ function lib:render(scene, canvases, cam)
 			love.graphics.setShader(shader)
 			
 			shader:send("transformProj", cam.transformProj)
-			shader:send("dataAlpha", canvases.averageAlpha)
 			if shader:hasUniform("viewPos") then shader:send("viewPos", {cam.pos:unpack()}) end
 			if shader:hasUniform("gamma") then shader:send("gamma", self.gamma) end
 			if shader:hasUniform("exposure") then shader:send("exposure", self.exposure) end

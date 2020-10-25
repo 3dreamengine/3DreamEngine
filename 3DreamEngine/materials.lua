@@ -16,6 +16,7 @@ function lib:newMaterial(name, dir)
 		metallic = 0.0,
 		solid = true,
 		alpha = false,
+		discard = false,
 		name = name or "None",        --name, used for texture linking
 		dir = dir,                    --directory, used for texture linking
 		ior = 1.0,

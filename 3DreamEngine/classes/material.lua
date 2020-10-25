@@ -4,6 +4,7 @@ return {
 	setterGetter = {
 		alpha = "boolean",
 		solid = "boolean",
+		discard = "boolean",
 		translucent = "number",
 		cullMode = "string",
 		

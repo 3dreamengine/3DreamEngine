@@ -84,9 +84,9 @@ function sh:constructPixel(dream, ID)
 			light += getLight(lightColor, viewVec, nLightVec, normal, albedo.rgb, material.x, material.y);
 			
 			//backface light
-			if (translucent > 0.0) {
+			#ifdef TRANSLUCENT_ENABLED
 				light += getLight(lightColor, viewVec, nLightVec, reflect(normal, normalRaw), albedo.rgb, material.x, material.y) * translucent;
-			}
+			#endif
 		}
 	]]):gsub("#ID#", ID)
 end
@@ -115,7 +115,7 @@ function sh:sendGlobalUniforms(dream, shaderObject)
 end
 
 function sh:sendUniforms(dream, shaderObject, light, ID)
-	local shader = shaderObject.shader
+	local shader = shaderObject.shader or shaderObject
 	
 	if light.shadow.canvas then
 		if light.smooth == nil then

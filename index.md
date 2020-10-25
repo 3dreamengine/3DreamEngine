@@ -421,10 +421,11 @@ direction = dream:getSunDir()
 <br />
 
 ```lua
-dream:setSunOffset(offset)
-offset = dream:getSunOffset()
+dream:setSunOffset(offset, rotation)
+offset, rotation = dream:getSunOffset()
 ```
-`offset` offset where 0 is the equator and 1 the north pole when using 'dream:setDaytime()'.  
+`offset` offset where 0 is the equator and 1 the north pole when using 'dream:setDaytime()'  
+`rotation` the rotation on the Y axis  
 
 
 
@@ -520,6 +521,8 @@ size, position = dream:setCloudsAnim()
 `size (0.01)` randomize size speed  
 `position (0.25)` randomize position speed  
 
+<br />
+
 ```lua
 dream:setCloudsStretch(stretch, stretch_wind, angle)
 stretch, stretch_wind, angle = dream:getCloudsStretch()
@@ -527,6 +530,16 @@ stretch, stretch_wind, angle = dream:getCloudsStretch()
 `stretch` stretch strength  
 `stretch_wind` stretch strength based on wind  
 `angle` angle offset  
+
+<br />
+
+```lua
+dream:setUpperClouds(enabled, density, rotation)
+enabled, density, rotation = dream:setUpperClouds()
+```
+`enabled (true)`   
+`density (0.5)` density multiplier  
+`rotation (0.01)` rotation effect  
 
 
 
@@ -641,7 +654,7 @@ self:setVisibility()
 self:setVisibility(render, shadow, reflections)
 render, shadow, reflections = self:setVisibility()
 ```
-`render` enabled in efault render pass  
+`render` enabled in default render pass  
 `shadow` enabled in shadow render pass  
 `reflections` enabled in reflections render pass 
 
@@ -678,7 +691,7 @@ Extends `clone`, 'transform', 'visibility', 'shader'
 
 Subobjects from 3DO files are loaded threaded and may not be loaded yet when using. They will not cause troubles, just wont render. Requesting an object happens automatically if not disabled in `dream:loadObject()` or via `request()`. If tried to render it also requests automatically. You can yield with `wait()` until everything has been loaded.
 ```lua
-laoded = self:isLoaded()
+loaded = self:isLoaded()
 self:request()
 self:wait()
 ```

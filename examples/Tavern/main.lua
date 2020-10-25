@@ -8,6 +8,11 @@ love.window.setVSync(false)
 local projectDir = "examples/Tavern/"
 dream:setNameDecoder()
 
+dream.renderSet:setRefractions(true)
+
+--dream.renderSet:setDeferred(true)
+--dream:setDeferredShaderType("PBR")
+
 dream:setSky(false)
 dream:setReflection(cimg:load(projectDir .. "sky.cimg"))
 
