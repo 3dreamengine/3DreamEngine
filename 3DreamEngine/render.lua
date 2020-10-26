@@ -138,7 +138,7 @@ function lib:render(scene, canvases, cam)
 	if canvases.mode ~= "direct" then
 		love.graphics.setCanvas(canvases.color)
 	end
-	self:renderSky(cam.transformProjOrigin, cam.transform)
+	self:renderSky(cam.transformProjOrigin, cam.transform, (cam.near + cam.far) / 2)
 	
 	--clear
 	if mode ~= "direct" then

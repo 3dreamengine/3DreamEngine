@@ -4,7 +4,9 @@
 
 local lib = _3DreamEngine
 
-function lib:renderSky(transformProj, camTransform)
+function lib:renderSky(transformProj, camTransform, transformScale)
+	transformProj = transformProj * mat4:getScale(transformScale or 500)
+	
 	love.graphics.push("all")
 	if not self.sky_texture then
 		love.graphics.clear()
@@ -52,9 +54,9 @@ function lib:renderSky(transformProj, camTransform)
 		
 		--moon
 		for sunMoon = 1, 2 do
-			local distance = sunMoon == 1 and 4.0 or (2.0 + math.sin(self.sky_time * math.pi * 2.0))
-			local right = vec3(camTransform[1], camTransform[2], camTransform[3]):normalize()
-			local up = vec3(camTransform[5], camTransform[6], camTransform[7])
+			local size = sunMoon == 1 and 0.5 or 1 / (2.0 - math.sin(self.sky_time * math.pi * 2.0))
+			local right = vec3(camTransform[1], camTransform[2], camTransform[3]):normalize() * size
+			local up = vec3(camTransform[5], camTransform[6], camTransform[7]) * size
 			
 			if sunMoon == 1 then
 				local moon = self:getTexture(self.textures.moon)
@@ -70,7 +72,7 @@ function lib:renderSky(transformProj, camTransform)
 					shader:send("transformProj", transformProj)
 					shader:send("up", {up:unpack()})
 					shader:send("right", {right:unpack()})
-					shader:send("InstanceCenter", {(-self.sun*distance):unpack()})
+					shader:send("InstanceCenter", {(-self.sun):unpack()})
 					shader:send("sun", {math.cos(self.sky_day / 30 * math.pi * 2), math.sin(self.sky_day / 30 * math.pi * 2), 0})
 					shader:send("normalTex", moon_normal)
 					
@@ -89,7 +91,7 @@ function lib:renderSky(transformProj, camTransform)
 					shader:send("transformProj", transformProj)
 					shader:send("up", {up:unpack()})
 					shader:send("right", {right:unpack()})
-					shader:send("InstanceCenter", {(self.sun*distance):unpack()})
+					shader:send("InstanceCenter", {(self.sun):unpack()})
 					
 					self.object_plane.objects.Plane.mesh:setTexture(sun)
 				end

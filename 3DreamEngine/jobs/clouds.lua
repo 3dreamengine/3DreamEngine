@@ -28,6 +28,7 @@ end
 function job:init()
 	spritebatch = nil
 	lib.cloudCanvas = love.graphics.newCanvas(lib.clouds_resolution, lib.clouds_resolution, {format = "r8"})
+	lib.cloudCanvas:setWrap("repeat")
 end
 
 function job:queue(times)

@@ -1,5 +1,3 @@
-//transformations
-extern highp mat4 transformProj;
 varying highp vec3 vertexPos;
 
 #ifdef PIXEL
@@ -31,14 +29,13 @@ vec4 effect(vec4 c, Image tex, vec2 tc, vec2 sc) {
 	
 	//density
 	float density = cloud * base * pos.y;
-	density = 1.0 - exp(-density);
 	
 	//direct sun
 	float directDot = max(dot(sunVec, dir), 0.0);
 	float direct = pow(directDot, 2.0 + density * 10.0) * sunStrength * max(0.0, 1.0 - dir.y);
 	
 	//color
-	vec3 color = mix(sunColor + direct * sunColor, ambientColor, density) * (0.6 + roughness * 0.8);
+	vec3 color = mix(sunColor + direct * sunColor, ambientColor, 1.0 - exp(-density)) * (0.3 + roughness * 0.4);
 	
 	return vec4(color, density);
 }
@@ -46,6 +43,8 @@ vec4 effect(vec4 c, Image tex, vec2 tc, vec2 sc) {
 
 
 #ifdef VERTEX
+extern highp mat4 transformProj;
+
 vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	vertexPos = vertex_position.xyz;
 	return transformProj * vertex_position;
