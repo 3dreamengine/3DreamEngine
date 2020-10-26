@@ -57,6 +57,7 @@ end
 
 --add tangents to a 3Dream vertex format
 --x, y, z, shaderData, nx, ny, nz, materialID, u, v, tx, ty, tz, btx, bty, btz
+local empty = {0, 0, 0}
 function lib:calcTangents(o)
 	o.tangents = { }
 	for i = 1, #o.vertices do
@@ -65,14 +66,14 @@ function lib:calcTangents(o)
 	
 	for i,f in ipairs(o.faces) do
 		--vertices
-		local v1 = o.vertices[f[1]]
-		local v2 = o.vertices[f[2]]
-		local v3 = o.vertices[f[3]]
+		local v1 = o.vertices[f[1]] or empty
+		local v2 = o.vertices[f[2]] or empty
+		local v3 = o.vertices[f[3]] or empty
 		
 		--tex coords
-		local uv1 = o.texCoords[f[1]]
-		local uv2 = o.texCoords[f[2]]
-		local uv3 = o.texCoords[f[3]]
+		local uv1 = o.texCoords[f[1]] or empty
+		local uv2 = o.texCoords[f[2]] or empty
+		local uv3 = o.texCoords[f[3]] or empty
 		
 		local tangent = { }
 		
