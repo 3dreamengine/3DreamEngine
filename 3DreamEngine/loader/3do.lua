@@ -50,8 +50,6 @@ return function(self, obj, path)
 	obj.args.noParticleSystem = true
 	obj.args.noMesh = true
 	obj.args.export3do = false
-	obj.args.centerMass = false
-	obj.args.grid = false
 	
 	obj.DO_dataOffset = 12 + headerLength
 	obj.DO_compressed = compressed

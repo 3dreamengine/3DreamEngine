@@ -97,13 +97,11 @@ yourObject = dream:loadObject(path, shaderType, args)
 
 * `textures` location for textures, use "dir/" to specify diretcory, "file" to specify "file_albedo", "file_roughness", ...  
 * `splitMaterials` if a single mesh has different textured materials, it has to be split into single meshes. splitMaterials does this automatically.
-* `grid` grid moves all vertices in a way that 0, 0, 0 is the floored origin with an maximal overhang of 0.25 units.
 * `noMesh` load vertex information but do not create a final mesh - template objects etc
 * `noParticleSystem` prevent the particle system from being generated
-* `cleanup`the level of cleanup after the objects have been loaded. false deloads * `nothing. nil (default) deloads all buffers except faces and vertex positions. true deloads * `everything.
+* `cleanup` the level of cleanup after the objects have been loaded. false deloads * `nothing. nil (default) deloads all buffers except faces and vertex positions. true deloads * `everything.
 * `export3do`loads the object as usual, then export the entire object inclusive * `animations, collisions, positions and similar as a 3DO file. See 3DO chapter for use cases
 * `export3doVertices`vertices are not included by default, since they are bulky and unecessary unless converting an object to a collision. While not recommended, you can force vertices and edge data to be included.
-centerMass` normalize the center of mass (vertice mass) to its origin
 * `mergeObjects` merge all object into one
 * `animations` when using COLLADA format, split the animation into {key = {from, to}}, where from and to are timestamps in seconds
 

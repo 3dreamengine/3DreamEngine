@@ -146,66 +146,6 @@ function lib:loadObject(path, shaderType, args)
 		end
 	end
 	
-	--grid moves all vertices in a way that 0, 0, 0 is the floored origin with an maximal overhang of 0.25 units.
-	if obj.args.grid then
-		for d,o in pairs(obj.objects) do
-			local minX, minY, minZ
-			for i,v in ipairs(o.vertices) do
-				minX = math.min(minX or v[1], v[1])
-				minY = math.min(minY or v[2], v[2])
-				minZ = math.min(minZ or v[3], v[3])
-			end
-			
-			o.x = math.floor((minX or 0) + 0.25)
-			o.y = math.floor((minY or 0) + 0.25)
-			o.z = math.floor((minZ or 0) + 0.25)
-			
-			for i,v in ipairs(o.vertices) do
-				v[1] = v[1] - o.x
-				v[2] = v[2] - o.y
-				v[3] = v[3] - o.z
-			end
-		end
-	end
-	
-	--move object to its center of vertice mass
-	if obj.args.centerMass then
-		for d,o in pairs(obj.objects) do
-			if not (d:sub(1, 10) == "COLLISION_" and obj.objects[d:sub(11)]) then
-				local x, y, z = 0, 0, 0
-				for i,v in ipairs(o.vertices) do
-					x = x + v[1]
-					y = y + v[2]
-					z = z + v[3]
-				end
-				
-				local c = #o.vertices
-				o.cx = x / c
-				o.cy = y / c
-				o.cz = z / c
-				
-				for i,v in ipairs(o.vertices) do
-					o.vertices[i] = {v[1] - o.cx, v[2] - o.cy, v[3] - o.cz}
-				end
-			end
-		end
-	end
-	
-	--use mass center of collisions actual mesh
-	if obj.args.centerMass then
-		for d,o in pairs(obj.objects) do
-			if d:sub(1, 10) == "COLLISION_" and obj.objects[d:sub(11)] then
-				local o2 = obj.objects[d:sub(11)]
-				o.cx = o2.cx
-				o.cy = o2.cy
-				o.cz = o2.cz
-				for i,v in ipairs(o.vertices) do
-					o.vertices[i] = {v[1] - o.cx, v[2] - o.cy, v[3] - o.cz}
-				end
-			end
-		end
-	end
-	
 	
 	--create particle systems
 	if not obj.args.noParticleSystem then
@@ -213,7 +153,7 @@ function lib:loadObject(path, shaderType, args)
 	end
 	
 	
-	--remove empty objects
+	--remove empty objects (second pass)
 	for d,s in pairs(obj.objects) do
 		if s.vertices and #s.vertices == 0 then
 			obj.objects[d] = nil
