@@ -308,7 +308,7 @@ function lib:getShader(o, pass, canvases, light, shadows)
 			ID_settings = ID_settings + 2 ^ 7
 			table.insert(globalDefines, "#define ALPHA_PASS")
 		end
-		if pass == 1 and (mat.discard or mat.alpha or math.dither) then
+		if pass == 1 and (mat.discard or mat.alpha or mat.dither or self.dither) then
 			ID_settings = ID_settings + 2 ^ 8
 			table.insert(globalDefines, "#define DISCARD_ENABLED")
 		end

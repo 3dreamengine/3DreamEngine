@@ -54,6 +54,7 @@
   * [object](#object-1) -
   [subobject](#subobject) -
   [material](#material)
+- [transparency](#transparency)
 - [Shaders](#shaders)
   * [built-in shader modules](#built-in-shader-modules)
     + [rain](#rain) -
@@ -939,10 +940,12 @@ set:setAlphaPass(enabled)
 * `direct` fastest, very reduced features, requires set depth canvas via conf.lua. If missing it will add it, causing a short flicker, sets format to rgb8
 * `lite` fast, reduced features, does not output, but stores result on `canvases.color`, sets format to rgb8
 * `normal` full features, default, sets to rgba16f HDR canvas.
-`res (512)` resolution if not specified in `dream:newCanvasSet()`.
-`format ("rgba16f")` LÖVE pixel format.
-`enabled` features
-* deferred uses a G-Buffer and draws light as a posteffect. Large overhead, small light-performance. Future unclear.
+
+`res (512)` resolution if not specified in `dream:newCanvasSet()`.  
+`format ("rgba16f")` LÖVE pixel format.  
+
+`enabled` features:
+* deferred uses a G-Buffer and draws light as a posteffect. Large overhead, small light-performance. Future unclear. Might get removed.
 * post effects are effects like exposure, bloom, ... which are unwanted for temporary results (e.g. reflections)
 * msaa is slower but more beatiful (consider hardware limit), fxaa is faster but blurry. Dont use both.
 * refractions simulate refractions for objects in the alpha pass and ior ~= 1.0
@@ -999,14 +1002,37 @@ material:metallicTex(tex)
 
 
 ### transparent materials
-You have to tell the engine how to render this material. Alpha enabled will use the second pass. Solid enabloed the first pass. Both can be enabled and makes sense for materials containing both full alpha parts and semi transparent parts. Translucent puts light on the backside. Settings translucent via the functions also sets the cullmode to none.
+You have to tell the engine how to render this material.  
+`Alpha` enabled will use the second pass.
+`Solid` enabled the first pass. Both can be enabled and makes sense for materials containing both full alpha parts and semi transparent parts.  
+`Translucent` puts light on the backside. Settings translucent via the functions also sets the cullmode to none.  
+`Discard` is required if the texture contains an alpha channel. It is always enabled if alpha is set to true (something else would not make sense) or if dithering is enabled. Discard is slow on some systems, especially slowing down direct rendering.
 ```lua
 material:setAlpha(enabled)
 material:setSolid(enabled)
+material:setDiscard(enabled)
 material:setTranslucent(value)
 material:cullMode(cullmode)
 ```
 `cullmode` LÖVE cullmode ("none", "back")  
+
+
+
+# transparency
+To make transparency possible, a few features have to be enabled. Enabling them by default would be slow, so this has to be done manually.  
+There are two render passes. The first, with depth writing, only render fully solid materials. The second pass render transparent materials.    
+
+* Does the material contain no solid alpha? -> `material:setSolid(false)` (by default enabled)
+* Does the material contain smooth alpha (values between 0 and 1)? -> `material:setAlpha(true)` (by default disabled)
+* Does the material contain any alpha? -> `material:setDiscard(true)` (by default disabled, `alpha=true` enables this automatically)
+
+Additionally, if your scene contains a lot of transparent materials and the rather limited sorting of the alpha pass fails, enable average alpha mode. This is an approximation of correct alpha blending and may look better.  
+`dream.renderSet:setAverageAlpha(true)`
+
+
+See their respective chapters for detailed information.
+* [transparent materials](#transparent-materials)
+* [setSettings](#setsettings)
 
 
 

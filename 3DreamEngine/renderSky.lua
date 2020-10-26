@@ -47,8 +47,8 @@ function lib:renderSky(transformProj, camTransform)
 		self.shaders.sky:send("rainbowDir", {self.rainbow_dir:unpack()})
 		
 		love.graphics.setColor(self.sky_color:unpack())
-		self.object_sky.objects.Sphere.mesh:setTexture(self.textures.sky)
-		love.graphics.draw(self.object_sky.objects.Sphere.mesh)
+		self.object_cube.objects.Cube.mesh:setTexture(self.textures.sky)
+		love.graphics.draw(self.object_cube.objects.Cube.mesh)
 		
 		--moon
 		for sunMoon = 1, 2 do

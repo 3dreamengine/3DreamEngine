@@ -27,6 +27,10 @@
 ![screenshots](https://raw.githubusercontent.com/3dreamengine/3DreamEngine/master/screenshots.jpg)
 
 
+# documentation
+[Documentation hosted on GitHub](https://3dreamengine.github.io/3DreamEngine/)
+
+
 # How to use?
 ```lua
 --load 3DreamEngine
@@ -70,9 +74,6 @@ function love.update()
   dream:update()
 end
 ```
-
-# documentation
-[Documentation hosted on GitHub](https://3dreamengine.github.io/3DreamEngine/)
 
 # Examples
 We have examples in the examples folder. The provided main.lua contains a demo selection.
