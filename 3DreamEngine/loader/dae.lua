@@ -383,11 +383,13 @@ return function(self, obj, path)
 	
 	local function addObject(name, mesh, transform)
 		for _,subObject in ipairs(meshData[mesh]) do
+			local id = name
 			if obj.args.splitMaterials then
-				name = name .. "_" .. subObject.material.name
+				id = id .. "_" .. subObject.material.name
 			end
-			obj.objects[name] = subObject:clone()
-			obj.objects[name].transform = correction * transform
+			obj.objects[id] = subObject:clone()
+			obj.objects[id].name = name
+			obj.objects[id].transform = correction * transform
 		end
 	end
 	

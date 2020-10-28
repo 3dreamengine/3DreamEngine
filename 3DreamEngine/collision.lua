@@ -225,7 +225,7 @@ function c:newMesh(object, transform)
 	elseif object.point then
 		--this is a collision object, wrap it into a group
 		setmetatable(object, {__index = c.meta_basic})
-		local g = self:newGroup(transform)
+		local g = self:newGroup(object.groupTransform or transform)
 		g:add(object)
 		return g
 	elseif object.collisions then
@@ -526,13 +526,13 @@ function c:collide(a, b, fast, bToA, aToB)
 			bToA = transformAInverse:affineAdd(a.children[1].transformInverse)
 			a = a.children[1]
 		else
-			aToB = a.transform
-			bToA = a.transformInverse
+			aToB = getTransform(a.transform)
+			bToA = getTransform(a.transformInverse)
 		end
 	end
 	
-	--transform
-	aToB = aToB:affineAdd(b.transformInverse)
+	--aToB = getTransform(b.transformInverse) * aToB
+	aToB = b.transformInverse:affineAdd(aToB)
 	
 	local earlyTransform = b.center and a.typ == "segment"
 	if earlyTransform then
@@ -591,9 +591,9 @@ function c:collide(a, b, fast, bToA, aToB)
 	
 	--children
 	if b.children then
-		if not earlyTransform and  maySkipTransform then
-		bToA = bToA and bToA:affineMul(b.transform) or b.transform:affineMul(transformAInverse)
-	end
+		if not earlyTransform and maySkipTransform then
+			bToA = bToA:affineAdd(b.transform)
+		end
 		for d,s in ipairs(b.children) do
 			local done = self:collide(a, s, fast, bToA, aToB)
 			if done then

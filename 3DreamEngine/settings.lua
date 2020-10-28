@@ -165,7 +165,7 @@ function lib:setBloom(quality, resolution, size, strength)
 		self.bloom_enabled = true
 		self.bloom_quality = quality
 		self.bloom_resolution = resolution or 0.5
-		self.bloom_size = size or 0.075
+		self.bloom_size = size or 0.1
 		self.bloom_strength = strength or 1.0
 	else
 		self.bloom_enabled = false

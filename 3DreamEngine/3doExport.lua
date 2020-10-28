@@ -53,12 +53,18 @@ function lib:export3do(obj)
 			["material"] = o.material.name,
 			["boundingBox"] = table.copyPrimitive(o.boundingBox),
 			["transform"] = o.transform,
-			["jointIDs"] = o.jointIDs,
-			["weights"] = o.weights,
 			["joints"] = o.joints,
+			["linked"] = o.linked,
 		}
 		
-		if obj.args.export3doVertices then
+		--additional data
+		if not o.linked then
+			h["weights"] = o.weights
+			h["jointIDs"] = o.jointIDs
+		end
+		
+		--extended data
+		if obj.args.export3doVertices and not o.linked then
 			h["vertices"] = o.vertices
 			h["edges"] = o.edges
 			h["faces"] = o.faces
@@ -66,7 +72,7 @@ function lib:export3do(obj)
 		
 		header.objects[d] = h
 		
-		if o.mesh then
+		if o.mesh and not o.linked then
 			if meshCache[o.mesh] then
 				h.vertexCount = meshCache[o.mesh].vertexCount
 				h.vertexMap = meshCache[o.mesh].vertexMap

@@ -114,6 +114,9 @@ return function(self, obj, path)
 				coll.normals[i] = vec3(n)
 			end
 			coll.point = vec3(coll.point)
+			if coll.groupTransform then
+				coll.groupTransform = mat4(coll.groupTransform)
+			end
 			coll.transform = #coll.transform == 16 and mat4(coll.transform) or vec3(coll.transform)
 			coll.transformInverse = #coll.transformInverse == 16 and mat4(coll.transformInverse) or vec3(coll.transformInverse)
 		end

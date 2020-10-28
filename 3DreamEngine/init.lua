@@ -61,6 +61,8 @@ lib.canvasFormats = love.graphics and love.graphics.getCanvasFormats() or { }
 
 --default material library
 lib.materialLibrary = { }
+lib.objectLibrary = { }
+lib.collisionLibrary = { }
 
 --default settings
 lib:setAO(32, 0.75, false)

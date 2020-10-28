@@ -499,11 +499,12 @@ metatable = {
 	
 	affineAdd = function(a, b)
 		if b.type == "vec3" then
+			do return a * mat4:getTranslate(b) end
 			return mat({
-				a[1], a[2], a[3], a[4] + b[1],
-				a[5], a[6], a[7], a[8] + b[2],
-				a[9], a[10], a[11], a[12] + b[3],
-				0, 0, 0, 1
+				a[1] * b[1], a[2] * b[2], a[3] * b[3], a[4],
+				a[5] * b[1], a[6] * b[2], a[7] * b[3], a[8],
+				a[9] * b[1], a[10] * b[2], a[11] * b[3], a[12],
+				a[13] * b[1], a[14] * b[6], a[15] * b[11], a[16],
 			})
 		else
 			return mat({

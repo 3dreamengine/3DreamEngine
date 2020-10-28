@@ -15,6 +15,91 @@ local function newBoundaryBox()
 	}
 end
 
+local function removePostfix(t)
+	local v = t:match("(.*)%.[^.]+")
+	return v or t
+end
+
+local function clone(t)
+	local n = { }
+	for d,s in pairs(t) do
+		n[d] = s
+	end
+	return n
+end
+
+--adapt the transform to the original object 
+local function moveToMaster(obj, o)
+	if obj.args.loadAsLibrary then
+		local oo
+		local search = removePostfix(o.name)
+		for d,s in pairs(obj.objects) do
+			if s.name == search and o ~= s then
+				oo = s
+				break
+			end
+		end
+		if oo and oo.transform and o.transform then
+			local t = oo.transform:invert() * o.transform
+			o.transform = oo.transform
+			
+			--transform vertices
+			for d,s in ipairs(o.vertices) do
+				o.vertices[d] = {(t * vec3(s)):unpack()}
+			end
+			
+			--transform normals
+			local tn = t:subm()
+			for d,s in ipairs(o.normals) do
+				o.normals[d] = {(tn * vec3(s)):unpack()}
+			end
+		end
+	end
+end
+
+--add to object library instead
+function lib:loadLibrary(path, shaderType, args, prefix)
+	if type(shaderType) == "table" then
+		return self:loadLibrary(path, shaderType and shaderType.shaderType, shaderType)
+	end
+	args = args or { }
+	args.shaderType = shaderType or args.shaderType
+	
+	prefix = prefix or ""
+	
+	args.no3doRequest = true
+	args.loadAsLibrary = true
+	
+	--load
+	local obj = self:loadObject(path, shaderType, args)
+	
+	--insert into library
+	local overwritten = { }
+	for name,o in pairs(obj.objects) do
+		local id = prefix .. o.name
+		if not overwritten[id] then
+			overwritten[id] = true
+			self.objectLibrary[id] = { }
+		end
+		
+		table.insert(self.objectLibrary[id], o)
+	end
+	
+	--insert collisions intro library
+	local overwritten = { }
+	if obj.collisions then
+		for name,c in pairs(obj.collisions) do
+			local id = removePostfix(prefix .. name)
+			if not overwritten[id] then
+				overwritten[id] = true
+				self.collisionLibrary[id] = { }
+			end
+			
+			table.insert(self.collisionLibrary[id], c)
+		end
+	end
+end
+
 --loads an object
 --args is a table containing additional settings
 --path is the absolute path without extension
@@ -97,37 +182,38 @@ function lib:loadObject(path, shaderType, args)
 	
 	
 	--remove empty objects
-	for d,s in pairs(obj.objects) do
-		if s.vertices and #s.vertices == 0 then
+	for d,o in pairs(obj.objects) do
+		if o.vertices and #o.vertices == 0 and not o.linked then
 			obj.objects[d] = nil
 		end
 	end
 	
 	
 	--extract positions
-	for d,s in pairs(obj.objects) do
-		local pos = s.name:find("POS_")
-		if pos then
+	for d,o in pairs(obj.objects) do
+		if o.name:sub(1, 4) == "POS_" then
+			--average position
 			local x, y, z = 0, 0, 0
-			for i,v in ipairs(s.vertices) do
+			for i,v in ipairs(o.vertices) do
 				x = x + v[1]
 				y = y + v[2]
 				z = z + v[3]
 			end
-			local c = #s.vertices
+			local c = #o.vertices
 			x = x / c
 			y = y / c
 			z = z / c
 			
+			--average size
 			local r = 0
-			for i,v in ipairs(s.vertices) do
+			for i,v in ipairs(o.vertices) do
 				r = r + math.sqrt((v[1] - x)^2 + (v[2] - y)^2 + (v[3] - z)^2)
 			end
 			r = r / c
 			
-			local stop = s.name:find(".", pos, true)
+			--add position
 			obj.positions[#obj.positions+1] = {
-				name = s.name:sub(pos+4, stop and (stop - 1) or #s.name),
+				name = removePostfix(o.name:sub(5)),
 				size = r,
 				x = x,
 				y = y,
@@ -140,9 +226,82 @@ function lib:loadObject(path, shaderType, args)
 	
 	--disable objects
 	for d,o in pairs(obj.objects) do
-		local pos = o.name:find("DISABLED")
-		if pos then
+		if o.name:sub(1, 9) == "DISABLED_" then
 			o.disabled = true
+		end
+	end
+	
+	
+	--link objects
+	local linkNr = 0
+	local linkNrC = 0
+	for d,o in pairs(obj.objects) do
+		if o.linked and o.obj == obj or o.name:sub(1, 5) == "LINK_" then
+			local id = o.linked or removePostfix(o.name:sub(6))
+			local lo = self.objectLibrary[id]
+			assert(lo, "linked object " .. id .. " is not in the object library!")
+			
+			--remove original
+			obj.objects[d] = nil
+			
+			--link
+			for d,no in ipairs(lo) do
+				linkNr = linkNr + 1
+				local co = self:newLinkedObject(no)
+				co.transform = o.transform
+				co.linked = id
+				obj.objects["link_" .. linkNr .. "_" .. no.name] = co
+			end
+			
+			--link collisions
+			local lc = self.collisionLibrary[id]
+			if lc then
+				obj.collisions = obj.collisions or { }
+				for d,no in ipairs(lc) do
+					linkNrC = linkNrC + 1
+					local co = clone(no)
+					co.groupTransform = o.transform
+					co.linked = id
+					obj.collisions["link_" .. linkNrC .. "_" .. d] = co
+				end
+			end
+		end
+	end
+	
+	
+	--LOD detection
+	local groups = { }
+	for d,o in pairs(obj.objects) do
+		if o.name:sub(1, 4) == "LOD_" then
+			local nr = tonumber(o.name:sub(5, 5))
+			assert(nr, "LOD nr malformed: " .. o.name)
+			
+			o.name = o.name:sub(7)
+			o.LODnr = nr
+			groups[o.name] = math.max(groups[o.name] or 1, nr)
+			
+			moveToMaster(obj, o)
+		end
+	end
+	
+	--apply LOD level
+	for d,o in pairs(obj.objects) do
+		if groups[o.name] then
+			local levels = groups[o.name]
+			local nr = o.LODnr or 0
+			
+			---o:setLOD(nr / levels, nr < levels and (nr + 1) / levels)
+		end
+	end
+	
+	
+	--shadow only detection
+	local groups = { }
+	for d,o in pairs(obj.objects) do
+		if o.name:sub(1, 7) == "SHADOW_" then
+			o.name = o.name:sub(8)
+			o:setVisibility(false, true, false)
+			moveToMaster(obj, o)
 		end
 	end
 	
@@ -167,13 +326,7 @@ function lib:loadObject(path, shaderType, args)
 		local total = 0
 		for d,s in pairs(obj.objects) do
 			total = total + 1
-			if s.boundingBox then
-				--convert loaded boundaries (e.g. .3do files)
-				s.boundingBox.first = vec3(s.boundingBox.first)
-				s.boundingBox.second = vec3(s.boundingBox.first)
-				s.boundingBox.dimensions = vec3(s.boundingBox.first)
-				s.boundingBox.center = vec3(s.boundingBox.first)
-			else
+			if not s.boundingBox then
 				s.boundingBox = newBoundaryBox()
 				
 				--scan all vertices
@@ -201,15 +354,24 @@ function lib:loadObject(path, shaderType, args)
 	
 	
 	--extract collisions
-	for dd,s in pairs(obj.objects) do
-		local pos = dd:find("COLLISION")
-		if pos then
-			local d = #dd:sub(pos + 10) == 0 and "collision" or dd:sub(pos + 10)
-			
-			obj.collisions = obj.collisions or { }
-			obj.collisionCount = (obj.collisionCount or 0) + 1
-			obj.collisions[d] = self:getCollisionData(s)
-			obj.objects[dd] = nil
+	for d,o in pairs(obj.objects) do
+		if o.name:sub(1, 10) == "COLLISION_" then
+			if o.vertices then
+				local id = o.name:sub(11)
+				
+				o.name = id
+				moveToMaster(obj, o)
+				
+				--leave at origin for library entries
+				if obj.args.loadAsLibrary then
+					o.transform = nil
+				end
+				
+				obj.collisions = obj.collisions or { }
+				obj.collisionCount = (obj.collisionCount or 0) + 1
+				obj.collisions[id] = self:getCollisionData(o)
+			end
+			obj.objects[d] = nil
 		end
 	end
 	
@@ -225,7 +387,7 @@ function lib:loadObject(path, shaderType, args)
 	if not obj.args.noMesh then
 		local cache = { }
 		for d,o in pairs(obj.objects) do
-			if not o.disabled then
+			if not o.disabled and not o.linked then
 				if cache[o.vertices] then
 					o.mesh = cache[o.vertices].mesh
 					o.tangents = cache[o.vertices].tangents
