@@ -147,7 +147,7 @@ function sh:perMaterial(dream, shaderObject, material)
 	shader:send("tex_combined", dream:getTexture(material.tex_combined) or tex.default)
 	shader:send("color_combined", {material.glossiness, material.specular, 1.0})
 	
-	if material.tex_normal then
+	if shader:hasUniform("tex_normal") then
 		shader:send("tex_normal", dream:getTexture(material.tex_normal) or tex.default_normal)
 	end
 	
