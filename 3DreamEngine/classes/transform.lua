@@ -2,9 +2,11 @@ local lib = _3DreamEngine
 
 local notInitError = "Transform not initialized, call reset() at least once."
 
+local I = mat4:getIdentity()
+
 return {
 	reset = function(obj)
-		obj.transform = mat4:getIdentity()
+		obj.transform = I
 		return obj
 	end,
 
@@ -14,32 +16,27 @@ return {
 	end,
 
 	translate = function(obj, x, y, z)
-		assert(obj.transform, notInitError)
-		obj.transform = obj.transform:translate(x, y, z)
+		obj.transform = (obj.transform or I):translate(x, y, z)
 		return obj
 	end,
 
 	scale = function(obj, x, y, z)
-		assert(obj.transform, notInitError)
-		obj.transform = obj.transform:scale(x, y, z)
+		obj.transform = (obj.transform or I):scale(x, y, z)
 		return obj
 	end,
 
 	rotateX = function(obj, rx)
-		assert(obj.transform, notInitError)
-		obj.transform = obj.transform:rotateX(rx)
+		obj.transform = (obj.transform or I):rotateX(rx)
 		return obj
 	end,
 
 	rotateY = function(obj, ry)
-		assert(obj.transform, notInitError)
-		obj.transform = obj.transform:rotateY(ry)
+		obj.transform = (obj.transform or I):rotateY(ry)
 		return obj
 	end,
 
 	rotateZ = function(obj, rz)
-		assert(obj.transform, notInitError)
-		obj.transform = obj.transform:rotateZ(rz)
+		obj.transform = (obj.transform or I):rotateZ(rz)
 		return obj
 	end,
 

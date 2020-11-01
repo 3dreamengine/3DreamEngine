@@ -112,7 +112,19 @@ function lib:renderSky(transformProj, camTransform, transformScale)
 			self.shaders.clouds:send("sunStrength", math.max(0.0, 1.0 - math.abs(sun.y) * (sun.y > 0 and 3.0 or 10.0)) * 10.0)
 			self.shaders.clouds:send("offset", self.clouds_pos)
 			
-			self.shaders.clouds:send("scale", self.clouds_scale)
+			--stretch
+			local a = math.atan2(lib.clouds_wind.y, lib.clouds_wind.x) + lib.clouds_angle
+			local strength = lib.clouds_wind:length() * lib.clouds_stretch_wind + lib.clouds_stretch
+			if strength < 0 then
+				a = a + math.pi / 2
+				strength = -strength
+			end
+			local stretch = {
+				self.clouds_scale / (1.0 + math.abs(math.cos(a)) * strength),
+				self.clouds_scale / (1.0 + math.abs(math.sin(a)) * strength)
+			}
+			
+			self.shaders.clouds:send("scale", stretch)
 			self.shaders.clouds:send("scale_base", self.clouds_scale / 17.0)
 			self.shaders.clouds:send("scale_roughness", self.clouds_scale * 0.7)
 			self.shaders.clouds:send("base_impact", 0.5 + self.weather_temperature * 5.0)

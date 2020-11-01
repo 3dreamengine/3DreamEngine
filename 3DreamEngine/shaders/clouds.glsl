@@ -4,7 +4,7 @@ varying highp vec3 vertexPos;
 extern vec3 sunColor;
 extern vec3 ambientColor;
 
-extern float scale;
+extern vec2 scale;
 extern float scale_base;
 extern float scale_roughness;
 extern float base_impact;

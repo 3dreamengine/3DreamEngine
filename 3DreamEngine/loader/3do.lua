@@ -89,6 +89,11 @@ return function(self, obj, path)
 			o.transform = mat4(o.transform)
 		end
 	end
+	
+	--recreate collision data
+	convert(obj.skeleton)
+	
+	--recreate animation data
 	if obj.animations then
 		for _,anim in pairs(obj.animations) do
 			for _,part in pairs(anim) do
@@ -99,6 +104,8 @@ return function(self, obj, path)
 			end
 		end
 	end
+	
+	--recreate collision data
 	if obj.collisions then
 		for _,coll in pairs(obj.collisions) do
 			for i,edge in ipairs(coll.edges) do
@@ -121,7 +128,13 @@ return function(self, obj, path)
 			coll.transformInverse = #coll.transformInverse == 16 and mat4(coll.transformInverse) or vec3(coll.transformInverse)
 		end
 	end
-	convert(obj.skeleton)
+	
+	--recreate linked data
+	if obj.linked then
+		for d,s in ipairs(obj.linked) do
+			s.transform = mat4(s.transform)
+		end
+	end
 	
 	--cleanup
 	for d,o in pairs(obj.objects) do

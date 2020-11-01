@@ -8,16 +8,21 @@ end
 
 local white = vec4(1.0, 1.0, 1.0, 1.0)
 local identityMatrix = mat4:getIdentity()
+local Z = vec3(0, 0, 0)
 
 return {
 	link = {"scene", "visibility"},
 	
 	clear = function(self)
 		self.tasks = { }
+		self.ID = 0
 	end,
 	
 	add = function(self, obj, parentTransform, col)
+		col = col or white
+		
 		--add to scene
+		local id = self.ID
 		for d,s in pairs(obj.objects or {obj}) do
 			if not s.disabled then
 				--apply transformation
@@ -28,37 +33,22 @@ return {
 					else
 						transform = parentTransform
 					end
-				else
-					if s.transform then
-						transform = s.transform
-					else
-						transform = identityMatrix
-					end
+				elseif s.transform then
+					transform = s.transform
 				end
 				
 				--bounding box
 				local pos
-				local bb = s.boundingBox
-				if bb then
-					--mat4 * vec3 multiplication, for performance reasons hardcoded
-					local a = bb.center
-					pos = vec3(transform[1] * a[1] + transform[2] * a[2] + transform[3] * a[3] + transform[4],
-						transform[5] * a[1] + transform[6] * a[2] + transform[7] * a[3] + transform[8],
-						transform[9] * a[1] + transform[10] * a[2] + transform[11] * a[3] + transform[12])
-				else
-					pos = vec3(transform[4], transform[8], transform[12])
+				if not transform then
+					transform = identityMatrix
+					pos = Z
 				end
 				
 				--add
-				table.insert(self.tasks, {
-					transform = transform, --transformation matrix, can be nil
-					pos = pos,             --bounding box center position of object
-					s = s,                 --drawable object
-					color = col or white,  --color, will affect color/albedo input
-					obj = obj,             --the object container used to store general informations (reflections, ...)
-					boneTransforms = obj.boneTransforms,
-				})
+				id = id + 1
+				self.tasks[id] = setmetatable({transform, pos or false, s, col, obj, obj.boneTransforms}, lib.meta.task)
 			end
 		end
+		self.ID = id
 	end,
 }

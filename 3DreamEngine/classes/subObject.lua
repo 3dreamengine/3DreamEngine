@@ -1,12 +1,7 @@
 local lib = _3DreamEngine
 
 function lib:newLinkedObject(original)
-	local meta = {
-		__index = function(o, key)
-			return rawget(o.linkedObject, key) or lib.meta.subObject.__index[key]
-		end
-	}
-	return setmetatable({linkedObject = original}, meta)
+	return setmetatable({ }, {__index = original})
 end
 
 function lib:newSubObject(name, obj, mat)

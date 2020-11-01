@@ -117,21 +117,23 @@ function lib.loadShader(self)
 	self.mainShaderCount = 0
 
 	--the ambient occlusion shader
-	local code = (
-		"#define SAMPLE_COUNT " .. self.AO_quality .. "\n" ..
-		love.filesystem.read(self.root .. "/shaders/SSAO.glsl")
-	):gsub("	", "")
-	self.shaders.SSAO = love.graphics.newShader(code)
-	
-	--pass samples to the shader
-	local f = { }
-	local range = 64.0
-	for i = 1, self.AO_quality do
-		local r = i / self.AO_quality * math.pi * 2
-		local d = (0.5 + i % 4) / 4
-		f[#f+1] = {math.cos(r)*d*range / love.graphics.getWidth(), math.sin(r)*d*range / love.graphics.getHeight(), (1-d)^2 / self.AO_quality}
+	if self.AO_enabled then
+		local code = (
+			"#define SAMPLE_COUNT " .. self.AO_quality .. "\n" ..
+			love.filesystem.read(self.root .. "/shaders/SSAO.glsl")
+		):gsub("	", "")
+		self.shaders.SSAO = love.graphics.newShader(code)
+		
+		--pass samples to the shader
+		local f = { }
+		local range = 64.0
+		for i = 1, self.AO_quality do
+			local r = i / self.AO_quality * math.pi * 2
+			local d = (0.5 + i % 4) / 4
+			f[#f+1] = {math.cos(r)*d*range / love.graphics.getWidth(), math.sin(r)*d*range / love.graphics.getHeight(), (1-d)^2 / self.AO_quality}
+		end
+		self.shaders.SSAO:send("samples", unpack(f))
 	end
-	self.shaders.SSAO:send("samples", unpack(f))
 	
 	--create light shaders
 	self.lightShaders = { }

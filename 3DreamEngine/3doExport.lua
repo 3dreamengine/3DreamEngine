@@ -41,8 +41,8 @@ function lib:export3do(obj)
 		["animationLengths"] = obj.animationLengths,
 		["joints"] = obj.joints,
 		["skeleton"] = obj.skeleton,
+		["linked"] = obj.linked,
 		["objects"] = { },
-		["ordered"] = { },
 	}
 	
 	for d,o in pairs(obj.objects) do

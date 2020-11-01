@@ -9,7 +9,6 @@ local function newBoundaryBox()
 	return {
 		first = vec3(math.huge, math.huge, math.huge),
 		second = vec3(-math.huge, -math.huge, -math.huge),
-		dimensions = vec3(0.0, 0.0, 0.0),
 		center = vec3(0.0, 0.0, 0.0),
 		size = 0
 	}
@@ -232,37 +231,47 @@ function lib:loadObject(path, shaderType, args)
 	end
 	
 	
-	--link objects
-	local linkNr = 0
-	local linkNrC = 0
+	--detect links
 	for d,o in pairs(obj.objects) do
-		if o.linked and o.obj == obj or o.name:sub(1, 5) == "LINK_" then
-			local id = o.linked or removePostfix(o.name:sub(6))
-			local lo = self.objectLibrary[id]
-			assert(lo, "linked object " .. id .. " is not in the object library!")
+		if o.name:sub(1, 5) == "LINK_" then
+			local source = o.linked or removePostfix(o.name:sub(6))
 			
 			--remove original
 			obj.objects[d] = nil
 			
+			--store link
+			obj.linked = obj.linked or { }
+			obj.linked[#obj.linked+1] = {
+				source = source,
+				transform = o.transform
+			}
+		end
+	end
+	
+	
+	--link objects
+	if obj.linked then
+		for id, link in ipairs(obj.linked) do
+			local lo = self.objectLibrary[link.source]
+			assert(lo, "linked object " .. link.source .. " is not in the object library!")
+			
 			--link
 			for d,no in ipairs(lo) do
-				linkNr = linkNr + 1
 				local co = self:newLinkedObject(no)
-				co.transform = o.transform
-				co.linked = id
-				obj.objects["link_" .. linkNr .. "_" .. no.name] = co
+				co.transform = link.transform
+				co.linked = link.source
+				obj.objects["link_" .. id .. "_" .. d .. "_" .. no.name] = co
 			end
 			
 			--link collisions
-			local lc = self.collisionLibrary[id]
+			local lc = self.collisionLibrary[link.source]
 			if lc then
 				obj.collisions = obj.collisions or { }
 				for d,no in ipairs(lc) do
-					linkNrC = linkNrC + 1
 					local co = clone(no)
-					co.groupTransform = o.transform
-					co.linked = id
-					obj.collisions["link_" .. linkNrC .. "_" .. d] = co
+					co.groupTransform = link.transform
+					co.linked = link.source
+					obj.collisions["link_" .. id .. "_" .. d .. "_" .. d] = co
 				end
 			end
 		end
@@ -322,34 +331,43 @@ function lib:loadObject(path, shaderType, args)
 	
 	--calculate bounding box
 	if not obj.boundingBox then
-		obj.boundingBox = newBoundaryBox()
-		local total = 0
 		for d,s in pairs(obj.objects) do
-			total = total + 1
 			if not s.boundingBox then
 				s.boundingBox = newBoundaryBox()
 				
-				--scan all vertices
+				--get aabb
 				for i,v in ipairs(s.vertices) do
 					local pos = vec3(v)
 					s.boundingBox.first = s.boundingBox.first:min(pos)
 					s.boundingBox.second = s.boundingBox.second:max(pos)
-					s.boundingBox.center = s.boundingBox.center + pos
 				end
+				s.boundingBox.center = (s.boundingBox.second + s.boundingBox.first) / 2
 				
-				s.boundingBox.center = s.boundingBox.center / #s.vertices
-				s.boundingBox.dimensions = s.boundingBox.second - s.boundingBox.first
-				s.boundingBox.size = math.max((s.boundingBox.dimensions * 0.5):length(), s.boundingBox.size)
+				--get size
+				local max = 0
+				local c = s.boundingBox.center
+				for i,v in ipairs(s.vertices) do
+					local pos = vec3(v) - c
+					max = math.max(max, pos:lengthSquared())
+				end
+				s.boundingBox.size = math.max(math.sqrt(max), s.boundingBox.size)
 			end
-			
-			obj.boundingBox.first = s.boundingBox.first:min(obj.boundingBox.first)
-			obj.boundingBox.second = s.boundingBox.second:max(obj.boundingBox.second)
-			obj.boundingBox.center = s.boundingBox.center + obj.boundingBox.center
-			
-			obj.boundingBox.size = math.max(obj.boundingBox.size, s.boundingBox.size)
 		end
-		obj.boundingBox.center = obj.boundingBox.center / total
-		obj.boundingBox.dimensions = obj.boundingBox.second - obj.boundingBox.first
+		
+		--calculate total bounding box
+		obj.boundingBox = newBoundaryBox()
+		for d,s in pairs(obj.objects) do
+			local sz = vec3(s.boundingBox.size, s.boundingBox.size, s.boundingBox.size)
+			
+			obj.boundingBox.first = s.boundingBox.first:min(obj.boundingBox.first - sz)
+			obj.boundingBox.second = s.boundingBox.second:max(obj.boundingBox.second + sz)
+			obj.boundingBox.center = (obj.boundingBox.second + obj.boundingBox.first) / 2
+		end
+		
+		for d,s in pairs(obj.objects) do
+			local o = s.boundingBox.center - obj.boundingBox.center
+			obj.boundingBox.size = math.max(obj.boundingBox.size, s.boundingBox.size + o:lengthSquared())
+		end
 	end
 	
 	

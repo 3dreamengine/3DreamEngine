@@ -265,7 +265,7 @@ function c:newMesh(object, transform)
 			return o
 		end
 	else
-		assert(object.faces, "Object has been cleaned up or is invalid, 'faces' and 'vertices' buffers are required!")
+		assert(object.faces and object.vertices, "Object has been cleaned up or is invalid, 'faces' and 'vertices' buffers are required!")
 		
 		--this is a sub object and needs to be converted first
 		local n = dream:getCollisionData(object)

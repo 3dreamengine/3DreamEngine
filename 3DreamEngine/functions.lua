@@ -226,23 +226,50 @@ function lib:pixelToPoint(point, cam, canvases)
 	return vec3(near) * (1.0 - depth) + vec3(far) * depth
 end
 
+function lib:getFrustumPlanes(m)
+	local planes = {vec4(), vec4(), vec4(), vec4(), vec4(), vec4()}
+	for i = 1, 4 do
+		planes[1][i] = m[12 + i] + m[0 + i]
+		planes[2][i] = m[12 + i] - m[0 + i]
+		planes[3][i] = m[12 + i] + m[4 + i]
+		planes[4][i] = m[12 + i] - m[4 + i]
+		planes[5][i] = m[12 + i] + m[8 + i]
+		planes[6][i] = m[12 + i] - m[8 + i]
+	end
+	return planes
+end
+
 function lib:inFrustum(cam, pos, radius)
 	local dir = pos - cam.pos
 	local dist = dir:length()
-	
-	--check if within bounding sphere as the angle check fails on close distance
-	if dist < radius * 2 + 0.5 then
-		return true
+
+	--check for close range and angle threshold
+	return dist < radius or dir:dot(cam.normal) > (cam.frustumAngle - radius / (dist - radius)) * dist
+end
+
+local cache = { }
+function lib:planeInFrustum(cam, pos, radius, id)
+	local c = cache[id]
+	if c then
+		local plane = cam.planes[c]
+		local dist = plane[1] * pos[1] + plane[2] * pos[2] + plane[3] * pos[3] + plane[4]
+		if dist + radius < 0.0 then
+			return false
+		end
+		cache[id] = nil
 	end
 	
-	--the additional margin visible due to its size
-	local margin = radius / dist / math.pi * 2
-	
-	--the visible angle based on fov
-	local angle = cam.fov / 180 * (1.0 + (cam.aspect - 1.0) * 0.25)
-	
-	--if it is within this threshold
-	return (dir / dist):dot(cam.normal) > 1.0 - angle - margin
+	for i = 1, 5 do
+		if i ~= c then
+			local plane = cam.planes[i]
+			local dist = plane[1] * pos[1] + plane[2] * pos[2] + plane[3] * pos[3] + plane[4]
+			if dist + radius < 0.0 then
+				cache[id] = i
+				return false
+			end
+		end
+	end
+	return true
 end
 
 --get the collision data from a mesh

@@ -20,9 +20,6 @@ function lib:newObject(path)
 		dir = dir, --dir containing the object
 		
 		loaded = true,
-		
-		--the object transformation
-		transform = mat4:getIdentity(),
 	}, self.meta.object)
 end
 

@@ -75,7 +75,7 @@ lib:setExposure(1.0)
 lib:setDeferredShaderType("Phong")
 lib:setMaxLights(16)
 lib:setNameDecoder("^(.+)_([^_]+)$")
-lib:setFrustumCheck(true)
+lib:setFrustumCheck("fast")
 lib:setLODDistance(100)
 lib:setDither(false)
 
@@ -379,7 +379,9 @@ function lib:draw(obj, x, y, z, sx, sy, sz)
 	local col = vec4(love.graphics.getColor())
 	
 	--add to scene
+	self.delton:start("add")
 	self.scene:add(obj, transform, col)
+	self.delton:stop()
 	
 	self.delton:stop()
 end

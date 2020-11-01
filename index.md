@@ -1217,7 +1217,6 @@ Since .mat files supports `onFinish()` callbacks you can put the above line here
 ```lua
 --example material file for grass
 return {
-	shadow = false,
 	extra = 0.02,
 	cullMode = "none",
 	

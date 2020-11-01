@@ -48,33 +48,35 @@ end
 
 function sh:perTask(dream, shaderObject, task)
 	local shader = shaderObject.shader
+	local subObj = task:getS()
 	
 	--initial prepare bone data
-	if not task.s.boneMesh and task.s.joints then
-		task.s.boneMesh = love.graphics.newMesh({{"VertexJoint", "byte", 4}, {"VertexWeight", "byte", 4}}, #task.s.joints, "triangles", "static")
+	if not subObj.boneMesh and subObj.joints then
+		subObj.boneMesh = love.graphics.newMesh({{"VertexJoint", "byte", 4}, {"VertexWeight", "byte", 4}}, #subObj.joints, "triangles", "static")
 		
 		--create mesh
-		for d,s in ipairs(task.s.joints) do
-			local w = task.s.weights[d]
-			task.s.boneMesh:setVertex(d, (s[1] or 0) / 255, (s[2] or 0) / 255, (s[3] or 0) / 255, (s[4] or 0) / 255, w[1] or 0, w[2] or 0, w[3] or 0, w[4] or 0)
+		for d,s in ipairs(subObj.joints) do
+			local w = subObj.weights[d]
+			subObj.boneMesh:setVertex(d, (s[1] or 0) / 255, (s[2] or 0) / 255, (s[3] or 0) / 255, (s[4] or 0) / 255, w[1] or 0, w[2] or 0, w[3] or 0, w[4] or 0)
 		end
 		
 		--clear buffers
-		if task.obj.args.cleanup ~= false then
-			task.s.joints = nil
-			task.s.weights = nil
+		if task:getObj().args.cleanup ~= false then
+			subObj.joints = nil
+			subObj.weights = nil
 		end
 		
-		task.s.mesh:attachAttribute("VertexJoint", task.s.boneMesh)
-		task.s.mesh:attachAttribute("VertexWeight", task.s.boneMesh)
+		subObj.mesh:attachAttribute("VertexJoint", subObj.boneMesh)
+		subObj.mesh:attachAttribute("VertexWeight", subObj.boneMesh)
 	end
 	
-	assert(task.boneTransforms, "missing bone transforms")
+	local bt = task:getBoneTransforms()
+	assert(bt, "missing bone transforms")
 	
 	local matrices = {mat4:getIdentity()}
-	if task.s.jointIDs then
-		for i,j in ipairs(task.s.jointIDs) do
-			matrices[i+1] = task.boneTransforms[j]
+	if subObj.jointIDs then
+		for i,j in ipairs(subObj.jointIDs) do
+			matrices[i+1] = bt[j]
 		end
 	end
 	shader:send("jointTransforms", unpack(matrices))

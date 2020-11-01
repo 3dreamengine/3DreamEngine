@@ -36,9 +36,16 @@ function lib:buildScene(cam, canvases, typ, blacklist)
 		lights = { }
 	}
 	
+	--update required acceleration data
+	if self.activeFrustum == self.inFrustum then
+		cam:updateFrustumAngle(canvases.width and canvases.width / canvases.height or 1)
+	elseif self.activeFrustum == self.planeInFrustum then
+		cam:updateFrustumPlanes()
+	end
+	
 	--add to scene
 	local LODFactor = 10 / self.LODDistance
-	local noFrustumCheck = cam.noFrustumCheck or not self.frustumCheck
+	local noFrustumCheck = cam.noFrustumCheck or not self.activeFrustum
 	for sc,_ in pairs(self.scenes) do
 		if not sc.visibility or sc.visibility[typ] then
 			--get light setup per scene
@@ -49,20 +56,22 @@ function lib:buildScene(cam, canvases, typ, blacklist)
 			end
 			
 			for _,task in ipairs(sc.tasks) do
-				if not blacklist or not (blacklist[task.obj] or blacklist[task.s]) then
-					local visibility = task.s.visibility or task.obj.visibility
+				local obj = task:getObj()
+				local subObj = task:getS()
+				if not blacklist or not (blacklist[obj] or blacklist[subObj]) then
+					local visibility = subObj.visibility or obj.visibility
 					if not visibility or visibility[typ] then
-						local mat = task.s.material
+						local mat = subObj.material
 						if typ ~= "shadows" or mat.shadow ~= false then
 							local solid = (mat.solid or not canvases.alphaPass) and 1 or 2
 							local alpha = canvases.alphaPass and mat.alpha and typ ~= "shadows" and 2 or 1
 							for pass = solid, alpha do
 								local scene = (not canvases.alphaPass or pass == 1) and scene.solid or scene.alpha
-								local LOD = task.s.LOD or task.obj.LOD
-								if not LOD or LOD[math.min( math.floor((task.pos - cam.pos):length() * LODFactor) + 1, 9 )] then
-									if noFrustumCheck or not task.s.boundingBox or self:inFrustum(cam, task.pos, task.s.boundingBox.size) then
-										if task.s.loaded then
-											local shader = self:getShader(task.s, pass, canvases, light, typ == "shadows")
+								local LOD = subObj.LOD or obj.LOD
+								if not LOD or LOD[math.min( math.floor((task:getPos() - cam.pos):length() * LODFactor) + 1, 9 )] then
+									if noFrustumCheck or not subObj.boundingBox or self:activeFrustum(cam, task:getPos(), task:getSize(), subObj) then
+										if subObj.loaded then
+											local shader = self:getShader(subObj, pass, canvases, light, typ == "shadows")
 											local lightID = pass == 1 and canvases.deferred and "" or light.ID
 											
 											--group shader and materials together to reduce shader switches
@@ -85,18 +94,18 @@ function lib:buildScene(cam, canvases, typ, blacklist)
 												
 												--reflections
 												if typ == "render" then
-													local reflection = task.s.reflection or task.obj.reflection
+													local reflection = subObj.reflection or obj.reflection
 													if reflection and reflection.canvas then
 														self.reflections[reflection] = {
-															dist = (task.pos - cam.pos):length(),
-															obj = task.s.reflection and task.s or task.obj,
-															pos = reflection.pos or task.pos,
+															dist = (task:getPos() - cam.pos):length(),
+															obj = subObj.reflection and subObj or obj,
+															pos = reflection.pos or task:getPos(),
 														}
 													end
 												end
 											end
-										elseif task.s.request then
-											task.s:request()
+										elseif subObj.request then
+											subObj:request()
 										end
 									end
 								end
@@ -149,8 +158,6 @@ function lib:render(scene, canvases, cam)
 			love.graphics.clear(0, 0, 0, 0)
 		end
 	end
-	
-	--prepare lighting
 	self.delton:stop()
 	
 	--start both passes
@@ -269,9 +276,12 @@ function lib:render(scene, canvases, cam)
 					
 					--draw objects
 					for _,task in pairs(materialGroup) do
+						local obj = task:getObj()
+						local subObj = task:getS()
+						
 						--sky texture
 						if shaderObject.reflection then
-							local ref = task.s.reflection or task.obj.reflection or (type(self.sky_reflection) == "table" and self.sky_reflection)
+							local ref = subObj.reflection or obj.reflection or (type(self.sky_reflection) == "table" and self.sky_reflection)
 							local tex = ref and (ref.image or ref.canvas)
 							if not tex and self.sky_reflection then
 								--use sky dome
@@ -293,7 +303,7 @@ function lib:render(scene, canvases, cam)
 						end
 						
 						--object transformation
-						shader:send("transform", task.transform)
+						shader:send("transform", task:getTransform())
 						
 						--shader
 						shaderEntry:perTask(self, shaderObject, task)
@@ -302,8 +312,8 @@ function lib:render(scene, canvases, cam)
 						end
 						
 						--render
-						love.graphics.setColor(task.color)
-						love.graphics.draw(task.s.mesh)
+						love.graphics.setColor(task:getColor())
+						love.graphics.draw(subObj.mesh)
 						
 						self.stats.draws = self.stats.draws + 1
 					end
@@ -498,7 +508,7 @@ function lib:renderShadows(scene, cam, canvas, blacklist)
 		--for each task
 		for _, task in ipairs(shaderGroup) do
 			--object transformation
-			shader:send("transform", task.transform)
+			shader:send("transform", task:getTransform())
 			
 			--shader
 			for d,s in pairs(shaderObject.modules) do
@@ -506,8 +516,8 @@ function lib:renderShadows(scene, cam, canvas, blacklist)
 			end
 			
 			--render
-			love.graphics.setColor(task.color)
-			love.graphics.draw(task.s.mesh)
+			love.graphics.setColor(task:getColor())
+			love.graphics.draw(task:getS().mesh)
 		end
 	end
 	
@@ -677,17 +687,16 @@ function lib:present(cam, canvases, lite)
 	local n = cam.near
 	local f = cam.far
 	local fov = cam.fov
-	local scale = math.tan(fov/2*math.pi/180)
+	local scale = math.tan(fov*math.pi/360)
 	local aspect = canvases.width / canvases.height
-	local r = aspect * scale * n
-	local l = -r
+	local r = scale * n * aspect
 	local t = scale * n
-	local b = -t
+	local m = canvases.mode == "direct" and 1 or -1
 	local projection = mat4(
-		2*n / (r-l),   0,              (r+l) / (r-l),     0,
-		0,             2*n / (t - b) * (canvases.mode == "direct" and 1 or -1),  (t+b) / (t-b),     0,
-		0,             0,              -(f+n) / (f-n),    -2*f*n / (f-n),
-		0,             0,              -1,                0
+		n / r,     0,          0,                0,
+		0,         n / t * m,  0,                0,
+		0,         0,          -(f+n) / (f-n),   -2*f*n / (f-n),
+		0,         0,          -1,               0
 	)
 	
 	--camera transformation
