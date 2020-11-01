@@ -72,7 +72,7 @@ function lib:buildScene(cam, canvases, typ, blacklist)
 									if noFrustumCheck or not subObj.boundingBox or self:activeFrustum(cam, task:getPos(), task:getSize(), subObj) then
 										if subObj.loaded then
 											local shader = self:getRenderShader(subObj, pass, canvases, light, typ == "shadows")
-											local lightID = pass == 1 and canvases.deferred and "" or light.ID
+											local lightID = light.ID
 											
 											--group shader and materials together to reduce shader switches
 											if not scene[shader] then
@@ -168,10 +168,7 @@ function lib:render(scene, canvases, cam)
 		--set canvases
 		local dataAlpha = canvases.averageAlpha and pass == 2
 		if canvases.mode ~= "direct" then
-			if canvases.deferred and pass == 1 then
-				--deferred pass 1
-				love.graphics.setCanvas({canvases.color, canvases.depth, canvases.position, canvases.normal, canvases.material, canvases.albedo, depthstencil = canvases.depth_buffer})
-			elseif dataAlpha then
+			if dataAlpha then
 				--average alpha
 				love.graphics.setCanvas({canvases.colorAlpha, canvases.dataAlpha, depthstencil = canvases.depth_buffer})
 				love.graphics.clear(true, false, false)
@@ -230,9 +227,7 @@ function lib:render(scene, canvases, cam)
 				self.delton:start("light")
 				
 				--light if using forward lighting
-				if not canvases.deferred or pass == 2 then
-					self:sendLightUniforms(scene.lights[lightID], shaderObject)
-				end
+				self:sendLightUniforms(scene.lights[lightID], shaderObject)
 				
 				--for each material
 				for material, materialGroup in pairs(lightGroup) do
@@ -321,52 +316,6 @@ function lib:render(scene, canvases, cam)
 			self.delton:stop()
 		end
 		love.graphics.setColor(1.0, 1.0, 1.0)
-		
-		--light
-		if canvases.deferred and pass == 1 then
-			local types = { }
-			local batches = { }
-			for _,s in ipairs(self.lighting) do
-				s.active = true
-				
-				local typ = s.typ .. "_" .. (s.shadow and "shadow" or "simple")
-				types[typ] = (types[typ] or 0) + 1
-				
-				local dat = lib.shaderLibrary.light[typ]
-				local b = batches[#batches]
-				if not b or b.typ ~= typ or #b >= (dat.batchable and self.max_lights or 1) then
-					batches[#batches+1] = {typ = typ}
-				end
-				
-				table.insert(batches[#batches], s)
-			end
-			
-			--render light batches
-			love.graphics.setCanvas(canvases.color)
-			love.graphics.setBlendMode("add")
-			love.graphics.setDepthMode()
-			local lastTyp
-			for _,batch in ipairs(batches) do
-				local dat = lib.shaderLibrary.light[batch.typ]
-				local shader = self.lightShaders[batch.typ]
-				
-				if lastTyp ~= batch.typ then
-					lastTyp = batch.typ
-					love.graphics.setShader(shader)
-					shader:send("tex_position", canvases.position)
-					shader:send("tex_normal", canvases.normal)
-					shader:send("tex_material", canvases.material)
-					
-					if shader:hasUniform("translucent") then
-						shader:send("translucent", 0.0)
-					end
-				end
-				
-				lib:sendLightUniforms({lights = batch, types = {[batch.typ] = #batch}}, shader, batch.typ)
-				love.graphics.draw(canvases.albedo)
-			end
-			love.graphics.setBlendMode("alpha")
-		end
 	end
 	
 	--particles on the alpha pass

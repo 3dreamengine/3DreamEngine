@@ -90,12 +90,10 @@ void effect() {
 #import modulesPixel
 vec3 col;
 	
-#ifndef DEFERRED
 	//forward lighting
 	vec3 light = vec3(0.0);
 #import lightingSystem
 	col += light;
-#endif
 	
 #import mainPixelPost
 #import modulesPixelPost
@@ -153,14 +151,6 @@ vec3 col;
 #ifndef REFRACTIONS_ENABLED
 		love_Canvases[1] = vec4(depth, 0.0, 0.0, albedo.a);
 #endif
-#endif
-	
-#ifdef DEFERRED
-	love_Canvases[2] = vec4(vertexPos, albedo.a);
-	love_Canvases[3] = vec4(normal, albedo.a);
-	love_Canvases[4] = vec4(material, albedo.a);
-	love_Canvases[5] = albedo;
-#else
 #endif
 }
 #endif

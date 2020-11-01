@@ -110,32 +110,6 @@ function lib.loadShader(self)
 		end
 		self.shaders.SSAO:send("samples", unpack(f))
 	end
-	
-	--create light shaders
-	self.lightShaders = { }
-	if self.renderSet.deferred or self.reflectionsSet.deferred then
-		local sh_light = love.filesystem.read(lib.root .. "/shaders/light.glsl")
-		for d,s in pairs(self.shaderLibrary.light) do
-			local lights = { }
-			if s.batchable then
-				lights.lights = { }
-				for i = 1, self.max_lights do
-					lights.lights[#lights.lights+1] = {light_typ = d}
-				end
-				lights.types = {[d] = self.max_lights}
-			else
-				lights.lights = {{light_typ = d}}
-				lights.types = {[d] = 1}
-			end
-			
-			local lcInit, lc = self:getLightComponents(lights)
-			local code = sh_light
-			code = code:gsub("#import lightingSystemInit", table.concat(lcInit, "\n"))
-			code = code:gsub("#import lightingSystem", table.concat(lc, "\n"))
-			code = code:gsub("#import lightFunction", self.shaderLibrary.base[self.deferredShaderType]:constructLightFunction(self))
-			self.lightShaders[d] = love.graphics.newShader(code)
-		end
-	end
 end
 
 --the final canvas combines all resources into one result
@@ -258,40 +232,36 @@ function lib:getRenderShader(o, pass, canvases, light, shadows)
 		if reflection then
 			ID_settings = ID_settings + 2 ^ 0
 		end
-		if canvases.deferred and pass == 1 then
-			ID_settings = ID_settings + 2 ^ 1
-			table.insert(globalDefines, "#define DEFERRED")
-		end
 		if canvases.refractions and refractions and pass == 2 then
-			ID_settings = ID_settings + 2 ^ 2
+			ID_settings = ID_settings + 2 ^ 1
 			table.insert(globalDefines, "#define REFRACTIONS_ENABLED")
 		end
 		if canvases.averageAlpha and pass == 2 then
-			ID_settings = ID_settings + 2 ^ 3
+			ID_settings = ID_settings + 2 ^ 2
 			table.insert(globalDefines, "#define AVERAGE_ENABLED")
 		end
 		if canvases.postEffects and self.exposure and earlyExposure(canvases) then
-			ID_settings = ID_settings + 2 ^ 4
+			ID_settings = ID_settings + 2 ^ 3
 			table.insert(globalDefines, "#define EXPOSURE_ENABLED")
 		end
 		if canvases.postEffects and self.gamma and earlyExposure(canvases) then
-			ID_settings = ID_settings + 2 ^ 5
+			ID_settings = ID_settings + 2 ^ 4
 			table.insert(globalDefines, "#define GAMMA_ENABLED")
 		end
 		if self.fog_enabled and canvases.mode ~= "normal" then
-			ID_settings = ID_settings + 2 ^ 6
+			ID_settings = ID_settings + 2 ^ 5
 			table.insert(globalDefines, "#define FOG_ENABLED")
 		end
 		if pass == 2 then
-			ID_settings = ID_settings + 2 ^ 7
+			ID_settings = ID_settings + 2 ^ 6
 			table.insert(globalDefines, "#define ALPHA_PASS")
 		end
 		if pass == 1 and (mat.discard or mat.alpha or mat.dither or self.dither) then
-			ID_settings = ID_settings + 2 ^ 8
+			ID_settings = ID_settings + 2 ^ 7
 			table.insert(globalDefines, "#define DISCARD_ENABLED")
 		end
 		if mat.translucent > 0 then
-			ID_settings = ID_settings + 2 ^ 9
+			ID_settings = ID_settings + 2 ^ 8
 			table.insert(globalDefines, "#define TRANSLUCENT_ENABLED")
 		end
 	end

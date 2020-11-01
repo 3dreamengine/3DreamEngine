@@ -72,7 +72,6 @@ lib:setFogHeight()
 lib:setDaytime(0.3)
 lib:setGamma(false)
 lib:setExposure(1.0)
-lib:setDeferredShaderType("Phong")
 lib:setMaxLights(16)
 lib:setNameDecoder("^(.+)_([^_]+)$")
 lib:setFrustumCheck("fast")
@@ -199,14 +198,11 @@ function lib.newCanvasSet(self, settings, w, h)
 	set.height = h
 	set.msaa = settings.msaa
 	set.mode = settings.mode
-	set.deferred = settings.deferred and settings.mode ~= "direct"
 	set.postEffects = settings.postEffects and settings.mode == "normal"
 	set.refractions = settings.alphaPass and settings.refractions and settings.mode == "normal"
 	set.averageAlpha = settings.alphaPass and settings.averageAlpha and settings.mode == "normal"
 	set.format = settings.format
 	set.alphaPass = settings.alphaPass
-	
-	assert(not set.deferred or settings.mode ~= "direct", "Deferred rendering is not compatible with direct rendering!")
 	
 	if settings.mode ~= "direct" then
 		--depth
@@ -226,14 +222,6 @@ function lib.newCanvasSet(self, settings, w, h)
 		
 		--depth
 		set.depth = love.graphics.newCanvas(w, h, {format = "r16f", readable = true, msaa = set.msaa})
-	end
-	
-	--deferred rendering
-	if set.deferred then
-		set.position = love.graphics.newCanvas(w, h, {format = settings.format, readable = true, msaa = set.msaa})
-		set.normal = love.graphics.newCanvas(w, h, {format = settings.format, readable = true, msaa = set.msaa})
-		set.material = love.graphics.newCanvas(w, h, {format = settings.format, readable = true, msaa = set.msaa})
-		set.albedo = love.graphics.newCanvas(w, h, {format = settings.format, readable = true, msaa = set.msaa})
 	end
 	
 	--screen space ambient occlusion blurring canvases

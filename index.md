@@ -10,7 +10,6 @@
    [present](#present)
 - [settings](#settings)
   * [Default shader](#default-shader) -
-  [deferred shader](#deferred-shader) -
   [max Lights](#max-lights) -
   [name Decoder](#name-decoder) -
   [frustum](#frustum) -
@@ -196,27 +195,6 @@ dream:setDefaultShaderType(typ)
 typ = dream:getDefaultShaderType()
 ```
 `typ (false)` valid shader type or false  
-
-
-
-## deferred shader
-Deferred shading, unlike forward, can only have one lighting function at the same time.
-
-```lua
-dream:setDeferredShaderType(typ)
-typ = dream:getDeferredShaderType()
-```
-`typ (false)` valid shader type to take light function from or false  
-
-
-## max Lights
-The maximal number per light typ. This is just a hardlimit.
-
-```lua
-dream:setMaxLights(limit)
-limit = dream:getMaxLights()
-```
-`limit (16)` number  
 
 
 
@@ -926,7 +904,6 @@ All of the following functions have a getter too.
 set:setMode(renderMode)
 set:setResolution(res)
 set:setFormat(format)
-set:setDeferred(enabled)
 set:setPostEffects(enabled)
 set:setMsaa(msaa)
 set:setFxaa(enabled)
@@ -943,7 +920,6 @@ set:setAlphaPass(enabled)
 `format ("rgba16f")` LÖVE pixel format.  
 
 `enabled` features:
-* deferred uses a G-Buffer and draws light as a posteffect. Large overhead, small light-performance. Future unclear. Might get removed.
 * post effects are effects like exposure, bloom, ... which are unwanted for temporary results (e.g. reflections)
 * msaa is slower but more beatiful (consider hardware limit), fxaa is faster but blurry. Dont use both.
 * refractions simulate refractions for objects in the alpha pass and ior ~= 1.0

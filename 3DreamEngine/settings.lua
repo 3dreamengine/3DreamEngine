@@ -10,7 +10,7 @@ local function check(value, typ, argNr)
 end
 
 
---sets the shader to take the light function from when using the deferred pipeline
+--sets the default shader
 function lib:setDefaultShaderType(typ)
 	if typ then
 		check(typ, "string")
@@ -22,17 +22,6 @@ function lib:setDefaultShaderType(typ)
 end
 function lib:getDefaultShaderType()
 	return self.defaultShaderType
-end
-
-
---sets the shader to take the light function from when using the deferred pipeline
-function lib:setDeferredShaderType(typ)
-	check(typ, "string")
-	assert(self.shaderLibrary.base[typ].constructLightFunction, "shader " .. typ .. " has no constructLightFunction!")
-	self.deferredShaderType = typ
-end
-function lib:getDeferredShaderType()
-	return self.deferredShaderType
 end
 
 
