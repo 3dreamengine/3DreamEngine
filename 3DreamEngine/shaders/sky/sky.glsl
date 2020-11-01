@@ -22,9 +22,11 @@ extern vec3 rainbowDir;
 #ifdef PIXEL
 extern float time;
 
-vec4 effect(vec4 ambient, Image sky, vec2 tc, vec2 sc) {
+extern Image MainTex;
+
+void effect() {
 	vec3 dir = normalize(vertexPos);
-	vec3 col = Texel(sky, vec2(time, 0.5-dir.y*0.5)).rgb * ambient.rgb * brightness;
+	vec3 col = Texel(MainTex, vec2(time, 0.5-dir.y*0.5)).rgb * VaryingColor.rgb * brightness;
 	
 	//stars
 	if (starsStrength > 0.0) {
@@ -47,7 +49,8 @@ vec4 effect(vec4 ambient, Image sky, vec2 tc, vec2 sc) {
 	float c = Texel(clouds, normalize(cloudsVec).xzy).r * cloudsBrightness;
 	col = mix(col, sunColor, c);
 	
-	return vec4(col, 1.0);
+	love_Canvases[0] = vec4(col, 1.0);
+	love_Canvases[1] = vec4(65504.0, 0.0, 0.0, 1.0);
 }
 #endif
 

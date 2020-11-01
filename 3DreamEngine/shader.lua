@@ -10,12 +10,12 @@ local testForOpenES = true
 --enables auto shader validator
 if _DEBUGMODE then
 	love.graphics.newShader_old = love.graphics.newShader
-	function love.graphics.newShader(pixel, vertex)
+	function love.graphics.newShader(pixel, vertex, name)
 		local status, err = love.graphics.validateShader(testForOpenES, pixel, vertex)
 		if not status then
 			print()
 			print("-----------------")
-			print("SHADER ERROR")
+			print("SHADER ERROR " .. tostring(name))
 			if not vertex and #pixel < 1024 and not pixel:find("\n") then
 				print(pixel)
 			end
@@ -69,40 +69,16 @@ for d,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/functi
 	codes[s:sub(1, #s-5)] = love.filesystem.read(lib.root .. "/shaders/functions/" .. s)
 end
 
+--return and load shader if nececary
 lib.shaders = { }
-
---blur
-lib.shaders.blur = love.graphics.newShader(lib.root .. "/shaders/blur.glsl")
-lib.shaders.blur_cube = love.graphics.newShader(lib.root .. "/shaders/blur_cube.glsl")
-
---applies bloom at a given strength
-lib.shaders.bloom = love.graphics.newShader(lib.root .. "/shaders/bloom.glsl")
-lib.shaders.bloom_average = love.graphics.newShader(lib.root .. "/shaders/bloom_average.glsl")
-
---the sky sphere shader
-lib.shaders.sky_cube = love.graphics.newShader(lib.root .. "/shaders/sky_cube.glsl")
-lib.shaders.sky_hdri = love.graphics.newShader(lib.root .. "/shaders/sky_hdri.glsl")
-lib.shaders.sky = love.graphics.newShader(lib.root .. "/shaders/sky.glsl")
-
---particle shader, draw textures at a given depth
-lib.shaders.billboard = love.graphics.newShader(lib.root .. "/shaders/billboard.glsl")
-lib.shaders.billboard_moon = love.graphics.newShader(lib.root .. "/shaders/billboard_moon.glsl")
-lib.shaders.billboard_sun = love.graphics.newShader(lib.root .. "/shaders/billboard_sun.glsl")
-
---autoExposure vignette
-lib.shaders.autoExposure = love.graphics.newShader(lib.root .. "/shaders/autoExposure.glsl")
-
---rrr1
-lib.shaders.rrr1 = love.graphics.newShader(lib.root .. "/shaders/rrr1.glsl")
-
---clouds
-lib.shaders.clouds = love.graphics.newShader(lib.root .. "/shaders/clouds.glsl")
-
---debug shaders
-if _DEBUGMODE then
-	for d,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/debug")) do
-		lib.shaders[s:sub(1, #s-5)] = love.graphics.newShader(lib.root .. "/shaders/debug/" .. s)
+function lib:getShader(s)
+	if not lib.shaders[s] then
+		local r = love.filesystem.read
+		local shader = r(lib.root .. "/shaders/" .. s .. ".glsl") or r(lib.root .. "/shaders/sky/" .. s .. ".glsl") or r(lib.root .. "/shaders/debug/" .. s .. ".glsl")
+		assert(shader, "shader " .. tostring(s) .. " does not exist")
+		lib.shaders[s] = love.graphics.newShader(shader, nil, s)
 	end
+	return lib.shaders[s]
 end
 
 local function earlyExposure(canvases)
@@ -238,7 +214,7 @@ end
 --construct a shader
 local baseShader = love.filesystem.read(lib.root .. "/shaders/base.glsl")
 local baseShadowShader = love.filesystem.read(lib.root .. "/shaders/shadow.glsl")
-function lib:getShader(o, pass, canvases, light, shadows)
+function lib:getRenderShader(o, pass, canvases, light, shadows)
 	local mat = o.material
 	local shaderType = o.shaderType
 	local reflection = o.reflection or o.obj and o.obj.reflection or self.sky_reflection

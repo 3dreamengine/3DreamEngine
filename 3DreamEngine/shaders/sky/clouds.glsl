@@ -15,7 +15,9 @@ extern vec2 offset;
 
 extern Image tex_base;
 
-vec4 effect(vec4 c, Image tex, vec2 tc, vec2 sc) {
+extern Image MainTex;
+
+void effect() {
 	vec3 dir = normalize(vertexPos);
 	vec3 pos = normalize(vertexPos * vec3(1.0, 8.0, 1.0));
 	if (pos.y < 0.0) {
@@ -23,7 +25,7 @@ vec4 effect(vec4 c, Image tex, vec2 tc, vec2 sc) {
 	}
 	
 	//cloud
-	float cloud = Texel(tex, pos.xz * scale + offset).r;
+	float cloud = Texel(MainTex, pos.xz * scale + offset).r;
 	float base = clamp(0.5 + (Texel(tex_base, pos.xz * scale_base - offset * 0.01).r - 0.5) * base_impact, 0.0, 1.0);
 	float roughness = Texel(tex_base, pos.xz * scale_roughness - offset).r;
 	
@@ -37,7 +39,8 @@ vec4 effect(vec4 c, Image tex, vec2 tc, vec2 sc) {
 	//color
 	vec3 color = mix(sunColor + direct * sunColor, ambientColor, 1.0 - exp(-density)) * (0.3 + roughness * 0.4);
 	
-	return vec4(color, density);
+	love_Canvases[0] = vec4(color, density);
+	love_Canvases[1] = vec4(mix(65504.0, 1024.0, density), 0.0, 0.0, 1.0);
 }
 #endif
 

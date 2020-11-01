@@ -71,7 +71,7 @@ function lib:buildScene(cam, canvases, typ, blacklist)
 								if not LOD or LOD[math.min( math.floor((task:getPos() - cam.pos):length() * LODFactor) + 1, 9 )] then
 									if noFrustumCheck or not subObj.boundingBox or self:activeFrustum(cam, task:getPos(), task:getSize(), subObj) then
 										if subObj.loaded then
-											local shader = self:getShader(subObj, pass, canvases, light, typ == "shadows")
+											local shader = self:getRenderShader(subObj, pass, canvases, light, typ == "shadows")
 											local lightID = pass == 1 and canvases.deferred and "" or light.ID
 											
 											--group shader and materials together to reduce shader switches
@@ -137,27 +137,22 @@ function lib:render(scene, canvases, cam)
 	--love shader friendly
 	local viewPos = {cam.pos:unpack()}
 	
-	--clear and set canvases
+	--and set canvases
 	love.graphics.push("all")
 	if canvases.mode ~= "direct" then
 		love.graphics.reset()
 	end
 	
-	--render sky
+	--clear canvases
 	if canvases.mode ~= "direct" then
-		love.graphics.setCanvas(canvases.color)
+		love.graphics.setCanvas({canvases.color, canvases.depth, depthstencil = canvases.depth_buffer})
+		love.graphics.setDepthMode()
+		love.graphics.clear(false, false, true)
 	end
+	
+	--render sky
 	self:renderSky(cam.transformProjOrigin, cam.transform, (cam.near + cam.far) / 2)
 	
-	--clear
-	if mode ~= "direct" then
-		love.graphics.setCanvas({canvases.depth, canvases.colorAlpha, canvases.dataAlpha, depthstencil = canvases.depth_buffer})
-		love.graphics.clear({255, 255, 255, 255}, {0, 0, 0, 0}, {0, 0, 0, 0})
-		if canvases.deferred then
-			love.graphics.setCanvas(canvases.position, canvases.normal, canvases.material, canvases.albedo)
-			love.graphics.clear(0, 0, 0, 0)
-		end
-	end
 	self.delton:stop()
 	
 	--start both passes
@@ -179,12 +174,11 @@ function lib:render(scene, canvases, cam)
 			elseif dataAlpha then
 				--average alpha
 				love.graphics.setCanvas({canvases.colorAlpha, canvases.dataAlpha, depthstencil = canvases.depth_buffer})
+				love.graphics.clear(true, false, false)
 			elseif canvases.refractions and pass == 2 then
 				--refractions only
-				love.graphics.setCanvas({canvases.colorAlpha, canvases.depth, depthstencil = canvases.depth_buffer})
-			elseif pass == 1 then
-				--no refractions or default pass
-				love.graphics.setCanvas({canvases.color, canvases.depth, depthstencil = canvases.depth_buffer})
+				love.graphics.setCanvas({canvases.colorAlpha, depthstencil = canvases.depth_buffer})
+				love.graphics.clear(true, false, false)
 			end
 		end
 		
@@ -547,18 +541,18 @@ function lib:renderFull(scene, cam, canvases)
 		love.graphics.setCanvas(canvases.AO_1)
 		love.graphics.clear()
 		love.graphics.setBlendMode("replace", "premultiplied")
-		love.graphics.setShader(self.shaders.SSAO)
+		love.graphics.setShader(self:getShader("SSAO"))
 		love.graphics.draw(canvases.depth, 0, 0, 0, self.AO_resolution)
 		
 		--blur
 		if self.AO_blur then
-			love.graphics.setShader(self.shaders.blur)
-			self.shaders.blur:send("dir", {1.0 / canvases.AO_1:getWidth(), 0.0})
+			love.graphics.setShader(self:getShader("blur"))
+			self:getShader("blur"):send("dir", {1.0 / canvases.AO_1:getWidth(), 0.0})
 			love.graphics.setCanvas(canvases.AO_2)
 			love.graphics.clear()
 			love.graphics.draw(canvases.AO_1)
 			
-			self.shaders.blur:send("dir", {0.0, 1.0 / canvases.AO_1:getHeight()})
+			self:getShader("blur"):send("dir", {0.0, 1.0 / canvases.AO_1:getHeight()})
 			
 			--without final, draw directly on color
 			if canvases.mode == "normal" then
@@ -572,7 +566,7 @@ function lib:renderFull(scene, cam, canvases)
 			end
 		elseif canvases.smode == "lite" then
 			--without final and blur, draw directly on color
-			love.graphics.setShader(self.shaders.rrr1)
+			love.graphics.setShader(self:getShader("rrr1"))
 			love.graphics.setCanvas(canvases.color)
 			love.graphics.setBlendMode("multiply", "premultiplied")
 			love.graphics.draw(canvases.AO_1, 0, 0, 0, 1 / self.AO_resolution)
@@ -587,16 +581,18 @@ function lib:renderFull(scene, cam, canvases)
 		
 		if canvases.averageAlpha then
 			--required different fetch
-			love.graphics.setShader(self.shaders.bloom_average)
-			self.shaders.bloom_average:send("canvas_alpha", canvases.colorAlpha)
-			self.shaders.bloom_average:send("canvas_alphaData", canvases.dataAlpha)
-			self.shaders.bloom_average:send("strength", self.bloom_strength)
+			local shader = self:getShader("bloom_average")
+			love.graphics.setShader(shader)
+			shader:send("canvas_alpha", canvases.colorAlpha)
+			shader:send("canvas_alphaData", canvases.dataAlpha)
+			shader:send("strength", self.bloom_strength)
 			love.graphics.setBlendMode("replace", "premultiplied")
 			love.graphics.draw(canvases.color, 0, 0, 0, self.bloom_resolution)
 		else
 			--color
-			love.graphics.setShader(self.shaders.bloom)
-			self.shaders.bloom:send("strength", self.bloom_strength)
+			local shader = self:getShader("bloom")
+			love.graphics.setShader(shader)
+			shader:send("strength", self.bloom_strength)
 			love.graphics.setBlendMode("replace", "premultiplied")
 			love.graphics.draw(canvases.color, 0, 0, 0, self.bloom_resolution)
 			
@@ -615,16 +611,17 @@ function lib:renderFull(scene, cam, canvases)
 		end
 		
 		--blur
-		love.graphics.setShader(self.shaders.blur)
+		local shader = self:getShader("blur")
+		love.graphics.setShader(shader)
 		for i = quality, 0, -1 do
 			local size = 2^i / 2^quality * self.bloom_size * canvases.width * self.bloom_resolution / 11
 			
-			self.shaders.blur:send("dir", {size / canvases.bloom_1:getWidth(), 0})
+			shader:send("dir", {size / canvases.bloom_1:getWidth(), 0})
 			love.graphics.setCanvas(canvases.bloom_2)
 			love.graphics.clear()
 			love.graphics.draw(canvases.bloom_1)
 			
-			self.shaders.blur:send("dir", {0, size / canvases.bloom_1:getHeight()})
+			shader:send("dir", {0, size / canvases.bloom_1:getHeight()})
 			love.graphics.setCanvas(canvases.bloom_1)
 			love.graphics.clear()
 			love.graphics.draw(canvases.bloom_2)
@@ -742,8 +739,8 @@ function lib:present(cam, canvases, lite)
 				
 				love.graphics.setColor(0, 0, 0)
 				love.graphics.rectangle("fill", x * w, y, w, h)
-				love.graphics.setShader(self.shaders.replaceAlpha)
-				self.shaders.replaceAlpha:send("alpha", b)
+				love.graphics.setShader(self:getShader("replaceAlpha"))
+				self:getShader("replaceAlpha"):send("alpha", b)
 				love.graphics.setBlendMode("add")
 				love.graphics.draw(s, x * w, y, 0, w / s:getWidth())
 				love.graphics.setShader()

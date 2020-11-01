@@ -150,7 +150,9 @@ vec3 col;
 		love_Canvases[1] = vec4(1.0, albedo.a, depth, 1.0);
 #endif
 #else
+#ifndef REFRACTIONS_ENABLED
 		love_Canvases[1] = vec4(depth, 0.0, 0.0, albedo.a);
+#endif
 #endif
 	
 #ifdef DEFERRED

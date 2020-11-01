@@ -398,16 +398,17 @@ do
 		
 		local can = cache[f][resolution][level]
 		local res = can:getWidth()
+		local shader = self:getShader("blur_cube")
 		for side = 1, 6 do
 			love.graphics.setCanvas(can)
-			love.graphics.setShader(self.shaders.blur_cube)
-			self.shaders.blur_cube:send("tex", cube)
-			self.shaders.blur_cube:send("strength", 0.025)
-			self.shaders.blur_cube:send("scale", 1.0 / res)
-			self.shaders.blur_cube:send("normal", blurVecs[side][1])
-			self.shaders.blur_cube:send("dirX", blurVecs[side][2])
-			self.shaders.blur_cube:send("dirY", blurVecs[side][3])
-			self.shaders.blur_cube:send("lod", level - 2.0)
+			love.graphics.setShader(shader)
+			shader:send("tex", cube)
+			shader:send("strength", 0.025)
+			shader:send("scale", 1.0 / res)
+			shader:send("normal", blurVecs[side][1])
+			shader:send("dirX", blurVecs[side][2])
+			shader:send("dirY", blurVecs[side][3])
+			shader:send("lod", level - 2.0)
 			love.graphics.rectangle("fill", 0, 0, res, res)
 			
 			--paste

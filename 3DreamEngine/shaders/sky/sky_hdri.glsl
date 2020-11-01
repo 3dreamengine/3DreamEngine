@@ -1,9 +1,12 @@
 #ifdef PIXEL
 extern float exposure;
 
-vec4 effect(vec4 ambient, Image sky, vec2 tc, vec2 sc) {
-	vec4 c = Texel(sky, tc);
-	return vec4(c.rgb * exposure, 1.0);
+extern Image MainTex;
+
+void effect() {
+	vec4 c = Texel(MainTex, VaryingTexCoord.xy);
+	love_Canvases[0] = vec4(c.rgb * exposure, 1.0);
+	love_Canvases[1] = vec4(65504.0, 0.0, 0.0, 1.0);
 }
 #endif
 
