@@ -57,6 +57,7 @@ function job:execute(times, delta, obj, pos, face)
 	local canvas = obj.reflection.canvas
 	depth_buffer = depth_buffer or love.graphics.newCanvas(canvas:getWidth(), canvas:getHeight(), {format = "depth16", readable = false, msaa = canvas:getMSAA()})
 	love.graphics.setCanvas({{canvas, face = face}, depthstencil = depth_buffer})
+	love.graphics.clear()
 	obj.reflection.canvas = nil
 	
 	--generate scene
