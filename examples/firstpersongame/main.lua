@@ -45,7 +45,7 @@ function love.draw()
 	dream.cam:rotateX(dream.cam.rx)
 	
 	--update light
-	dream:resetLight(true)
+	dream:resetLight()
 	if love.mouse.isDown(1) then
 		dream:addNewLight("point", player.x + dream.cam.normal.x, player.y + dream.cam.normal.y, player.z + dream.cam.normal.z, 1.0, 0.75, 0.1, 5.0 + love.math.noise(love.timer.getTime()*2))
 	end

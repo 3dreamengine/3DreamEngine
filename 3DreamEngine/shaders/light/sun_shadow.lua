@@ -80,11 +80,11 @@ function sh:constructDefinesGlobal(dream)
 				return sampleShadowSun2(sun_shadow_tex_1, shadowUV * 0.5 + 0.5);
 			} else if (dist < factor) {
 				vertexPosShadow = sun_shadow_proj_2 * vec4(vertexPos.xyz, 1.0);
-				shadowUV = vertexPosShadow.xyz - vec3(0.0, 0.0, bias * factor);
+				shadowUV = vertexPosShadow.xyz - vec3(0.0, 0.0, bias * 0.5 * factor);
 				return sampleShadowSun2(sun_shadow_tex_2, shadowUV * 0.5 + 0.5);
 			} else {
 				vertexPosShadow = sun_shadow_proj_3 * vec4(vertexPos.xyz, 1.0);
-				shadowUV = vertexPosShadow.xyz - vec3(0.0, 0.0, bias * factor * factor);
+				shadowUV = vertexPosShadow.xyz - vec3(0.0, 0.0, bias * factor);
 				return sampleShadowSun2(sun_shadow_tex_3, shadowUV * 0.5 + 0.5);
 			}
 		}

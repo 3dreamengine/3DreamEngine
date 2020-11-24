@@ -213,10 +213,12 @@ decoder = dream:setNameDecoder()
 To improve performance you can enable frustum checks to only render visible objects.
 
 ```lua
-dream:setFrustumCheck(enabled)
-enabled = dream:getFrustumCheck()
+dream:setFrustumCheck(frustumType)
+frustumType = dream:getFrustumCheck()
 ```
-`enabled (true)`
+`frustumType ("fast")`
+* "fast" using fast dot product at reduced precision (rendering more than necessary)
+* "plane" using accurate but slightly slower plane frustum check. WIP due to errors at close distance.
 
 
 

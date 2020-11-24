@@ -207,9 +207,10 @@ function lib:getRenderShader(o, pass, canvases, light, shadows)
 	--global modules
 	local m = { }
 	for d,s in pairs(self.activeShaderModules) do
-		m[d] = self:getShaderModule(d)
-		if not shadows or m[d].shadow then
-			ID_modules = ID_modules + m[d].ID
+		local sm = self:getShaderModule(d)
+		if not shadows or sm.shadow then
+			m[d] = sm
+			ID_modules = ID_modules + sm.ID
 		end
 	end
 	
@@ -217,9 +218,10 @@ function lib:getRenderShader(o, pass, canvases, light, shadows)
 	if modules then
 		for d,s in pairs(modules) do
 			if not self.activeShaderModules[d] then
-				m[d] = self:getShaderModule(d)
-				if not shadows or m[d].shadow then
-					ID_modules = ID_modules + m[d].ID
+				local sm = self:getShaderModule(d)
+				if not shadows or sm.shadow then
+					m[d] = sm
+					ID_modules = ID_modules + sm.ID
 				end
 			end
 		end
