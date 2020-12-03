@@ -41,7 +41,7 @@ return {
 	end,
 
 	setDirection = function(obj, normal, up)
-		obj.transform = lib:lookAt(vec3(0, 0, 0), normal, up):invert() * obj.transform
+		obj.transform = lib:lookAt(vec3(0, 0, 0), normal, up):invert()
 		return obj
 	end,
 }

@@ -626,8 +626,9 @@ function lib:present(cam, canvases, lite)
 	
 	--extract camera position and normal
 	cam = cam or self.cam
-	cam.pos = cam.transform:invert() * vec3(0.0, 0.0, 0.0)
-	cam.normal = (cam.pos - cam.transform:invert() * vec3(0.0, 0.0, 1.0)):normalize()
+	local i = cam.transform:invert()
+	cam.pos = i * vec3(0.0, 0.0, 0.0)
+	cam.normal = (cam.pos - i * vec3(0.0, 0.0, 1.0)):normalize()
 	
 	--perspective transform
 	local n = cam.near
