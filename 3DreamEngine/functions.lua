@@ -302,22 +302,24 @@ function lib:getCollisionData(object)
 		vertices[d] = (object.transform and object.transform * vec3(s) or vec3(s)) - n.transform
 	end
 	
-	--edges
-	for d,s in ipairs(object.edges) do
-		--vertices
-		local a = vertices[s[1]]
-		local b = vertices[s[2]]
-		
-		--edge
-		table.insert(n.edges, {a, b})
-	end
-	
-	--faces
+	local hashes = { }
 	for d,s in ipairs(object.faces) do
 		--vertices
 		local a = vertices[s[1]]
 		local b = vertices[s[2]]
 		local c = vertices[s[3]]
+		
+		--edges
+		for i = 1, 3 do
+			local n1 = s[i % 3 + 1]
+			local n2 = s[(i+1) % 3 + 1]
+			
+			local id = math.min(n1, n2) * 9999 + math.max(n1, n2)
+			if not hashes[id] then
+				table.insert(n.edges, {vertices[n1], vertices[n2]})
+				hashes[id] = true
+			end
+		end
 		
 		--face normal
 		local normal = (b-a):cross(c-a):normalize()

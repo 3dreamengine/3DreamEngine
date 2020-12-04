@@ -16,7 +16,7 @@ local descriptions = {
 	["blacksmith"] = "Single room demo. PBR with 3 lightsources. Toggle different features to see real time differences.",
 	["firstpersongame"] = "Not really a game, demo scene to see particle systems, outdoor lighting, daytime and rain.",
 	["particlesystem"] = "Small particle system example.",
-	["lowPolyGame"] = "Unfinished collision demo, flat phong shading.",
+	["game"] = "Unfinished collision demo, flat phong shading.",
 	["knight"] = "MagicaVoxel demo.",
 }
 

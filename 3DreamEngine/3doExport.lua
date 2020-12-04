@@ -51,7 +51,7 @@ function lib:export3do(obj)
 			["shaderType"] = o.shaderType,
 			["meshType"] = o.meshType,
 			["material"] = o.material.name,
-			["boundingBox"] = table.copyPrimitive(o.boundingBox),
+			["boundingBox"] = o.boundingBox,
 			["transform"] = o.transform,
 			["joints"] = o.joints,
 			["linked"] = o.linked,
@@ -66,7 +66,6 @@ function lib:export3do(obj)
 		--extended data
 		if obj.args.export3doVertices and not o.linked then
 			h["vertices"] = o.vertices
-			h["edges"] = o.edges
 			h["faces"] = o.faces
 		end
 		

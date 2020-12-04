@@ -10,6 +10,18 @@ local function loadFloatArray(arr)
 	end
 	return t
 end
+
+local function loadVecArray(arr, stride)
+	local t = { }
+	for w in arr:gmatch("%S+") do
+		if #t == 0 or #t[#t] >= stride then
+			t[#t+1] = { }
+		end
+		table.insert(t[#t], tonumber(w))
+	end
+	return t
+end
+
 local function loadArray(arr)
 	local t = { }
 	for w in arr:gmatch("%S+") do
@@ -221,6 +233,13 @@ return function(self, obj, path)
 			["COLOR"] = "colors",
 		}
 		
+		local stride = {
+			["VERTEX"] = 3,
+			["NORMAL"] = 3,
+			["TEXCOORD"] = 2,
+			["COLOR"] = 4,
+		}
+		
 		--parse vertices
 		local o
 		local lastMaterial
@@ -282,45 +301,33 @@ return function(self, obj, path)
 					end
 					
 					--parse data arrays
-					local verticeIndex = { }
 					for d,input in ipairs(l.input) do
 						local f = translate[input._attr.semantic]
 						if f then
-							local s = loadFloatArray( (indices[input._attr.source].input and indices[ indices[input._attr.source].input[1]._attr.source ] or indices[input._attr.source]).float_array[1][1] )
+							--fetch data from the mesh source or from a nested vertice data block
+							local otherInput = indices[input._attr.source].input
+							local data = (otherInput and indices[otherInput[1]._attr.source] or indices[input._attr.source]).float_array[1][1]
+							local s = loadVecArray(data, stride[input._attr.semantic])
+							
+							--flip UV
+							if f == "texCoords" then
+								for i,v in ipairs(s) do
+									s[i] = {v[1], 1.0 - v[2]}
+								end
+							end
+							
+							--parse
 							for i = 1, #ids / fields do
-								local id = ids[(i-1)*fields + tonumber(input._attr.offset) + 1]
-								if f == "texCoords" then
-									--xy vector
-									o[f][index+i] = {
-										s[id*2+1],
-										1.0-s[id*2+2],
-									}
-								elseif f == "colors" then
-									--rgba vector
-									o[f][index+i] = {
-										s[id*4+1],
-										s[id*4+2],
-										s[id*4+3],
-										s[id*4+4],
-									}
-								else
-									--xyz vectors
-									o[f][index+i] = {
-										s[id*3+1],
-										s[id*3+2],
-										s[id*3+3]
-									}
-									
-									if f == "vertices" then
-										verticeIndex[index+i] = id
-									end
-									
-									--also connect weight and joints
-									if f == "vertices" and o.weights then
-										o.weights[index+i] = armatures[o.name].weights[id+1]
-										o.joints[index+i] = armatures[o.name].joints[id+1]
-										o.materials[index+i] = material
-									end
+								local id = ids[(i-1)*fields + tonumber(input._attr.offset) + 1] + 1
+								
+								--connect data
+								o[f][index+i] = s[id]
+								
+								--also connect weight and joints
+								if f == "vertices" and o.weights then
+									o.weights[index+i] = armatures[o.name].weights[id]
+									o.joints[index+i] = armatures[o.name].joints[id]
+									o.materials[index+i] = material
 								end
 							end
 						end
@@ -331,18 +338,6 @@ return function(self, obj, path)
 					local i = index+1
 					for face = 1, count do
 						local verts = vcount[face] or 3
-						
-						--store edges
-						for v = 1, verts do
-							local a, b = i + v - 1, v == verts and i or (i + v)
-							local min = math.min(verticeIndex[a], verticeIndex[b])
-							local max = math.max(verticeIndex[a], verticeIndex[b])
-							local id = min * 65536 + max
-							if not edges[id] then
-								edges[id] = true
-								o.edges[#o.edges+1] = {a, b}
-							end
-						end
 						
 						if verts == 3 then
 							--tris

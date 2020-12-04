@@ -422,11 +422,12 @@ function lib:loadObject(path, shaderType, args)
 	if obj.args.cleanup ~= false then
 		for d,s in pairs(obj.objects) do
 			if obj.args.cleanup then
+				--clean important data only on request to allow reusage for collision data
 				s.vertices = nil
 				s.faces = nil
-				s.edges = nil
 			end
 			
+			--cleanup irrelevant data
 			s.normals = nil
 			s.texCoords = nil
 			s.colors = nil

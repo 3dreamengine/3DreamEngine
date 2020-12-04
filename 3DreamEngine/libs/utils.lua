@@ -5,33 +5,6 @@ local utils = {
 	math = { },
 }
 
-local index = { }
-function utils.printTable(t, tab)
-	if not tab then
-		print()
-		index = { }
-	end
-	tab = tab or 0
-	local count = 0
-	for d,s in pairs(t) do
-		count = count + 1
-	end
-	if index[t] then
-		print(string.rep(" ", tab*2) .. (count == 0 and "└─" or "├─") .. " (repeat)")
-		return
-	else
-		index[t] = t
-	end
-	for d,s in pairs(t) do
-		count = count - 1
-		if type(s) == "table" then
-			print(string.rep(" ", tab*2) .. (count == 0 and "└─" or "├─") .. tostring(d))
-			utils.printTable(s, tab+1)
-		else
-			print(string.rep(" ", tab*2) .. (count == 0 and "└─" or "├─") .. tostring(d) .. " = " .. tostring(s))
-		end
-	end
-end
 
 -- FILE SYSTEM --
 --recursively delete files
@@ -57,12 +30,19 @@ function utils.filesystem.getSize(item)
 	end
 end
 
+
 -- TABLE --
-function utils.table.merge(first_table, second_table)
+function utils.table.merge(first_table, second_table, cycles)
+	cycles = cycles or { }
+	cycles[second_table] = true
 	for k,v in pairs(second_table) do
 		if type(v) == "table" then
-			if not first_table[k] then first_table[k] = { } end
-			table.merge(first_table[k], v)
+			if not cycles[first_table[k]] then
+				if not first_table[k] then
+					first_table[k] = { }
+				end
+				utils.table.merge(first_table[k], v, cycles)
+			end
 		else
 			first_table[k] = v
 		end
@@ -82,19 +62,35 @@ function utils.table.copy(first_table)
 	return second_table
 end
 
-local primitives = {["boolean"] = true, ["string"] = true, ["number"] = true}
-function table.copyPrimitive(first_table)
-	local second_table = { }
-	for k,v in pairs(first_table) do
-		if primitives[type(k)] then
-			if type(v) == "table" then
-				second_table[k] = table.copyPrimitive(v)
-			elseif primitives[type(v)] then
-				second_table[k] = v
+--prints a table, considers cycles
+do
+	local index = { }
+	function utils.table.print(t, tab)
+		if not tab then
+			print()
+			index = { }
+		end
+		tab = tab or 0
+		local count = 0
+		for d,s in pairs(t) do
+			count = count + 1
+		end
+		if index[t] then
+			print(string.rep(" ", tab*2) .. (count == 0 and "└─" or "├─") .. " (repeat)")
+			return
+		else
+			index[t] = t
+		end
+		for d,s in pairs(t) do
+			count = count - 1
+			if type(s) == "table" then
+				print(string.rep(" ", tab*2) .. (count == 0 and "└─" or "├─") .. tostring(d))
+				utils.table.print(s, tab+1)
+			else
+				print(string.rep(" ", tab*2) .. (count == 0 and "└─" or "├─") .. tostring(d) .. " = " .. tostring(s))
 			end
 		end
 	end
-	return second_table
 end
 
 --invert indices and values to produce a set

@@ -7,7 +7,6 @@ return function(self, obj, path, loadAsCollisions)
 	local vertices = { }
 	local normals = { }
 	local texture = { }
-	local edges = { }
 	
 	--load object
 	local material = obj.materials.None
@@ -58,17 +57,6 @@ return function(self, obj, path, loadAsCollisions)
 					o.normals[index] = normals[tonumber(v2[3])]
 					o.materials[index] = material
 					o.extras[index] = material.extra or o.extra or 1.0
-				end
-			end
-			
-			--store edges
-			for i = 1, verts do
-				local min = math.min(edgeID[i], edgeID[i+1] or edgeID[1])
-				local max = math.max(edgeID[i], edgeID[i+1] or edgeID[1])
-				local id = min * 65536 + max
-				if not edges[id] then
-					edges[id] = true
-					o.edges[#o.edges+1] = {edge[i], edge[i+1] or edge[1]}
 				end
 			end
 			
