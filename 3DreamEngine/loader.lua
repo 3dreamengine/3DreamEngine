@@ -257,19 +257,23 @@ function lib:loadObject(path, shaderType, args)
 	
 	
 	--detect links
+	local antiDuplicate = { }
 	for d,o in pairs(obj.objects) do
 		if o.name:sub(1, 5) == "LINK_" then
-			local source = o.linked or removePostfix(o.name:sub(6))
-			
 			--remove original
 			obj.objects[d] = nil
 			
-			--store link
-			obj.linked = obj.linked or { }
-			obj.linked[#obj.linked+1] = {
-				source = source,
-				transform = o.transform
-			}
+			if not antiDuplicate[o.name] then
+				antiDuplicate[o.name] = true
+				local source = o.linked or removePostfix(o.name:sub(6))
+				
+				--store link
+				obj.linked = obj.linked or { }
+				obj.linked[#obj.linked+1] = {
+					source = source,
+					transform = o.transform
+				}
+			end
 		end
 	end
 	
