@@ -225,7 +225,7 @@ function c:newMesh(object, transform)
 	elseif object.point then
 		--this is a collision object, wrap it into a group
 		setmetatable(object, {__index = c.meta_basic})
-		local g = self:newGroup(object.groupTransform or transform)
+		local g = self:newGroup(object.linkTransform or transform)
 		g:add(object)
 		return g
 	elseif object.collisions then

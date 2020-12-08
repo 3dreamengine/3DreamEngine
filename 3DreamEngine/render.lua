@@ -6,6 +6,7 @@ local lib = _3DreamEngine
 
 --rendering stats
 lib.stats = {
+	vertices = 0,
 	shadersInUse = 0,
 	lightSetups = 0,
 	materialDraws = 0,
@@ -305,6 +306,7 @@ function lib:render(scene, canvases, cam)
 						love.graphics.draw(subObj.mesh)
 						
 						self.stats.draws = self.stats.draws + 1
+						self.stats.vertices = self.stats.vertices + subObj.mesh:getVertexCount()
 					end
 					self.stats.materialDraws = self.stats.materialDraws + 1
 					self.delton:stop()

@@ -27,9 +27,10 @@ local function clone(t)
 	return n
 end
 
---adapt the transform to the original object 
+--adapt the transform to the original object, for example the collision to the actual mesh
 local function moveToMaster(obj, o)
 	if obj.args.loadAsLibrary then
+		--look for original
 		local oo
 		local search = removePostfix(o.name)
 		for d,s in pairs(obj.objects) do
@@ -38,19 +39,29 @@ local function moveToMaster(obj, o)
 				break
 			end
 		end
+		
+		--transform
 		if oo and oo.transform and o.transform then
 			local t = oo.transform:invert() * o.transform
 			o.transform = oo.transform
 			
 			--transform vertices
+			local transformed = { }
 			for d,s in ipairs(o.vertices) do
-				o.vertices[d] = {(t * vec3(s)):unpack()}
+				if not transformed[s] then
+					transformed[s] = {(t * vec3(s)):unpack()}
+				end
+				o.vertices[d] = transformed[s]
 			end
 			
 			--transform normals
 			local tn = t:subm()
+			local transformed = { }
 			for d,s in ipairs(o.normals) do
-				o.normals[d] = {(tn * vec3(s)):unpack()}
+				if not transformed[s] then
+					transformed[s] = {(tn * vec3(s)):unpack()}
+				end
+				o.normals[d] = transformed[s]
 			end
 		end
 	end
@@ -61,7 +72,7 @@ function lib:loadLibrary(path, shaderType, args, prefix)
 	if type(shaderType) == "table" then
 		return self:loadLibrary(path, shaderType and shaderType.shaderType, shaderType)
 	end
-	args = args or { }
+	args = table.copy(args) or { }
 	args.shaderType = shaderType or args.shaderType
 	
 	prefix = prefix or ""
@@ -97,6 +108,20 @@ function lib:loadLibrary(path, shaderType, args, prefix)
 			table.insert(self.collisionLibrary[id], c)
 		end
 	end
+	
+	--insert physics intro library
+	local overwritten = { }
+	if obj.physics then
+		for name,c in pairs(obj.physics) do
+			local id = removePostfix(prefix .. name)
+			if not overwritten[id] then
+				overwritten[id] = true
+				self.physicsLibrary[id] = { }
+			end
+			
+			table.insert(self.physicsLibrary[id], c)
+		end
+	end
 end
 
 --loads an object
@@ -107,7 +132,7 @@ function lib:loadObject(path, shaderType, args)
 	if type(shaderType) == "table" then
 		return self:loadObject(path, shaderType and shaderType.shaderType, shaderType)
 	end
-	args = args or { }
+	args = table.copy(args) or { }
 	args.shaderType = shaderType or args.shaderType
 	
 	--some shaderType specific settings
@@ -269,9 +294,21 @@ function lib:loadObject(path, shaderType, args)
 				obj.collisions = obj.collisions or { }
 				for d,no in ipairs(lc) do
 					local co = clone(no)
-					co.groupTransform = link.transform
+					co.linkTransform = link.transform
 					co.linked = link.source
 					obj.collisions["link_" .. id .. "_" .. d .. "_" .. d] = co
+				end
+			end
+			
+			--link physics
+			local lc = self.physicsLibrary[link.source]
+			if lc then
+				obj.physics = obj.physics or { }
+				for d,no in ipairs(lc) do
+					local co = clone(no)
+					co.transform = link.transform
+					co.linked = link.source
+					obj.physics["link_" .. id .. "_" .. d .. "_" .. d] = co
 				end
 			end
 		end
@@ -385,9 +422,14 @@ function lib:loadObject(path, shaderType, args)
 					o.transform = nil
 				end
 				
+				--3D collision
 				obj.collisions = obj.collisions or { }
 				obj.collisionCount = (obj.collisionCount or 0) + 1
 				obj.collisions[id] = self:getCollisionData(o)
+				
+				--2.5D physics
+				obj.physics = obj.physics or { }
+				obj.physics[id] = self:getPhysicsData(o)
 			end
 			obj.objects[d] = nil
 		end
@@ -425,10 +467,10 @@ function lib:loadObject(path, shaderType, args)
 				--clean important data only on request to allow reusage for collision data
 				s.vertices = nil
 				s.faces = nil
+				s.normals = nil
 			end
 			
 			--cleanup irrelevant data
-			s.normals = nil
 			s.texCoords = nil
 			s.colors = nil
 			s.materials = nil

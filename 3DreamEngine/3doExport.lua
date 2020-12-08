@@ -45,6 +45,19 @@ function lib:export3do(obj)
 		["objects"] = { },
 	}
 	
+	--physics
+	if obj.physics then
+		header["physics"] = { }
+		for d,s in ipairs(obj.physics) do
+			header["physics"][d] = { }
+			for i,v in pairs(s) do
+				header["physics"][d][i] = v
+			end
+			
+			header["physics"][d].shape = {header["physics"][d].shape:getPoints()}
+		end
+	end
+	
 	for d,o in pairs(obj.objects) do
 		local h = {
 			["name"] = o.name,
@@ -66,6 +79,7 @@ function lib:export3do(obj)
 		--extended data
 		if obj.args.export3doVertices and not o.linked then
 			h["vertices"] = o.vertices
+			h["normals"] = o.normals
 			h["faces"] = o.faces
 		end
 		

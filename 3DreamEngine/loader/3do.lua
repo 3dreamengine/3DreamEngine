@@ -3,6 +3,7 @@
 blazing fast mesh loading using pre-calculated meshes and multi-threading
 --]]
 
+--recursively recreates vectors
 local function convert(t)
 	if t then
 		for d,s in pairs(t) do
@@ -108,24 +109,25 @@ return function(self, obj, path)
 	--recreate collision data
 	if obj.collisions then
 		for _,coll in pairs(obj.collisions) do
-			for i,edge in ipairs(coll.edges) do
-				edge[1] = vec3(edge[1])
-				edge[2] = vec3(edge[2])
-			end
-			for i,face in ipairs(coll.faces) do
-				face[1] = vec3(face[1])
-				face[2] = vec3(face[2])
-				face[3] = vec3(face[3])
-			end
-			for i,n in ipairs(coll.normals) do
-				coll.normals[i] = vec3(n)
-			end
+			convert(coll.edges)
+			convert(coll.faces)
+			convert(coll.normals)
 			coll.point = vec3(coll.point)
-			if coll.groupTransform then
-				coll.groupTransform = mat4(coll.groupTransform)
+			if coll.linkTransform then
+				coll.linkTransform = mat4(coll.linkTransform)
 			end
 			coll.transform = #coll.transform == 16 and mat4(coll.transform) or vec3(coll.transform)
 			coll.transformInverse = #coll.transformInverse == 16 and mat4(coll.transformInverse) or vec3(coll.transformInverse)
+		end
+	end
+	
+	--recreate physics data
+	if obj.physics then
+		for _,coll in pairs(obj.physics) do
+			coll.transform = mat4(coll.transform)
+			convert(coll.vertices)
+			convert(coll.normals)
+			coll.shape = love.physics.newPolygonShape(coll.shape)
 		end
 	end
 	
@@ -150,5 +152,7 @@ return function(self, obj, path)
 	if not obj.args.no3doRequest then
 		obj:request()
 	end
+	
+	cache = { }
 	file:close()
 end

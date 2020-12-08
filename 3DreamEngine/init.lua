@@ -31,6 +31,7 @@ lib.ffi = require("ffi")
 _3DreamEngine = lib
 lib.root = (...)
 require((...) .. "/functions")
+require((...) .. "/collisionFunctions")
 require((...) .. "/settings")
 require((...) .. "/classes")
 require((...) .. "/shader")
@@ -63,6 +64,7 @@ lib.canvasFormats = love.graphics and love.graphics.getCanvasFormats() or { }
 lib.materialLibrary = { }
 lib.objectLibrary = { }
 lib.collisionLibrary = { }
+lib.physicsLibrary = { }
 
 --default settings
 lib:setAO(32, 0.75, false)
@@ -333,6 +335,7 @@ function lib:prepare()
 	self.allActiveShaderModules = { }
 	
 	--reset stats
+	self.stats.vertices = 0
 	self.stats.shadersInUse = 0
 	self.stats.lightSetups = 0
 	self.stats.materialDraws = 0

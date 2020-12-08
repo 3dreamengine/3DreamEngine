@@ -32,22 +32,19 @@ end
 
 
 -- TABLE --
-function utils.table.merge(first_table, second_table, cycles)
-	cycles = cycles or { }
-	cycles[second_table] = true
-	for k,v in pairs(second_table) do
+function utils.table.merge(first, second)
+	for k,v in pairs(second) do
 		if type(v) == "table" then
-			if not cycles[first_table[k]] then
-				if not first_table[k] then
-					first_table[k] = { }
-				end
-				utils.table.merge(first_table[k], v, cycles)
+			if not first[k] then
+				first[k] = v
+			else
+				utils.table.merge(first[k], v)
 			end
 		else
-			first_table[k] = v
+			first[k] = v
 		end
 	end
-	return first_table
+	return first
 end
 
 function utils.table.copy(first_table)
