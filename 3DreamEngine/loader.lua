@@ -14,57 +14,12 @@ local function newBoundaryBox()
 	}
 end
 
-local function removePostfix(t)
-	local v = t:match("(.*)%.[^.]+")
-	return v or t
-end
-
 local function clone(t)
 	local n = { }
 	for d,s in pairs(t) do
 		n[d] = s
 	end
 	return n
-end
-
---adapt the transform to the original object, for example the collision to the actual mesh
-local function moveToMaster(obj, o)
-	if obj.args.loadAsLibrary then
-		--look for original
-		local oo
-		local search = removePostfix(o.name)
-		for d,s in pairs(obj.objects) do
-			if s.name == search and o ~= s then
-				oo = s
-				break
-			end
-		end
-		
-		--transform
-		if oo and oo.transform and o.transform then
-			local t = oo.transform:invert() * o.transform
-			o.transform = oo.transform
-			
-			--transform vertices
-			local transformed = { }
-			for d,s in ipairs(o.vertices) do
-				if not transformed[s] then
-					transformed[s] = {(t * vec3(s)):unpack()}
-				end
-				o.vertices[d] = transformed[s]
-			end
-			
-			--transform normals
-			local tn = t:subm()
-			local transformed = { }
-			for d,s in ipairs(o.normals) do
-				if not transformed[s] then
-					transformed[s] = {(tn * vec3(s)):unpack()}
-				end
-				o.normals[d] = transformed[s]
-			end
-		end
-	end
 end
 
 --add to object library instead
@@ -91,35 +46,41 @@ function lib:loadLibrary(path, shaderType, args, prefix)
 			overwritten[id] = true
 			self.objectLibrary[id] = { }
 		end
-		
 		table.insert(self.objectLibrary[id], o)
 	end
 	
-	--insert collisions intro library
+	--insert collisions into library
 	local overwritten = { }
 	if obj.collisions then
 		for name,c in pairs(obj.collisions) do
-			local id = removePostfix(prefix .. name)
+			local id = prefix .. c.name
 			if not overwritten[id] then
 				overwritten[id] = true
 				self.collisionLibrary[id] = { }
 			end
-			
 			table.insert(self.collisionLibrary[id], c)
 		end
 	end
 	
-	--insert physics intro library
+	--insert physics into library
 	local overwritten = { }
 	if obj.physics then
 		for name,c in pairs(obj.physics) do
-			local id = removePostfix(prefix .. name)
+			local id = prefix .. c.name
 			if not overwritten[id] then
 				overwritten[id] = true
 				self.physicsLibrary[id] = { }
 			end
-			
 			table.insert(self.physicsLibrary[id], c)
+		end
+	end
+end
+
+--remove objects without vertices
+local function cleanEmpties(obj)
+	for d,o in pairs(obj.objects) do
+		if o.vertices and #o.vertices == 0 and not o.linked then
+			obj.objects[d] = nil
 		end
 	end
 end
@@ -153,7 +114,6 @@ function lib:loadObject(path, shaderType, args)
 	}
 	
 	local obj = self:newObject(path)
-	
 	obj.args = args
 	
 	--load files
@@ -184,13 +144,6 @@ function lib:loadObject(path, shaderType, args)
 			--load object
 			local failed = self.loader[typ](self, obj, obj.path .. "." .. typ)
 			
-			--look for collision
-			if typ == "obj" then
-				if love.filesystem.getInfo(obj.path .. "_collision." .. typ) then
-					self.loader[typ](self, obj, obj.path .. "_collision." .. typ, true)
-				end
-			end
-			
 			--skip furhter modifying and exporting if already packed as 3do
 			--also skips mesh loading since it is done manually
 			if typ == "3do" and not failed then
@@ -206,16 +159,41 @@ function lib:loadObject(path, shaderType, args)
 	
 	
 	--remove empty objects
+	cleanEmpties(obj)
+	
+	
+	--parse tags
+	local tags = {
+		["COLLPHY"] = true,
+		["COLLISION"] = true,
+		["PHYSICS"] = true,
+		["LOD"] = true,
+		["POS"] = true,
+		["LINK"] = true,
+		["BAKE"] = true,
+		["SHADOW"] = true,
+	}
 	for d,o in pairs(obj.objects) do
-		if o.vertices and #o.vertices == 0 and not o.linked then
-			obj.objects[d] = nil
+		o.tags = { }
+		local possibles = string.split(o.name, "_")
+		for index,tag in ipairs(possibles) do
+			local key, value = unpack(string.split(tag, ":"))
+			if tags[key] then
+				o.tags[key:lower()] = value or true
+			else
+				if key:upper() == key and key:lower() ~= key then
+					print("unknown tag '" .. key .. "' of object '" .. o.name .. "' in '" .. path .. "'?")
+				end
+				o.name = table.concat(possibles, "_", index)
+				break
+			end
 		end
 	end
 	
 	
 	--extract positions
 	for d,o in pairs(obj.objects) do
-		if o.name:sub(1, 4) == "POS_" then
+		if o.tags.pos then
 			--average position
 			local x, y, z = 0, 0, 0
 			for i,v in ipairs(o.vertices) do
@@ -237,7 +215,7 @@ function lib:loadObject(path, shaderType, args)
 			
 			--add position
 			obj.positions[#obj.positions+1] = {
-				name = removePostfix(o.name:sub(5)),
+				name = o.name,
 				size = r,
 				x = x,
 				y = y,
@@ -248,24 +226,16 @@ function lib:loadObject(path, shaderType, args)
 	end
 	
 	
-	--disable objects
-	for d,o in pairs(obj.objects) do
-		if o.name:sub(1, 9) == "DISABLED_" then
-			o.disabled = true
-		end
-	end
-	
-	
 	--detect links
-	local antiDuplicate = { }
+	local linkedNames = { }
 	for d,o in pairs(obj.objects) do
-		if o.name:sub(1, 5) == "LINK_" then
+		if o.tags.link then
 			--remove original
 			obj.objects[d] = nil
 			
-			if not antiDuplicate[o.name] then
-				antiDuplicate[o.name] = true
-				local source = o.linked or removePostfix(o.name:sub(6))
+			if not linkedNames[o.name] then
+				linkedNames[o.name] = true
+				local source = o.linked or o.name
 				
 				--store link
 				obj.linked = obj.linked or { }
@@ -275,6 +245,60 @@ function lib:loadObject(path, shaderType, args)
 				}
 			end
 		end
+	end
+	
+	
+	--split materials
+	for d,o in pairs(obj.objects) do
+		if obj.args.splitMaterials and not o.tags.bake and not o.tags.split then
+			obj.objects[d] = nil
+			for i,m in ipairs(o.materials) do
+				local d2 = d .. "_" .. m.name
+				if not obj.objects[d2] then
+					local o2 = o:clone()
+					o2.materialGroup = d
+					o2.tags = table.copy(o.tags)
+					o2.tags.split = true
+					
+					o2.material = m
+					o2.translation = { }
+					
+					o2.vertices = { }
+					o2.normals = { }
+					o2.texCoords = { }
+					o2.colors = { }
+					o2.materials = { }
+					o2.faces = { }
+					
+					obj.objects[d2] = o2
+				end
+				
+				local o2 = obj.objects[d2]
+				
+				local i2 = #o2.vertices+1
+				o2.vertices[i2] = o.vertices[i]
+				o2.normals[i2] = o.normals[i]
+				o2.texCoords[i2] = o.texCoords[i]
+				o2.colors[i2] = o.colors[i]
+				o2.materials[i2] = o.materials[i]
+				o2.translation[i] = i2
+			end
+			
+			for i,f in ipairs(o.faces) do
+				--TODO: if a face shares more than one material it will cause errors
+				local m = o.materials[f[1]]
+				local d2 = d .. "_" .. m.name
+				local o2 = obj.objects[d2]
+				o2.faces[#o2.faces+1] = {
+					o2.translation[f[1]],
+					o2.translation[f[2]],
+					o2.translation[f[3]],
+				}
+			end
+		end
+	end
+	for d,o in pairs(obj.objects) do
+		o.translation = nil
 	end
 	
 	
@@ -289,6 +313,7 @@ function lib:loadObject(path, shaderType, args)
 				local co = self:newLinkedObject(no)
 				co.transform = link.transform
 				co.linked = link.source
+				co.name = "link_" .. id .. "_" .. co.name
 				obj.objects["link_" .. id .. "_" .. d .. "_" .. no.name] = co
 			end
 			
@@ -300,7 +325,7 @@ function lib:loadObject(path, shaderType, args)
 					local co = clone(no)
 					co.linkTransform = link.transform
 					co.linked = link.source
-					obj.collisions["link_" .. id .. "_" .. d .. "_" .. d] = co
+					obj.collisions["link_" .. id .. "_" .. d .. "_" .. no.name] = co
 				end
 			end
 			
@@ -312,46 +337,45 @@ function lib:loadObject(path, shaderType, args)
 					local co = clone(no)
 					co.transform = link.transform
 					co.linked = link.source
-					obj.physics["link_" .. id .. "_" .. d .. "_" .. d] = co
+					obj.physics["link_" .. id .. "_" .. d .. "_" .. no.name] = co
 				end
 			end
 		end
 	end
 	
 	
-	--LOD detection
-	local groups = { }
-	for d,o in pairs(obj.objects) do
-		if o.name:sub(1, 4) == "LOD_" then
-			local nr = tonumber(o.name:sub(5, 5))
-			assert(nr, "LOD nr malformed: " .. o.name)
-			
-			o.name = o.name:sub(7)
-			o.LODnr = nr
-			groups[o.name] = math.max(groups[o.name] or 1, nr)
-			
-			moveToMaster(obj, o)
-		end
-	end
-	
-	--apply LOD level
-	for d,o in pairs(obj.objects) do
-		if groups[o.name] then
-			local levels = groups[o.name]
-			local nr = o.LODnr or 0
-			
-			---o:setLOD(nr / levels, nr < levels and (nr + 1) / levels)
-		end
-	end
-	
-	
 	--shadow only detection
-	local groups = { }
 	for d,o in pairs(obj.objects) do
-		if o.name:sub(1, 7) == "SHADOW_" then
-			o.name = o.name:sub(8)
+		if o.tags.shadow then
 			o:setVisibility(false, true, false)
-			moveToMaster(obj, o)
+		end
+		
+		--hide rest of group in shadow pass
+		for d2,o2 in pairs(obj.objects) do
+			if o2.name == o.name and not o.tags.shadow then
+				o:setVisibility(true, false, true)
+			end
+		end
+	end
+	
+	
+	--LOD detection
+	for _,typ in ipairs({"render", "shadows", "reflections"}) do
+		local max = { }
+		for d,o in pairs(obj.objects) do
+			if (not o.visibility or o.visibility[typ]) and o.tags.lod then
+				local nr = tonumber(o.tags.lod)
+				assert(nr, "LOD nr malformed: " .. o.name .. " (use 'LOD:integer')")
+				max[o.name] = math.max(max[o.name] or 0, nr)
+			end
+		end
+		
+		--apply LOD level
+		for d,o in pairs(obj.objects) do
+			if (not o.visibility or o.visibility[typ]) and max[o.name] then
+				local nr = tonumber(o.tags.lod) or 0
+				o:setLOD(nr, max[o.name] == nr and math.huge or nr+1)
+			end
 		end
 	end
 	
@@ -363,11 +387,7 @@ function lib:loadObject(path, shaderType, args)
 	
 	
 	--remove empty objects (second pass)
-	for d,s in pairs(obj.objects) do
-		if s.vertices and #s.vertices == 0 then
-			obj.objects[d] = nil
-		end
-	end
+	cleanEmpties(obj)
 	
 	
 	--calculate bounding box
@@ -412,30 +432,54 @@ function lib:loadObject(path, shaderType, args)
 	end
 	
 	
+	--get group center
+	local center = { }
+	local centerCount = { }
+	for d,o in pairs(obj.objects) do
+		center[o.name] = (center[o.name] or vec3(0, 0, 0)) + o.boundingBox.center
+		centerCount[o.name] = (centerCount[o.name] or 0) + 1
+	end
+	
+	for d,o in pairs(obj.objects) do
+		o.LOD_center = center[o.name] / centerCount[o.name]
+	end
+	
+	
+	
 	--extract collisions
 	for d,o in pairs(obj.objects) do
-		if o.name:sub(1, 10) == "COLLISION_" then
+		if o.tags.collision or o.tags.physics or o.tags.collphy then
 			if o.vertices then
-				local id = o.name:sub(11)
-				
-				o.name = id
-				moveToMaster(obj, o)
-				
 				--leave at origin for library entries
 				if obj.args.loadAsLibrary then
 					o.transform = nil
 				end
 				
 				--3D collision
-				obj.collisions = obj.collisions or { }
-				obj.collisionCount = (obj.collisionCount or 0) + 1
-				obj.collisions[id] = self:getCollisionData(o)
+				if o.tags.collision or o.tags.collphy then
+					obj.collisions = obj.collisions or { }
+					obj.collisionCount = (obj.collisionCount or 0) + 1
+					obj.collisions[d] = self:getCollisionData(o)
+				end
 				
 				--2.5D physics
-				obj.physics = obj.physics or { }
-				obj.physics[id] = self:getPhysicsData(o)
+				if o.tags.physics or o.tags.collphy then
+					obj.physics = obj.physics or { }
+					obj.physics[d] = self:getPhysicsData(o)
+				end
 			end
-			obj.objects[d] = nil
+			
+			--remove if no longer used
+			--TODO: pfusch
+			local count = 0
+			for d,s in pairs(o.tags) do
+				if d ~= "split" then
+					count = count + 1
+				end
+			end
+			if count <= 1 then
+				obj.objects[d] = nil
+			end
 		end
 	end
 	
@@ -451,7 +495,7 @@ function lib:loadObject(path, shaderType, args)
 	if not obj.args.noMesh then
 		local cache = { }
 		for d,o in pairs(obj.objects) do
-			if not o.disabled and not o.linked then
+			if not o.linked then
 				if cache[o.vertices] then
 					o.mesh = cache[o.vertices].mesh
 					o.tangents = cache[o.vertices].tangents
@@ -483,7 +527,6 @@ function lib:loadObject(path, shaderType, args)
 			s.tangents = nil
 		end
 	end
-	
 	
 	--3do exporter
 	if obj.args.export3do then

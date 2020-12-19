@@ -61,6 +61,10 @@ function lib:export3do(obj)
 	for d,o in pairs(obj.objects) do
 		local h = {
 			["name"] = o.name,
+			["materialGroup"] = o.materialGroup,
+			["LOD_min"] = o.LOD_min,
+			["LOD_max"] = o.LOD_max,
+			["LOD_center"] = o.LOD_center,
 			["shaderType"] = o.shaderType,
 			["meshType"] = o.meshType,
 			["material"] = o.material.name,

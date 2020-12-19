@@ -228,43 +228,33 @@ function lib:getRenderShader(o, pass, canvases, light, shadows)
 	end
 	
 	--settings
-	local globalDefines
 	if not shadows then
-		globalDefines = { }
 		if reflection then
 			ID_settings = ID_settings + 2 ^ 0
 		end
 		if canvases.refractions and refractions and pass == 2 then
 			ID_settings = ID_settings + 2 ^ 1
-			table.insert(globalDefines, "#define REFRACTIONS_ENABLED")
 		end
 		if canvases.averageAlpha and pass == 2 then
 			ID_settings = ID_settings + 2 ^ 2
-			table.insert(globalDefines, "#define AVERAGE_ENABLED")
 		end
 		if canvases.postEffects and self.exposure and earlyExposure(canvases) then
 			ID_settings = ID_settings + 2 ^ 3
-			table.insert(globalDefines, "#define EXPOSURE_ENABLED")
 		end
 		if canvases.postEffects and self.gamma and earlyExposure(canvases) then
 			ID_settings = ID_settings + 2 ^ 4
-			table.insert(globalDefines, "#define GAMMA_ENABLED")
 		end
 		if self.fog_enabled and canvases.mode ~= "normal" then
 			ID_settings = ID_settings + 2 ^ 5
-			table.insert(globalDefines, "#define FOG_ENABLED")
 		end
 		if pass == 2 then
 			ID_settings = ID_settings + 2 ^ 6
-			table.insert(globalDefines, "#define ALPHA_PASS")
 		end
 		if pass == 1 and (mat.discard or mat.alpha or mat.dither or self.dither) then
 			ID_settings = ID_settings + 2 ^ 7
-			table.insert(globalDefines, "#define DISCARD_ENABLED")
 		end
 		if mat.translucent > 0 then
 			ID_settings = ID_settings + 2 ^ 8
-			table.insert(globalDefines, "#define TRANSLUCENT_ENABLED")
 		end
 	end
 	
@@ -285,6 +275,36 @@ function lib:getRenderShader(o, pass, canvases, light, shadows)
 		local info = self.mainShaders[ID]
 		
 		if not shadows then
+			--settings
+			local globalDefines = { }
+			if reflection then
+				ID_settings = ID_settings + 2 ^ 0
+			end
+			if canvases.refractions and refractions and pass == 2 then
+				table.insert(globalDefines, "#define REFRACTIONS_ENABLED")
+			end
+			if canvases.averageAlpha and pass == 2 then
+				table.insert(globalDefines, "#define AVERAGE_ENABLED")
+			end
+			if canvases.postEffects and self.exposure and earlyExposure(canvases) then
+				table.insert(globalDefines, "#define EXPOSURE_ENABLED")
+			end
+			if canvases.postEffects and self.gamma and earlyExposure(canvases) then
+				table.insert(globalDefines, "#define GAMMA_ENABLED")
+			end
+			if self.fog_enabled and canvases.mode ~= "normal" then
+				table.insert(globalDefines, "#define FOG_ENABLED")
+			end
+			if pass == 2 then
+				table.insert(globalDefines, "#define ALPHA_PASS")
+			end
+			if pass == 1 and (mat.discard or mat.alpha or mat.dither or self.dither) then
+				table.insert(globalDefines, "#define DISCARD_ENABLED")
+			end
+			if mat.translucent > 0 then
+				table.insert(globalDefines, "#define TRANSLUCENT_ENABLED")
+			end
+			
 			--setting specific defines
 			code = code:gsub("#import globalDefines", table.concat(globalDefines, "\n"))
 			

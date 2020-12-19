@@ -101,7 +101,6 @@ yourObject = dream:loadObject(path, shaderType, args)
 * `cleanup` the level of cleanup after the objects have been loaded. false deloads * `nothing. nil (default) deloads all buffers except faces and vertex positions. true deloads * `everything.
 * `export3do`loads the object as usual, then export the entire object inclusive * `animations, collisions, positions and similar as a 3DO file. See 3DO chapter for use cases
 * `export3doVertices`vertices are not included by default, since they are bulky and unecessary unless converting an object to a collision. While not recommended, you can force vertices and edge data to be included.
-* `mergeObjects` merge all object into one
 * `animations` when using COLLADA format, split the animation into {key = {from, to}}, where from and to are timestamps in seconds
 
 if the name of an subObject contains:

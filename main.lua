@@ -1,3 +1,5 @@
+require("run")
+
 local examples = love.filesystem.getDirectoryItems("examples")
 for i = #examples, 1, -1 do
 	if not love.filesystem.getInfo("examples/" .. examples[i] .. "/main.lua", "file") then
@@ -16,7 +18,7 @@ local descriptions = {
 	["blacksmith"] = "Single room demo. PBR with 3 lightsources. Toggle different features to see real time differences.",
 	["firstpersongame"] = "Not really a game, demo scene to see particle systems, outdoor lighting, daytime and rain.",
 	["particlesystem"] = "Small particle system example.",
-	["game"] = "Unfinished collision demo, flat phong shading.",
+	["game"] = "Unfinished collision demo.",
 	["knight"] = "MagicaVoxel demo.",
 }
 

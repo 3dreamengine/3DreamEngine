@@ -19,7 +19,7 @@ local function link(chain)
 			m[name] = func
 		end
 	end
-	return {__index = m}
+	return {__index = m, __tostring = m.tostring}
 end
 
 --auto create setter and getter

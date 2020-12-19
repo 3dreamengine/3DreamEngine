@@ -1,10 +1,18 @@
 local lib = _3DreamEngine
 
+local function removePostfix(t)
+	local v = t:match("(.*)%.[^.]+")
+	return v or t
+end
+
 function lib:newLinkedObject(original)
 	return setmetatable({ }, {__index = original})
 end
 
 function lib:newSubObject(name, obj, mat)
+	--remove numbering from the end
+	name = removePostfix(name)
+	
 	--guess shaderType if not specified based on textures used
 	local shaderType = obj.args.shaderType
 	if not shaderType then
@@ -23,6 +31,7 @@ function lib:newSubObject(name, obj, mat)
 		name = name,
 		material = mat,
 		obj = obj,
+		tags = { },
 		
 		--common data arrays
 		vertices = { },
@@ -32,7 +41,6 @@ function lib:newSubObject(name, obj, mat)
 		materials = { },
 		extras = { },
 		faces = { },
-		edges = { },
 		
 		loaded = true,
 		
@@ -73,4 +81,12 @@ return {
 			end
 		end
 	end,
+	
+	setName = function(self, name)
+		assert(type(name) == "string", "name has to be a string")
+		self.name = removePostfix(name)
+	end,
+	getName = function(self)
+		return name
+	end
 }

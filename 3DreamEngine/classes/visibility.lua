@@ -1,12 +1,13 @@
 return {
-	setLOD = function(self, LOD)
-		self.LOD = LOD
+	setLOD = function(self, min, max)
+		self.LOD_min = min
+		self.LOD_max = max
 	end,
 	getLOD = function(self)
-		return self.LOD
+		return self.LOD_min, self.LOD_max
 	end,
 	
-	setVisibility = function(self, render, shadow, reflections)
+	setVisibility = function(self, render, shadows, reflections)
 		if render == nil then
 			self.visibility = false
 		elseif type(render) == "table" then
@@ -14,16 +15,16 @@ return {
 		else
 			self.visibility = {
 				render = render,
-				shadow = shadow,
+				shadows = shadows,
 				reflections = reflections,
 			}
 		end
 	end,
 	getVisibility = function(self)
 		if self.visibility then
-			return self.visibility.render, self.visibility.shadow, self.visibility.reflections
+			return self.visibility.render, self.visibility.shadows, self.visibility.reflections
 		else
-			return false, false, false
+			return true, true, true
 		end
 	end,
 }

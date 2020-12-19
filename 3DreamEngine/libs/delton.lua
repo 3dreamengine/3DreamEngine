@@ -95,6 +95,7 @@ function delton:present()
 end
 
 --render a single segment
+local size = 1
 function delton:renderSegment(segment, time, depth, height)
 	--choose
 	local children = { }
@@ -105,7 +106,9 @@ function delton:renderSegment(segment, time, depth, height)
 	end
 	
 	--text
-	local size = math.min(1, 90 / self.root.count / 4)
+	if depth == 1 then
+		size = size * 0.99 + 0.01 * math.min(1, 40 / self.root.count)
+	end
 	local w = math.min(4, 50 / self.root.depth)
 	if segment == self.root then
 		local t = string.format("%s: %0.2f ms", segment.name, segment.timeMedian * 1000)

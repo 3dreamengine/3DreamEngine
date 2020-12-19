@@ -45,7 +45,6 @@ function lib:buildScene(cam, canvases, typ, blacklist)
 	end
 	
 	--add to scene
-	local LODFactor = 10 / self.LODDistance
 	local noFrustumCheck = cam.noFrustumCheck or not self.activeFrustum
 	for sc,_ in pairs(self.scenes) do
 		if not sc.visibility or sc.visibility[typ] then
@@ -56,59 +55,58 @@ function lib:buildScene(cam, canvases, typ, blacklist)
 				scene.lights[light.ID] = light
 			end
 			
-			for _,task in ipairs(sc.tasks) do
+			local tasks = typ == "shadows" and sc.tasksShadows or typ == "reflections" and sc.tasksReflections or sc.tasksRender
+			local tasksCount = #tasks
+			local tasksCountTotal = tasksCount + #sc.tasks
+			
+			for taskID = 1, tasksCountTotal do
+				local task = tasks[taskID] or sc.tasks[taskID - tasksCount]
 				local obj = task:getObj()
 				local subObj = task:getS()
 				if not blacklist or not (blacklist[obj] or blacklist[subObj]) then
-					local visibility = subObj.visibility or obj.visibility
-					if not visibility or visibility[typ] then
-						local mat = subObj.material
-						if typ ~= "shadows" or mat.shadow ~= false then
-							local solid = (mat.solid or not canvases.alphaPass) and 1 or 2
-							local alpha = canvases.alphaPass and mat.alpha and typ ~= "shadows" and 2 or 1
-							for pass = solid, alpha do
-								local scene = (not canvases.alphaPass or pass == 1) and scene.solid or scene.alpha
-								local LOD = subObj.LOD or obj.LOD
-								if not LOD or LOD[math.min( math.floor((task:getPos() - cam.pos):length() * LODFactor) + 1, 9 )] then
-									if noFrustumCheck or not subObj.boundingBox or self:activeFrustum(cam, task:getPos(), task:getSize(), subObj) then
-										if subObj.loaded then
-											local shader = self:getRenderShader(subObj, pass, canvases, light, typ == "shadows")
-											local lightID = light.ID
-											
-											--group shader and materials together to reduce shader switches
-											if not scene[shader] then
-												scene[shader] = { }
+					local mat = subObj.material
+					if typ ~= "shadows" or mat.shadow ~= false then
+						local solid = (mat.solid or not canvases.alphaPass) and 1 or 2
+						local alpha = canvases.alphaPass and mat.alpha and typ ~= "shadows" and 2 or 1
+						for pass = solid, alpha do
+							if noFrustumCheck or not subObj.boundingBox or self:activeFrustum(cam, task:getPos(), task:getSize(), subObj) then
+								if subObj.loaded then
+									local shader = self:getRenderShader(subObj, pass, canvases, light, typ == "shadows")
+									local lightID = light.ID
+									local scene = (not canvases.alphaPass or pass == 1) and scene.solid or scene.alpha
+									
+									--group shader and materials together to reduce shader switches
+									if not scene[shader] then
+										scene[shader] = { }
+									end
+									
+									if typ == "shadows" then
+										table.insert(scene[shader], task)
+									else
+										if not scene[shader][lightID] then
+											scene[shader][lightID] = { }
+										end
+										if not scene[shader][lightID][mat] then
+											scene[shader][lightID][mat] = { }
+										end
+										
+										--add
+										table.insert(scene[shader][lightID][mat], task)
+										
+										--reflections
+										if typ == "render" then
+											local reflection = subObj.reflection or obj.reflection
+											if reflection and reflection.canvas then
+												self.reflections[reflection] = {
+													dist = (task:getPos() - cam.pos):length(),
+													obj = subObj.reflection and subObj or obj,
+													pos = reflection.pos or task:getPos(),
+												}
 											end
-											
-											if typ == "shadows" then
-												table.insert(scene[shader], task)
-											else
-												if not scene[shader][lightID] then
-													scene[shader][lightID] = { }
-												end
-												if not scene[shader][lightID][mat] then
-													scene[shader][lightID][mat] = { }
-												end
-												
-												--add
-												table.insert(scene[shader][lightID][mat], task)
-												
-												--reflections
-												if typ == "render" then
-													local reflection = subObj.reflection or obj.reflection
-													if reflection and reflection.canvas then
-														self.reflections[reflection] = {
-															dist = (task:getPos() - cam.pos):length(),
-															obj = subObj.reflection and subObj or obj,
-															pos = reflection.pos or task:getPos(),
-														}
-													end
-												end
-											end
-										elseif subObj.request then
-											subObj:request()
 										end
 									end
+								elseif subObj.request then
+									subObj:request()
 								end
 							end
 						end
@@ -657,7 +655,7 @@ function lib:present(cam, canvases, lite)
 	
 	--generate scene
 	self.delton:start("scene")
-	local scene = self:buildScene(cam, canvases, "render", blacklist)
+	local scene = self:buildScene(cam, canvases, "render")
 	self.delton:stop()
 	
 	--process render jobs

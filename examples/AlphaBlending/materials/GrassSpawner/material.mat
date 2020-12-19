@@ -1,5 +1,6 @@
 return {
 	particleSystems = {
+		removeEmitter = true,
 		{
 			objects = {
 				["examples/AlphaBlending/grass"] = 500,

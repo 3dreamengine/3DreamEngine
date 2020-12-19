@@ -8,10 +8,9 @@ local lib = _3DreamEngine
 --add particle system objects
 --for every sub object (which is not a particle mesh) with a material with an attached particle systems create a new object (the particles)
 --assigning several materials to one object without the split arg therefore wont work properly
-function lib.addParticlesystems(self, obj)
+function lib:addParticlesystems(obj)
 	for oName, o in pairs(obj.objects) do
 		if o.material.particleSystems and not o.particleSystem then
-			
 			--load objects of particle system
 			if not o.material.particleSystems.loaded then
 				o.material.particleSystems.loaded = true
@@ -32,9 +31,14 @@ function lib.addParticlesystems(self, obj)
 				end
 			end
 			
+			--remove emitter
+			if o.material.particleSystems.removeEmitter then
+				obj.objects[oName] = nil
+			end
+			
 			for particleSystemID, particleSystem in ipairs(o.material.particleSystems) do
 				--create the particle mesh
-				local pname = o.name:gsub("DISABLED_", "") .. "_particleSystem_" .. o.material.name .. "_" .. particleSystemID
+				local pname = o.name .. "_particleSystem_" .. o.material.name .. "_" .. particleSystemID
 				obj.objects[pname] = dream:newSubObject(pname, obj, particleSystem.objects[1].material or obj.materials.None)
 				obj.objects[pname].particleSystem = true
 				local po = obj.objects[pname]

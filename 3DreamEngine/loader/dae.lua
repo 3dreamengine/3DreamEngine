@@ -258,11 +258,7 @@ return function(self, obj, path)
 				for _,l in ipairs(list) do
 					local mat = indices[l._attr.material] or obj.materials.None
 					local material = self.materialLibrary[mat.name] or mat
-					if obj.args.splitMaterials then
-						o = self:newSubObject(geo._attr.id, obj, material)
-						meshData[id][#meshData[id]+1] = o
-						index = 0
-					elseif not o then
+					if not o then
 						o = self:newSubObject(geo._attr.id, obj, material)
 						meshData[id][#meshData[id]+1] = o
 					end
@@ -324,9 +320,11 @@ return function(self, obj, path)
 								o[f][index+i] = s[id]
 								
 								--also connect weight and joints
-								if f == "vertices" and o.weights then
-									o.weights[index+i] = armatures[o.name].weights[id]
-									o.joints[index+i] = armatures[o.name].joints[id]
+								if f == "vertices" then
+									if o.weights then
+										o.weights[index+i] = armatures[o.name].weights[id]
+										o.joints[index+i] = armatures[o.name].joints[id]
+									end
 									o.materials[index+i] = material
 								end
 							end
@@ -376,14 +374,12 @@ return function(self, obj, path)
 		end
 	end
 	
+	--connect meshdata and instance and add it as object
 	local function addObject(name, mesh, transform)
 		for _,subObject in ipairs(meshData[mesh]) do
 			local id = name
-			if obj.args.splitMaterials then
-				id = id .. "_" .. subObject.material.name
-			end
 			obj.objects[id] = subObject:clone()
-			obj.objects[id].name = name
+			obj.objects[id]:setName(name)
 			obj.objects[id].transform = correction * transform
 		end
 	end

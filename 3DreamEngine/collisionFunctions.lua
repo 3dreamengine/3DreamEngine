@@ -7,18 +7,19 @@ local lib = _3DreamEngine
 
 --get the collision data from a mesh
 --it moves the collider to its bounding box center based on its initial transform
-function lib:getCollisionData(object)
+function lib:getCollisionData(obj)
 	local n = { }
 	
 	--data required by the collision extension
 	n.typ = "mesh"
 	n.boundary = 0
+	n.name = obj.name
 	
 	--offset, a transformation will be directly applied
-	n.transform = object.boundingBox and object.boundingBox.center or vec3(0, 0, 0)
+	n.transform = obj.boundingBox and obj.boundingBox.center or vec3(0, 0, 0)
 	
-	if object.transform then
-		n.transform = object.transform * n.transform
+	if obj.transform then
+		n.transform = obj.transform * n.transform
 	end
 	
 	n.transformInverse = -n.transform
@@ -31,12 +32,12 @@ function lib:getCollisionData(object)
 	
 	--transform vertices
 	local vertices = { }
-	for d,s in ipairs(object.vertices) do
-		vertices[d] = (object.transform and object.transform * vec3(s) or vec3(s)) - n.transform
+	for d,s in ipairs(obj.vertices) do
+		vertices[d] = (obj.transform and obj.transform * vec3(s) or vec3(s)) - n.transform
 	end
 	
 	local hashes = { }
-	for d,s in ipairs(object.faces) do
+	for d,s in ipairs(obj.faces) do
 		--vertices
 		local a = vertices[s[1]]
 		local b = vertices[s[2]]
@@ -159,6 +160,7 @@ function lib:getPhysicsData(obj)
 	p.vertices = obj.vertices
 	p.normals = obj.normals
 	p.transform = obj.transform or mat4.getIdentity()
+	p.name = obj.name
 	return p
 end
 
