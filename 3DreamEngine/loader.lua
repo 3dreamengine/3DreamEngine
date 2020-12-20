@@ -491,6 +491,14 @@ function lib:loadObject(path, shaderType, args)
 	end
 	
 	
+	--bake
+	for d,o in pairs(obj.objects) do
+		if o.tags.bake then
+			self:bakeMaterial(o)
+		end
+	end
+	
+	
 	--create meshes
 	if not obj.args.noMesh then
 		local cache = { }

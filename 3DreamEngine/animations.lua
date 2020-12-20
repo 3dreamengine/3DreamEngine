@@ -1,6 +1,6 @@
 --[[
 #part of the 3DreamEngine by Luke100000
-functions.lua - contains library relevant functions
+animations.lua - contains animation and skeletal relevant functions
 --]]
 
 local lib = _3DreamEngine

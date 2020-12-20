@@ -46,6 +46,7 @@ require((...) .. "/particlesystem")
 require((...) .. "/particles")
 require((...) .. "/3doExport")
 require((...) .. "/animations")
+require((...) .. "/bake")
 
 --loader
 lib.loader = { }

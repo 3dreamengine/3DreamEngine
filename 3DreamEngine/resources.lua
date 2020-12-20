@@ -155,7 +155,7 @@ end
 --if a thumbnail is provided, may return the thumbnail until fully loaded
 lib.texturesLoaded = { }
 lib.thumbnailPaths = { }
-function lib:getTexture(path)
+function lib:getTexture(path, force)
 	if type(path) == "userdata" then
 		return path
 	end
@@ -164,7 +164,7 @@ function lib:getTexture(path)
 	end
 	
 	--skip threaded loading
-	if not self.textures_threaded and type(path) == "string" then
+	if force or not self.textures_threaded and type(path) == "string" then
 		if not self.texturesLoaded[path] then
 			self.texturesLoaded[path] = love.graphics.newImage(path, {mipmaps = self.textures_mipmaps})
 			self.texturesLoaded[path]:setWrap("repeat", "repeat")
