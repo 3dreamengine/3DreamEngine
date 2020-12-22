@@ -41,9 +41,9 @@ end
 function lib:lookAt(eye, at, up)
 	up = up or vec3(0.0, 1.0, 0.0)
 	
-	zaxis = (at - eye):normalize()
-	xaxis = zaxis:cross(up):normalize()
-	yaxis = xaxis:cross(zaxis)
+	local zaxis = (at - eye):normalize()
+	local xaxis = zaxis:cross(up):normalize()
+	local yaxis = xaxis:cross(zaxis)
 
 	zaxis = -zaxis
 	

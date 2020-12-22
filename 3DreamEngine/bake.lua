@@ -65,7 +65,7 @@ function lib:bakeMaterial(o)
 	for m,p in pairs(materials) do
 		local area = math.sqrt((uvs[m][1] - uvs[m][3])^2 + (uvs[m][2] - uvs[m][4])^2)
 		local textures = m.tex_albedo
-		local prio = math.sqrt(p) * area * (textures and 0.001 or 1.0)
+		local prio = p * area * (textures and 0.001 or 1.0)
 		priority[m] = prio
 		totalPriority = totalPriority + prio
 	end
@@ -110,7 +110,7 @@ function lib:bakeMaterial(o)
 	local res = 1024
 	local canvases = {
 		tex_albedo = love.graphics.newCanvas(res, res),
-		tex_combined = love.graphics.newCanvas(res, res),
+		--tex_combined = love.graphics.newCanvas(res, res),
 		tex_normal = love.graphics.newCanvas(res, res),
 		tex_emission = love.graphics.newCanvas(res, res),
 	}
@@ -145,7 +145,6 @@ function lib:bakeMaterial(o)
 		love.graphics.reset()
 		love.graphics.draw(canvas, 0, 0, 0, 0.5)
 		love.graphics.present()
-		love.timer.sleep(1)
 	end
 	
 	--adapt UV

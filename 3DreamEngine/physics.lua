@@ -9,7 +9,7 @@ local colliderMeta = {
 	end,
 	
 	getVelocity = function(self)
-		return self.body:getVelocity()
+		return self.body:getLinearVelocity()
 	end,
 	
 	applyForce = function(self, fx, fy)

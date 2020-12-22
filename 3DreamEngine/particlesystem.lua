@@ -5,181 +5,226 @@ particlesystem.lua - generates particle meshes based on .mat instructions
 
 local lib = _3DreamEngine
 
+local function loadParticles(self, particleSystems)
+	for _, ps in ipairs(particleSystems) do
+		if ps.randomSize then
+			print("warning: depricated particlesystem.randomSize found! Particle systems have changed.")
+		end
+		
+		--default values
+		ps.size = ps.size or {0.75, 1.25}
+		ps.rotation = ps.rotation or 1.0
+		ps.tilt = ps.tilt or 0.0
+		
+		ps.loadedObjects = { }
+		for i,v in pairs(ps.objects) do
+			local o = self:loadObject(i, {cleanup = false, noMesh = true, noParticleSystem = true})
+			
+			--extract subObjects
+			for d,s in pairs(o.objects) do
+				s.particleDensity = v
+				table.insert(ps.loadedObjects, s)
+			end
+		end
+	end
+end
+
 --add particle system objects
---for every sub object (which is not a particle mesh) with a material with an attached particle systems create a new object (the particles)
+--for every sub object (which is not a particle mesh itself) with a material with an attached particle systems create a new object (the particles)
 --assigning several materials to one object without the split arg therefore wont work properly
 function lib:addParticlesystems(obj)
 	for oName, o in pairs(obj.objects) do
-		if o.material.particleSystems and not o.particleSystem then
-			--load objects of particle system
-			if not o.material.particleSystems.loaded then
-				o.material.particleSystems.loaded = true
-				for psID, ps in ipairs(o.material.particleSystems) do
-					ps.objects_new = { }
-					ps.randomSize = ps.randomSize or {0.75, 1.25}
-					ps.normal = ps.normal or 1.0
-					for i,v in pairs(ps.objects) do
-						local o = self:loadObject(i, {cleanup = false, noMesh = true, noParticleSystem = true})
-						
-						--extract subObjects
-						for d,s in pairs(o.objects) do
-							table.insert(ps.objects_new, {object = s, material = s.material, amount = v})
-						end
-					end
-					
-					ps.objects, ps.objects_new = ps.objects_new, ps.objects
-				end
+		local particleSystems = o.material.particleSystems
+		if particleSystems and not o.tags.particle then
+			--load objects of particle system into respective material
+			if not particleSystems.loaded then
+				particleSystems.loaded = true
+				loadParticles(self, particleSystems)
 			end
 			
 			--remove emitter
-			if o.material.particleSystems.removeEmitter then
+			if particleSystems.removeEmitter then
 				obj.objects[oName] = nil
 			end
 			
-			for particleSystemID, particleSystem in ipairs(o.material.particleSystems) do
-				--create the particle mesh
-				local pname = o.name .. "_particleSystem_" .. o.material.name .. "_" .. particleSystemID
-				obj.objects[pname] = dream:newSubObject(pname, obj, particleSystem.objects[1].material or obj.materials.None)
-				obj.objects[pname].particleSystem = true
-				local po = obj.objects[pname]
+			for psID, ps in ipairs(particleSystems) do
+				assert(#ps.loadedObjects > 0, "particle systems used objects are empty")
 				
-				--place particles
-				for _,particle in ipairs(particleSystem.objects) do
-					local amount = particle.amount / #particleSystem.objects
+				--list particles to spawn
+				local transforms = { }
+				for _,particle in ipairs(ps.loadedObjects) do
+					local mat = particle.material
+					if not transforms[mat] then
+						transforms[mat] = {
+							min = vec3(math.huge, math.huge, math.huge),
+							max = vec3(-math.huge, -math.huge, -math.huge),
+							vertices = 0
+						}
+					end
+					local t = transforms[mat]
 					
+					--per face
+					local density = particle.particleDensity / #ps.loadedObjects
 					for _,f in ipairs(o.faces) do
-						if (amount >= 1 or math.random() < amount) then
-							local v1 = o.vertices[f[1]]
-							local v2 = o.vertices[f[2]]
-							local v3 = o.vertices[f[3]]
+						local v1 = vec3(o.vertices[f[1]])
+						local v2 = vec3(o.vertices[f[2]])
+						local v3 = vec3(o.vertices[f[3]])
+						
+						--area of the plane
+						local a = (v1-v2):length()
+						local b = (v2-v3):length()
+						local c = (v3-v1):length()
+						local s = (a+b+c)/2
+						local area = math.sqrt(s*(s-a)*(s-b)*(s-c))
+						
+						--amount of objects
+						local am = math.floor(area * density + math.random())
+						
+						--add objects
+						for i = 1, am do
+							local u = math.random()
+							local v = math.random()
 							
-							--normal vector
-							local va = {v1[1] - v2[1], v1[2] - v2[2], v1[3] - v2[3]}
-							local vb = {v1[1] - v3[1], v1[2] - v3[2], v1[3] - v3[3]}
-							local n = {
-								o.normals[f[1]][1] + o.normals[f[2]][1] + o.normals[f[3]][1],
-								o.normals[f[1]][2] + o.normals[f[2]][2] + o.normals[f[3]][2],
-								o.normals[f[1]][3] + o.normals[f[2]][3] + o.normals[f[3]][3]
-							}
+							--flip to match triangle instead of quad
+							if v > 1 - u then
+								u = 1 - u
+								v = 1 - v
+							end
 							
-							--some particles like grass points towards the sky
-							n[1] = n[1] * particleSystem.normal
-							n[2] = n[2] * particleSystem.normal + (1-particleSystem.normal)
-							n[3] = n[3] * particleSystem.normal
+							local w = (1 - u - v)
 							
-							--area of the plane
-							local a = math.sqrt((v1[1]-v2[1])^2 + (v1[2]-v2[2])^2 + (v1[3]-v2[3])^2)
-							local b = math.sqrt((v2[1]-v3[1])^2 + (v2[2]-v3[2])^2 + (v2[3]-v3[3])^2)
-							local c = math.sqrt((v3[1]-v1[1])^2 + (v3[2]-v1[2])^2 + (v3[3]-v1[3])^2)
-							local s = (a+b+c)/2
-							local area = math.sqrt(s*(s-a)*(s-b)*(s-c))
+							--interpolated normal and position
+							local n = vec3(o.normals[f[1]]) * u + vec3(o.normals[f[1]]) * v + vec3(o.normals[f[1]]) * w
+							local p = v1 * u + vec3(v2) * v + vec3(v3) * w
 							
-							local rotZ = math.asin(n[1] / math.sqrt(n[1]^2+n[2]^2))
-							local rotX = math.asin(n[3] / math.sqrt(n[2]^2+n[3]^2))
+							--optionally transform normal to match expected orientation
+							if o.transform then
+								n = o.transform:invert() * n
+							end
 							
-							local c = math.cos(rotZ)
-							local s = math.sin(rotZ)
-							rotZ = mat3(
-								c, s, 0,
-								-s, c, 0,
-								0, 0, 1
-							)
+							--randomize normal
+							local normal
+							if ps.tilt > 0 then
+								normal = vec3(math.random(), math.random(), math.random()) * ps.tilt + vec3(-n.x, -n.z, n.y) * (1 - ps.tilt)
+							else
+								normal = vec3(-n.x, -n.z, n.y)
+							end
 							
-							local c = math.cos(rotX)
-							local s = math.sin(rotX)
-							rotX = mat3(
-								1, 0, 0,
-								0, c, -s,
-								0, s, c
-							)
+							--randomize front
+							local font
+							if ps.rotation > 0 then
+								local tangent = n:cross(vec3(1, 2, 3))
+								local bitangent = n:cross(tangent)
+								front = tangent * (math.random()-0.5) + bitangent * (math.random()-0.5) * ps.rotation + vec3(0, 0, -1) * (1 - ps.rotation)
+							else
+								front = vec3(0, 0, -1)
+							end
 							
-							--add object to particle system object
-							local am = math.floor(area*math.max(1, amount)+math.random())
+							--scale
+							local sc = math.random() * (ps.size[2] - ps.size[1]) + ps.size[1]
 							
-							for i = 1, am do
-								--location on the plane
-								local f1 = math.random()
-								local f2 = math.random()
-								local f3 = math.random()
-								local f = f1+f2+f3
-								f1 = f1 / f
-								f2 = f2 / f
-								f3 = f3 / f
+							--custom mat3 lookup with scale
+							local zaxis = normal:normalize()
+							local xaxis = zaxis:cross(front):normalize()
+							local yaxis = xaxis:cross(zaxis)
+							
+							local transform = mat3:getScale(sc, sc, sc) * mat3(
+								xaxis.x, xaxis.y, xaxis.z,
+								yaxis.x, yaxis.y, yaxis.z,
+								-zaxis.x, -zaxis.y, -zaxis.z
+							):invert()
+							
+							--insert
+							t.min = t.min:min(p)
+							t.max = t.max:max(p)
+							t.vertices = t.vertices + #particle.vertices
+							table.insert(t, {
+								pos = p,
+								transform = transform,
+								particle = particle,
+							})
+						end
+					end
+				end
+				
+				--for each material of the transforms
+				local matID = 0
+				for mat, transforms in pairs(transforms) do
+					--find best splitting layout
+					local target = 10000
+					local splits = vec3(1, 1, 1)
+					local size = transforms.max - transforms.min
+					while transforms.vertices / (splits[1] * splits[2] * splits[3]) > target do
+						local max = math.max(unpack(size / splits))
+						for i = 1, 3 do
+							if size[i] / splits[i] == max then
+								splits[i] = splits[i] + 1
+								break
+							end
+						end
+					end
+					
+					--create the particle mesh
+					local delta = size / splits
+					local ID = 0
+					matID = matID + 1
+					for x = transforms.min.x, transforms.max.x, delta.x do
+						for y = transforms.min.y, transforms.max.y, delta.y do
+							for z = transforms.min.z, transforms.max.z, delta.z do
+								ID = ID + 1
+								local pname = oName .. "_ps_" .. psID .. "_" .. matID .. "_" .. ID
+								local po = dream:newSubObject(pname, obj, ps.loadedObjects[1].material)
+								obj.objects[pname] = po
+								po.transform = o.transform
+								po.tags.particle = true
 								
-								local x = v1[1]*f1 + v2[1]*f2 + v3[1]*f3
-								local y = v1[2]*f1 + v2[2]*f2 + v3[2]*f3
-								local z = v1[3]*f1 + v2[3]*f2 + v3[3]*f3
-								
-								--rotation matrix
-								local rotY = particleSystem.randomRotation and math.random()*math.pi*2 or 0
-								
-								local c = math.cos(rotY)
-								local s = math.sin(rotY)
-								rotY = mat3(
-									c, 0, -s,
-									0, 1, 0,
-									s, 0, c
-								)
-								
-								local sc = math.random() * (particleSystem.randomSize[2] - particleSystem.randomSize[1]) + particleSystem.randomSize[1]
-								local scale = mat3(
-									sc, 0, 0,
-									0, sc, 0,
-									0, 0, sc
-								)
-								
-								local res = rotX * rotY * rotZ * scale
-								
-								if particleSystem.randomDistance then
-									local vn = res * vec3(0, 1, 0)
-									local l = vn:length()
-									x = x + vn[1] * particleSystem.randomDistance * math.random() / l
-									y = y + vn[2] * particleSystem.randomDistance * math.random() / l
-									z = z + vn[3] * particleSystem.randomDistance * math.random() / l
-								end
-								
-								--insert vertices and faces
-								local lastIndex = #po.vertices
-								for d,s in ipairs(particle.object.vertices) do
-									local vp = res * vec3(s[1], s[2], s[3])
-									
-									local n = particle.object.normals[d]
-									local vn = (res * vec3(n[1], n[2], n[3])):normalize()
-									
-									local uv = particle.object.texCoords[d]
-									
-									local extra = 1.0
-									if particleSystem.shader == "wind" then
-										if particleSystem.shaderValue == "grass" then
-											extra = math.min(1.0, math.max(0.0, s[2] * 0.25)) * (particleSystem.shaderValueGrass or 1.0)
-										else
-											extra = tonumber(particleSystem.shaderValue) or 0.15
+								for _, s in ipairs(transforms) do
+									local p = s.pos
+									if p.x > x and p.x < x + delta.x and p.y > y and p.y < y + delta.y and p.z > z and p.z < z + delta.z then
+										local transform = s.transform
+										local particle = s.particle
+										
+										--insert vertices and faces
+										local lastIndex = #po.vertices
+										for d,s in ipairs(particle.vertices) do
+											--transform
+											local vp = transform * vec3(s) + p
+											local vn = (transform * vec3(particle.normals[d])):normalize()
+											
+											--calculate extra based on given shader and shaderValue
+											--TODO prepare once
+											local extra = 1.0
+											if ps.shader == "wind" then
+												if ps.shaderValue == "grass" then
+													extra = math.min(1.0, math.max(0.0, s[2] * 0.25)) * (ps.shaderValueGrass or 1.0)
+												else
+													extra = tonumber(ps.shaderValue) or 0.15
+												end
+											end
+											
+											--merge data
+											local index = #po.vertices+1
+											local emission = po.material.emission or 0
+											if type(emission) == "table" then
+												emission = math.sqrt(emission[1]^2+emission[2]^2+emission[3]^2)
+											end
+											po.vertices[index] = vp
+											po.extras[index] = extra
+											po.normals[index] = vn
+											po.materials[index] = {po.material.specular, po.material.glossiness, emission}
+											po.texCoords[index] = particle.texCoords[d]
+											po.colors[index] = po.material.color
+										end
+										
+										for d,s in ipairs(particle.faces) do
+											po.faces[#po.faces+1] = {s[1]+lastIndex, s[2]+lastIndex, s[3]+lastIndex}
 										end
 									end
-									
-									local index = #po.vertices+1
-									local emission = po.material.emission or 0
-									if type(emission) == "table" then
-										emission = math.sqrt(emission[1]^2+emission[2]^2+emission[3]^2)
-									end
-									po.vertices[index] = {vp[1]+x, vp[2]+y, vp[3]+z}
-									po.extras[index] = extra
-									po.normals[index] = {vn[1], vn[2], vn[3]}
-									po.materials[index] = {po.material.specular, po.material.glossiness, emission}
-									po.texCoords[index] = {uv[1], uv[2]}
-									
-									po.colors[index] = po.material.color
-								end
-								
-								for d,s in ipairs(particle.object.faces) do
-									po.faces[#po.faces+1] = {s[1]+lastIndex, s[2]+lastIndex, s[3]+lastIndex}
 								end
 							end
 						end
 					end
 				end
-				
-				--print(o.material.name .. ": " .. #po.faces .. " particle-faces") io.flush()
 			end
 		end
 	end

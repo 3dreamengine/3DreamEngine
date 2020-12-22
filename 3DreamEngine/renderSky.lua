@@ -57,7 +57,7 @@ function lib:renderSky(transformProj, camTransform, transformScale)
 		
 		--moon
 		for sunMoon = 1, 2 do
-			local size = sunMoon == 1 and 0.5 or 1 / (2.0 - math.sin(self.sky_time * math.pi * 2.0))
+			local size = sunMoon == 1 and 0.25 or 0.5 / (2.0 - math.sin(self.sky_time * math.pi * 2.0))
 			local right = vec3(camTransform[1], camTransform[2], camTransform[3]):normalize() * size
 			local up = vec3(camTransform[5], camTransform[6], camTransform[7]) * size
 			

@@ -61,14 +61,14 @@ mat = {
 		})
 	end,
 
-	getScale = function(self, x, y)
+	getScale = function(self, x, y, z)
 		if type(x) == "table" then
 			x, y = x[1], x[2]
 		end
 		return mat({
 			x, 0, 0,
 			0, y or x, 0,
-			0, 0, 1
+			0, 0, z or 1
 		})
 	end,
 
