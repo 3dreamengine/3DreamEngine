@@ -14,6 +14,7 @@ function lib:getCollisionData(obj)
 	n.typ = "mesh"
 	n.boundary = 0
 	n.name = obj.name
+	n.group = obj.group
 	
 	--offset, a transformation will be directly applied
 	n.transform = obj.boundingBox and obj.boundingBox.center or vec3(0, 0, 0)
@@ -161,6 +162,7 @@ function lib:getPhysicsData(obj)
 	p.normals = obj.normals
 	p.transform = obj.transform or mat4.getIdentity()
 	p.name = obj.name
+	p.group = obj.group
 	return p
 end
 

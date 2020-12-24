@@ -225,7 +225,6 @@ function lib:loadObject(path, shaderType, args)
 		end
 	end
 	
-	
 	--detect links
 	local linkedNames = { }
 	for d,o in pairs(obj.objects) do
@@ -249,56 +248,61 @@ function lib:loadObject(path, shaderType, args)
 	
 	
 	--split materials
-	for d,o in pairs(obj.objects) do
-		if obj.args.splitMaterials and not o.tags.bake and not o.tags.split then
-			obj.objects[d] = nil
-			for i,m in ipairs(o.materials) do
-				local d2 = d .. "_" .. m.name
-				if not obj.objects[d2] then
-					local o2 = o:clone()
-					o2.materialGroup = d
-					o2.tags = table.copy(o.tags)
-					o2.tags.split = true
+	local changes = true
+	while changes do
+		changes = false
+		for d,o in pairs(obj.objects) do
+			if obj.args.splitMaterials and not o.tags.bake and not o.tags.split then
+				changes = true
+				obj.objects[d] = nil
+				for i,m in ipairs(o.materials) do
+					local d2 = d .. "_" .. m.name
+					if not obj.objects[d2] then
+						local o2 = o:clone()
+						o2.group = d
+						o2.tags = table.copy(o.tags)
+						o2.tags.split = true
+						
+						o2.material = m
+						o2.translation = { }
+						
+						o2.vertices = { }
+						o2.normals = { }
+						o2.texCoords = { }
+						o2.colors = { }
+						o2.materials = { }
+						o2.faces = { }
+						
+						obj.objects[d2] = o2
+					end
 					
-					o2.material = m
-					o2.translation = { }
+					local o2 = obj.objects[d2]
 					
-					o2.vertices = { }
-					o2.normals = { }
-					o2.texCoords = { }
-					o2.colors = { }
-					o2.materials = { }
-					o2.faces = { }
-					
-					obj.objects[d2] = o2
+					local i2 = #o2.vertices+1
+					o2.vertices[i2] = o.vertices[i]
+					o2.normals[i2] = o.normals[i]
+					o2.texCoords[i2] = o.texCoords[i]
+					o2.colors[i2] = o.colors[i]
+					o2.materials[i2] = o.materials[i]
+					o2.translation[i] = i2
 				end
 				
-				local o2 = obj.objects[d2]
-				
-				local i2 = #o2.vertices+1
-				o2.vertices[i2] = o.vertices[i]
-				o2.normals[i2] = o.normals[i]
-				o2.texCoords[i2] = o.texCoords[i]
-				o2.colors[i2] = o.colors[i]
-				o2.materials[i2] = o.materials[i]
-				o2.translation[i] = i2
-			end
-			
-			for i,f in ipairs(o.faces) do
-				--TODO: if a face shares more than one material it will cause errors
-				local m = o.materials[f[1]]
-				local d2 = d .. "_" .. m.name
-				local o2 = obj.objects[d2]
-				o2.faces[#o2.faces+1] = {
-					o2.translation[f[1]],
-					o2.translation[f[2]],
-					o2.translation[f[3]],
-				}
+				for i,f in ipairs(o.faces) do
+					--TODO: if a face shares more than one material it will cause errors
+					local m = o.materials[f[1]]
+					local d2 = d .. "_" .. m.name
+					local o2 = obj.objects[d2]
+					o2.faces[#o2.faces+1] = {
+						o2.translation[f[1]],
+						o2.translation[f[2]],
+						o2.translation[f[3]],
+					}
+				end
 			end
 		end
-	end
-	for d,o in pairs(obj.objects) do
-		o.translation = nil
+		for d,o in pairs(obj.objects) do
+			o.translation = nil
+		end
 	end
 	
 	

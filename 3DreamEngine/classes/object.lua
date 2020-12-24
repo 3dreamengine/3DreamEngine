@@ -62,8 +62,10 @@ return {
 	end,
 	
 	print = function(self)
+		--general innformation
 		print(self)
 		
+		--group objects by their name
 		print("objects")
 		local groups = { }
 		local hash = { }
@@ -75,20 +77,27 @@ return {
 		end
 		table.sort(groups)
 		
+		--print objects
 		for _,group in ipairs(groups) do
+			--header
 			print("  " .. group)
 			local width = 32
-			print("      #m tags" .. string.rep(" ", width-4) .. "LOD     D S R")
+			print("       # tags" .. string.rep(" ", width-4) .. "LOD     D S R  Vertexcount")
 			
+			--group together materials and particle meshes
 			local found = { }
-			local hash = { }
+			local count = { }
+			local vertices = { }
 			for d,s in pairs(self.objects) do
 				if s.name == group then
-					local n = s.materialGroup or d
-					if not hash[n] then
+					local n = s.group or d
+					if not count[n] then
 						found[#found+1] = {d, n}
 					end
-					hash[n] = (hash[n] or 0) + 1
+					count[n] = (count[n] or 0) + 1
+					if s.mesh then
+						vertices[n] = (vertices[n] or 0) + s.mesh:getVertexCount()
+					end
 				end
 			end
 			
@@ -99,12 +108,38 @@ return {
 					tags[#tags+1] = d
 				end
 				
+				if s.linked then
+					table.insert(tags, 1, "L")
+				end
+				
 				local tags = table.concat(tags, ", "):sub(1, width)
 				local min, max = s:getLOD()
 				local lod = max and (min .. " - " .. max) or ""
 				local a, b, c = s:getVisibility()
-				print("    " .. string.format("% 3d ", hash[d[2]]) .. tags .. string.rep(" ", width - #tags) .. lod .. string.rep(" ", 8 - #lod) .. (a and "X" or " ") .. " " .. (b and "X" or " ") .. " " .. (c and "X" or " "))
+				local visibility = (a and "X" or " ") .. " " .. (b and "X" or " ") .. " " .. (c and "X" or " ")
+				
+				print(string.format("     % 3d %s%s%s%s%s %d", count[d[2]], tags, string.rep(" ", width - #tags), lod, string.rep(" ", 8 - #lod), visibility, vertices[d[2]] or 0))
 			end
+		end
+		
+		--collisions
+		print("collisions")
+		local count = { }
+		for d,s in pairs(self.collisions) do
+			count[s.name] = (count[s.name] or 0) + 1
+		end
+		for d,s in pairs(count) do
+			print("", d, s)
+		end
+		
+		--physics
+		print("physics")
+		local count = { }
+		for d,s in pairs(self.physics) do
+			count[s.name] = (count[s.name] or 0) + 1
+		end
+		for d,s in pairs(count) do
+			print("", d, s)
 		end
 	end
 }
