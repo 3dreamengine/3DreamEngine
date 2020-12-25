@@ -5,6 +5,7 @@ particlesystem.lua - generates particle meshes based on .mat instructions
 
 local lib = _3DreamEngine
 
+--load a list of particle objects and prepare them
 local function loadParticles(self, particleSystems)
 	for _, ps in ipairs(particleSystems) do
 		if ps.randomSize then
@@ -16,6 +17,8 @@ local function loadParticles(self, particleSystems)
 		ps.rotation = ps.rotation or 1.0
 		ps.tilt = ps.tilt or 0.0
 		
+		ps.input = ps.input or { }
+		
 		ps.loadedObjects = { }
 		for i,v in pairs(ps.objects) do
 			local o = self:loadObject(i, {cleanup = false, noMesh = true, noParticleSystem = true})
@@ -26,6 +29,25 @@ local function loadParticles(self, particleSystems)
 				table.insert(ps.loadedObjects, s)
 			end
 		end
+	end
+end
+
+--fetches an input from the color buffer
+--TODO support for additional vertex/color/UV maps
+local ones = {1, 1, 1}
+local function getInput(input, o, f)
+	if input then
+		return input.invert and {
+			(1 - o.colors[f[1]][input.channel]) * (input.mul or 1.0) + (input.add or 0.0),
+			(1 - o.colors[f[2]][input.channel]) * (input.mul or 1.0) + (input.add or 0.0),
+			(1 - o.colors[f[3]][input.channel]) * (input.mul or 1.0) + (input.add or 0.0)
+		} or {
+			o.colors[f[1]][input.channel] * (input.mul or 1.0) + (input.add or 0.0),
+			o.colors[f[2]][input.channel] * (input.mul or 1.0) + (input.add or 0.0),
+			o.colors[f[3]][input.channel] * (input.mul or 1.0) + (input.add or 0.0)
+		}
+	else
+		return ones
 	end
 end
 
@@ -45,6 +67,12 @@ function lib:addParticlesystems(obj)
 			--remove emitter
 			if particleSystems.removeEmitter then
 				obj.objects[oName] = nil
+			end
+			
+			--some shader rely on the vertical height, assuming the emitters transform is final it uses it as the global orientation
+			local orientation = vec3(0, 1, 0)
+			if o.transform then
+				orientation = o.transform * orientation
 			end
 			
 			for psID, ps in ipairs(particleSystems) do
@@ -77,8 +105,13 @@ function lib:addParticlesystems(obj)
 						local s = (a+b+c)/2
 						local area = math.sqrt(s*(s-a)*(s-b)*(s-c))
 						
+						--specific input for density
+						local density, maxDensity = getInput(ps.input.density, o, f)
+						local maxDensity = math.max(unpack(density))
+						local size = getInput(ps.input.size, o, f)
+						
 						--amount of objects
-						local am = math.floor(area * density + math.random())
+						local am = math.floor(area * maxDensity + math.random())
 						
 						--add objects
 						for i = 1, am do
@@ -93,56 +126,60 @@ function lib:addParticlesystems(obj)
 							
 							local w = (1 - u - v)
 							
-							--interpolated normal and position
-							local n = vec3(o.normals[f[1]]) * u + vec3(o.normals[f[1]]) * v + vec3(o.normals[f[1]]) * w
-							local p = v1 * u + vec3(v2) * v + vec3(v3) * w
-							
-							--optionally transform normal to match expected orientation
-							if o.transform then
-								n = o.transform:invert() * n
+							--interpolated per vertex density
+							if maxDensity < 1.0 and (density[1] * u + density[2] * v + density[3] * w) / maxDensity < math.random() then
+								--interpolated normal and position
+								local n = vec3(o.normals[f[1]]) * u + vec3(o.normals[f[1]]) * v + vec3(o.normals[f[1]]) * w
+								local p = v1 * u + vec3(v2) * v + vec3(v3) * w
+								
+								--optionally transform normal to match expected orientation
+								if o.transform then
+									n = o.transform:invert() * n
+								end
+								
+								--randomize normal
+								local normal
+								if ps.tilt > 0 then
+									normal = vec3(math.random(), math.random(), math.random()) * ps.tilt + vec3(-n.x, -n.z, n.y) * (1 - ps.tilt)
+								else
+									normal = vec3(-n.x, -n.z, n.y)
+								end
+								
+								--randomize front
+								local font
+								if ps.rotation > 0 then
+									local tangent = n:cross(vec3(1, 2, 3))
+									local bitangent = n:cross(tangent)
+									front = tangent * (math.random()-0.5) + bitangent * (math.random()-0.5) * ps.rotation + vec3(0, 0, -1) * (1 - ps.rotation)
+								else
+									front = vec3(0, 0, -1)
+								end
+								
+								--scale
+								local esc = size[1] * u + size[2] * v + size[3] * w
+								local sc = math.random() * (ps.size[2] - ps.size[1]) + ps.size[1] * esc
+								
+								--custom mat3 lookup with scale
+								local zaxis = normal:normalize()
+								local xaxis = zaxis:cross(front):normalize()
+								local yaxis = xaxis:cross(zaxis)
+								
+								local transform = mat3:getScale(sc, sc, sc) * mat3(
+									xaxis.x, xaxis.y, xaxis.z,
+									yaxis.x, yaxis.y, yaxis.z,
+									-zaxis.x, -zaxis.y, -zaxis.z
+								):invert()
+								
+								--insert
+								t.min = t.min:min(p)
+								t.max = t.max:max(p)
+								t.vertices = t.vertices + #particle.vertices
+								table.insert(t, {
+									pos = p,
+									transform = transform,
+									particle = particle,
+								})
 							end
-							
-							--randomize normal
-							local normal
-							if ps.tilt > 0 then
-								normal = vec3(math.random(), math.random(), math.random()) * ps.tilt + vec3(-n.x, -n.z, n.y) * (1 - ps.tilt)
-							else
-								normal = vec3(-n.x, -n.z, n.y)
-							end
-							
-							--randomize front
-							local font
-							if ps.rotation > 0 then
-								local tangent = n:cross(vec3(1, 2, 3))
-								local bitangent = n:cross(tangent)
-								front = tangent * (math.random()-0.5) + bitangent * (math.random()-0.5) * ps.rotation + vec3(0, 0, -1) * (1 - ps.rotation)
-							else
-								front = vec3(0, 0, -1)
-							end
-							
-							--scale
-							local sc = math.random() * (ps.size[2] - ps.size[1]) + ps.size[1]
-							
-							--custom mat3 lookup with scale
-							local zaxis = normal:normalize()
-							local xaxis = zaxis:cross(front):normalize()
-							local yaxis = xaxis:cross(zaxis)
-							
-							local transform = mat3:getScale(sc, sc, sc) * mat3(
-								xaxis.x, xaxis.y, xaxis.z,
-								yaxis.x, yaxis.y, yaxis.z,
-								-zaxis.x, -zaxis.y, -zaxis.z
-							):invert()
-							
-							--insert
-							t.min = t.min:min(p)
-							t.max = t.max:max(p)
-							t.vertices = t.vertices + #particle.vertices
-							table.insert(t, {
-								pos = p,
-								transform = transform,
-								particle = particle,
-							})
 						end
 					end
 				end
@@ -193,11 +230,10 @@ function lib:addParticlesystems(obj)
 											local vn = (transform * vec3(particle.normals[d])):normalize()
 											
 											--calculate extra based on given shader and shaderValue
-											--TODO prepare once
 											local extra = 1.0
 											if ps.shader == "wind" then
 												if ps.shaderValue == "grass" then
-													extra = math.min(1.0, math.max(0.0, s[2] * 0.25)) * (ps.shaderValueGrass or 1.0)
+													extra = math.max(0.0, (orientation * s):length() * (ps.shaderValueGrass or 0.25))
 												else
 													extra = tonumber(ps.shaderValue) or 0.15
 												end

@@ -141,6 +141,13 @@ function lib:finishMaterial(mat, obj)
 		end
 	end
 	
+	--enable shader modules
+	if mat.shaderModules then
+		for _,s in ipairs(mat.shaderModules) do
+			mat:activateShaderModule(s)
+		end
+	end
+	
 	--last callback
 	if mat.onFinish then
 		mat:onFinish(obj)

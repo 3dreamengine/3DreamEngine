@@ -129,7 +129,7 @@ return {
 			count[s.name] = (count[s.name] or 0) + 1
 		end
 		for d,s in pairs(count) do
-			print("", d, s)
+			print("", s, d)
 		end
 		
 		--physics
@@ -139,7 +139,7 @@ return {
 			count[s.name] = (count[s.name] or 0) + 1
 		end
 		for d,s in pairs(count) do
-			print("", d, s)
+			print("", s, d)
 		end
 	end
 }
