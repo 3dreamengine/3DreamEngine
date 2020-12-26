@@ -52,15 +52,13 @@ function sh:constructDefines(dream)
 	]]
 end
 
-function sh:constructPixel(dream, info)
+function sh:constructPixel(dream, mat)
 	return [[
 		vec3 rainNormal = normalize(Texel(splashes, vertexPos.xz).xyz);
 		
 		float rainNoise = Texel(tex_wetness, vertexPos.xz * 0.17).r;
 		float rain = clamp((normal.y * 1.1 - 0.1) * clamp(wetness * 1.5 - rainNoise + (1.0 - rainNormal.z) * 2.0, 0.0, 1.0), 0.0, 1.0);
-	]] .. (info.shaderType == "PBR" and [[
-		material.r = mix(material.r, 0.0, rain * 0.75);
-	]] or "")
+	]]
 end
 
 function sh:constructPixelPost(dream)

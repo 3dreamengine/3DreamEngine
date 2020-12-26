@@ -246,14 +246,15 @@ end
 scan("")
 
 --combine 3 textures to use only one texture
-function lib:combineTextures(metallicSpecular, roughnessGlossines, AO, name)
-	local path = (metallicSpecular or roughnessGlossines or (AO .. "combined")):gsub("metallic", "combined"):gsub("roughness", "combined"):gsub("specular", "combined"):gsub("glossiness", "combined")
+function lib:combineTextures(metallicSpecular, roughnessGlossines, AO)
+	local path = metallicSpecular or roughnessGlossines or (AO .. "_material")
 	
-	if name then
-		local dir = path:match("(.*[/\\])")
-		path = dir and (dir .. name) or name
-	else
-		path = path:match("(.+)%..+")
+	--remove extension
+	path = path:match("(.+)%..+")
+	
+	--replace typ
+	for d,s in ipairs({"roughness", "metallic", "specular", "glossiness"}) do
+		path = path:gsub(s, "material")
 	end
 	
 	return {"combine", path, metallicSpecular, roughnessGlossines, AO}

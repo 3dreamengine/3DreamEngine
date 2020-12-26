@@ -93,7 +93,7 @@ function lib:addParticlesystems(obj)
 					local t = transforms[mat]
 					
 					--per face
-					local density = particle.particleDensity / #ps.loadedObjects
+					local particleDensity = particle.particleDensity / #ps.loadedObjects
 					for _,f in ipairs(o.faces) do
 						local v1 = vec3(o.vertices[f[1]])
 						local v2 = vec3(o.vertices[f[2]])
@@ -112,7 +112,7 @@ function lib:addParticlesystems(obj)
 						local size = getInput(ps.input.size, o, f)
 						
 						--amount of objects
-						local am = math.floor(area * maxDensity + math.random())
+						local am = math.floor(area * maxDensity * particleDensity + math.random())
 						
 						--add objects
 						for i = 1, am do

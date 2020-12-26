@@ -110,7 +110,7 @@ function lib:bakeMaterial(o)
 	local res = 1024
 	local canvases = {
 		tex_albedo = love.graphics.newCanvas(res, res),
-		--tex_combined = love.graphics.newCanvas(res, res),
+		--tex_material = love.graphics.newCanvas(res, res),
 		tex_normal = love.graphics.newCanvas(res, res),
 		tex_emission = love.graphics.newCanvas(res, res),
 	}
@@ -176,8 +176,8 @@ function lib:bakeMaterial(o)
 		o.material.tex_normal = canvases.tex_normal
 	end
 	
-	if used.tex_combined then
-		o.material.tex_combined = canvases.tex_combined
+	if used.tex_material then
+		o.material.tex_material = canvases.tex_material
 		o.material.specular = 1.0
 		o.material.glossiness = 1.0
 		o.material.roughness = 1.0

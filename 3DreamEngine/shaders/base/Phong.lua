@@ -25,8 +25,8 @@ function sh:constructDefines(dream, mat)
 		
 		#ifdef PIXEL
 		extern Image tex_albedo;
-		extern Image tex_combined;
-		extern vec3 color_combined;
+		extern Image tex_material;
+		extern vec3 color_material;
 		extern Image tex_emission;
 		extern vec3 color_emission;
 		extern Image tex_normal;
@@ -58,7 +58,7 @@ function sh:constructPixel(dream, mat)
 	#endif
 	
 	//fetch material data
-	vec3 material = Texel(tex_combined, VaryingTexCoord.xy).rgb * color_combined;
+	vec3 material = Texel(tex_material, VaryingTexCoord.xy).rgb * color_material;
 	
 	//emission
 	#ifdef TEX_EMISSION
@@ -144,8 +144,8 @@ function sh:perMaterial(dream, shaderObject, material)
 	shader:send("tex_albedo", dream:getTexture(material.tex_albedo) or tex.default)
 	shader:send("color_albedo", material.color)
 	
-	shader:send("tex_combined", dream:getTexture(material.tex_combined) or tex.default)
-	shader:send("color_combined", {material.glossiness, material.specular, 1.0})
+	shader:send("tex_material", dream:getTexture(material.tex_material) or tex.default)
+	shader:send("color_material", {material.glossiness, material.specular, 1.0})
 	
 	if shader:hasUniform("tex_normal") then
 		shader:send("tex_normal", dream:getTexture(material.tex_normal) or tex.default_normal)

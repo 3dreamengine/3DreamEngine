@@ -79,7 +79,7 @@ end
 function lib:finishMaterial(mat, obj)
 	setmetatable(mat, self.meta.material)
 	
-	for _,typ in ipairs({"albedo", "normal", "roughness", "metallic", "emission", "ao", "specular", "glossiness"}) do
+	for _,typ in ipairs({"albedo", "normal", "roughness", "metallic", "emission", "ao", "specular", "glossiness", "material"}) do
 		local custom = mat["tex_" .. typ]
 		mat["tex_" .. typ] = nil
 		if custom then
@@ -128,15 +128,15 @@ function lib:finishMaterial(mat, obj)
 	end
 	
 	--combiner
-	if not mat["tex_" .. "combined"] then
+	if not mat["tex_material"] then
 		local metallicRoughness = mat["tex_metallic"] or mat["tex_roughness"]
 		local specularGlossiness = mat["tex_specular"] or mat["tex_glossiness"]
 		
 		if metallicRoughness or specularGlossiness or mat["tex_ao"] then
 			if metallicRoughness then
-				mat["tex_" .. "combined"] = self:combineTextures(mat["tex_roughness"], mat["tex_metallic"], mat["tex_ao"])
+				mat["tex_material"] = self:combineTextures(mat["tex_roughness"], mat["tex_metallic"], mat["tex_ao"])
 			elseif specularGlossiness then
-				mat["tex_" .. "combined"] = self:combineTextures(mat["tex_glossiness"], mat["tex_specular"], mat["tex_ao"])
+				mat["tex_material"] = self:combineTextures(mat["tex_glossiness"], mat["tex_specular"], mat["tex_ao"])
 			end
 		end
 	end

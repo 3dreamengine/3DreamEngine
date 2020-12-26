@@ -61,6 +61,16 @@ return {
 		return string.format("%s: %d objects, %d collisions, %d physics, %d lights", self.name, count(self.objects), count(self.collisions), count(self.physics), count(self.lights))
 	end,
 	
+	withName = function(self, name)
+		local o = { }
+		for d,s in pairs(self.objects) do
+			if s.name == name then
+				o[d] = s
+			end
+		end
+		return o
+	end,
+	
 	print = function(self)
 		--general innformation
 		print(self)
