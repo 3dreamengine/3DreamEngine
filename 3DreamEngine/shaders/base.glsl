@@ -60,6 +60,7 @@ float whenLt(float x, float y) {
 
 void effect() {
 #import mainPixelPre
+#import modulesPixelPre
 	
 	//dither alpha
 #ifdef ALPHA_PASS
@@ -160,7 +161,6 @@ vec3 col;
 vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	vertexPos = vertex_position.xyz;
 	
-#import vertexVertex
 #import modulesVertex
 #import mainVertex
 	
@@ -172,6 +172,8 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	
 	//extract and pass depth
 	depth = vPos.z;
+	
+#import modulesVertexPost
 	
 	return vPos;
 }

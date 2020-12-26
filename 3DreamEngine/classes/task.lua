@@ -34,6 +34,15 @@ return {
 		return self[5]
 	end,
 	
+	getScaledLOD = function(self)
+		local LOD_min, LOD_max = self[3]:getScaledLOD()
+		if LOD_min then
+			return LOD_min, LOD_max
+		else
+			return self[5]:getScaledLOD()
+		end
+	end,
+	
 	getBoneTransforms = function(self)
 		return self[6]
 	end,

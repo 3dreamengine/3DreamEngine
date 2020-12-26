@@ -1,18 +1,10 @@
 local lib = _3DreamEngine
 
-local function removePostfix(t)
-	local v = t:match("(.*)%.[^.]+")
-	return v or t
-end
-
 function lib:newLinkedObject(original)
 	return setmetatable({ }, {__index = original})
 end
 
 function lib:newSubObject(name, obj, mat)
-	--remove numbering from the end
-	name = removePostfix(name)
-	
 	--guess shaderType if not specified based on textures used
 	local shaderType = obj.args.shaderType
 	if not shaderType then
@@ -84,7 +76,7 @@ return {
 	
 	setName = function(self, name)
 		assert(type(name) == "string", "name has to be a string")
-		self.name = removePostfix(name)
+		self.name = name
 	end,
 	getName = function(self)
 		return name

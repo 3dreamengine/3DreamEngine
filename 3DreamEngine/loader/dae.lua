@@ -297,9 +297,14 @@ return function(self, obj, path)
 					end
 					
 					--parse data arrays
+					local count = { }
 					for d,input in ipairs(l.input) do
 						local f = translate[input._attr.semantic]
 						if f then
+							count[f] = (count[f] or 0) + 1
+							local of = count[f] > 1 and (f .. "_" .. count[f]) or f
+							o[of] = o[of] or { }
+							
 							--fetch data from the mesh source or from a nested vertice data block
 							local otherInput = indices[input._attr.source].input
 							local data = (otherInput and indices[otherInput[1]._attr.source] or indices[input._attr.source]).float_array[1][1]
@@ -317,7 +322,7 @@ return function(self, obj, path)
 								local id = ids[(i-1)*fields + tonumber(input._attr.offset) + 1] + 1
 								
 								--connect data
-								o[f][index+i] = s[id]
+								o[of][index+i] = s[id]
 								
 								--also connect weight and joints
 								if f == "vertices" then

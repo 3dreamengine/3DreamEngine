@@ -234,7 +234,7 @@ function lib:loadObject(path, shaderType, args)
 			
 			if not linkedNames[o.name] then
 				linkedNames[o.name] = true
-				local source = o.linked or o.name
+				local source = o.linked or (o.name:match("(.*)%.[^.]+") or o.name)
 				
 				--store link
 				obj.linked = obj.linked or { }
@@ -440,14 +440,14 @@ function lib:loadObject(path, shaderType, args)
 	local center = { }
 	local centerCount = { }
 	for d,o in pairs(obj.objects) do
-		center[o.name] = (center[o.name] or vec3(0, 0, 0)) + o.boundingBox.center
-		centerCount[o.name] = (centerCount[o.name] or 0) + 1
+		local id = o.LOD_group or o.name
+		center[id] = (center[id] or vec3(0, 0, 0)) + o.boundingBox.center
+		centerCount[id] = (centerCount[id] or 0) + 1
 	end
-	
 	for d,o in pairs(obj.objects) do
-		o.LOD_center = center[o.name] / centerCount[o.name]
+		local id = o.LOD_group or o.name
+		o.LOD_center = center[id] / centerCount[id]
 	end
-	
 	
 	
 	--extract collisions

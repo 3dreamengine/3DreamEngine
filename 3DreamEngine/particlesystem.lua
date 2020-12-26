@@ -34,6 +34,7 @@ end
 
 --fetches an input from the color buffer
 --TODO support for additional vertex/color/UV maps
+--TODO support for image data
 local ones = {1, 1, 1}
 local function getInput(input, o, f)
 	if input then
@@ -127,7 +128,7 @@ function lib:addParticlesystems(obj)
 							local w = (1 - u - v)
 							
 							--interpolated per vertex density
-							if maxDensity < 1.0 and (density[1] * u + density[2] * v + density[3] * w) / maxDensity < math.random() then
+							if maxDensity == 1.0 or (density[1] * u + density[2] * v + density[3] * w) / maxDensity < math.random() then
 								--interpolated normal and position
 								local n = vec3(o.normals[f[1]]) * u + vec3(o.normals[f[1]]) * v + vec3(o.normals[f[1]]) * w
 								local p = v1 * u + vec3(v2) * v + vec3(v3) * w
@@ -215,6 +216,8 @@ function lib:addParticlesystems(obj)
 								po.group = oName
 								po.transform = o.transform
 								po.tags.particle = true
+								po.LOD_group = pname
+								po:setLOD(0, 1, true)
 								
 								for _, s in ipairs(transforms) do
 									local p = s.pos

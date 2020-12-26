@@ -1,10 +1,18 @@
+local lib = _3DreamEngine
+
 return {
-	setLOD = function(self, min, max)
+	setLOD = function(self, min, max, adaptSize)
 		self.LOD_min = min
 		self.LOD_max = max
+		self.LOD_adaptSize = adaptSize
 	end,
 	getLOD = function(self)
-		return self.LOD_min, self.LOD_max
+		return self.LOD_min, self.LOD_adaptSize and (self.boundingBox.size / lib.LODDistance) or self.LOD_max
+	end,
+	getScaledLOD = function(self)
+		if self.LOD_min then
+			return self.LOD_min * lib.LODDistance, self.LOD_adaptSize and (self.LOD_max * lib.LODDistance + self.boundingBox.size) or self.LOD_max * lib.LODDistance
+		end
 	end,
 	
 	setVisibility = function(self, render, shadows, reflections)

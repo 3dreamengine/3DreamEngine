@@ -48,9 +48,8 @@ return {
 			local task = setmetatable({transform, pos or false, s, col, obj, obj.boneTransforms}, lib.meta.task)
 			
 			--LOD
-			local LOD_min = s.LOD_min or obj.LOD_min
-			local LOD_max = s.LOD_max or obj.LOD_max
-			local dist = LOD_min and s.LOD_center and (transform * s.LOD_center - (dream.cam.pos or vec3(0, 0, 0))):length() * 0.1
+			local LOD_min, LOD_max = s:getScaledLOD()
+			local dist = LOD_min and s.LOD_center and (transform * s.LOD_center - (dream.cam.pos or vec3(0, 0, 0))):length() / lib.LODDistance
 			
 			--task
 			if not dist or dist >= LOD_min and dist <= LOD_max then

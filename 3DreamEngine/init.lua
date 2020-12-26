@@ -78,7 +78,7 @@ lib:setExposure(1.0)
 lib:setMaxLights(16)
 lib:setNameDecoder("^(.+)_([^_]+)$")
 lib:setFrustumCheck("fast")
-lib:setLODDistance(100)
+lib:setLODDistance(20)
 lib:setDither(false)
 
 --shadows
@@ -359,12 +359,12 @@ function lib:draw(obj, x, y, z, sx, sy, sz)
 		)
 		
 		--also applies objects own transformation if present
-		if obj.transform then
+		if obj.objects and obj.transform then
 			transform = transform * obj.transform
 		end
 	else
 		--pre defined transform
-		transform = obj.transform
+		transform = obj.objects and obj.transform
 	end
 	
 	--fetch current color

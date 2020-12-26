@@ -321,18 +321,24 @@ function lib:getRenderShader(o, pass, canvases, light, shadows)
 		
 		--import additional modules
 		local define = { }
+		local vertexPost = { }
 		local vertex = { }
 		local pixel = { }
+		local pixelPre = { }
 		local pixelPost = { }
 		for d,s in pairs(m) do
 			assert(s, "Shader module '" .. d .. "' does not exist!")
 			table.insert(define, s.constructDefines and s:constructDefines(self, info) or "")
+			table.insert(vertexPost, s.constructVertexPost and s:constructVertexPost(self, info) or "")
 			table.insert(vertex, s.constructVertex and s:constructVertex(self, info) or "")
 			table.insert(pixel, s.constructPixel and s:constructPixel(self, info) or "")
+			table.insert(pixelPre, s.constructPixelPre and s:constructPixelPre(self, info) or "")
 			table.insert(pixelPost, s.constructPixelPost and s:constructPixelPost(self, info) or "")
 		end
 		code = code:gsub("#import modulesDefines", table.concat(define, "\n"))
+		code = code:gsub("#import modulesVertexPost", table.concat(vertexPost, "\n"))
 		code = code:gsub("#import modulesVertex", table.concat(vertex, "\n"))
+		code = code:gsub("#import modulesPixelPre", table.concat(pixelPre, "\n"))
 		code = code:gsub("#import modulesPixelPost", table.concat(pixelPost, "\n"))
 		code = code:gsub("#import modulesPixel", table.concat(pixel, "\n"))
 		

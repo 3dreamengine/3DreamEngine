@@ -102,7 +102,7 @@ local function attemptSolve(a, b)
 	local index = b:getUserData()
 	
 	local heights = colliderB.heights[index]
-	local h = colliderB.y + heights[1] * w1 + heights[2] * w2 + heights[3] * w3
+	local h = colliderB.y + math.min(heights[1] * w1 + heights[2] * w2 + heights[3] * w3, math.max(unpack(heights)))
 	
 	local thickness = colliderB.thickness[index]
 	local b = colliderB.y + thickness[1] * w1 + thickness[2] * w2 + thickness[3] * w3
