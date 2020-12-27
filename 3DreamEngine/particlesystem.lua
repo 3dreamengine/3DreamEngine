@@ -65,7 +65,7 @@ local function getInput(input, o, f)
 				end,
 			}
 		else
-			local dat = {
+			local dat = input.invert and {
 				(1 - o.colors[f[1]][input.channel]) * (input.mul or 1.0) + (input.add or 0.0),
 				(1 - o.colors[f[2]][input.channel]) * (input.mul or 1.0) + (input.add or 0.0),
 				(1 - o.colors[f[3]][input.channel]) * (input.mul or 1.0) + (input.add or 0.0)

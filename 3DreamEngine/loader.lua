@@ -232,13 +232,11 @@ function lib:loadObject(path, shaderType, args)
 		if o.tags.link then
 			--remove original
 			obj.objects[d] = nil
-		
-			local source = o.linked or o.name
 			
 			--store link
 			obj.linked = obj.linked or { }
 			obj.linked[#obj.linked+1] = {
-				source = source,
+				source = o.linked or o.name,
 				transform = o.transform
 			}
 		end
@@ -350,12 +348,12 @@ function lib:loadObject(path, shaderType, args)
 	for d,o in pairs(obj.objects) do
 		if o.tags.shadow then
 			o:setVisibility(false, true, false)
-		end
-		
-		--hide rest of group in shadow pass
-		for d2,o2 in pairs(obj.objects) do
-			if o2.name == o.name and not o.tags.shadow then
-				o:setVisibility(true, false, true)
+			
+			--hide rest of group in shadow pass
+			for d2,o2 in pairs(obj.objects) do
+				if o2.name == o.name and not o.tags.shadow then
+					o:setVisibility(true, false, true)
+				end
 			end
 		end
 	end
