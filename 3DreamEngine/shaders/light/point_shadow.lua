@@ -16,7 +16,7 @@ function sh:constructDefinesGlobal(dream)
 	float sampleShadowPointSmooth(vec3 lightVec, samplerCube tex) {
 		//bias
 		float depth = length(lightVec);
-		float bias = 0.01 + depth * 0.01;
+		float bias = depth * 0.01 + 0.01;
 		depth -= bias;
 		
 		//direction
@@ -35,7 +35,7 @@ function sh:constructDefinesGlobal(dream)
 	float sampleShadowPoint(vec3 lightVec, samplerCube tex) {
 		//bias
 		float depth = length(lightVec);
-		float bias = 0.01 + depth * 0.01;
+		float bias = depth * 0.01 + 0.01;
 		depth -= bias;
 		
 		//direction

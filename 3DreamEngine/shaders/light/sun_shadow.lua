@@ -7,7 +7,7 @@ function sh:constructDefinesGlobal(dream)
 		extern float factor;
 		extern float shadowDistance;
 		extern float texelSize;
-	
+		
 		vec2 sampleOffset[17] = vec2[] (
 			vec2(2, -1),
 			vec2(3, 0),
@@ -36,22 +36,22 @@ function sh:constructDefinesGlobal(dream)
 			return shadow / 17.0;
 		}
 		
-		float sampleShadowSunSmooth(vec3 vertexPos, mat4 sun_shadow_proj_1, mat4 sun_shadow_proj_2, mat4 sun_shadow_proj_3, sampler2DShadow sun_shadow_tex_1, sampler2DShadow sun_shadow_tex_2, sampler2DShadow sun_shadow_tex_3, float bias) {
+		float sampleShadowSunSmooth(vec3 vertexPos, mat4 sun_shadow_proj_1, mat4 sun_shadow_proj_2, mat4 sun_shadow_proj_3, sampler2DShadow sun_shadow_tex_1, sampler2DShadow sun_shadow_tex_2, sampler2DShadow sun_shadow_tex_3, vec3 bias) {
 			vec4 vertexPosShadow;
 			vec3 shadowUV;
 			float dist = distance(vertexPos, viewPos) * shadowDistance;
 			
 			if (dist < 1.0) {
-				vertexPosShadow = sun_shadow_proj_1 * vec4(vertexPos.xyz, 1.0);
-				shadowUV = vertexPosShadow.xyz - vec3(0.0, 0.0, bias);
+				vertexPosShadow = sun_shadow_proj_1 * vec4(vertexPos + bias, 1.0);
+				shadowUV = vertexPosShadow.xyz;
 				return sampleShadowSun2Smooth(sun_shadow_tex_1, shadowUV * 0.5 + 0.5);
 			} else if (dist < factor) {
-				vertexPosShadow = sun_shadow_proj_2 * vec4(vertexPos.xyz, 1.0);
-				shadowUV = vertexPosShadow.xyz - vec3(0.0, 0.0, bias * factor);
+				vertexPosShadow = sun_shadow_proj_2 * vec4(vertexPos + bias * factor, 1.0);
+				shadowUV = vertexPosShadow.xyz;
 				return sampleShadowSun2Smooth(sun_shadow_tex_2, shadowUV * 0.5 + 0.5);
 			} else {
-				vertexPosShadow = sun_shadow_proj_3 * vec4(vertexPos.xyz, 1.0);
-				shadowUV = vertexPosShadow.xyz - vec3(0.0, 0.0, bias * factor * factor);
+				vertexPosShadow = sun_shadow_proj_3 * vec4(vertexPos + bias * factor * factor, 1.0);
+				shadowUV = vertexPosShadow.xyz;
 				return sampleShadowSun2Smooth(sun_shadow_tex_3, shadowUV * 0.5 + 0.5);
 			}
 		}
@@ -69,22 +69,22 @@ function sh:constructDefinesGlobal(dream)
 			) * 0.25;
 		}
 		
-		float sampleShadowSun(vec3 vertexPos, mat4 sun_shadow_proj_1, mat4 sun_shadow_proj_2, mat4 sun_shadow_proj_3, sampler2DShadow sun_shadow_tex_1, sampler2DShadow sun_shadow_tex_2, sampler2DShadow sun_shadow_tex_3, float bias) {
+		float sampleShadowSun(vec3 vertexPos, mat4 sun_shadow_proj_1, mat4 sun_shadow_proj_2, mat4 sun_shadow_proj_3, sampler2DShadow sun_shadow_tex_1, sampler2DShadow sun_shadow_tex_2, sampler2DShadow sun_shadow_tex_3, vec3 bias) {
 			vec4 vertexPosShadow;
 			vec3 shadowUV;
 			float dist = distance(vertexPos, viewPos) * shadowDistance;
 			
 			if (dist < 1.0) {
-				vertexPosShadow = sun_shadow_proj_1 * vec4(vertexPos.xyz, 1.0);
-				shadowUV = vertexPosShadow.xyz - vec3(0.0, 0.0, bias);
+				vertexPosShadow = sun_shadow_proj_1 * vec4(vertexPos + bias, 1.0);
+				shadowUV = vertexPosShadow.xyz;
 				return sampleShadowSun2(sun_shadow_tex_1, shadowUV * 0.5 + 0.5);
 			} else if (dist < factor) {
-				vertexPosShadow = sun_shadow_proj_2 * vec4(vertexPos.xyz, 1.0);
-				shadowUV = vertexPosShadow.xyz - vec3(0.0, 0.0, bias * 0.5 * factor);
+				vertexPosShadow = sun_shadow_proj_2 * vec4(vertexPos + bias * factor, 1.0);
+				shadowUV = vertexPosShadow.xyz;
 				return sampleShadowSun2(sun_shadow_tex_2, shadowUV * 0.5 + 0.5);
 			} else {
-				vertexPosShadow = sun_shadow_proj_3 * vec4(vertexPos.xyz, 1.0);
-				shadowUV = vertexPosShadow.xyz - vec3(0.0, 0.0, bias * factor);
+				vertexPosShadow = sun_shadow_proj_3 * vec4(vertexPos + bias * factor * factor, 1.0);
+				shadowUV = vertexPosShadow.xyz;
 				return sampleShadowSun2(sun_shadow_tex_3, shadowUV * 0.5 + 0.5);
 			}
 		}
@@ -118,7 +118,8 @@ end
 function sh:constructPixel(dream, ID)
 	return ([[
 		float shadow;
-		float bias = max(0.01 * (1.0 - dot(normal, sun_shadow_vec_#ID#)), 0.0005);
+		vec3 bias = normal * mix(32.0, 8.0, dot(normal, sun_shadow_vec_#ID#)) * texelSize;
+		
 		if (sun_shadow_smooth_#ID#) {
 			shadow = sampleShadowSunSmooth(vertexPos, sun_shadow_proj_1_#ID#, sun_shadow_proj_2_#ID#, sun_shadow_proj_3_#ID#, sun_shadow_tex_1_#ID#, sun_shadow_tex_2_#ID#, sun_shadow_tex_3_#ID#, bias);
 		} else {
