@@ -225,24 +225,22 @@ function lib:loadObject(path, shaderType, args)
 		end
 	end
 	
+	
 	--detect links
 	local linkedNames = { }
 	for d,o in pairs(obj.objects) do
 		if o.tags.link then
 			--remove original
 			obj.objects[d] = nil
+		
+			local source = o.linked or o.name
 			
-			if not linkedNames[o.name] then
-				linkedNames[o.name] = true
-				local source = o.linked or (o.name:match("(.*)%.[^.]+") or o.name)
-				
-				--store link
-				obj.linked = obj.linked or { }
-				obj.linked[#obj.linked+1] = {
-					source = source,
-					transform = o.transform
-				}
-			end
+			--store link
+			obj.linked = obj.linked or { }
+			obj.linked[#obj.linked+1] = {
+				source = source,
+				transform = o.transform
+			}
 		end
 	end
 	

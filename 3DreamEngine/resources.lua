@@ -10,19 +10,23 @@ lib.resourceJobs = { }
 lib.lastResourceJob = 0
 lib.threads = { }
 
-function lib:addResourceJob(typ, obj, priority, ...)
-	self.lastResourceJob = self.lastResourceJob + 1
-	self.resourceJobs[self.lastResourceJob] = obj
-	
-	self[priority and "channel_jobs_priority" or "channel_jobs"]:push({"3do", self.lastResourceJob, ...})
-end
+lib.texturesLoaded = { }
+lib.thumbnailPaths = { }
 
---start the threads
-for i = 1, math.max(1, require("love.system").getProcessorCount()-1) do
+--start the threads (all except 2 cores planned for renderer and seperate client thread)
+for i = 1, math.max(1, require("love.system").getProcessorCount()-2) do
 	lib.threads[i] = love.thread.newThread(lib.root .. "/thread.lua")
 	lib.threads[i]:start()
 end
 
+--add a new job to be handled by a loader thread
+function lib:addResourceJob(typ, obj, priority, ...)
+	self.lastResourceJob = self.lastResourceJob + 1
+	self.resourceJobs[self.lastResourceJob] = obj
+	self[priority and "channel_jobs_priority" or "channel_jobs"]:push({"3do", self.lastResourceJob, ...})
+end
+
+--input channels and result
 lib.channel_jobs_priority = love.thread.getChannel("3DreamEngine_channel_jobs_priority")
 lib.channel_jobs = love.thread.getChannel("3DreamEngine_channel_jobs")
 lib.channel_results = love.thread.getChannel("3DreamEngine_channel_results")
@@ -33,6 +37,7 @@ local fastLoadingJob = false
 
 --updates active resource tasks (mesh loading, texture loading, ...)
 function lib:update()
+	--recreate buffer object if necessary
 	local bufferSize = self.textures_bufferSize
 	if not bufferData or bufferData:getWidth() ~= self.textures_bufferSize then
 		bufferData = love.image.newImageData(bufferSize, bufferSize)
@@ -46,7 +51,7 @@ function lib:update()
 			local s = fastLoadingJob
 			local t = love.timer.getTime()
 			
-			--prepare
+			--prepare buffer
 			bufferData:paste(s.data, 0, 0, s.x*bufferSize, s.y*bufferSize, math.min(bufferSize, s.width - bufferSize*s.x), math.min(bufferSize, s.height - bufferSize*s.y))
 			buffer:replacePixels(bufferData)
 			
@@ -152,9 +157,7 @@ function lib:update()
 end
 
 --get a texture, load it threaded if enabled and therefore may return nil first
---if a thumbnail is provided, may return the thumbnail until fully loaded
-lib.texturesLoaded = { }
-lib.thumbnailPaths = { }
+--if a thumbnail is provided, it may return the thumbnail until fully loaded
 function lib:getTexture(path, force)
 	if type(path) == "userdata" then
 		return path
@@ -213,12 +216,7 @@ function lib:getTexture(path, force)
 end
 
 --scan for image files and adds path to image library
-local imageFormats = {"tga", "png", "gif", "bmp", "exr", "hdr", "dds", "dxt", "pkm", "jpg", "jpe", "jpeg", "jp2"}
-local imageFormat = { }
-for d,s in ipairs(imageFormats) do
-	imageFormat["." .. s] = d
-end
-
+local imageFormats = table.toSet({"tga", "png", "gif", "bmp", "exr", "hdr", "dds", "dxt", "pkm", "jpg", "jpe", "jpeg", "jp2"})
 lib.images = { }
 lib.imageDirectories = { }
 local priority = { }
@@ -228,15 +226,14 @@ local function scan(path)
 			if love.filesystem.getInfo(path .. "/" .. s, "directory") then
 				scan(path .. (#path > 0 and "/" or "") .. s)
 			else
-				local ext = s:match("^.+(%..+)$")
-				if ext and imageFormat[ext] then
-					local name = s:sub(1, #s-#ext)
+				local name, ext = s:match("^(.+)%.(.+)$")
+				if ext and imageFormats[ext] then
 					local p = path .. "/" .. name
-					if not lib.images[p] or imageFormat[ext] < priority[p] then
+					if not lib.images[p] or imageFormats[ext] < priority[p] then
 						lib.images[p] = path .. "/" .. s
 						lib.imageDirectories[path] = lib.imageDirectories[path] or { }
 						lib.imageDirectories[path][s] = path .. "/" .. s
-						priority[p] = imageFormat[ext]
+						priority[p] = imageFormats[ext]
 					end
 				end
 			end

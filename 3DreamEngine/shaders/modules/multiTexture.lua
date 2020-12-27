@@ -22,6 +22,8 @@ function sh:constructDefines(dream)
 	extern Image tex_mask;
 	extern Image tex_blend;
 	
+	extern float uv2Scale;
+	
 	varying vec2 VaryingTexCoord2;
 	
 	#ifdef VERTEX
@@ -36,17 +38,19 @@ function sh:constructPixel(dream, mat)
 	float blend = Texel(tex_blend, VaryingTexCoord2.xy * 64.0).r;
 	mask = clamp((mask*1.25-0.125 - blend) * 16.0, 0.0, 1.0);
 	
-	albedo = mix(albedo, Texel(tex_albedo_2, VaryingTexCoord.xy) * color_albedo_2, mask);
+	vec2 uv2 = VaryingTexCoord.xy * uv2Scale;
 	
-	material = mix(material, Texel(tex_material_2, VaryingTexCoord.xy).xyz * color_material_2, mask);
+	albedo = mix(albedo, Texel(tex_albedo_2, uv2) * color_albedo_2, mask);
+	
+	material = mix(material, Texel(tex_material_2, uv2).xyz * color_material_2, mask);
 	
 	#ifdef TEX_NORMAL
-		vec3 normal_2 = normalize(TBN * (Texel(tex_normal_2, VaryingTexCoord.xy).rgb - 0.5));
+		vec3 normal_2 = normalize(TBN * (Texel(tex_normal_2, uv2).rgb - 0.5));
 		normal = mix(normal, normal_2, mask);
 	#endif
 	
 	#ifdef TEX_EMISSION
-		emission = mix(emission, Texel(tex_emission_2, VaryingTexCoord.xy).rgb * color_emission_2, mask);
+		emission = mix(emission, Texel(tex_emission_2, uv2).rgb * color_emission_2, mask);
 	#else
 		emission = mix(emission, color_emission_2, mask);
 	#endif
@@ -96,6 +100,8 @@ function sh:perTask(dream, shaderObject, task)
 	
 	shader:send("tex_mask", dream:getTexture(subObj.tex_mask) or dream.textures.default)
 	shader:send("tex_blend", dream:getTexture(subObj.tex_blend) or dream.textures.default)
+	
+	shader:send("uv2Scale", subObj.multiTexture_uv2Scale or 1.0)
 	
 	shader:send("tex_albedo_2", dream:getTexture(material.tex_albedo) or dream.textures.default)
 	shader:send("color_albedo_2", material.color)

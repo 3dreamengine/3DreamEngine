@@ -1,5 +1,10 @@
 local lib = _3DreamEngine
 
+local function removePostfix(t)
+	local v = t:match("(.*)%.[^.]+")
+	return v or t
+end
+
 function lib:newLinkedObject(original)
 	return setmetatable({ }, {__index = original})
 end
@@ -20,7 +25,7 @@ function lib:newSubObject(name, obj, mat)
 	end
 	
 	local o = {
-		name = name,
+		name = removePostfix(name),
 		material = mat,
 		obj = obj,
 		tags = { },
@@ -76,7 +81,7 @@ return {
 	
 	setName = function(self, name)
 		assert(type(name) == "string", "name has to be a string")
-		self.name = name
+		self.name = removePostfix(name)
 	end,
 	getName = function(self)
 		return name

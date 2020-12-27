@@ -34,19 +34,56 @@ end
 
 --fetches an input from the color buffer
 --TODO support for additional vertex/color/UV maps
---TODO support for image data
-local ones = {1, 1, 1}
+local ones = {
+	get = function()
+		return 1
+	end,
+	getMax = function()
+		return 1
+	end,
+}
+local imageDataCache = { }
 local function getInput(input, o, f)
 	if input then
-		return input.invert and {
-			(1 - o.colors[f[1]][input.channel]) * (input.mul or 1.0) + (input.add or 0.0),
-			(1 - o.colors[f[2]][input.channel]) * (input.mul or 1.0) + (input.add or 0.0),
-			(1 - o.colors[f[3]][input.channel]) * (input.mul or 1.0) + (input.add or 0.0)
-		} or {
-			o.colors[f[1]][input.channel] * (input.mul or 1.0) + (input.add or 0.0),
-			o.colors[f[2]][input.channel] * (input.mul or 1.0) + (input.add or 0.0),
-			o.colors[f[3]][input.channel] * (input.mul or 1.0) + (input.add or 0.0)
-		}
+		if input.source == "image" then
+			local dat = imageDataCache[input.path]
+			local width, height = dat:getDimensions()
+			local b = o[input.buffer or "texCoords"]
+			local uv1 = b[f[1]]
+			local uv2 = b[f[2]]
+			local uv3 = b[f[3]]
+			
+			return {
+				get = function(self, u, v, w)
+					local x = math.floor((uv1[1] * u + uv2[1] * v + uv3[1] * w) * width)
+					local y = math.floor((uv1[2] * u + uv2[2] * v + uv3[2] * w) * height)
+					local v = ({dat:getPixel(math.clamp(x, 0, width-1), math.clamp(y, 0, height-1))})[input.channel]
+					return (input.invert and (1.0 - v) or v) * (input.mul or 1.0) + (input.add or 0.0)
+				end,
+				getMax = function(self)
+					return 0.999
+				end,
+			}
+		else
+			local dat = {
+				(1 - o.colors[f[1]][input.channel]) * (input.mul or 1.0) + (input.add or 0.0),
+				(1 - o.colors[f[2]][input.channel]) * (input.mul or 1.0) + (input.add or 0.0),
+				(1 - o.colors[f[3]][input.channel]) * (input.mul or 1.0) + (input.add or 0.0)
+			} or {
+				o.colors[f[1]][input.channel] * (input.mul or 1.0) + (input.add or 0.0),
+				o.colors[f[2]][input.channel] * (input.mul or 1.0) + (input.add or 0.0),
+				o.colors[f[3]][input.channel] * (input.mul or 1.0) + (input.add or 0.0)
+			}
+			
+			return {
+				get = function(self, u, v, w)
+					return dat[1] * u + dat[2] * v + dat[3] * w
+				end,
+				getMax = function(self)
+					return math.max(dat[1], dat[2], dat[3])
+				end,
+			}
+		end
 	else
 		return ones
 	end
@@ -76,8 +113,22 @@ function lib:addParticlesystems(obj)
 				orientation = o.transform * orientation
 			end
 			
+			--load required imageData
 			for psID, ps in ipairs(particleSystems) do
-				assert(#ps.loadedObjects > 0, "particle systems used objects are empty")
+				for _,input in pairs(ps.input) do
+					if input.source == "image" then
+						if not imageDataCache[input.path] then
+							assert(self.images[input.path], "image " .. tostring(input.path) .. " does not exist!")
+							print("warning: particlesystem #" .. psID .. " of material " .. o.material.name .. " uses an (slow) image source. Use 3DO export for the final build")
+							imageDataCache[input.path] = love.image.newImageData(self.images[input.path])
+						end
+					end
+				end
+			end
+			
+			--place them
+			for psID, ps in ipairs(particleSystems) do
+				assert(#ps.loadedObjects > 0, "particle systems imported objects are empty")
 				
 				--list particles to spawn
 				local transforms = { }
@@ -108,7 +159,7 @@ function lib:addParticlesystems(obj)
 						
 						--specific input for density
 						local density, maxDensity = getInput(ps.input.density, o, f)
-						local maxDensity = math.max(unpack(density))
+						local maxDensity = density:getMax()
 						local size = getInput(ps.input.size, o, f)
 						
 						--amount of objects
@@ -128,7 +179,7 @@ function lib:addParticlesystems(obj)
 							local w = (1 - u - v)
 							
 							--interpolated per vertex density
-							if maxDensity == 1.0 or (density[1] * u + density[2] * v + density[3] * w) / maxDensity < math.random() then
+							if maxDensity == 1.0 or density:get(u, v, w) / maxDensity > math.random() then
 								--interpolated normal and position
 								local n = vec3(o.normals[f[1]]) * u + vec3(o.normals[f[1]]) * v + vec3(o.normals[f[1]]) * w
 								local p = v1 * u + vec3(v2) * v + vec3(v3) * w
@@ -157,7 +208,7 @@ function lib:addParticlesystems(obj)
 								end
 								
 								--scale
-								local esc = size[1] * u + size[2] * v + size[3] * w
+								local esc = size:get(u, v, w)
 								local sc = math.random() * (ps.size[2] - ps.size[1]) + ps.size[1] * esc
 								
 								--custom mat3 lookup with scale
@@ -268,4 +319,5 @@ function lib:addParticlesystems(obj)
 			end
 		end
 	end
+	imageDataCache = { }
 end
