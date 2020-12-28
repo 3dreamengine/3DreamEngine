@@ -272,6 +272,14 @@ function lib:planeInFrustum(cam, pos, radius, id)
 	return true
 end
 
+function lib:getBarycentric(x, y, x1, y1, x2, y2, x3, y3)
+	local det = (y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3)
+	local w1 = ((y2 - y3) * (x - x3) + (x3 - x2) * (y - y3)) / det
+	local w2 = ((y3 - y1) * (x - x3) + (x1 - x3) * (y - y3)) / det
+	local w3 = 1 - w1 - w2
+	return w1, w2, w3
+end
+
 do
 	local blurVecs = {
 		{

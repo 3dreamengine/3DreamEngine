@@ -1,6 +1,6 @@
 local p = { }
 
-local dream = _3DreamEngine
+local lib = _3DreamEngine
 
 local colliderMeta = {
 	getPosition = function(self)
@@ -92,12 +92,7 @@ local function attemptSolve(a, b)
 	local x, y = b:getBody():getLocalPoint(a:getBody():getWorldPoint(0, 0))
 	local x1, y1, x2, y2, x3, y3 = b:getShape():getPoints()
 	
-	local det = (y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3)
-	local w1 = ((y2 - y3) * (x - x3) + (x3 - x2) * (y - y3)) / det
-	local w2 = ((y3 - y1) * (x - x3) + (x1 - x3) * (y - y3)) / det
-	local w3 = 1 - w1 - w2
-	
-	local inside = w1 > 0 and w2 > 0 and w3 > 0
+	local w1, w2, w3 = lib:getBarycentric(x, y, x1, y1, x2, y2, x3, y3)
 	
 	local index = b:getUserData()
 	
@@ -152,12 +147,12 @@ function p:newMesh(obj)
 		n.typ = "group"
 		n.objects = { }
 		for d,phy in pairs(obj.physics) do
-			table.insert(n.objects, dream:getPhysicsObject(phy))
+			table.insert(n.objects, lib:getPhysicsObject(phy))
 		end
 	elseif obj.objects then
 		obj.physics = { }
 		for d,s in pairs(obj.objects) do
-			obj.physics[d] = dream:getPhysicsData(s)
+			obj.physics[d] = lib:getPhysicsData(s)
 		end
 		return self:newMesh(obj)
 	end

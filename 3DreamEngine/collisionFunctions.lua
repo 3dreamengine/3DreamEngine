@@ -3,11 +3,11 @@
 collisionFunctions.lua - contains collision and physics library relevant functions
 --]]
 
-local lib = _3DreamEngine
+local self = _3DreamEngine
 
 --get the collision data from a mesh
 --it moves the collider to its bounding box center based on its initial transform
-function lib:getCollisionData(obj)
+function self:getCollisionData(obj)
 	local n = { }
 	
 	--data required by the collision extension
@@ -93,7 +93,7 @@ end
 
 --receives an array of faces defined by three indices and an array with vertices and returns an array of connected subsets and an array of subset vertices indices
 --connected sets are defined by a single shared vertex, recognized by its reference
-function lib:groupVertices(faces, vertices)
+function self:groupVertices(faces, vertices)
 	--initilize group indices
 	local groupIndices = { }
 	for d,s in ipairs(vertices) do
@@ -155,7 +155,7 @@ function lib:groupVertices(faces, vertices)
 end
 
 --preprocess subObject and link required data
-function lib:getPhysicsData(obj)
+function self:getPhysicsData(obj)
 	local p = { }
 	p.groups, p.groupVertices = self:groupVertices(obj.faces, obj.vertices)
 	p.vertices = obj.vertices
@@ -166,15 +166,17 @@ function lib:getPhysicsData(obj)
 	return p
 end
 
-function lib:getPhysicsObject(phy)
+function self:getPhysicsObject(phy)
 	local n = { }
-	local t = love.timer.getTime()
 	
 	n.typ = "triangle"
 	n.objects = { }
 	n.normals = { }
 	n.heights = { }
 	n.thickness = { }
+	
+	--to make is theoretically possible to reuse the physicsData
+	local groups = table.copy(phy.groups)
 	
 	--transform vertices
 	local transformed = { }
@@ -197,6 +199,55 @@ function lib:getPhysicsObject(phy)
 		normals[d] = transformed[s]
 	end
 	
+	--look for highest and lowest value, or triangulate the face it is in
+	local height = { }
+	local threshold = 0.01
+	for d,s in ipairs(vertices) do
+		for i,v in ipairs(vertices) do
+			if i > d then break end
+			local dist = (s.x-v.x)^2 + (s.z-v.z)^2
+			if dist < threshold then
+				height[d] = math.abs(v.y - s.y, 0)
+				height[i] = math.abs(s.y - v.y, 0)
+				break
+			end
+		end
+		
+		--no opposite vertex found
+		if not height[d] then
+			for _,group in ipairs(groups) do
+				for faceID,face in ipairs(group) do
+					--vertices
+					local a = vertices[face[1]]
+					local b = vertices[face[2]]
+					local c = vertices[face[3]]
+					
+					local w1, w2, w3 = self:getBarycentric(x, y, a.x, a.y, b.x, b.y, c.x, c.y)
+					local inside = w1 > 0 and w2 > 0 and w3 > 0 and w1 < 1 and w2 < 1 and w3 < 1
+					if inside then
+						table.remove(group, faceID)
+						
+						table.insert(group, {face[1], face[2], d})
+						table.insert(group, {face[2], face[3], d})
+						table.insert(group, {face[3], face[1], d})
+						
+						local h = a.y * w1 + b.y * w2 + c.y * w3
+						height[d] = math.abs(h - s.y, 0)
+						height[i] = math.abs(s.y - h, 0)
+						
+						goto done
+					end
+				end
+			end
+			::done::
+		end
+		
+		--corner
+		if not height[d] then
+			height[d] = 0
+		end
+	end
+	
 	--get most likely vertex to reconstruct order
 	local function smallest(x, y, x1, y1, x2, y2, x3, y3)
 		local d1 = math.abs(x1 - x) + math.abs(y1 - y)
@@ -207,7 +258,7 @@ function lib:getPhysicsObject(phy)
 	end
 	
 	--create polygons
-	for gID,group in ipairs(phy.groups) do
+	for gID,group in ipairs(groups) do
 		for _,face in ipairs(group) do
 			--vertices
 			local a = vertices[face[1]]
