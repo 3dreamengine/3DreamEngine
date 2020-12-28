@@ -103,7 +103,7 @@ function lib:bakeMaterial(o)
 	
 	--debug
 	for d,s in ipairs(atlas) do
-		print(d, unpack(s))
+		--print(d, unpack(s))
 	end
 	
 	--bake

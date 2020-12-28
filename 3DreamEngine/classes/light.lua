@@ -1,5 +1,10 @@
 local lib = _3DreamEngine
 
+local function removePostfix(t)
+	local v = t:match("(.*)%.[^.]+")
+	return v or t
+end
+
 function lib:newLight(typ, posX, posY, posZ, r, g, b, brightness)
 	r = r or 1.0
 	g = g or 1.0
@@ -8,6 +13,7 @@ function lib:newLight(typ, posX, posY, posZ, r, g, b, brightness)
 	
 	local l = {
 		typ = typ or "point",
+		name = "unnamed",
 		x = posX or 0,
 		y = posY or 0,
 		z = posZ or 0,
@@ -23,11 +29,16 @@ function lib:newLight(typ, posX, posY, posZ, r, g, b, brightness)
 end
 
 return {
-	link = {"light"},
+	link = {"light", "clone"},
 	
 	setterGetter = {
 		frameSkip = "number",
+		name = "string",
 	},
+	
+	setName = function(self, name)
+		self.name = removePostfix(name)
+	end,
 	
 	setBrightness = function(self, brightness)
 		self.brightness = brightness

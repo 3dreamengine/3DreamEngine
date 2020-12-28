@@ -366,6 +366,7 @@ return function(self, obj, path)
 	if root.library_lights then
 		for d,light in ipairs(root.library_lights[1].light) do
 			local l = self:newLight()
+			l:setName(light._attr.name)
 			lightIDs[light._attr.id] = l
 			
 			if light.extra and light.extra[1] and light.extra[1].technique and light.extra[1].technique[1] then
@@ -374,8 +375,6 @@ return function(self, obj, path)
 				l:setColor(dat.red and tonumber(dat.red[1][1]) or 1.0, dat.green and tonumber(dat.green[1][1]) or 1.0, dat.blue and tonumber(dat.blue[1][1]) or 1.0)
 				l:setBrightness(dat.energy and tonumber(dat.energy[1][1]) or 1.0)
 			end
-			
-			table.insert(obj.lights, l)
 		end
 	end
 	
@@ -393,16 +392,19 @@ return function(self, obj, path)
 	--load scene
 	for d,s in ipairs(root.library_visual_scenes[1].visual_scene[1].node) do
 		obj.joints = { }
+		local name = s._attr.name or s._attr.id
 		if s.instance_geometry then
 			--object
 			local id = s.instance_geometry[1]._attr.url:sub(2)
-			local name = s._attr.name or s._attr.id
 			local transform = mat4(loadFloatArray(s.matrix[1][1]))
 			addObject(name, id, transform)
 		elseif s.instance_light then
 			local transform = correction * mat4(loadFloatArray(s.matrix[1][1]))
-			local l = lightIDs[s.instance_light[1]._attr.url:sub(2)]
+			local id = s.instance_light[1]._attr.url:sub(2)
+			local l = lightIDs[id]
 			l:setPosition(transform[4], transform[8], transform[12])
+			l:setName(name)
+			obj.lights[id] = l:clone()
 		elseif s._attr.name == "Armature" then
 			--propably an armature
 			--TODO: not a proper way to identify armature nodes

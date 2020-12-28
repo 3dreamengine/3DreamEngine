@@ -38,40 +38,30 @@ function lib:loadLibrary(path, shaderType, args, prefix)
 	--load
 	local obj = self:loadObject(path, shaderType, args)
 	
+	--prepare lights for library entry
+	for d,s in pairs(obj.lights) do
+		for _,o in pairs(obj.objects) do
+			if s.name == o.name then
+				local p = o.transform:invert() * vec3(s.x, s.y, s.z)
+				s.x = p.x
+				s.y = p.y
+				s.z = p.z
+				break
+			end
+		end
+	end
+	
 	--insert into library
-	local overwritten = { }
-	for name,o in pairs(obj.objects) do
-		local id = prefix .. o.name
-		if not overwritten[id] then
-			overwritten[id] = true
-			self.objectLibrary[id] = { }
-		end
-		table.insert(self.objectLibrary[id], o)
-	end
-	
-	--insert collisions into library
-	local overwritten = { }
-	if obj.collisions then
-		for name,c in pairs(obj.collisions) do
-			local id = prefix .. c.name
-			if not overwritten[id] then
-				overwritten[id] = true
-				self.collisionLibrary[id] = { }
+	for _,list in ipairs({"objects", "collisions", "physics", "positions", "lights"}) do
+		for _,o in pairs(obj[list] or { }) do
+			local id = prefix .. o.name
+			if not self.objectLibrary[id] then
+				self.objectLibrary[id] = { }
 			end
-			table.insert(self.collisionLibrary[id], c)
-		end
-	end
-	
-	--insert physics into library
-	local overwritten = { }
-	if obj.physics then
-		for name,c in pairs(obj.physics) do
-			local id = prefix .. c.name
-			if not overwritten[id] then
-				overwritten[id] = true
-				self.physicsLibrary[id] = { }
+			if not self.objectLibrary[id][list] then
+				self.objectLibrary[id][list] = { }
 			end
-			table.insert(self.physicsLibrary[id], c)
+			table.insert(self.objectLibrary[id][list], o)
 		end
 	end
 end
@@ -309,35 +299,26 @@ function lib:loadObject(path, shaderType, args)
 			assert(lo, "linked object " .. link.source .. " is not in the object library!")
 			
 			--link
-			for d,no in ipairs(lo) do
-				local co = self:newLinkedObject(no)
-				co.transform = link.transform
-				co.linked = link.source
-				co.name = "link_" .. id .. "_" .. co.name
-				obj.objects["link_" .. id .. "_" .. d .. "_" .. no.name] = co
-			end
-			
-			--link collisions
-			local lc = self.collisionLibrary[link.source]
-			if lc then
-				obj.collisions = obj.collisions or { }
-				for d,no in ipairs(lc) do
-					local co = clone(no)
-					co.linkTransform = link.transform
+			for _,list in ipairs({"objects", "collisions", "physics", "positions", "lights"}) do
+				for d,no in ipairs(lo[list] or { }) do
+					local co = list == "objects" and self:newLinkedObject(no) or no.clone and no:clone() or clone(no)
+					
+					--collisions preserve theit origin centered transform and use a super group instead
+					if list == "collisions" then
+						co.linkTransform = link.transform
+					elseif list == "lights" or list == "positions" then
+						local p = link.transform * vec3(co.x, co.y, co.z)
+						co.x = p.x
+						co.y = p.y
+						co.z = p.z
+					else
+						co.transform = link.transform
+					end
+					
 					co.linked = link.source
-					obj.collisions["link_" .. id .. "_" .. d .. "_" .. no.name] = co
-				end
-			end
-			
-			--link physics
-			local lc = self.physicsLibrary[link.source]
-			if lc then
-				obj.physics = obj.physics or { }
-				for d,no in ipairs(lc) do
-					local co = clone(no)
-					co.transform = link.transform
-					co.linked = link.source
-					obj.physics["link_" .. id .. "_" .. d .. "_" .. no.name] = co
+					co.name = "link_" .. id .. "_" .. co.name
+					obj[list] = obj[list] or { }
+					obj[list]["link_" .. id .. "_" .. d .. "_" .. no.name] = co
 				end
 			end
 		end

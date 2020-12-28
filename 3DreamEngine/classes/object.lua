@@ -151,5 +151,11 @@ return {
 		for d,s in pairs(count) do
 			print("", s, d)
 		end
+		
+		--physics
+		print("lights")
+		for d,s in pairs(self.lights) do
+			print("", s.name, s.brightness)
+		end
 	end
 }
