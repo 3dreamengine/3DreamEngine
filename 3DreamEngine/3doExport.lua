@@ -36,7 +36,6 @@ function lib:export3do(obj)
 		["lights"] = obj.lights,
 		["positions"] = obj.positions,
 		["transform"] = obj.transform,
-		["collisions"] = obj.collisions,
 		["animations"] = obj.animations,
 		["animationLengths"] = obj.animationLengths,
 		["joints"] = obj.joints,

@@ -1,6 +1,81 @@
+--[[
+#DEPRICATED
+The collision extension is not recommended due to its extremely low performance and lack of physics.
+It remains here as a single file and propably will stay untouched, but error fixes etc are not planned.
+If you need physics, check out the blazing fast Box2D extension (physics.lua)
+If you want raytracing (ray-mesh collision for shots, view detection, etc) check out the way more suitable raytrace.lua. It works on any mesh and is faster than collision.lua.
+--]]
+
 local c = { }
 
-local dream = _3DreamEngine
+local lib = _3DreamEngine
+
+--get the collision data from a mesh
+--it moves the collider to its bounding box center based on its initial transform
+function lib:getCollisionData(obj)
+	local n = { }
+	
+	--data required by the collision extension
+	n.typ = "mesh"
+	n.boundary = 0
+	n.name = obj.name
+	n.group = obj.group
+	
+	--offset, a transformation will be directly applied
+	n.transform = obj.boundingBox and obj.boundingBox.center or vec3(0, 0, 0)
+	
+	if obj.transform then
+		n.transform = obj.transform * n.transform
+	end
+	
+	n.transformInverse = -n.transform
+	
+	--data
+	n.faces = { }
+	n.normals = { }
+	n.edges = { }
+	n.point = vec3(0, 0, 0)
+	
+	--transform vertices
+	local vertices = { }
+	for d,s in ipairs(obj.vertices) do
+		vertices[d] = (obj.transform and obj.transform * vec3(s) or vec3(s)) - n.transform
+	end
+	
+	local hashes = { }
+	for d,s in ipairs(obj.faces) do
+		--vertices
+		local a = vertices[s[1]]
+		local b = vertices[s[2]]
+		local c = vertices[s[3]]
+		
+		--edges
+		for i = 1, 3 do
+			local n1 = s[i % 3 + 1]
+			local n2 = s[(i+1) % 3 + 1]
+			
+			local id = math.min(n1, n2) * 9999 + math.max(n1, n2)
+			if not hashes[id] then
+				table.insert(n.edges, {vertices[n1], vertices[n2]})
+				hashes[id] = true
+			end
+		end
+		
+		--face normal
+		local normal = (b-a):cross(c-a):normalize()
+		table.insert(n.normals, normal)
+		
+		n.point = a
+		
+		--boundary
+		n.boundary = math.max(n.boundary, a:length(), b:length(), c:length())
+		
+		--face
+		table.insert(n.faces, {a, b, c})
+	end
+	
+	return n
+end
 
 local I = mat4:getIdentity()
 local Z = vec3()
@@ -268,7 +343,7 @@ function c:newMesh(object, transform)
 		assert(object.faces and object.vertices, "Object has been cleaned up or is invalid, 'faces' and 'vertices' buffers are required!")
 		
 		--this is a sub object and needs to be converted first
-		local n = dream:getCollisionData(object)
+		local n = lib:getCollisionData(object)
 		
 		--then use the collision to continue
 		return self:newMesh(n, transform)

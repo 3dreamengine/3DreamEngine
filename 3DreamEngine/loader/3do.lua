@@ -106,21 +106,6 @@ return function(self, obj, path)
 		end
 	end
 	
-	--recreate collision data
-	if obj.collisions then
-		for _,coll in pairs(obj.collisions) do
-			convert(coll.edges)
-			convert(coll.faces)
-			convert(coll.normals)
-			coll.point = vec3(coll.point)
-			if coll.linkTransform then
-				coll.linkTransform = mat4(coll.linkTransform)
-			end
-			coll.transform = #coll.transform == 16 and mat4(coll.transform) or vec3(coll.transform)
-			coll.transformInverse = #coll.transformInverse == 16 and mat4(coll.transformInverse) or vec3(coll.transformInverse)
-		end
-	end
-	
 	--recreate physics data
 	if obj.physics then
 		for _,coll in pairs(obj.physics) do

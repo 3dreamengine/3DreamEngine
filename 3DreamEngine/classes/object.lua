@@ -59,7 +59,7 @@ return {
 			end
 			return c
 		end
-		return string.format("%s: %d objects, %d collisions, %d physics, %d lights", self.name, count(self.objects), count(self.collisions or { }), count(self.physics or { }), count(self.lights))
+		return string.format("%s: %d objects, %d physics, %d lights", self.name, count(self.objects), count(self.physics or { }), count(self.lights))
 	end,
 	
 	withName = function(self, name)
@@ -131,16 +131,6 @@ return {
 				
 				print(string.format("     % 3d %s%s%s%s%s %d", count[d[2]], tags, string.rep(" ", width - #tags), lod, string.rep(" ", 8 - #lod), visibility, vertices[d[2]] or 0))
 			end
-		end
-		
-		--collisions
-		print("collisions")
-		local count = { }
-		for d,s in pairs(self.collisions or { }) do
-			count[s.name] = (count[s.name] or 0) + 1
-		end
-		for d,s in pairs(count) do
-			print("", s, d)
 		end
 		
 		--physics

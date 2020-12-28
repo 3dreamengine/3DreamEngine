@@ -52,7 +52,7 @@ function lib:loadLibrary(path, shaderType, args, prefix)
 	end
 	
 	--insert into library
-	for _,list in ipairs({"objects", "collisions", "physics", "positions", "lights"}) do
+	for _,list in ipairs({"objects", "physics", "positions", "lights"}) do
 		for _,o in pairs(obj[list] or { }) do
 			local id = prefix .. o.name
 			if not self.objectLibrary[id] then
@@ -301,14 +301,11 @@ function lib:loadObject(path, shaderType, args)
 			assert(lo, "linked object " .. link.source .. " is not in the object library!")
 			
 			--link
-			for _,list in ipairs({"objects", "collisions", "physics", "positions", "lights"}) do
+			for _,list in ipairs({"objects", "physics", "positions", "lights"}) do
 				for d,no in ipairs(lo[list] or { }) do
 					local co = list == "objects" and self:newLinkedObject(no) or no.clone and no:clone() or clone(no)
 					
-					--collisions preserve theit origin centered transform and use a super group instead
-					if list == "collisions" then
-						co.linkTransform = link.transform
-					elseif list == "lights" or list == "positions" then
+					if list == "lights" or list == "positions" then
 						local p = link.transform * vec3(co.x, co.y, co.z)
 						co.x = p.x
 						co.y = p.y
@@ -429,20 +426,13 @@ function lib:loadObject(path, shaderType, args)
 	end
 	
 	
-	--extract collisions
+	--extract physics
 	for d,o in pairs(obj.objects) do
-		if o.tags.collision or o.tags.physics or o.tags.collphy then
+		if o.tags.physics or o.tags.collphy then
 			if o.vertices then
 				--leave at origin for library entries
 				if obj.args.loadAsLibrary then
 					o.transform = nil
-				end
-				
-				--3D collision
-				if o.tags.collision or o.tags.collphy then
-					obj.collisions = obj.collisions or { }
-					obj.collisionCount = (obj.collisionCount or 0) + 1
-					obj.collisions[d] = self:getCollisionData(o)
 				end
 				
 				--2.5D physics
