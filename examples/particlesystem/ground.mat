@@ -7,9 +7,8 @@ return {
 				objects = {
 					["examples/particlesystem/grass"] = 1000,
 				},
-				randomSize = {0.5, 1.0},
-				randomRotation = true,
-				normal = 0.9,
+				size = {0.5, 1.0},
+				rotation = 0.25,
 				shader = "wind",
 				shaderValue = "grass",
 			},
@@ -17,8 +16,8 @@ return {
 				objects = {
 					["examples/particlesystem/rock"] = 50,
 				},
-				randomSize = {0.5, 1.0},
-				randomRotation = true,
+				size = {0.5, 1.0},
+				rotation = 0.25,
 			},
 		}
 	},
@@ -29,9 +28,8 @@ return {
 				objects = {
 					["examples/particlesystem/leave"] = 200,
 				},
-				randomSize = {0.25, 0.35},
-				randomRotation = true,
-				normal = 0.9,
+				size = {0.25, 0.35},
+				rotation = 0.25,
 				shader = "wind",
 				shaderValue = 0.05,
 			},
@@ -39,9 +37,8 @@ return {
 				objects = {
 					["examples/particlesystem/leave"] = 200,
 				},
-				randomSize = {0.25, 0.35},
-				randomRotation = true,
-				normal = 0.9,
+				size = {0.25, 0.35},
+				rotation = 0.25,
 				shader = "wind",
 				shaderValue = -0.03,
 			},

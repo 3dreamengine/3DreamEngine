@@ -191,18 +191,18 @@ function lib:addParticlesystems(obj)
 								
 								--randomize normal
 								local normal
-								if ps.tilt > 0 then
-									normal = vec3(math.random(), math.random(), math.random()) * ps.tilt + vec3(-n.x, -n.z, n.y) * (1 - ps.tilt)
+								if ps.rotation > 10 then
+									normal = vec3(math.random(), math.random(), math.random()) * ps.rotation + vec3(-n.x, -n.z, n.y) * (1 - ps.rotation)
 								else
-									normal = vec3(-n.x, -n.z, n.y)
+									normal = vec3(n.x, n.y, n.z)
 								end
 								
 								--randomize front
 								local font
-								if ps.rotation > 0 then
+								if ps.tilt > 0 then
 									local tangent = n:cross(vec3(1, 2, 3))
 									local bitangent = n:cross(tangent)
-									front = tangent * (math.random()-0.5) + bitangent * (math.random()-0.5) * ps.rotation + vec3(0, 0, -1) * (1 - ps.rotation)
+									front = tangent * (math.random()-0.5) + bitangent * (math.random()-0.5) * ps.tilt + vec3(0, 0, -1) * (1 - ps.tilt)
 								else
 									front = vec3(0, 0, -1)
 								end
@@ -212,8 +212,8 @@ function lib:addParticlesystems(obj)
 								local sc = math.random() * (ps.size[2] - ps.size[1]) + ps.size[1] * esc
 								
 								--custom mat3 lookup with scale
-								local zaxis = normal:normalize()
-								local xaxis = zaxis:cross(front):normalize()
+								local zaxis = front:normalize()
+								local xaxis = zaxis:cross(normal):normalize()
 								local yaxis = xaxis:cross(zaxis)
 								
 								local transform = mat3:getScale(sc, sc, sc) * mat3(

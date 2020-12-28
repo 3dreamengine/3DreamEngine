@@ -26,18 +26,15 @@ return function(self, obj, path)
 			texture[#texture+1] = {tonumber(v[2]), 1.0 - tonumber(v[3])}
 		elseif v[1] == "usemtl" then
 			material = self.materialLibrary[l:sub(8)] or obj.materials[l:sub(8)] or obj.materials.None
+			o.material = material
 		elseif v[1] == "f" then
 			local verts = #v-1
 			
 			--combine vertex and data into one
 			local index = #o.vertices
-			local edge = { }
-			local edgeID = { }
 			for i = 1, verts do
 				local v2 = self:split(v[i+1]:gsub("//", "/0/"), "/")
 				index = index + 1
-				edge[i] = index
-				edgeID[i] = tonumber(v2[1])
 				o.vertices[index] = vertices[tonumber(v2[1])]
 				o.texCoords[index] = texture[tonumber(v2[2])]
 				o.normals[index] = normals[tonumber(v2[3])]

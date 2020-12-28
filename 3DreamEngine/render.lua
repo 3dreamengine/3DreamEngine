@@ -105,7 +105,7 @@ function lib:buildScene(cam, canvases, typ, blacklist)
 											end
 										end
 									end
-								elseif subObj.request then
+								else
 									subObj:request()
 								end
 							end

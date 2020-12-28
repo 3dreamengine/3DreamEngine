@@ -4,8 +4,8 @@ return {
 			objects = {
 				["examples/firstpersongame/objects/grass"] = 20,
 			},
-			randomSize = {2.5, 4.0},
-			randomRotation = true,
+			size = {2.5, 4.0},
+			rotation = 0.25,
 			normal = 0.9,
 			shader = "wind",
 			shaderValue = "grass",
@@ -14,8 +14,9 @@ return {
 			objects = {
 				["examples/firstpersongame/objects/rocks"] = 0.2,
 			},
-			randomSize = {1.0, 1.25},
-			randomRotation = true,
+			size = {1.0, 1.25},
+			rotation = 1,
+			tilt = 1,
 		},
 	}
 }

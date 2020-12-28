@@ -3,11 +3,11 @@
 collisionFunctions.lua - contains collision and physics library relevant functions
 --]]
 
-local self = _3DreamEngine
+local lib = _3DreamEngine
 
 --get the collision data from a mesh
 --it moves the collider to its bounding box center based on its initial transform
-function self:getCollisionData(obj)
+function lib:getCollisionData(obj)
 	local n = { }
 	
 	--data required by the collision extension
@@ -93,7 +93,7 @@ end
 
 --receives an array of faces defined by three indices and an array with vertices and returns an array of connected subsets and an array of subset vertices indices
 --connected sets are defined by a single shared vertex, recognized by its reference
-function self:groupVertices(faces, vertices)
+function lib:groupVertices(faces, vertices)
 	--initilize group indices
 	local groupIndices = { }
 	for d,s in ipairs(vertices) do
@@ -155,7 +155,7 @@ function self:groupVertices(faces, vertices)
 end
 
 --preprocess subObject and link required data
-function self:getPhysicsData(obj)
+function lib:getPhysicsData(obj)
 	local p = { }
 	p.groups, p.groupVertices = self:groupVertices(obj.faces, obj.vertices)
 	p.vertices = obj.vertices
@@ -166,7 +166,7 @@ function self:getPhysicsData(obj)
 	return p
 end
 
-function self:getPhysicsObject(phy)
+function lib:getPhysicsObject(phy)
 	local n = { }
 	
 	n.typ = "triangle"

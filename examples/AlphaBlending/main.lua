@@ -22,7 +22,7 @@ local p = scene.positions[1]
 local light = dream:newLight("point", p.x, p.y, p.z, 1.4, 1.2, 1.0, 20.0)
 light:addShadow()
 light:setSmoothing(true)
-light.blacklist = {[scene.objects.chandelier_glass_Chalendier] = true, [scene.objects.chandelier_WhiteGlass] = true}
+light.blacklist = {[scene.objects.chandelier_glass_None] = true, [scene.objects.chandelier_WhiteGlass] = true}
 
 --custom position and rotation
 dream.cam.rx = 0.9

@@ -5,12 +5,12 @@ return {
 			objects = {
 				["examples/AlphaBlending/grass"] = 500,
 			},
-			randomSize = {0.15, 0.2},
-			randomRotation = true,
-			normal = 0.9,
+			size = {0.15, 0.2},
+			rotation = 0.2,
 			shader = "wind",
 			shaderValue = "grass",
-			shaderValueGrass = 0.1,
+			shaderValueGrass = 0.025,
+			removeEmitter = true,
 		},
 	}
 }

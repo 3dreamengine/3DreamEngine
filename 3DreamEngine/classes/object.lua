@@ -2,6 +2,7 @@ local lib = _3DreamEngine
 
 function lib:newObject(path)
 	--get name and dir
+	path = path or "unknown"
 	local n = self:split(path, "/")
 	local name = n[#n] or path
 	local dir = #n > 1 and table.concat(n, "/", 1, #n-1) or ""
@@ -58,7 +59,7 @@ return {
 			end
 			return c
 		end
-		return string.format("%s: %d objects, %d collisions, %d physics, %d lights", self.name, count(self.objects), count(self.collisions), count(self.physics), count(self.lights))
+		return string.format("%s: %d objects, %d collisions, %d physics, %d lights", self.name, count(self.objects), count(self.collisions or { }), count(self.physics or { }), count(self.lights))
 	end,
 	
 	withName = function(self, name)
@@ -135,7 +136,7 @@ return {
 		--collisions
 		print("collisions")
 		local count = { }
-		for d,s in pairs(self.collisions) do
+		for d,s in pairs(self.collisions or { }) do
 			count[s.name] = (count[s.name] or 0) + 1
 		end
 		for d,s in pairs(count) do
@@ -145,7 +146,7 @@ return {
 		--physics
 		print("physics")
 		local count = { }
-		for d,s in pairs(self.physics) do
+		for d,s in pairs(self.physics or { }) do
 			count[s.name] = (count[s.name] or 0) + 1
 		end
 		for d,s in pairs(count) do

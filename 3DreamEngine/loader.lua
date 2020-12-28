@@ -27,7 +27,7 @@ function lib:loadLibrary(path, shaderType, args, prefix)
 	if type(shaderType) == "table" then
 		return self:loadLibrary(path, shaderType and shaderType.shaderType, shaderType)
 	end
-	args = table.copy(args) or { }
+	args = table.copy(args or { })
 	args.shaderType = shaderType or args.shaderType
 	
 	prefix = prefix or ""
@@ -83,7 +83,7 @@ function lib:loadObject(path, shaderType, args)
 	if type(shaderType) == "table" then
 		return self:loadObject(path, shaderType and shaderType.shaderType, shaderType)
 	end
-	args = table.copy(args) or { }
+	args = table.copy(args or { })
 	args.shaderType = shaderType or args.shaderType
 	
 	--some shaderType specific settings
@@ -172,7 +172,7 @@ function lib:loadObject(path, shaderType, args)
 				o.tags[key:lower()] = value or true
 			else
 				if key:upper() == key and key:lower() ~= key then
-					print("unknown tag '" .. key .. "' of object '" .. o.name .. "' in '" .. path .. "'?")
+					print("unknown tag '" .. key .. "' of object '" .. o.name .. "' in '" .. path .. "'")
 				end
 				o.name = table.concat(possibles, "_", index)
 				break
@@ -257,6 +257,7 @@ function lib:loadObject(path, shaderType, args)
 						o2.texCoords = { }
 						o2.colors = { }
 						o2.materials = { }
+						o2.extras = { }
 						o2.faces = { }
 						
 						obj.objects[d2] = o2
@@ -270,6 +271,7 @@ function lib:loadObject(path, shaderType, args)
 					o2.texCoords[i2] = o.texCoords[i]
 					o2.colors[i2] = o.colors[i]
 					o2.materials[i2] = o.materials[i]
+					o2.extras[i2] = o.extras[i]
 					o2.translation[i] = i2
 				end
 				

@@ -5,8 +5,5 @@ return {
 	cullMode = "none",
 	translucent = 1.0,
 	discard = true,
-	
-	onFinish = function(mat, obj)
-		mat:activateShaderModule("wind")
-	end,
+	shaderModules = {"wind"},
 }

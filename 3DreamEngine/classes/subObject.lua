@@ -56,7 +56,7 @@ return {
 	end,
 	
 	request = function(self)
-		if not self.loaded then
+		if not self.loaded and self.obj.DO_dataOffset then
 			self.obj.loadRequests = self.obj.loadRequests or { }
 			
 			local index = self.obj.DO_dataOffset + self.meshDataIndex
