@@ -1,6 +1,6 @@
 --load the 3D lib
 dream = require("3DreamEngine")
-collision = require("3DreamEngine/collision")
+raytrace = require("3DreamEngine/raytrace")
 love.window.setTitle("PBR Tavern")
 love.window.setVSync(false)
 
@@ -28,17 +28,6 @@ dream:init()
 
 --load scene
 local scene = dream:loadObject(projectDir .. "scene", "PBR")
-
---create mesh collisions for all sub objects
-local colls = collision:newGroup()
-for d,s in pairs(scene.objects) do
-	local c = collision:newMesh(s)
-	
-	--the first children is the actual mesh data which will be returned in the collider, we give it a name so we can recognise it later
-	c.children[1].name = d
-	
-	colls:add(c)
-end
 
 local player = {
 	x = 4,
@@ -156,28 +145,20 @@ function love.draw()
 	if lookingAtCheck then
 		local t = love.timer.getTime()
 		local coll = false
-		local pos = vec3(player.x, player.y, player.z)
+		local origin = vec3(player.x, player.y, player.z)
+		local direction
 		
-		local segment
 		if rotateCamera then
-			segment = collision:newSegment(pos, pos + dream.cam.normal * 10)
+			direction = dream.cam.normal * 10
 		else
 			local x, y = love.mouse.getPosition()
 			local point = dream:pixelToPoint(vec3(x, y, 10))
-			segment = collision:newSegment(pos, point)
+			direction = point - origin
 		end
 		
 		--check
-		if collision:collide(segment, colls) then
-			--fetch the collision of the last check
-			local best = math.huge
-			for d,s in ipairs(collision:getCollisions()) do
-				local dist = (s[2] - pos):lengthSquared()
-				if dist < best then
-					best = dist
-					coll = s[3].name or "?"
-				end
-			end
+		if raytrace:raytrace(scene, origin, direction) then
+			coll = raytrace:getObject().name
 		end
 		
 		--cursor
