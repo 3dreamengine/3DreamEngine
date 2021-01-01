@@ -268,6 +268,7 @@ function lib:getRenderShader(obj, pass, canvases, light, shadows)
 			modules = m,
 			reflection = not shadows and reflection,
 			shadows = shadows,
+			uniforms = { },
 		}
 		local info = self.mainShaders[ID]
 		
@@ -373,23 +374,18 @@ local baseParticlesShader = love.filesystem.read(lib.root .. "/shaders/particles
 local baseParticleShader = love.filesystem.read(lib.root .. "/shaders/particle.glsl")
 function lib:getParticlesShader(canvases, light, emissive, single)
 	--additional settings
-	local globalDefines = { }
 	local ID_settings = 0
 	if emissive then
 		ID_settings = ID_settings + 2^0
-		table.insert(globalDefines, "#define TEX_EMISSION")
 	end
 	if canvases.postEffects and self.exposure and earlyExposure(canvases) then
 		ID_settings = ID_settings + 2^1
-		table.insert(globalDefines, "#define EXPOSURE_ENABLED")
 	end
 	if canvases.postEffects and self.gamma and earlyExposure(canvases) then
 		ID_settings = ID_settings + 2^2
-		table.insert(globalDefines, "#define GAMMA_ENABLED")
 	end
 	if self.fog_enabled and canvases.mode ~= "normal" then
 		ID_settings = ID_settings + 2^4
-		table.insert(globalDefines, "#define FOG_ENABLED")
 	end
 	if single then
 		ID_settings = ID_settings + 2^5
@@ -398,7 +394,23 @@ function lib:getParticlesShader(canvases, light, emissive, single)
 	local ID = light.ID .. string.char(ID_settings)
 	
 	if not self.particlesShader[ID] then
-		local info = { }
+		local globalDefines = { }
+		if emissive then
+			table.insert(globalDefines, "#define TEX_EMISSION")
+		end
+		if canvases.postEffects and self.exposure and earlyExposure(canvases) then
+			table.insert(globalDefines, "#define EXPOSURE_ENABLED")
+		end
+		if canvases.postEffects and self.gamma and earlyExposure(canvases) then
+			table.insert(globalDefines, "#define GAMMA_ENABLED")
+		end
+		if self.fog_enabled and canvases.mode ~= "normal" then
+			table.insert(globalDefines, "#define FOG_ENABLED")
+		end
+		
+		local info = {
+			uniforms = { }
+		}
 		
 		--construct shader
 		local code = single and baseParticleShader or baseParticlesShader

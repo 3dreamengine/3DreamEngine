@@ -13,19 +13,37 @@ lib.stats = {
 	draws = 0,
 }
 
+--sorting function for the alpha pass
 local sortPosition = vec3(0, 0, 0)
 local function sortFunction(a, b)
 	return (a.pos - sortPosition):lengthSquared() > (b.pos - sortPosition):lengthSquared()
 end
 
-function lib:sendFogData(shader)
-	shader:send("fog_density", self.fog_density)
-	shader:send("fog_color", self.fog_color)
-	shader:send("fog_sun", self.sun)
-	shader:send("fog_sunColor", self.sun_color)
-	shader:send("fog_scatter", self.fog_scatter)
-	shader:send("fog_min", self.fog_min)
-	shader:send("fog_max", self.fog_max)
+--sends fog relevant data to the given shader
+local function sendFogData(shader)
+	shader:send("fog_density", lib.fog_density)
+	shader:send("fog_color", lib.fog_color)
+	shader:send("fog_sun", lib.sun)
+	shader:send("fog_sunColor", lib.sun_color)
+	shader:send("fog_scatter", lib.fog_scatter)
+	shader:send("fog_min", lib.fog_min)
+	shader:send("fog_max", lib.fog_max)
+end
+
+--improve speed of uniform check
+local function hasUniform(shaderObject, name)
+	local uniforms = shaderObject.uniforms
+	if uniforms[name] == nil then
+		uniforms[name] = shaderObject.shader:hasUniform(name)
+	end
+	return uniforms[name]
+end
+
+--checks if this uniform exists and sends
+local function checkAndSend(shader, name, value)
+	if shader:hasUniform(name) then
+		shader:send(name, value)
+	end
 end
 
 --use active scenes, current canvas set, the usage type and an optional blacklist to create a final, ready to render scene
@@ -178,13 +196,13 @@ function lib:render(scene, canvases, cam)
 		end
 		
 		--final draw
+		self.delton:start("shader")
 		for shaderObject, shaderGroup in pairs(pass == 1 and scene.solid or scene.alpha) do
-			self.delton:start("shader")
 			local shader = shaderObject.shader
 			
 			--output settings
 			love.graphics.setShader(shader)
-			if shader:hasUniform("dataAlpha") then
+			if hasUniform(shaderObject, "dataAlpha") then
 				shader:send("dataAlpha", dataAlpha)
 			end
 			
@@ -196,23 +214,23 @@ function lib:render(scene, canvases, cam)
 			end
 			
 			--fog
-			if shader:hasUniform("fog_density") then
-				self:sendFogData(shader)
+			if hasUniform(shaderObject, "fog_density") then
+				sendFogData(shader)
 			end
 			
 			--framebuffer
-			if shader:hasUniform("tex_depth") then
+			if hasUniform(shaderObject, "tex_depth") then
 				shader:send("tex_depth", canvases.depth)
 				shader:send("tex_color", canvases.color)
 				shader:send("screenScale", {1 / canvases.width, 1 / canvases.height})
 			end
 			
-			if shader:hasUniform("gamma") then shader:send("gamma", self.gamma) end
-			if shader:hasUniform("exposure") then shader:send("exposure", self.exposure) end
+			if hasUniform(shaderObject, "gamma") then shader:send("gamma", self.gamma) end
+			if hasUniform(shaderObject, "exposure") then shader:send("exposure", self.exposure) end
 			
 			--camera
 			shader:send("transformProj", cam.transformProj)
-			if shader:hasUniform("viewPos") then
+			if hasUniform(shaderObject, "viewPos") then
 				shader:send("viewPos", viewPos)
 			end
 			
@@ -221,21 +239,19 @@ function lib:render(scene, canvases, cam)
 			end
 			
 			--for each light setup
+			self.delton:start("light")
 			for lightID, lightGroup in pairs(shaderGroup) do
-				self.delton:start("light")
-				
 				--light if using forward lighting
 				self:sendLightUniforms(scene.lights[lightID], shaderObject)
 				
 				--for each material
+				self.delton:start("material")
 				for material, materialGroup in pairs(lightGroup) do
-					self.delton:start("material")
-					
 					--alpha
-					if shader:hasUniform("isSemi") then
+					if hasUniform(shaderObject, "isSemi") then
 						shader:send("isSemi", canvases.alphaPass and material.solid and material.alpha and 1 or 0)
 					end
-					if shader:hasUniform("dither") then
+					if hasUniform(shaderObject, "dither") then
 						if material.dither == nil then
 							shader:send("dither", self.dither and 1 or 0)
 						else
@@ -244,11 +260,11 @@ function lib:render(scene, canvases, cam)
 					end
 					
 					--ior
-					if shader:hasUniform("ior") then
+					if hasUniform(shaderObject, "ior") then
 						shader:send("ior", 1.0 / material.ior)
 					end
 					
-					if shader:hasUniform("translucent") then
+					if hasUniform(shaderObject, "translucent") then
 						shader:send("translucent", material.translucent)
 					end
 					
@@ -306,14 +322,14 @@ function lib:render(scene, canvases, cam)
 						self.stats.vertices = self.stats.vertices + subObj.mesh:getVertexCount()
 					end
 					self.stats.materialDraws = self.stats.materialDraws + 1
-					self.delton:stop()
 				end
-				self.stats.lightSetups = self.stats.lightSetups + 1
 				self.delton:stop()
+				self.stats.lightSetups = self.stats.lightSetups + 1
 			end
-			self.stats.shadersInUse = self.stats.shadersInUse + 1
 			self.delton:stop()
+			self.stats.shadersInUse = self.stats.shadersInUse + 1
 		end
+		self.delton:stop()
 		love.graphics.setColor(1.0, 1.0, 1.0)
 	end
 	
@@ -330,16 +346,16 @@ function lib:render(scene, canvases, cam)
 			love.graphics.setShader(shader)
 			
 			shader:send("transformProj", cam.transformProj)
-			if shader:hasUniform("viewPos") then shader:send("viewPos", {cam.pos:unpack()}) end
-			if shader:hasUniform("gamma") then shader:send("gamma", self.gamma) end
-			if shader:hasUniform("exposure") then shader:send("exposure", self.exposure) end
+			if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", {cam.pos:unpack()}) end
+			if hasUniform(shaderObject, "gamma") then shader:send("gamma", self.gamma) end
+			if hasUniform(shaderObject, "exposure") then shader:send("exposure", self.exposure) end
 			
 			--light if using forward lighting
 			self:sendLightUniforms(light, shaderObject)
 			
 			--fog
-			if shader:hasUniform("fog_density") then
-				self:sendFogData(shader)
+			if hasUniform(shaderObject, "fog_density") then
+				sendFogData(shader)
 			end
 			
 			--render particle batches
@@ -352,7 +368,7 @@ function lib:render(scene, canvases, cam)
 					shader:send("right", {right:unpack()})
 					
 					--emission texture
-					if shader:hasUniform("tex_emission") then
+					if hasUniform(shaderObject, "tex_emission") then
 						shader:send("tex_emission", batch.emissionTexture)
 					end
 					
@@ -370,16 +386,16 @@ function lib:render(scene, canvases, cam)
 			
 			shader:send("transformProj", cam.transformProj)
 			shader:send("dataAlpha", canvases.averageAlpha)
-			if shader:hasUniform("viewPos") then shader:send("viewPos", {cam.pos:unpack()}) end
-			if shader:hasUniform("gamma") then shader:send("gamma", self.gamma) end
-			if shader:hasUniform("exposure") then shader:send("exposure", self.exposure) end
+			if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", {cam.pos:unpack()}) end
+			if hasUniform(shaderObject, "gamma") then shader:send("gamma", self.gamma) end
+			if hasUniform(shaderObject, "exposure") then shader:send("exposure", self.exposure) end
 			
 			--light if using forward lighting
 			self:sendLightUniforms(light, shaderObject)
 			
 			--fog
-			if shader:hasUniform("fog_density") then
-				self:sendFogData(shader)
+			if hasUniform(shaderObject, "fog_density") then
+				sendFogData(shader)
 			end
 			
 			--render particles
@@ -397,7 +413,7 @@ function lib:render(scene, canvases, cam)
 				shader:send("InstanceEmission", s[5 + nr])
 				
 				--emission texture
-				if shader:hasUniform("tex_emission") then
+				if hasUniform(shaderObject, "tex_emission") then
 					shader:send("tex_emission", s[2])
 				end
 				
@@ -443,7 +459,7 @@ function lib:renderShadows(scene, cam, canvas, blacklist)
 		
 		--camera
 		shader:send("transformProj", cam.transformProj)
-		if shader:hasUniform("viewPos") then
+		if hasUniform(shaderObject, "viewPos") then
 			shader:send("viewPos", viewPos)
 		end
 		
@@ -463,8 +479,8 @@ function lib:renderShadows(scene, cam, canvas, blacklist)
 		end
 	end
 	
-	self.delton:stop()
 	love.graphics.pop()
+	self.delton:stop()
 end
 
 --full render, including bloom, fxaa, exposure and gamma correction
@@ -592,24 +608,24 @@ function lib:renderFull(scene, cam, canvases)
 		
 		love.graphics.setShader(shader)
 		
-		if shader:hasUniform("canvas_depth") then shader:send("canvas_depth", canvases.depth) end
+		checkAndSend(shader, "canvas_depth", canvases.depth)
 		
-		if shader:hasUniform("canvas_bloom") then shader:send("canvas_bloom", canvases.bloom_1) end
-		if shader:hasUniform("canvas_ao") then shader:send("canvas_ao", canvases.AO_1) end
+		checkAndSend(shader, "canvas_bloom", canvases.bloom_1)
+		checkAndSend(shader, "canvas_ao", canvases.AO_1)
 		
-		if shader:hasUniform("canvas_alpha") then shader:send("canvas_alpha", canvases.colorAlpha) end
-		if shader:hasUniform("canvas_alphaData") then shader:send("canvas_alphaData", canvases.dataAlpha) end
+		checkAndSend(shader, "canvas_alpha", canvases.colorAlpha)
+		checkAndSend(shader, "canvas_alphaData", canvases.dataAlpha)
 		
-		if shader:hasUniform("canvas_exposure") then shader:send("canvas_exposure", self.canvas_exposure) end
+		checkAndSend(shader, "canvas_exposure", self.canvas_exposure)
 		
-		if shader:hasUniform("transformInverse") then shader:send("transformInverse", cam.transformProj:invert()) end
-		if shader:hasUniform("viewPos") then shader:send("viewPos", cam.pos) end
+		checkAndSend(shader, "transformInverse", cam.transformProj:invert())
+		checkAndSend(shader, "viewPos", cam.pos)
 		
-		if shader:hasUniform("gamma") then shader:send("gamma", self.gamma) end
-		if shader:hasUniform("exposure") then shader:send("exposure", self.exposure) end
+		checkAndSend(shader, "gamma", self.gamma)
+		checkAndSend(shader, "exposure", self.exposure)
 		
 		if shader:hasUniform("fog_density") then
-			self:sendFogData(shader)
+			sendFogData(shader)
 		end
 		
 		love.graphics.draw(canvases.color)
