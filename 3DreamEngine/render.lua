@@ -633,6 +633,9 @@ function lib:renderFull(scene, cam, canvases)
 	end
 end
 
+local sum = 0
+local count = 0
+
 function lib:present(cam, canvases, lite)
 	self.delton:start("present")
 	
@@ -642,31 +645,47 @@ function lib:present(cam, canvases, lite)
 	--extract camera position and normal
 	cam = cam or self.cam
 	local i = cam.transform:invert()
-	cam.pos = i * vec3(0.0, 0.0, 0.0)
-	cam.normal = (cam.pos - i * vec3(0.0, 0.0, 1.0)):normalize()
+	cam.pos = vec3(i[4], i[8], i[12])
+	cam.normal = vec3(-i[3], -i[7], -i[11]):normalize()
 	
 	--perspective transform
-	local n = cam.near
-	local f = cam.far
-	local fov = cam.fov
-	local scale = math.tan(fov*math.pi/360)
-	local aspect = canvases.width / canvases.height
-	local r = scale * n * aspect
-	local t = scale * n
-	local m = canvases.mode == "direct" and 1 or -1
-	local projection = mat4(
-		n / r,     0,          0,                0,
-		0,         n / t * m,  0,                0,
-		0,         0,          -(f+n) / (f-n),   -2*f*n / (f-n),
-		0,         0,          -1,               0
-	)
+	do
+		local n = cam.near
+		local f = cam.far
+		local fov = cam.fov
+		local scale = math.tan(fov*math.pi/360)
+		local aspect = canvases.width / canvases.height
+		local r = scale * n * aspect
+		local t = scale * n
+		local m = canvases.mode == "direct" and 1 or -1
+		
+		--optimized matrix multiplikation by removing constants
+		--looks like a mess, but its only the opengl projection multiplied by the camera
+		local b = cam.transform
+		local a1 = n / r
+		local a6 = n / t * m
+		local fn1 = 1 / (f-n)
+		local a11 = -(f+n) * fn1
+		local a12 = -2*f*n * fn1
+		
+		cam.transformProj = mat4(
+			a1 * b[1],   a1 * b[2],     a1 * b[3],     a1 * b[4],
+			a6 * b[5],   a6 * b[6],     a6 * b[7],     a6 * b[8],
+			a11 * b[9],  a11 * b[10],   a11 * b[11],   a11 * b[12] + a12,
+			-b[9],       -b[10],        -b[11],        -b[12]
+		)
+		
+		cam.transformProjOrigin = mat4(
+			a1 * b[1],   a1 * b[2],    a1 * b[3],    0.0,
+			a6 * b[5],   a6 * b[6],    a6 * b[7],    0.0,
+			a11 * b[9],  a11 * b[10],  a11 * b[11],  a12,
+			-b[9],       -b[10],       -b[11],       0.0
+		)
+		
+		cam.aspect = aspect
+		self.lastUsedCam = cam
+	end
 	
-	--camera transformation
-	cam.transformProj = projection * cam.transform
-	local m = cam.transform
-	cam.transformProjOrigin = projection * mat4(m[1], m[2], m[3], 0.0, m[5], m[6], m[7], 0.0, m[9], m[10], m[11], 0.0, 0.0, 0.0, 0.0, 1.0)
-	cam.aspect = aspect
-	self.lastUsedCam = cam
 	
 	--generate scene
 	self.delton:start("scene")
@@ -687,44 +706,47 @@ function lib:present(cam, canvases, lite)
 	self.delton:stop()
 	
 	--debug
-	local brightness = {
-		data_pass2 = 0.25,
-		depth = 0.1,
-	}
-	if _DEBUGMODE and love.keyboard.isDown(",") then
-		local w = 400
-		local x = 0
-		local y = 0
-		local maxHeight = 0
-		for d,s in pairs(canvases) do
-			if type(s) == "userdata" and s:isReadable() then
-				local b = brightness[d] or 1
-				local h = w / s:getWidth() * s:getHeight()
-				maxHeight = math.max(maxHeight, h)
-				
-				love.graphics.setColor(0, 0, 0)
-				love.graphics.rectangle("fill", x * w, y, w, h)
-				love.graphics.setShader(self:getShader("replaceAlpha"))
-				self:getShader("replaceAlpha"):send("alpha", b)
-				love.graphics.setBlendMode("add")
-				love.graphics.draw(s, x * w, y, 0, w / s:getWidth())
-				love.graphics.setShader()
-				love.graphics.setBlendMode("alpha")
-				love.graphics.setColor(1, 1, 1)
-				love.graphics.print(d, x * w, y)
-				
-				x = x + 1
-				if x * w + w >= love.graphics.getWidth() then
-					x = 0
-					y = y + maxHeight
-					maxHeight = 0
+	if _DEBUGMODE then
+		if love.keyboard.isDown(",") then
+			local brightness = {
+				data_pass2 = 0.25,
+				depth = 0.1,
+			}
+			
+			local w = 400
+			local x = 0
+			local y = 0
+			local maxHeight = 0
+			for d,s in pairs(canvases) do
+				if type(s) == "userdata" and s:isReadable() then
+					local b = brightness[d] or 1
+					local h = w / s:getWidth() * s:getHeight()
+					maxHeight = math.max(maxHeight, h)
+					
+					love.graphics.setColor(0, 0, 0)
+					love.graphics.rectangle("fill", x * w, y, w, h)
+					love.graphics.setShader(self:getShader("replaceAlpha"))
+					self:getShader("replaceAlpha"):send("alpha", b)
+					love.graphics.setBlendMode("add")
+					love.graphics.draw(s, x * w, y, 0, w / s:getWidth())
+					love.graphics.setShader()
+					love.graphics.setBlendMode("alpha")
+					love.graphics.setColor(1, 1, 1)
+					love.graphics.print(d, x * w, y)
+					
+					x = x + 1
+					if x * w + w >= love.graphics.getWidth() then
+						x = 0
+						y = y + maxHeight
+						maxHeight = 0
+					end
 				end
 			end
 		end
-	end
-	
-	self.delton:step()
-	if _DEBUGMODE and love.keyboard.isDown(".") then
-		self.delton:present()
+		
+		self.delton:step()
+		if love.keyboard.isDown(".") then
+			self.delton:present()
+		end
 	end
 end

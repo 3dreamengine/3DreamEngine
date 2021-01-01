@@ -25,25 +25,6 @@ end
 local shadowCam = lib:newCam()
 shadowCam.noFrustumCheck = true
 
---an optimized multiplikation of the default projection matrix with a common transformation matrix
-local function projectionMultiplication(a, b)
-	return mat4({
-		a[1] * b[1] +
-		a[1] * b[2] +
-		a[1] * b[3] +
-		a[4] +
-		a[6] * b[5] +
-		a[6] * b[6] +
-		a[6] * b[7] +
-		a[8] +
-		a[11] * b[9] +
-		a[11] * b[10] +
-		a[11] * b[11] +
-		a[12] +
-		0, 0, 0, 1
-	})
-end
-
 function job:execute(times, delta, light, pos, cascade)
 	local cam = lib.lastUsedCam
 	light.shadow.lastPos = pos
@@ -62,24 +43,29 @@ function job:execute(times, delta, light, pos, cascade)
 	local n = 1.0
 	local f = 100
 	
-	local projection = mat4(
-		2 / (r - l),	0,	0,	-(r + l) / (r - l),
-		0, -2 / (t - b), 0, -(t + b) / (t - b),
-		0, 0, -2 / (f - n), -(f + n) / (f - n),
-		0, 0, 0, 1
-	)
-	
 	shadowCam.pos = cam.pos
 	shadowCam.normal = pos
 	shadowCam.transform = lib:lookAt(cam.pos + shadowCam.normal * f * 0.5, cam.pos, vec3(0.0, 1.0, 0.0))
-	shadowCam.transformProj = projection * shadowCam.transform
 	
-	--optimized matrix multiplikation
-	shadowCam.transformProjOrigin = projectionMultiplication(projection, shadowCam.transform)
+	--optimized arthopgraphic projected multiplied by the cameras view matrix
+	local a1 = 2 / (r - l)
+	local a4 = -(r + l) / (r - l)
+	local a6 = -2 / (t - b)
+	local a8 = -(t + b) / (t - b)
+	local a11 = -2 / (f - n)
+	local a12 = -(f + n) / (f - n)
+	local b = shadowCam.transform
+	shadowCam.transformProj =  mat4({
+		a1 * b[1],   a1 * b[2],    a1 * b[3],    a1 * b[4] + a4,
+		a6 * b[5],   a6 * b[6],    a6 * b[7],    a6 * b[8] + a8,
+		a11 * b[9],  a11 * b[10],  a11 * b[11],  a11 * b[12] + a12,
+		0.0,         0.0,          0.0,          1.0,
+	})
 	
 	light.shadow["transformation_" .. cascade] = shadowCam.transformProj
 	light.shadow.canvases[cascade] = light.shadow.canvases[cascade] or lib:newShadowCanvas("sun", light.shadow.res)
 	
+	--only load scene for first canvas assuming nothing has changed in the meanwhile (TODO: possible instable, requires further inspection)
 	if cascade == 1 then
 		light.scene = lib:buildScene(shadowCam, lib.shadowSet, "shadows", light.blacklist)
 	end

@@ -489,10 +489,28 @@ metatable = {
 		local t2 = a2:trace()
 		local t3 = a3:trace()
 		local d = a:det()
-		local d6 = 1/6
-		local I = setmetatable({d6, 0, 0, 0, 0, d6, 0, 0, 0, 0, d6, 0, 0, 0, 0, d6}, metatable)
+		local dth = 1 / d
+		local d6 = (t^3 - 3*t*t2 + 2*t3) / 6
+		local m1 = 0.5 * (t*t - t2)
 		
-		return (I * (t*t*t - 3*t*t2 + 2*t3) - a * 0.5 * (t*t - t2) + a2 * t - a3) / d
+		return 	mat4({
+			(a2[1] * t - m1 * a[1] - a3[1] + d6) * dth,
+			(a2[2] * t - m1 * a[2] - a3[2]) * dth,
+			(a2[3] * t - m1 * a[3] - a3[3]) * dth,
+			(a2[4] * t - m1 * a[4] - a3[4]) * dth,
+			(a2[5] * t - m1 * a[5] - a3[5]) * dth,
+			(a2[6] * t - m1 * a[6] - a3[6] + d6) * dth,
+			(a2[7] * t - m1 * a[7] - a3[7]) * dth,
+			(a2[8] * t - m1 * a[8] - a3[8]) * dth,
+			(a2[9] * t - m1 * a[9] - a3[9]) * dth,
+			(a2[10] * t - m1 * a[10] - a3[10]) * dth,
+			(a2[11] * t - m1 * a[11] - a3[11] + d6) * dth,
+			(a2[12] * t - m1 * a[12] - a3[12]) * dth,
+			(a2[13] * t - m1 * a[13] - a3[13]) * dth,
+			(a2[14] * t - m1 * a[14] - a3[14]) * dth,
+			(a2[15] * t - m1 * a[15] - a3[15]) * dth,
+			(a2[16] * t - m1 * a[16] - a3[16] + d6) * dth,
+		})
 	end,
 	
 	affineAdd = function(a, b)
