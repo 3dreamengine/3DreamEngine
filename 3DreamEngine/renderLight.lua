@@ -21,7 +21,7 @@ function lib:getLightOverview(cam)
 	local lights = { }
 	local types = { }
 	for d,s in ipairs(self.lighting) do
-		local typ = s.typ .. "_" .. (s.shadow and "shadow" or "simple")
+		local typ = s.typ .. "_" .. (s.shadow and "shadow" or "simple") .. (s.shadow and s.shadow.static == "dynamic" and "_dynamic" or "")
 		s.light_typ = typ
 		
 		if (types[typ] or 0) < self.max_lights then

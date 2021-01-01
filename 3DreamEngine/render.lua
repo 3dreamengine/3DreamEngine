@@ -48,7 +48,7 @@ end
 
 --use active scenes, current canvas set, the usage type and an optional blacklist to create a final, ready to render scene
 --typ is the final scene typ and may be 'render', 'shadows' or 'reflections'
-function lib:buildScene(cam, canvases, typ, blacklist)
+function lib:buildScene(cam, canvases, typ, blacklist, dynamic)
 	local scene = {
 		solid = { },
 		alpha = typ ~= "shadows" and { } or false,
@@ -71,59 +71,67 @@ function lib:buildScene(cam, canvases, typ, blacklist)
 				scene.lights[light.ID] = light
 			end
 			
-			local tasks = typ == "shadows" and sc.tasksShadows or typ == "reflections" and sc.tasksReflections or sc.tasksRender
-			local tasksCount = #tasks
-			local tasksCountTotal = tasksCount + #sc.tasks
-			
-			for taskID = 1, tasksCountTotal do
-				local task = tasks[taskID] or sc.tasks[taskID - tasksCount]
-				local obj = task:getObj()
-				local subObj = task:getS()
-				if not blacklist or not (blacklist[obj] or blacklist[subObj]) then
-					local mat = subObj.material
-					if typ ~= "shadows" or mat.shadow ~= false then
-						local solid = (mat.solid or not canvases.alphaPass) and 1 or 2
-						local alpha = canvases.alphaPass and mat.alpha and typ ~= "shadows" and 2 or 1
-						for pass = solid, alpha do
-							subObj.rID = subObj.rID or math.random()
-							if not frustumCheck or self:planeInFrustum(cam, task:getPos(), task:getSize(), subObj.rID) then
-								if subObj.loaded then
-									local shader = self:getRenderShader(subObj, pass, canvases, light, typ == "shadows")
-									local lightID = light.ID
-									local scene = (not canvases.alphaPass or pass == 1) and scene.solid or scene.alpha
-									
-									--group shader and materials together to reduce shader switches
-									if not scene[shader] then
-										scene[shader] = { }
-									end
-									
-									if typ == "shadows" then
-										table.insert(scene[shader], task)
-									else
-										if not scene[shader][lightID] then
-											scene[shader][lightID] = { }
-										end
-										if not scene[shader][lightID][mat] then
-											scene[shader][lightID][mat] = { }
+			for _,tasks in ipairs(dynamic == nil and {
+				sc.tasks[1].all,
+				sc.tasks[1][typ],
+				sc.tasks[2].all,
+				sc.tasks[2][typ]
+			} or dynamic == true and {
+				sc.tasks[2].all,
+				sc.tasks[2][typ]
+			} or {
+				sc.tasks[1].all,
+				sc.tasks[1][typ]
+			}) do
+				for taskID, task in ipairs(tasks) do
+					local obj = task:getObj()
+					local subObj = task:getS()
+					if not blacklist or not (blacklist[obj] or blacklist[subObj]) then
+						local mat = subObj.material
+						if typ ~= "shadows" or mat.shadow ~= false then
+							local solid = (mat.solid or not canvases.alphaPass) and 1 or 2
+							local alpha = canvases.alphaPass and mat.alpha and typ ~= "shadows" and 2 or 1
+							for pass = solid, alpha do
+								subObj.rID = subObj.rID or math.random()
+								if not frustumCheck or self:planeInFrustum(cam, task:getPos(), task:getSize(), subObj.rID) then
+									if subObj.loaded then
+										local shader = self:getRenderShader(subObj, pass, canvases, light, typ == "shadows")
+										local lightID = light.ID
+										local scene = (not canvases.alphaPass or pass == 1) and scene.solid or scene.alpha
+										
+										--group shader and materials together to reduce shader switches
+										if not scene[shader] then
+											scene[shader] = { }
 										end
 										
-										--add
-										table.insert(scene[shader][lightID][mat], task)
-										
-										--reflections
-										if typ == "render" then
-											local reflection = subObj.reflection or obj.reflection
-											if reflection and reflection.canvas then
-												self.reflections[reflection] = {
-													dist = (task:getPos() - cam.pos):length(),
-													obj = subObj.reflection and subObj or obj,
-													pos = reflection.pos or task:getPos(),
-												}
+										if typ == "shadows" then
+											table.insert(scene[shader], task)
+										else
+											if not scene[shader][lightID] then
+												scene[shader][lightID] = { }
+											end
+											if not scene[shader][lightID][mat] then
+												scene[shader][lightID][mat] = { }
+											end
+											
+											--add
+											table.insert(scene[shader][lightID][mat], task)
+											
+											--reflections
+											if typ == "render" then
+												local reflection = subObj.reflection or obj.reflection
+												if reflection and reflection.canvas then
+													self.reflections[reflection] = {
+														dist = (task:getPos() - cam.pos):length(),
+														obj = subObj.reflection and subObj or obj,
+														pos = reflection.pos or task:getPos(),
+													}
+												end
 											end
 										end
+									else
+										subObj:request()
 									end
-								else
-									subObj:request()
 								end
 							end
 						end
@@ -433,7 +441,7 @@ function lib:render(scene, canvases, cam)
 end
 
 --only renders a depth variant
-function lib:renderShadows(scene, cam, canvas, blacklist)
+function lib:renderShadows(scene, cam, canvas, blacklist, dynamic)
 	self.delton:start("renderShadows")
 	
 	love.graphics.push("all")
@@ -442,6 +450,13 @@ function lib:renderShadows(scene, cam, canvas, blacklist)
 	love.graphics.setDepthMode("less", true)
 	love.graphics.setBlendMode("darken", "premultiplied")
 	love.graphics.setCanvas(canvas)
+	
+	--second pass for dynamics
+	if dynamic then
+		love.graphics.setColorMask(false, true, false, false)
+	else
+		love.graphics.setColorMask(true, false, false, false)
+	end
 	love.graphics.clear(255, 255, 255, 255)
 	
 	--love shader friendly

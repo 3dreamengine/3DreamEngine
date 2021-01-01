@@ -348,6 +348,7 @@ function lib:draw(object, x, y, z, sx, sy, sz)
 	
 	--prepare transform matrix
 	local transform
+	local dynamic = object.dynamic
 	if x then
 		--simple transform with arguments, ignores object transformation matrix
 		transform = mat4(
@@ -361,6 +362,7 @@ function lib:draw(object, x, y, z, sx, sy, sz)
 		if obj.transform then
 			transform = transform * obj.transform
 		end
+		dynamic = true
 	else
 		--pre defined transform
 		transform = obj.transform
@@ -371,7 +373,7 @@ function lib:draw(object, x, y, z, sx, sy, sz)
 	
 	--add to scene
 	self.delton:start("add")
-	self.scene:add(object, transform, col)
+	self.scene:add(object, transform, col, dynamic)
 	self.delton:stop()
 	
 	self.delton:stop()

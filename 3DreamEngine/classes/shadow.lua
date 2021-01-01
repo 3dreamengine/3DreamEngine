@@ -18,7 +18,7 @@ function lib:newShadow(typ, static, res)
 	}, self.meta.shadow)
 end
 
-function lib:newShadowCanvas(typ, res)
+function lib:newShadowCanvas(typ, res, dynamic)
 	if typ == "sun" then
 		local canvas = love.graphics.newCanvas(res, res,
 			{format = "depth16", readable = true, msaa = 0, type = "2d"})
@@ -29,7 +29,7 @@ function lib:newShadowCanvas(typ, res)
 		return canvas
 	elseif typ == "point" then
 		local canvas = love.graphics.newCanvas(res, res,
-			{format = "r16f", readable = true, msaa = 0, type = "cube"})
+			{format = dynamic and "rg16f" or "r16f", readable = true, msaa = 0, type = "cube"})
 		
 		canvas:setFilter("linear", "linear")
 		
@@ -42,5 +42,12 @@ return {
 	
 	refresh = function(self)
 		self.done = { }
+	end,
+	
+	setStatic = function(self, static)
+		self.static = static
+	end,
+	getStatic = function(self)
+		return self.static
 	end,
 }

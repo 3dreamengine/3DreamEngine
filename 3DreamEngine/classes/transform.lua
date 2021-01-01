@@ -12,36 +12,43 @@ return {
 
 	setTransform = function(obj, t)
 		obj.transform = t
+		obj.dynamic = true
 		return obj
 	end,
 
 	translate = function(obj, x, y, z)
 		obj.transform = (obj.transform or I):translate(x, y, z)
+		obj.dynamic = true
 		return obj
 	end,
 
 	scale = function(obj, x, y, z)
 		obj.transform = (obj.transform or I):scale(x, y, z)
+		obj.dynamic = true
 		return obj
 	end,
 
 	rotateX = function(obj, rx)
 		obj.transform = (obj.transform or I):rotateX(rx)
+		obj.dynamic = true
 		return obj
 	end,
 
 	rotateY = function(obj, ry)
 		obj.transform = (obj.transform or I):rotateY(ry)
+		obj.dynamic = true
 		return obj
 	end,
 
 	rotateZ = function(obj, rz)
 		obj.transform = (obj.transform or I):rotateZ(rz)
+		obj.dynamic = true
 		return obj
 	end,
 
 	setDirection = function(obj, normal, up)
 		obj.transform = lib:lookAt(vec3(0, 0, 0), normal, up):invert()
+		obj.dynamic = true
 		return obj
 	end,
 }

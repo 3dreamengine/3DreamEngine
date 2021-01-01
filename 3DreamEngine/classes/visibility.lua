@@ -35,4 +35,11 @@ return {
 			return true, true, true
 		end
 	end,
+	
+	setDynamic = function(self, dynamic)
+		self.dynamic = dynamic or false
+	end,
+	isDynamic = function(self)
+		return self.dynamic
+	end
 }

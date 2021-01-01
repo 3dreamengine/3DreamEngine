@@ -12,13 +12,24 @@ return {
 	link = {"scene", "visibility"},
 	
 	clear = function(self)
-		self.tasks = { }
-		self.tasksRender = { }
-		self.tasksShadows = { }
-		self.tasksReflections = { }
+		--static tasks
+		self.tasks = {
+			{ --static
+				all = { },
+				render = { },
+				shadows = { },
+				reflections = { },
+			},
+			{ --dynamic
+				all = { },
+				render = { },
+				shadows = { },
+				reflections = { },
+			},
+		}
 	end,
 	
-	add = function(self, object, parentTransform, col)
+	add = function(self, object, parentTransform, col, dynamic)
 		col = col or white
 		local camPos = dream.cam.pos or vec3(0, 0, 0)
 		
@@ -54,22 +65,23 @@ return {
 			--task
 			if not dist or dist >= LOD_min and dist <= LOD_max then
 				--prepare task
-				local task = setmetatable({s, col, obj, pos, transform, obj.boneTransforms}, lib.meta.task)
+				local task = setmetatable({s, col, obj, false, transform, false, obj.boneTransforms}, lib.meta.task)
 				
 				--insert into respective rendering queues
 				local visibility = s.visibility or obj.visibility
+				local dyn = (dynamic or s.dynamic) and 2 or 1
 				if visibility then
 					if visibility.render then
-						table.insert(self.tasksRender, task)
+						table.insert(self.tasks[dyn].render, task)
 					end
 					if visibility.shadows then
-						table.insert(self.tasksShadows, task)
+						table.insert(self.tasks[dyn].shadows, task)
 					end
 					if visibility.reflections then
-						table.insert(self.tasksReflections, task)
+						table.insert(self.tasks[dyn].reflections, task)
 					end
 				else
-					table.insert(self.tasks, task)
+					table.insert(self.tasks[dyn].all, task)
 				end
 			end
 		end

@@ -66,7 +66,7 @@ function job:execute(times, delta, light, pos, cascade)
 	light.shadow.canvases[cascade] = light.shadow.canvases[cascade] or lib:newShadowCanvas("sun", light.shadow.res)
 	
 	--only load scene for first canvas assuming nothing has changed in the meanwhile (TODO: possible instable, requires further inspection)
-	if cascade == 1 then
+	if not light.scene then
 		light.scene = lib:buildScene(shadowCam, lib.shadowSet, "shadows", light.blacklist)
 	end
 	lib:renderShadows(light.scene, shadowCam, {depthstencil = light.shadow.canvases[cascade]})

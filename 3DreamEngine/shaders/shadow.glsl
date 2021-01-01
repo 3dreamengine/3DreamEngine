@@ -26,7 +26,7 @@ void effect() {
 #import modulesPixelPost
 	
 	float dd = length(viewPos - vertexPos.xyz);
-	love_Canvases[0] = vec4(dd, 0.0, 0.0, 1.0);
+	love_Canvases[0] = vec4(dd, dd, dd, 1.0);
 }
 #endif
 
