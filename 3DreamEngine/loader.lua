@@ -31,14 +31,23 @@ function lib:loadLibrary(path, shaderType, args, prefix)
 	
 	--prepare lights for library entry
 	for d,s in pairs(obj.lights) do
+		local best = math.huge
+		local master
 		for _,o in pairs(obj.objects) do
 			if s.name == o.name then
-				local p = o.transform and o.transform:invert() * vec3(s.x, s.y, s.z) or vec3(s.x, s.y, s.z)
-				s.x = p.x
-				s.y = p.y
-				s.z = p.z
-				break
+				local _, max = o:getLOD()
+				if max or 99999999 < best then
+					best = max or 99999999
+					master = o
+				end
 			end
+		end
+		
+		if master and master.transform then
+			local p = master.transform:invert() * vec3(s.x, s.y, s.z)
+			s.x = p.x
+			s.y = p.y
+			s.z = p.z
 		end
 	end
 	
