@@ -49,6 +49,7 @@ end
 --use active scenes, current canvas set, the usage type and an optional blacklist to create a final, ready to render scene
 --typ is the final scene typ and may be 'render', 'shadows' or 'reflections'
 function lib:buildScene(cam, canvases, typ, blacklist, dynamic)
+	self.delton:start("scene")
 	local scene = {
 		solid = { },
 		alpha = typ ~= "shadows" and { } or false,
@@ -151,6 +152,7 @@ function lib:buildScene(cam, canvases, typ, blacklist, dynamic)
 		end
 	end
 	
+	self.delton:stop()
 	return scene
 end
 
@@ -703,9 +705,7 @@ function lib:present(cam, canvases, lite)
 	
 	
 	--generate scene
-	self.delton:start("scene")
 	local scene = self:buildScene(cam, canvases, "render")
-	self.delton:stop()
 	
 	--process render jobs
 	if not lite then

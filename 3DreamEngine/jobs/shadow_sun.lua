@@ -36,9 +36,7 @@ function job:execute(times, delta, light, pos, cascade)
 	
 	--render
 	local r = lib.shadow_distance / 2 * (lib.shadow_factor ^ (cascade-1))
-	local t = lib.shadow_distance / 2 * (lib.shadow_factor ^ (cascade-1))
 	local l = -r
-	local b = -t
 	
 	local n = 1.0
 	local f = 100
@@ -48,16 +46,15 @@ function job:execute(times, delta, light, pos, cascade)
 	shadowCam.transform = lib:lookAt(cam.pos + shadowCam.normal * f * 0.5, cam.pos, vec3(0.0, 1.0, 0.0))
 	
 	--optimized arthopgraphic projected multiplied by the cameras view matrix
-	local a1 = 2 / (r - l)
-	local a4 = -(r + l) / (r - l)
-	local a6 = -2 / (t - b)
-	local a8 = -(t + b) / (t - b)
+	local a1 = 1 / r
+	local a4 = -(r + l) / r / 2
+	local a6 = -a1
 	local a11 = -2 / (f - n)
 	local a12 = -(f + n) / (f - n)
 	local b = shadowCam.transform
 	shadowCam.transformProj =  mat4({
 		a1 * b[1],   a1 * b[2],    a1 * b[3],    a1 * b[4] + a4,
-		a6 * b[5],   a6 * b[6],    a6 * b[7],    a6 * b[8] + a8,
+		a6 * b[5],   a6 * b[6],    a6 * b[7],    a6 * b[8],
 		a11 * b[9],  a11 * b[10],  a11 * b[11],  a11 * b[12] + a12,
 		0.0,         0.0,          0.0,          1.0,
 	})

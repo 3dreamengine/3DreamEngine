@@ -44,13 +44,11 @@ function lib:lookAt(eye, at, up)
 	local zaxis = (at - eye):normalize()
 	local xaxis = zaxis:cross(up):normalize()
 	local yaxis = xaxis:cross(zaxis)
-
-	zaxis = -zaxis
 	
 	return mat4(
 		xaxis.x, xaxis.y, xaxis.z, -xaxis:dot(eye),
 		yaxis.x, yaxis.y, yaxis.z, -yaxis:dot(eye),
-		zaxis.x, zaxis.y, zaxis.z, -zaxis:dot(eye),
+		-zaxis.x, -zaxis.y, -zaxis.z, zaxis:dot(eye),
 		0, 0, 0, 1
 	)
 end
@@ -433,6 +431,16 @@ function lib:take3DScreenshot(pos, resolution, path)
 	--export cimg data
 	cimg:export(results, path or "results.cimg")
 end
+
+--view normals
+lib.lookNormals = {
+	vec3(1, 0, 0),
+	vec3(-1, 0, 0),
+	vec3(0, -1, 0),
+	vec3(0, 1, 0),
+	vec3(0, 0, 1),
+	vec3(0, 0, -1),
+}
 
 --global shader modules
 lib.activeShaderModules = { }

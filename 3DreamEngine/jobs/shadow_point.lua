@@ -22,19 +22,33 @@ function job:queue(times)
 	end
 end
 
-function job:execute(times, delta, light, pos)
-	local lookNormals = lib.lookNormals
-	light.shadow.lastPos = pos
+--slightly modified lookAt to return the axis wise dot product for the position
+--this allows reusage of most of the matrix
+local function lookAt(at, up)
+	local zaxis = at:normalize()
+	local xaxis = zaxis:cross(up):normalize()
+	local yaxis = xaxis:cross(zaxis)
 	
-	--TODO optimize
-	local transformations = {
-		lib:lookAt(pos, pos + lookNormals[1], vec3(0, -1, 0)),
-		lib:lookAt(pos, pos + lookNormals[2], vec3(0, -1, 0)),
-		lib:lookAt(pos, pos + lookNormals[3], vec3(0, 0, -1)),
-		lib:lookAt(pos, pos + lookNormals[4], vec3(0, 0, 1)),
-		lib:lookAt(pos, pos + lookNormals[5], vec3(0, -1, 0)),
-		lib:lookAt(pos, pos + lookNormals[6], vec3(0, -1, 0)),
-	}
+	return mat4(
+		xaxis.x, xaxis.y, xaxis.z, 0,
+		yaxis.x, yaxis.y, yaxis.z, 0,
+		-zaxis.x, -zaxis.y, -zaxis.z, 0,
+		0, 0, 0, 1
+	), -xaxis, -yaxis, zaxis
+end
+
+--view matrices
+local transformations = {
+	{lookAt(lib.lookNormals[1], vec3(0, -1, 0))},
+	{lookAt(lib.lookNormals[2], vec3(0, -1, 0))},
+	{lookAt(lib.lookNormals[3], vec3(0, 0, -1))},
+	{lookAt(lib.lookNormals[4], vec3(0, 0, 1))},
+	{lookAt(lib.lookNormals[5], vec3(0, -1, 0))},
+	{lookAt(lib.lookNormals[6], vec3(0, -1, 0))},
+}
+
+function job:execute(times, delta, light, pos)
+	light.shadow.lastPos = pos
 	
 	--create new canvases if necessary
 	if not light.shadow.canvas then
@@ -47,7 +61,13 @@ function job:execute(times, delta, light, pos)
 		if light.shadow.static == "dynamic" then
 			dynamic = light.shadow.done[1] or false
 		end
-		local shadowCam = lib:newCam(transformations[face], lib.cubeMapProjection, pos, lookNormals[face])
+		
+		local t = transformations[face]
+		t[1][4] = t[2]:dot(pos)
+		t[1][8] = t[3]:dot(pos)
+		t[1][12] = t[4]:dot(pos)
+		
+		local shadowCam = lib:newCam(t[1], lib.cubeMapProjection, pos, lib.lookNormals[face])
 		local scene = lib:buildScene(shadowCam, lib.shadowSet, "shadows", light.blacklist, dynamic)
 		lib:renderShadows(scene, shadowCam, {{light.shadow.canvas, face = face}}, false, dynamic)
 	end

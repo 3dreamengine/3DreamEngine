@@ -46,16 +46,6 @@ do
 	)
 end
 
---view normals
-lib.lookNormals = {
-	vec3(1, 0, 0),
-	vec3(-1, 0, 0),
-	vec3(0, -1, 0),
-	vec3(0, 1, 0),
-	vec3(0, 0, 1),
-	vec3(0, 0, -1),
-}
-
 local frame = 0
 local operations
 
