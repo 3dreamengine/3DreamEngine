@@ -257,7 +257,7 @@ function lib:planeInFrustum(cam, pos, radius, id)
 		cache[id] = nil
 	end
 	
-	for i = 1, 5 do
+	for i = 1, 4 do
 		if i ~= c then
 			local plane = cam.planes[i]
 			local dist = plane[1] * pos[1] + plane[2] * pos[2] + plane[3] * pos[3] + plane[4]

@@ -187,6 +187,8 @@ local function attemptSolve(a, b)
 	return coll
 end
 
+print("unstuck only -> if the vertical spacing gets bigger valid, else reset")
+
 --preSolve event to decide wether a collision happens
 local function preSolve(a, b, c)
 	local t1 = a:getBody():getType() == "dynamic"

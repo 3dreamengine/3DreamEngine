@@ -22,6 +22,9 @@ function job:queue(times)
 	end
 end
 
+local shadowCam = lib:newCam()
+shadowCam.noFrustumCheck = true
+
 function job:execute(times, delta, light, pos, cascade)
 	local cam = lib.lastUsedCam
 	light.shadow.lastPos = pos
@@ -47,19 +50,40 @@ function job:execute(times, delta, light, pos, cascade)
 		0, 0, 0, 1
 	)
 	
-	local shadowCam = lib:newCam()
-	shadowCam.noFrustumCheck = true
 	shadowCam.pos = cam.pos
 	shadowCam.normal = pos
 	shadowCam.transform = lib:lookAt(cam.pos + shadowCam.normal * f * 0.5, cam.pos, vec3(0.0, 1.0, 0.0))
 	shadowCam.transformProj = projection * shadowCam.transform
+	
+	--optimized matrix multiplikation
+	local a = projection
 	local m = shadowCam.transform
-	shadowCam.transformProjOrigin = projection * mat4(m[1], m[2], m[3], 0.0, m[5], m[6], m[7], 0.0, m[9], m[10], m[11], 0.0, 0.0, 0.0, 0.0, 1.0)
+	shadowCam.transformProjOrigin = mat4({
+		a[1] * b[1] +
+		a[1] * b[2] +
+		a[1] * b[3] +
+		a[4] +
+		a[6] * b[5] +
+		a[6] * b[6] +
+		a[6] * b[7] +
+		a[8] +
+		a[11] * b[9] +
+		a[11] * b[10] +
+		a[11] * b[11] +
+		a[12] +
+		0, 0, 0, 1
+	})
+	
 	light.shadow["transformation_" .. cascade] = shadowCam.transformProj
 	light.shadow.canvases[cascade] = light.shadow.canvases[cascade] or lib:newShadowCanvas("sun", light.shadow.res)
 	
-	local scene = lib:buildScene(shadowCam, lib.shadowSet, "shadows", light.blacklist)
-	lib:renderShadows(scene, shadowCam, {depthstencil = light.shadow.canvases[cascade]})
+	if cascade == 1 then
+		light.scene = lib:buildScene(shadowCam, lib.shadowSet, "shadows", light.blacklist)
+	end
+	lib:renderShadows(light.scene, shadowCam, {depthstencil = light.shadow.canvases[cascade]})
+	if cascade == 3 then
+		light.scene = nil
+	end
 	
 	light.shadow.done[cascade] = true
 end

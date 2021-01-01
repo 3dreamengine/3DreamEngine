@@ -38,7 +38,7 @@ function lib:buildScene(cam, canvases, typ, blacklist)
 	}
 	
 	--update required acceleration data
-	local frustumCheck = cam.noFrustumCheck or not self.frustumCheck
+	local frustumCheck = self.frustumCheck and not cam.noFrustumCheck
 	if frustumCheck then
 		cam:updateFrustumPlanes()
 	end

@@ -212,12 +212,10 @@ decoder = dream:setNameDecoder()
 To improve performance you can enable frustum checks to only render visible objects.
 
 ```lua
-dream:setFrustumCheck(both)
-dream:setFrustumCheck(render, shadow)
-render, shadow = dream:getFrustumCheck()
+dream:setFrustumCheck(enabled)
+enabled = dream:getFrustumCheck()
 ```
-`render (true)` general frustum check
-`shadow (false)` optional frustum checking for shadow cube maps. Disabling it allows reusage of the scene, reducing CPU usage, but increasing the GPU usage instead.
+`enabled (true)` enable frusutm plane based checks
 
 
 

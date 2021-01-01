@@ -50,16 +50,13 @@ end
 
 
 --enable/disable in frustum check
-function lib:setFrustumCheck(c, cs)
-	cs = cs == nil and c
+function lib:setFrustumCheck(c)
 	check(c, "boolean")
-	check(cs, "boolean")
 	
 	self.frustumCheck = c
-	self.frustumCheckShadow = cs
 end
 function lib:getFrustumCheck()
-	return self.frustumCheck, frustumCheckShadow
+	return self.frustumCheck
 end
 
 
