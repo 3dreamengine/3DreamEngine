@@ -188,19 +188,16 @@ end
 --construct a shader
 local baseShader = love.filesystem.read(lib.root .. "/shaders/base.glsl")
 local baseShadowShader = love.filesystem.read(lib.root .. "/shaders/shadow.glsl")
-function lib:getRenderShader(o, pass, canvases, light, shadows)
-	local mat = o.material
-	local shaderType = o.shaderType
-	local reflection = o.reflection or o.obj and o.obj.reflection or self.sky_reflection
-	local refractions = mat.ior ~= 1.0
-	local modules = o.modules or o.obj and o.obj.modules or mat.modules
-	
-	--check if required shader exists
-	assert(self.shaderLibrary.base[shaderType], "Shader '" .. shaderType .. "' does not exist!")
+function lib:getRenderShader(obj, pass, canvases, light, shadows)
+	local mat = obj.material
+	local shaderType = obj.shaderType
+	local reflection = obj.reflection or obj.obj and obj.obj.reflection or self.sky_reflection
+	local refractions = canvases.refractions and mat.ior ~= 1.0
+	local modules = obj.modules or obj.obj and obj.obj.modules or mat.modules
 	
 	--get unique IDs for the components
 	local ID_base = self.shaderLibrary.base[shaderType]:getTypeID(self, mat)
-	local ID_light = shadows and 0 or light.ID
+	local ID_light = shadows and "0" or light.ID
 	local ID_settings = 0
 	local ID_modules = 0
 	
@@ -229,14 +226,20 @@ function lib:getRenderShader(o, pass, canvases, light, shadows)
 	
 	--settings
 	if not shadows then
+		if pass == 2 then
+			if refractions then
+				ID_settings = ID_settings + 2 ^ 1
+			end
+			if canvases.averageAlpha then
+				ID_settings = ID_settings + 2 ^ 2
+			end
+			ID_settings = ID_settings + 2 ^ 6
+		elseif mat.discard or mat.alpha or mat.dither or self.dither then
+			ID_settings = ID_settings + 2 ^ 7
+		end
+		
 		if reflection then
 			ID_settings = ID_settings + 2 ^ 0
-		end
-		if canvases.refractions and refractions and pass == 2 then
-			ID_settings = ID_settings + 2 ^ 1
-		end
-		if canvases.averageAlpha and pass == 2 then
-			ID_settings = ID_settings + 2 ^ 2
 		end
 		if canvases.postEffects and self.exposure and earlyExposure(canvases) then
 			ID_settings = ID_settings + 2 ^ 3
@@ -246,12 +249,6 @@ function lib:getRenderShader(o, pass, canvases, light, shadows)
 		end
 		if self.fog_enabled and canvases.mode ~= "normal" then
 			ID_settings = ID_settings + 2 ^ 5
-		end
-		if pass == 2 then
-			ID_settings = ID_settings + 2 ^ 6
-		end
-		if pass == 1 and (mat.discard or mat.alpha or mat.dither or self.dither) then
-			ID_settings = ID_settings + 2 ^ 7
 		end
 		if mat.translucent > 0 then
 			ID_settings = ID_settings + 2 ^ 8
@@ -280,7 +277,7 @@ function lib:getRenderShader(o, pass, canvases, light, shadows)
 			if reflection then
 				ID_settings = ID_settings + 2 ^ 0
 			end
-			if canvases.refractions and refractions and pass == 2 then
+			if refractions and pass == 2 then
 				table.insert(globalDefines, "#define REFRACTIONS_ENABLED")
 			end
 			if canvases.averageAlpha and pass == 2 then

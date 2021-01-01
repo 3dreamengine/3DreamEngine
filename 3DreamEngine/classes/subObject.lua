@@ -40,6 +40,8 @@ function lib:newSubObject(name, obj, mat)
 		faces = { },
 		
 		loaded = true,
+		LOD_center = vec3(0, 0, 0),
+		boundingBox = self:newBoundaryBox(),
 		
 		shaderType = shaderType,
 		meshType = obj.args.meshType or self.shaderLibrary.base[shaderType].meshType,

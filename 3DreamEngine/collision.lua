@@ -22,7 +22,7 @@ function lib:getCollisionData(obj)
 	n.group = obj.group
 	
 	--offset, a transformation will be directly applied
-	n.transform = obj.boundingBox and obj.boundingBox.center or vec3(0, 0, 0)
+	n.transform = obj.boundingBox.center
 	
 	if obj.transform then
 		n.transform = obj.transform * n.transform

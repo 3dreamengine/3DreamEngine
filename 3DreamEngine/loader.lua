@@ -5,15 +5,6 @@ loader.lua - loads objects
 
 local lib = _3DreamEngine
 
-local function newBoundaryBox()
-	return {
-		first = vec3(math.huge, math.huge, math.huge),
-		second = vec3(-math.huge, -math.huge, -math.huge),
-		center = vec3(0.0, 0.0, 0.0),
-		size = 0
-	}
-end
-
 local function clone(t)
 	local n = { }
 	for d,s in pairs(t) do
@@ -42,7 +33,7 @@ function lib:loadLibrary(path, shaderType, args, prefix)
 	for d,s in pairs(obj.lights) do
 		for _,o in pairs(obj.objects) do
 			if s.name == o.name then
-				local p = o.transform:invert() * vec3(s.x, s.y, s.z)
+				local p = o.transform and o.transform:invert() * vec3(s.x, s.y, s.z) or vec3(s.x, s.y, s.z)
 				s.x = p.x
 				s.y = p.y
 				s.z = p.z
@@ -154,14 +145,13 @@ function lib:loadObject(path, shaderType, args)
 	
 	--parse tags
 	local tags = {
-		["COLLPHY"] = true,
-		["COLLISION"] = true,
 		["PHYSICS"] = true,
 		["LOD"] = true,
 		["POS"] = true,
 		["LINK"] = true,
 		["BAKE"] = true,
 		["SHADOW"] = true,
+		["ID"] = true,
 	}
 	for d,o in pairs(obj.objects) do
 		o.tags = { }
@@ -238,6 +228,18 @@ function lib:loadObject(path, shaderType, args)
 	while changes do
 		changes = false
 		for d,o in pairs(obj.objects) do
+			--buffer detection
+			local buffers = {
+				"vertices",
+				"normals",
+				"texCoords",
+				"colors",
+				"materials",
+				"extras",
+				"weights",
+				"joints",
+			}
+			
 			if obj.args.splitMaterials and not o.tags.bake and not o.tags.split then
 				changes = true
 				obj.objects[d] = nil
@@ -251,28 +253,28 @@ function lib:loadObject(path, shaderType, args)
 						
 						o2.material = m
 						o2.translation = { }
-						
-						o2.vertices = { }
-						o2.normals = { }
-						o2.texCoords = { }
-						o2.colors = { }
-						o2.materials = { }
-						o2.extras = { }
 						o2.faces = { }
+						
+						--clear buffers
+						for _,buffer in ipairs(buffers) do
+							if o2[buffer] then
+								o2[buffer] = { }
+							end
+						end
 						
 						obj.objects[d2] = o2
 					end
 					
 					local o2 = obj.objects[d2]
-					
 					local i2 = #o2.vertices+1
-					o2.vertices[i2] = o.vertices[i]
-					o2.normals[i2] = o.normals[i]
-					o2.texCoords[i2] = o.texCoords[i]
-					o2.colors[i2] = o.colors[i]
-					o2.materials[i2] = o.materials[i]
-					o2.extras[i2] = o.extras[i]
+					
+					--copy buffers
 					o2.translation[i] = i2
+					for _,buffer in ipairs(buffers) do
+						if o2[buffer] then
+							o2[buffer][i2] = o[buffer][i]
+						end
+					end
 				end
 				
 				for i,f in ipairs(o.faces) do
@@ -327,12 +329,16 @@ function lib:loadObject(path, shaderType, args)
 	--shadow only detection
 	for d,o in pairs(obj.objects) do
 		if o.tags.shadow then
-			o:setVisibility(false, true, false)
-			
-			--hide rest of group in shadow pass
-			for d2,o2 in pairs(obj.objects) do
-				if o2.name == o.name and not o.tags.shadow then
-					o:setVisibility(true, false, true)
+			if o.tags.shadow == "false" then
+				o:setVisibility(true, false, true)
+			else
+				o:setVisibility(false, true, false)
+				
+				--hide rest of group in shadow pass
+				for d2,o2 in pairs(obj.objects) do
+					if o2.name == o.name and not o.tags.shadow then
+						o:setVisibility(true, false, true)
+					end
 				end
 			end
 		end
@@ -371,10 +377,10 @@ function lib:loadObject(path, shaderType, args)
 	
 	
 	--calculate bounding box
-	if not obj.boundingBox then
+	if not obj.boundingBox.initialized then
 		for d,s in pairs(obj.objects) do
-			if not s.boundingBox then
-				s.boundingBox = newBoundaryBox()
+			if not s.boundingBox.initialized then
+				s.boundingBox = self:newBoundaryBox(true)
 				
 				--get aabb
 				for i,v in ipairs(s.vertices) do
@@ -396,7 +402,7 @@ function lib:loadObject(path, shaderType, args)
 		end
 		
 		--calculate total bounding box
-		obj.boundingBox = newBoundaryBox()
+		obj.boundingBox = self:newBoundaryBox(true)
 		for d,s in pairs(obj.objects) do
 			local sz = vec3(s.boundingBox.size, s.boundingBox.size, s.boundingBox.size)
 			
@@ -443,14 +449,7 @@ function lib:loadObject(path, shaderType, args)
 			end
 			
 			--remove if no longer used
-			--TODO: pfusch
-			local count = 0
-			for d,s in pairs(o.tags) do
-				if d ~= "split" then
-					count = count + 1
-				end
-			end
-			if count <= 1 then
+			if not o.tags.lod and not o.tags.bake then
 				obj.objects[d] = nil
 			end
 		end
@@ -493,7 +492,7 @@ function lib:loadObject(path, shaderType, args)
 	if obj.args.cleanup ~= false then
 		for d,s in pairs(obj.objects) do
 			if obj.args.cleanup then
-				--clean important data only on request to allow reusage for collision data
+				--clean important data only on request to allow reusage
 				s.vertices = nil
 				s.faces = nil
 				s.normals = nil

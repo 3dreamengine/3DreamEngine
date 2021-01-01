@@ -7,7 +7,7 @@ return {
 		self.LOD_adaptSize = adaptSize
 	end,
 	getLOD = function(self)
-		return self.LOD_min, self.LOD_adaptSize and (self.boundingBox.size / lib.LODDistance) or self.LOD_max
+		return self.LOD_min, self.LOD_max
 	end,
 	getScaledLOD = function(self)
 		if self.LOD_min then

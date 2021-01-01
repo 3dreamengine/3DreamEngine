@@ -1,14 +1,12 @@
 local lib = _3DreamEngine
 
+local white = vec4(1.0, 1.0, 1.0, 1.0)
+
 function lib:newScene()
 	local m = setmetatable({ }, self.meta.scene)
 	m:clear()
 	return m
 end
-
-local white = vec4(1.0, 1.0, 1.0, 1.0)
-local identityMatrix = mat4:getIdentity()
-local Z = vec3(0, 0, 0)
 
 return {
 	link = {"scene", "visibility"},
@@ -20,11 +18,14 @@ return {
 		self.tasksReflections = { }
 	end,
 	
-	add = function(self, obj, parentTransform, col)
+	add = function(self, object, parentTransform, col)
 		col = col or white
+		local camPos = dream.cam.pos or vec3(0, 0, 0)
 		
 		--add to scene
-		for d,s in pairs(obj.objects or {obj}) do
+		for d,s in pairs(object.objects or {object}) do
+			local obj = s.obj or object
+			
 			--apply transformation
 			local transform
 			if parentTransform then
@@ -37,22 +38,25 @@ return {
 				transform = s.transform
 			end
 			
-			--bounding box
-			local pos
-			if not transform then
-				transform = identityMatrix
-				pos = Z
-			end
-			
-			--prepare task
-			local task = setmetatable({transform, pos or false, s, col, obj, obj.boneTransforms}, lib.meta.task)
-			
 			--LOD
 			local LOD_min, LOD_max = s:getScaledLOD()
-			local dist = LOD_min and s.LOD_center and (transform * s.LOD_center - (dream.cam.pos or vec3(0, 0, 0))):length() / lib.LODDistance
+			local dist
+			if LOD_min then
+				--harcoded distance after LOD_center transformation minus the camPos
+				local b = s.LOD_center
+				dist = math.sqrt(
+					(transform[1] * b[1] + transform[2] * b[2] + transform[3] * b[3] + transform[4] - camPos[1])^2 +
+					(transform[5] * b[1] + transform[6] * b[2] + transform[7] * b[3] + transform[8] - camPos[2])^2 +
+					(transform[9] * b[1] + transform[10] * b[2] + transform[11] * b[3] + transform[12] - camPos[3])^2
+				)
+			end
 			
 			--task
 			if not dist or dist >= LOD_min and dist <= LOD_max then
+				--prepare task
+				local task = setmetatable({s, col, obj, pos, transform, obj.boneTransforms}, lib.meta.task)
+				
+				--insert into respective rendering queues
 				local visibility = s.visibility or obj.visibility
 				if visibility then
 					if visibility.render then

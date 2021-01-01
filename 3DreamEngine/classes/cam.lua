@@ -27,13 +27,6 @@ return {
 		far = "number",
 	},
 	
-	--required for fast frustum check
-	updateFrustumAngle = function(self, aspect)
-		local scale = self.fov * math.pi / 360
-		local hFov = math.atan(scale * (aspect or 1.0)) * 360 / math.pi
-		self.frustumAngle = 1.0 - math.cos(math.max(self.fov, hFov) / 360 * math.pi)
-	end,
-	
 	--required for plane frustum check
 	updateFrustumPlanes = function(self)
 		self.planes = lib:getFrustumPlanes(self.transformProj)

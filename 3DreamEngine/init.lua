@@ -31,7 +31,6 @@ lib.ffi = require("ffi")
 _3DreamEngine = lib
 lib.root = (...)
 require((...) .. "/functions")
-require((...) .. "/collisionFunctions")
 require((...) .. "/settings")
 require((...) .. "/classes")
 require((...) .. "/shader")
@@ -75,7 +74,7 @@ lib:setGamma(false)
 lib:setExposure(1.0)
 lib:setMaxLights(16)
 lib:setNameDecoder("^(.+)_([^_]+)$")
-lib:setFrustumCheck("fast")
+lib:setFrustumCheck(true, false)
 lib:setLODDistance(20)
 lib:setDither(false)
 
@@ -342,8 +341,10 @@ function lib:prepare()
 end
 
 --add an object to the default scene
-function lib:draw(obj, x, y, z, sx, sy, sz)
+function lib:draw(object, x, y, z, sx, sy, sz)
 	self.delton:start("draw")
+	
+	local obj = object.obj or object
 	
 	--prepare transform matrix
 	local transform
@@ -357,12 +358,12 @@ function lib:draw(obj, x, y, z, sx, sy, sz)
 		)
 		
 		--also applies objects own transformation if present
-		if obj.objects and obj.transform then
+		if obj.transform then
 			transform = transform * obj.transform
 		end
 	else
 		--pre defined transform
-		transform = obj.objects and obj.transform
+		transform = obj.transform
 	end
 	
 	--fetch current color
@@ -370,7 +371,7 @@ function lib:draw(obj, x, y, z, sx, sy, sz)
 	
 	--add to scene
 	self.delton:start("add")
-	self.scene:add(obj, transform, col)
+	self.scene:add(object, transform, col)
 	self.delton:stop()
 	
 	self.delton:stop()

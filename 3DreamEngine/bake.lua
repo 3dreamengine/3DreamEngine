@@ -109,42 +109,40 @@ function lib:bakeMaterial(o)
 	--bake
 	local res = 1024
 	local canvases = {
-		tex_albedo = love.graphics.newCanvas(res, res),
-		--tex_material = love.graphics.newCanvas(res, res),
-		tex_normal = love.graphics.newCanvas(res, res),
-		tex_emission = love.graphics.newCanvas(res, res),
+		tex_albedo = love.graphics.newCanvas(res, res, {mipmaps = "manual"}),
+		--tex_material = love.graphics.newCanvas(res, res, {mipmaps = "manual"}),
+		tex_normal = love.graphics.newCanvas(res, res, {mipmaps = "manual"}),
+		tex_emission = love.graphics.newCanvas(res, res, {mipmaps = "manual"}),
 	}
 	local used = { }
 	
 	--render individual images
 	for name, canvas in pairs(canvases) do
-		love.graphics.push("all")
-		love.graphics.scale(canvas:getDimensions())
-		love.graphics.setCanvas(canvas)
-		
-		for d,s in ipairs(atlas) do
-			if s[4] and s[4][name] then
-				local tex = self:getTexture(s[4][name], true)
-				if tex then
-					local uv = uvs[s[4]]
-					local mesh = love.graphics.newMesh({
-						{0, 0, uv[1], uv[2]},
-						{1, 0, uv[3], uv[2]},
-						{1, 1, uv[3], uv[4]},
-						{0, 1, uv[1], uv[4]},
-					})
-					mesh:setTexture(tex)
-					love.graphics.draw(mesh, s[1], s[2], 0, s[3])
-					used[name] = true
+		for i = 1, canvas:getMipmapCount() do
+			love.graphics.push("all")
+			love.graphics.setCanvas(canvas, i)
+			local w, h = canvas:getDimensions()
+			love.graphics.scale(w / 2^(i-1), h / 2^(i-1))
+			
+			for d,s in ipairs(atlas) do
+				if s[4] and s[4][name] then
+					local tex = self:getTexture(s[4][name], true)
+					if tex then
+						local uv = uvs[s[4]]
+						local mesh = love.graphics.newMesh({
+							{0, 0, uv[1], uv[2]},
+							{1, 0, uv[3], uv[2]},
+							{1, 1, uv[3], uv[4]},
+							{0, 1, uv[1], uv[4]},
+						})
+						mesh:setTexture(tex)
+						love.graphics.draw(mesh, s[1], s[2], 0, s[3])
+						used[name] = true
+					end
 				end
 			end
+			love.graphics.pop()
 		end
-		love.graphics.pop()
-		
-		love.graphics.clear()
-		love.graphics.reset()
-		love.graphics.draw(canvas, 0, 0, 0, 0.5)
-		love.graphics.present()
 	end
 	
 	--adapt UV

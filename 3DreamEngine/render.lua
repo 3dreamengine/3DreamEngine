@@ -38,14 +38,12 @@ function lib:buildScene(cam, canvases, typ, blacklist)
 	}
 	
 	--update required acceleration data
-	if self.activeFrustum == self.inFrustum then
-		cam:updateFrustumAngle(canvases.width and canvases.width / canvases.height or 1)
-	elseif self.activeFrustum == self.planeInFrustum then
+	local frustumCheck = cam.noFrustumCheck or not self.frustumCheck
+	if frustumCheck then
 		cam:updateFrustumPlanes()
 	end
 	
 	--add to scene
-	local noFrustumCheck = cam.noFrustumCheck or not self.activeFrustum
 	for sc,_ in pairs(self.scenes) do
 		if not sc.visibility or sc.visibility[typ] then
 			--get light setup per scene
@@ -69,7 +67,8 @@ function lib:buildScene(cam, canvases, typ, blacklist)
 						local solid = (mat.solid or not canvases.alphaPass) and 1 or 2
 						local alpha = canvases.alphaPass and mat.alpha and typ ~= "shadows" and 2 or 1
 						for pass = solid, alpha do
-							if noFrustumCheck or not subObj.boundingBox or self:activeFrustum(cam, task:getPos(), task:getSize(), subObj) then
+							subObj.rID = subObj.rID or math.random()
+							if not frustumCheck or self:planeInFrustum(cam, task:getPos(), task:getSize(), subObj.rID) then
 								if subObj.loaded then
 									local shader = self:getRenderShader(subObj, pass, canvases, light, typ == "shadows")
 									local lightID = light.ID

@@ -20,6 +20,8 @@ function lib:newObject(path)
 		name = name, --name of object
 		dir = dir, --dir containing the object
 		
+		boundingBox = self:newBoundaryBox(),
+		
 		loaded = true,
 	}, self.meta.object)
 end

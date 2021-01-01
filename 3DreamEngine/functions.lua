@@ -226,6 +226,7 @@ function lib:pixelToPoint(point, cam, canvases)
 	return vec3(near) * (1.0 - depth) + vec3(far) * depth
 end
 
+--prepares a camera to support plane frustum checks
 function lib:getFrustumPlanes(m)
 	local planes = {vec4(), vec4(), vec4(), vec4(), vec4(), vec4()}
 	for i = 1, 4 do
@@ -239,16 +240,13 @@ function lib:getFrustumPlanes(m)
 	return planes
 end
 
-function lib:inFrustum(cam, pos, radius)
-	local dir = pos - cam.pos
-	local dist = dir:length()
-
-	--check for close range and angle threshold
-	return dist < radius or dir:dot(cam.normal) > (cam.frustumAngle - radius / (dist - radius)) * dist
-end
-
+--optimized plane frustum check
 local cache = { }
 function lib:planeInFrustum(cam, pos, radius, id)
+	if (pos[1] - cam.pos[1])^2 + (pos[2] - cam.pos[2])^2 + (pos[3] - cam.pos[3])^2 < radius * radius then
+		return true
+	end
+	
 	local c = cache[id]
 	if c then
 		local plane = cam.planes[c]
@@ -278,6 +276,16 @@ function lib:getBarycentric(x, y, x1, y1, x2, y2, x3, y3)
 	local w2 = ((y3 - y1) * (x - x3) + (x1 - x3) * (y - y3)) / det
 	local w3 = 1 - w1 - w2
 	return w1, w2, w3
+end
+
+function lib:newBoundaryBox(initialized)
+	return {
+		first = vec3(math.huge, math.huge, math.huge),
+		second = vec3(-math.huge, -math.huge, -math.huge),
+		center = vec3(0.0, 0.0, 0.0),
+		size = 0,
+		initialized = initialized or false
+	}
 end
 
 do

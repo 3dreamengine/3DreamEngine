@@ -50,19 +50,16 @@ end
 
 
 --enable/disable in frustum check
-function lib:setFrustumCheck(c)
-	if c == "fast" then
-		self.activeFrustum = self.inFrustum
-	elseif c == "plane" then
-		self.activeFrustum = self.planeInFrustum
-	elseif c then
-		error("frustum mode " .. tostring(c) .. " does not exist! Choose 'fast' or 'plane'!")
-	else
-		self.activeFrustum = false
-	end
+function lib:setFrustumCheck(c, cs)
+	cs = cs == nil and c
+	check(c, "boolean")
+	check(cs, "boolean")
+	
+	self.frustumCheck = c
+	self.frustumCheckShadow = cs
 end
 function lib:getFrustumCheck()
-	return self.activeFrustum
+	return self.frustumCheck, frustumCheckShadow
 end
 
 
