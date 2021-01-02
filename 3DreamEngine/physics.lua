@@ -233,7 +233,7 @@ function p:newMesh(obj)
 		return self:newMesh(obj)
 	end
 	
-	assert(#n.objects > 0, "Object has been cleaned up or is invalid, 'faces' and 'vertices' buffers are required!")
+	assert(#n.objects > 0, "Object " .. tostring(obj) .. " has been cleaned up or is invalid, 'faces' and 'vertices' buffers are required!")
 	
 	return setmetatable(n, {__index = objectMeta})
 end

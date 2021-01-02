@@ -103,17 +103,19 @@ function lib:update()
 			local mesh
 			
 			for d,o in pairs(obj.objects) do
-				local index = o.obj.DO_dataOffset + o.meshDataIndex
-				if msg[3] == index then
-					if not mesh then
-						mesh = love.graphics.newMesh(o.vertexFormat, o.vertexCount, "triangles", "static")
-						mesh:setVertexMap(o.vertexMap)
-						mesh:setVertices(msg[4])
-						vertexMap = nil
+				if o.meshDataIndex then
+					local index = o.obj.DO_dataOffset + o.meshDataIndex
+					if msg[3] == index then
+						if not mesh then
+							mesh = love.graphics.newMesh(o.vertexFormat, o.vertexCount, "triangles", "static")
+							mesh:setVertexMap(o.vertexMap)
+							mesh:setVertices(msg[4])
+							vertexMap = nil
+						end
+						
+						o.mesh = mesh
+						o.loaded = true
 					end
-					
-					o.mesh = mesh
-					o.loaded = true
 				end
 			end
 			self.resourceJobs[msg[2]] = nil

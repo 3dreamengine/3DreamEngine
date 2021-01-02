@@ -194,7 +194,6 @@ metatable = {
 				a[1] * b[1] + a[2] * b[2] + a[3] * b[3],
 				a[4] * b[1] + a[5] * b[2] + a[6] * b[3],
 				a[7] * b[1] + a[8] * b[2] + a[9] * b[3],
-				
 			})
 		elseif b.type == "vec2" then
 			return vec2({

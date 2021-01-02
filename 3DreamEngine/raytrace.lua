@@ -20,9 +20,9 @@ local function buildMatrices(object)
 	local matrices = { }
 	for d,tri in ipairs(object.faces) do
 		--vertices
-		local a = object.vertices[tri[1]]
-		local b = object.vertices[tri[2]]
-		local c = object.vertices[tri[3]]
+		local a = vec3(object.vertices[tri[1]])
+		local b = vec3(object.vertices[tri[2]])
+		local c = vec3(object.vertices[tri[3]])
 		
 		--edges and normal
 		local e1 = b - a
@@ -171,7 +171,7 @@ local function triangeCheck_position(o, d, m)
 	local oz = m[9] * o[1] + m[10] * o[2] + m[11] * o[3] + m[12]
 	local dz = m[9] * d[1] + m[10] * d[2] + m[11] * d[3]
 	local t = - oz / dz
-	if t < 0 or t > 1 then
+	if t < 0 or t > maxT then
 		return
 	end
 	
@@ -187,7 +187,7 @@ local function triangeCheck_position(o, d, m)
 	local oy = m[5] * o[1] + m[6] * o[2] + m[7] * o[3] + m[8]
 	local dy = m[5] * d[1] + m[6] * d[2] + m[7] * d[3]
 	local v = oy + t * dy
-	if v >= 0 and u+v <= 1 and t < maxT then
+	if v >= 0 and u+v <= 1 then
 		maxT = t
 		maxU = u
 		maxV = v
@@ -255,17 +255,24 @@ function raytrace:getObject()
 	return nearestObject
 end
 
-function raytrace:raytrace(object, origin, direction, mode, inner)
+function raytrace:raytrace(object, o_origin, o_direction, mode, inner)
 	--apply transformation
+	local origin, direction
 	if object.transform then
-		local i = object.transform:invert()
-		origin = i * origin
-		direction = i * direction
+		local m = object:getInvertedTransform()
+		origin = m * o_origin
+		direction = vec3({
+				m[1] * o_direction[1] + m[2] * o_direction[2] + m[3] * o_direction[3],
+				m[5] * o_direction[1] + m[6] * o_direction[2] + m[7] * o_direction[3],
+				m[9] * o_direction[1] + m[10] * o_direction[2] + m[11] * o_direction[3],
+			})
+	else
+		origin, direction = o_origin, o_direction
 	end
 	
 	--clear
 	if not inner then
-		maxT, maxU, maxV, maxF = math.huge, false, false, false
+		maxT, maxU, maxV, maxF = 1, false, false, false
 	end
 	
 	if object.objects then
@@ -310,7 +317,7 @@ function raytrace:raytrace(object, origin, direction, mode, inner)
 	
 	--return final position and normal
 	if not inner and maxU then
-		return origin + maxT * direction
+		return o_origin + maxT * o_direction
 	else
 		return false
 	end

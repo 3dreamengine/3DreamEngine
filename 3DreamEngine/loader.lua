@@ -137,6 +137,7 @@ function lib:loadObject(path, shaderType, args)
 			--skip furhter modifying and exporting if already packed as 3do
 			--also skips mesh loading since it is done manually
 			if typ == "3do" and not failed then
+				goto skipWhen3do
 				break
 			end
 		end
@@ -153,28 +154,30 @@ function lib:loadObject(path, shaderType, args)
 	
 	
 	--parse tags
-	local tags = {
-		["PHYSICS"] = true,
-		["LOD"] = true,
-		["POS"] = true,
-		["LINK"] = true,
-		["BAKE"] = true,
-		["SHADOW"] = true,
-		["ID"] = true,
-	}
-	for d,o in pairs(obj.objects) do
-		o.tags = { }
-		local possibles = string.split(o.name, "_")
-		for index,tag in ipairs(possibles) do
-			local key, value = unpack(string.split(tag, ":"))
-			if tags[key] then
-				o.tags[key:lower()] = value or true
-			else
-				if key:upper() == key and key:lower() ~= key then
-					print("unknown tag '" .. key .. "' of object '" .. o.name .. "' in '" .. path .. "'")
+	do
+		local tags = {
+			["PHYSICS"] = true,
+			["LOD"] = true,
+			["POS"] = true,
+			["LINK"] = true,
+			["BAKE"] = true,
+			["SHADOW"] = true,
+			["ID"] = true,
+		}
+		for d,o in pairs(obj.objects) do
+			o.tags = { }
+			local possibles = string.split(o.name, "_")
+			for index,tag in ipairs(possibles) do
+				local key, value = unpack(string.split(tag, ":"))
+				if tags[key] then
+					o.tags[key:lower()] = value or true
+				else
+					if key:upper() == key and key:lower() ~= key then
+						print("unknown tag '" .. key .. "' of object '" .. o.name .. "' in '" .. path .. "'")
+					end
+					o.name = table.concat(possibles, "_", index)
+					break
 				end
-				o.name = table.concat(possibles, "_", index)
-				break
 			end
 		end
 	end
@@ -216,120 +219,94 @@ function lib:loadObject(path, shaderType, args)
 	
 	
 	--detect links
-	local linkedNames = { }
-	for d,o in pairs(obj.objects) do
-		if o.tags.link then
-			--remove original
-			obj.objects[d] = nil
-			
-			--store link
-			obj.linked = obj.linked or { }
-			obj.linked[#obj.linked+1] = {
-				source = o.linked or o.name,
-				transform = o.transform
-			}
+	do
+		local linkedNames = { }
+		for d,o in pairs(obj.objects) do
+			if o.tags.link then
+				--remove original
+				obj.objects[d] = nil
+				
+				--store link
+				obj.linked = obj.linked or { }
+				obj.linked[#obj.linked+1] = {
+					source = o.linked or o.name,
+					transform = o.transform
+				}
+			end
 		end
 	end
 	
 	
 	--split materials
-	local changes = true
-	while changes do
-		changes = false
-		for d,o in pairs(obj.objects) do
-			--buffer detection
-			local buffers = {
-				"vertices",
-				"normals",
-				"texCoords",
-				"colors",
-				"materials",
-				"extras",
-				"weights",
-				"joints",
-			}
-			
-			if obj.args.splitMaterials and not o.tags.bake and not o.tags.split then
-				changes = true
-				obj.objects[d] = nil
-				for i,m in ipairs(o.materials) do
-					local d2 = d .. "_" .. m.name
-					if not obj.objects[d2] then
-						local o2 = o:clone()
-						o2.group = d
-						o2.tags = table.copy(o.tags)
-						o2.tags.split = true
+	do
+		local changes = true
+		while changes do
+			changes = false
+			for d,o in pairs(obj.objects) do
+				--buffer detection
+				local buffers = {
+					"vertices",
+					"normals",
+					"texCoords",
+					"colors",
+					"materials",
+					"extras",
+					"weights",
+					"joints",
+				}
+				
+				if obj.args.splitMaterials and not o.tags.bake and not o.tags.split then
+					changes = true
+					obj.objects[d] = nil
+					for i,m in ipairs(o.materials) do
+						local d2 = d .. "_" .. m.name
+						if not obj.objects[d2] then
+							local o2 = o:clone()
+							o2.group = d
+							o2.tags = table.copy(o.tags)
+							o2.tags.split = true
+							
+							o2.material = m
+							o2.translation = { }
+							o2.faces = { }
+							
+							--clear buffers
+							for _,buffer in ipairs(buffers) do
+								if o2[buffer] then
+									o2[buffer] = { }
+								end
+							end
+							
+							obj.objects[d2] = o2
+						end
 						
-						o2.material = m
-						o2.translation = { }
-						o2.faces = { }
+						local o2 = obj.objects[d2]
+						local i2 = #o2.vertices+1
 						
-						--clear buffers
+						--copy buffers
+						o2.translation[i] = i2
 						for _,buffer in ipairs(buffers) do
 							if o2[buffer] then
-								o2[buffer] = { }
+								o2[buffer][i2] = o[buffer][i]
 							end
 						end
-						
-						obj.objects[d2] = o2
 					end
 					
-					local o2 = obj.objects[d2]
-					local i2 = #o2.vertices+1
-					
-					--copy buffers
-					o2.translation[i] = i2
-					for _,buffer in ipairs(buffers) do
-						if o2[buffer] then
-							o2[buffer][i2] = o[buffer][i]
-						end
+					for i,f in ipairs(o.faces) do
+						--TODO: if a face shares more than one material it will cause errors
+						local m = o.materials[f[1]]
+						local d2 = d .. "_" .. m.name
+						local o2 = obj.objects[d2]
+						o2.faces[#o2.faces+1] = {
+							o2.translation[f[1]],
+							o2.translation[f[2]],
+							o2.translation[f[3]],
+						}
 					end
-				end
-				
-				for i,f in ipairs(o.faces) do
-					--TODO: if a face shares more than one material it will cause errors
-					local m = o.materials[f[1]]
-					local d2 = d .. "_" .. m.name
-					local o2 = obj.objects[d2]
-					o2.faces[#o2.faces+1] = {
-						o2.translation[f[1]],
-						o2.translation[f[2]],
-						o2.translation[f[3]],
-					}
 				end
 			end
-		end
-		for d,o in pairs(obj.objects) do
-			o.translation = nil
-		end
-	end
-	
-	
-	--link objects
-	if obj.linked then
-		for id, link in ipairs(obj.linked) do
-			local lo = self.objectLibrary[link.source]
-			assert(lo, "linked object " .. link.source .. " is not in the object library!")
-			
-			--link
-			for _,list in ipairs({"objects", "physics", "positions", "lights"}) do
-				for d,no in ipairs(lo[list] or { }) do
-					local co = list == "objects" and self:newLinkedObject(no) or no.clone and no:clone() or clone(no)
-					
-					if list == "lights" or list == "positions" then
-						local p = link.transform * vec3(co.x, co.y, co.z)
-						co.x = p.x
-						co.y = p.y
-						co.z = p.z
-					else
-						co.transform = link.transform
-					end
-					
-					co.linked = link.source
-					co.name = "link_" .. id .. "_" .. co.name
-					obj[list] = obj[list] or { }
-					obj[list]["link_" .. id .. "_" .. d .. "_" .. no.name] = co
-				end
+			for d,o in pairs(obj.objects) do
+				o.translation = nil
 			end
 		end
 	end
@@ -428,16 +405,18 @@ function lib:loadObject(path, shaderType, args)
 	
 	
 	--get group center
-	local center = { }
-	local centerCount = { }
-	for d,o in pairs(obj.objects) do
-		local id = o.LOD_group or o.name
-		center[id] = (center[id] or vec3(0, 0, 0)) + o.boundingBox.center
-		centerCount[id] = (centerCount[id] or 0) + 1
-	end
-	for d,o in pairs(obj.objects) do
-		local id = o.LOD_group or o.name
-		o.LOD_center = center[id] / centerCount[id]
+	do
+		local center = { }
+		local centerCount = { }
+		for d,o in pairs(obj.objects) do
+			local id = o.LOD_group or o.name
+			center[id] = (center[id] or vec3(0, 0, 0)) + o.boundingBox.center
+			centerCount[id] = (centerCount[id] or 0) + 1
+		end
+		for d,o in pairs(obj.objects) do
+			local id = o.LOD_group or o.name
+			o.LOD_center = center[id] / centerCount[id]
+		end
 	end
 	
 	
@@ -476,6 +455,38 @@ function lib:loadObject(path, shaderType, args)
 	for d,o in pairs(obj.objects) do
 		if o.tags.bake then
 			self:bakeMaterial(o)
+		end
+	end
+	
+	::skipWhen3do::
+	
+	
+	--link objects
+	if obj.linked then
+		for id, link in ipairs(obj.linked) do
+			local lo = self.objectLibrary[link.source]
+			assert(lo, "linked object " .. link.source .. " is not in the object library!")
+			
+			--link
+			for _,list in ipairs({"objects", "physics", "positions", "lights"}) do
+				for d,no in ipairs(lo[list] or { }) do
+					local co = list == "objects" and self:newLinkedObject(no) or no.clone and no:clone() or clone(no)
+					
+					if list == "lights" or list == "positions" then
+						local p = link.transform * vec3(co.x, co.y, co.z)
+						co.x = p.x
+						co.y = p.y
+						co.z = p.z
+					else
+						co.transform = link.transform
+					end
+					
+					co.linked = link.source
+					co.name = "link_" .. id .. "_" .. co.name
+					obj[list] = obj[list] or { }
+					obj[list]["link_" .. id .. "_" .. d .. "_" .. no.name] = co
+				end
+			end
 		end
 	end
 	

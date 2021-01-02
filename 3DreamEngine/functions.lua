@@ -53,6 +53,21 @@ function lib:lookAt(eye, at, up)
 	)
 end
 
+function lib:lookInDirection(at, up)
+	up = up or vec3(0.0, 1.0, 0.0)
+	
+	local zaxis = at:normalize()
+	local xaxis = zaxis:cross(up):normalize()
+	local yaxis = xaxis:cross(zaxis)
+	
+	return mat4(
+		xaxis.x, xaxis.y, xaxis.z, 0.0,
+		yaxis.x, yaxis.y, yaxis.z, 0.0,
+		-zaxis.x, -zaxis.y, -zaxis.z, 0.0,
+		0, 0, 0, 1
+	)
+end
+
 --add tangents to a 3Dream vertex format
 --x, y, z, shaderData, nx, ny, nz, materialID, u, v, tx, ty, tz, btx, bty, btz
 local empty = {0, 0, 0}

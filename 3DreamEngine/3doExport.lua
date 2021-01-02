@@ -42,20 +42,8 @@ function lib:export3do(obj)
 		["skeleton"] = obj.skeleton,
 		["linked"] = obj.linked,
 		["objects"] = { },
+		["physics"] = obj.physics,
 	}
-	
-	--physics
-	if obj.physics then
-		header["physics"] = { }
-		for d,s in ipairs(obj.physics) do
-			header["physics"][d] = { }
-			for i,v in pairs(s) do
-				header["physics"][d][i] = v
-			end
-			
-			header["physics"][d].shape = {header["physics"][d].shape:getPoints()}
-		end
-	end
 	
 	for d,o in pairs(obj.objects) do
 		local h = {
@@ -63,6 +51,7 @@ function lib:export3do(obj)
 			["group"] = o.group,
 			["LOD_min"] = o.LOD_min,
 			["LOD_max"] = o.LOD_max,
+			["LOD_adaptSize"] = o.LOD_adaptSize,
 			["LOD_center"] = o.LOD_center,
 			["shaderType"] = o.shaderType,
 			["meshType"] = o.meshType,
@@ -71,12 +60,17 @@ function lib:export3do(obj)
 			["transform"] = o.transform,
 			["joints"] = o.joints,
 			["linked"] = o.linked,
+			["tags"] = o.tags,
 		}
 		
 		--additional data
 		if not o.linked then
 			h["weights"] = o.weights
 			h["jointIDs"] = o.jointIDs
+			
+			for i = 2, 10 do
+				h["texCoords_" .. i] = o["texCoords_" .. i]
+			end
 		end
 		
 		--extended data

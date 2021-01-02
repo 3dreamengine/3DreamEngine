@@ -112,7 +112,6 @@ return function(self, obj, path)
 			coll.transform = mat4(coll.transform)
 			convert(coll.vertices)
 			convert(coll.normals)
-			coll.shape = love.physics.newPolygonShape(coll.shape)
 		end
 	end
 	
