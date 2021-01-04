@@ -256,10 +256,6 @@ end
 --optimized plane frustum check
 local cache = { }
 function lib:planeInFrustum(cam, pos, radius, id)
-	if (pos[1] - cam.pos[1])^2 + (pos[2] - cam.pos[2])^2 + (pos[3] - cam.pos[3])^2 < radius * radius then
-		return true
-	end
-	
 	local c = cache[id]
 	if c then
 		local plane = cam.planes[c]

@@ -52,14 +52,13 @@ return {
 	getSize = function(self)
 		if not self[6] then
 			local m = self[5]
-			local scale = math.sqrt(
-				math.max(
-					(m[1]^2 + m[5]^2 + m[9]^2),
-					(m[2]^2 + m[6]^2 + m[10]^2),
-					(m[3]^2 + m[7]^2 + m[11]^2)
-				)
+			local scale = math.max(
+				(m[1]^2 + m[5]^2 + m[9]^2),
+				(m[2]^2 + m[6]^2 + m[10]^2),
+				(m[3]^2 + m[7]^2 + m[11]^2)
 			)
-			self[6] = self[1].boundingBox.size * scale
+			
+			self[6] = math.sqrt(3 * self[1].boundingBox.size^2 * scale)
 		end
 		return self[6]
 	end,

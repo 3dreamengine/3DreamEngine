@@ -262,10 +262,10 @@ function raytrace:raytrace(object, o_origin, o_direction, mode, inner)
 		local m = object:getInvertedTransform()
 		origin = m * o_origin
 		direction = vec3({
-				m[1] * o_direction[1] + m[2] * o_direction[2] + m[3] * o_direction[3],
-				m[5] * o_direction[1] + m[6] * o_direction[2] + m[7] * o_direction[3],
-				m[9] * o_direction[1] + m[10] * o_direction[2] + m[11] * o_direction[3],
-			})
+			m[1] * o_direction[1] + m[2] * o_direction[2] + m[3] * o_direction[3],
+			m[5] * o_direction[1] + m[6] * o_direction[2] + m[7] * o_direction[3],
+			m[9] * o_direction[1] + m[10] * o_direction[2] + m[11] * o_direction[3],
+		})
 	else
 		origin, direction = o_origin, o_direction
 	end
