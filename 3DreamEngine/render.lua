@@ -72,7 +72,7 @@ function lib:buildScene(cam, canvases, typ, blacklist, dynamic)
 				scene.lights[light.ID] = light
 			end
 			
-			for _,tasks in ipairs(dynamic == nil and {
+			for _,taskList in ipairs(dynamic == nil and {
 				sc.tasks[1].all,
 				sc.tasks[1][typ],
 				sc.tasks[2].all,
@@ -84,58 +84,68 @@ function lib:buildScene(cam, canvases, typ, blacklist, dynamic)
 				sc.tasks[1].all,
 				sc.tasks[1][typ]
 			}) do
-				for taskID, task in ipairs(tasks) do
-					local obj = task:getObj()
-					local subObj = task:getS()
+				for subObj, tasks in pairs(taskList) do
+					local obj = subObj.obj
 					if not blacklist or not (blacklist[obj] or blacklist[subObj]) then
 						local mat = subObj.material
-						if typ ~= "shadows" or mat.shadow ~= false then
-							local solid = (mat.solid or not canvases.alphaPass) and 1 or 2
-							local alpha = canvases.alphaPass and mat.alpha and typ ~= "shadows" and 2 or 1
-							for pass = solid, alpha do
-								subObj.rID = subObj.rID or math.random()
-								if not frustumCheck or self:planeInFrustum(cam, task:getPos(), task:getSize(), subObj.rID) then
-									if subObj.loaded then
-										if subObj.mesh then
-											local shader = self:getRenderShader(subObj, pass, canvases, light, typ == "shadows")
-											local lightID = light.ID
-											local scene = (not canvases.alphaPass or pass == 1) and scene.solid or scene.alpha
-											
-											--group shader and materials together to reduce shader switches
-											if not scene[shader] then
-												scene[shader] = { }
-											end
-											
-											if typ == "shadows" then
-												table.insert(scene[shader], task)
-											else
-												if not scene[shader][lightID] then
-													scene[shader][lightID] = { }
-												end
-												if not scene[shader][lightID][mat] then
-													scene[shader][lightID][mat] = { }
-												end
-												
-												--add
-												table.insert(scene[shader][lightID][mat], task)
-												
-												--reflections
-												if typ == "render" then
-													local reflection = subObj.reflection or obj.reflection
-													if reflection and reflection.canvas then
-														self.reflections[reflection] = {
-															dist = (task:getPos() - cam.pos):length(),
-															obj = subObj.reflection and subObj or obj,
-															pos = reflection.pos or task:getPos(),
-														}
-													end
-												end
+						local solid = (mat.solid or not canvases.alphaPass) and 1 or 2
+						local alpha = canvases.alphaPass and mat.alpha and typ ~= "shadows" and 2 or 1
+						for pass = solid, alpha do
+							if subObj.loaded then
+								if subObj.mesh then
+									--check which individual tasks are visible
+									local valids
+									if frustumCheck and subObj.boundingBox.initialized then
+										valids = { }
+										for _, task in ipairs(tasks) do
+											if self:planeInFrustum(cam, task:getPos(subObj), task:getSize(subObj), task:getTransform()) then
+												valids[#valids+1] = task
 											end
 										end
 									else
-										subObj:request()
+										valids = tasks
+									end
+									
+									if valids[1] then
+										local shader = self:getRenderShader(subObj, pass, canvases, light, typ == "shadows")
+										local lightID = light.ID
+										local scene = (not canvases.alphaPass or pass == 1) and scene.solid or scene.alpha
+										
+										--group shader and materials together to reduce shader switches
+										if not scene[shader] then
+											scene[shader] = { }
+										end
+										
+										if typ == "shadows" then
+											scene[shader][valids] = subObj
+										else
+											if not scene[shader][lightID] then
+												scene[shader][lightID] = { }
+											end
+											if not scene[shader][lightID][mat] then
+												scene[shader][lightID][mat] = { }
+											end
+											
+											--add
+											scene[shader][lightID][mat][valids] = subObj
+											
+											--reflections
+											if typ == "render" then
+												local reflection = subObj.reflection or obj.reflection
+												if reflection and reflection.canvas then
+													local task = tasks[1]
+													self.reflections[reflection] = {
+														dist = (task:getPos(subObj) - cam.pos):length(),
+														obj = subObj.reflection and subObj or obj,
+														pos = reflection.pos or task:getPos(subObj),
+													}
+												end
+											end
+										end
 									end
 								end
+							else
+								subObj:request()
 							end
 						end
 					end
@@ -145,14 +155,14 @@ function lib:buildScene(cam, canvases, typ, blacklist, dynamic)
 	end
 	
 	--sort tables for materials requiring sorting
-	if scene.alpha then
-		sortPosition = cam.pos
-		for shader, shaderGroup in pairs(scene.alpha) do
-			for material, materialGroup in pairs(shaderGroup) do
-				table.sort(materialGroup, sortFunction)
-			end
-		end
-	end
+--	if scene.alpha then
+--		sortPosition = cam.pos
+--		for shader, shaderGroup in pairs(scene.alpha) do
+--			for material, materialGroup in pairs(shaderGroup) do
+--				table.sort(materialGroup, sortFunction)
+--			end
+--		end
+--	end
 	
 	self.delton:stop()
 	return scene
@@ -290,9 +300,8 @@ function lib:render(scene, canvases, cam)
 					love.graphics.setMeshCullMode(canvases.cullMode or material.cullMode or "back")
 					
 					--draw objects
-					for _,task in pairs(materialGroup) do
-						local obj = task:getObj()
-						local subObj = task:getS()
+					for tasks, subObj in pairs(materialGroup) do
+						local obj = subObj.obj
 						
 						--sky texture
 						if shaderObject.reflection then
@@ -317,21 +326,24 @@ function lib:render(scene, canvases, cam)
 							end
 						end
 						
-						--object transformation
-						shader:send("transform", task:getTransform())
 						
-						--shader
-						shaderEntry:perTask(self, shaderObject, task)
-						for d,s in pairs(shaderObject.modules) do
-							s:perTask(self, shaderObject, task)
+						for _,task in ipairs(tasks) do
+							--object transformation
+							shader:send("transform", task:getTransform())
+							
+							--shader
+							shaderEntry:perTask(self, shaderObject, task)
+							for d,s in pairs(shaderObject.modules) do
+								s:perTask(self, shaderObject, subObj, task)
+							end
+							
+							--render
+							love.graphics.setColor(task:getColor())
+							love.graphics.draw(subObj.mesh)
+							
+							self.stats.draws = self.stats.draws + 1
+							self.stats.vertices = self.stats.vertices + subObj.mesh:getVertexCount()
 						end
-						
-						--render
-						love.graphics.setColor(task:getColor())
-						love.graphics.draw(subObj.mesh)
-						
-						self.stats.draws = self.stats.draws + 1
-						self.stats.vertices = self.stats.vertices + subObj.mesh:getVertexCount()
 					end
 					self.stats.materialDraws = self.stats.materialDraws + 1
 				end
@@ -483,19 +495,20 @@ function lib:renderShadows(scene, cam, canvas, blacklist, dynamic)
 		end
 		
 		--for each task
-		for _, task in ipairs(shaderGroup) do
-			--object transformation
-			shader:send("transform", task:getTransform())
-			
-			--shader
-			for d,s in pairs(shaderObject.modules) do
-				s:perTask(self, shaderObject, task)
+		for tasks, subObj in pairs(shaderGroup) do
+			for _,task in ipairs(tasks) do
+				--object transformation
+				shader:send("transform", task:getTransform())
+				
+				--shader
+				for d,s in pairs(shaderObject.modules) do
+					s:perTask(self, shaderObject, subObj, task)
+				end
+				
+				--render
+				love.graphics.setColor(task:getColor())
+				love.graphics.draw(subObj.mesh)
 			end
-			
-			--render
-			love.graphics.setColor(task:getColor())
-			local mesh = task:getS().mesh
-			love.graphics.draw(mesh)
 		end
 	end
 	

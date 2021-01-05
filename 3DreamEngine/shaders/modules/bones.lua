@@ -46,9 +46,8 @@ function sh:perMaterial(dream, shaderObject, material)
 	
 end
 
-function sh:perTask(dream, shaderObject, task)
+function sh:perTask(dream, shaderObject, subObj, task)
 	local shader = shaderObject.shader
-	local subObj = task:getS()
 	
 	--initial prepare bone data
 	if not subObj.boneMesh and subObj.joints then
@@ -61,7 +60,7 @@ function sh:perTask(dream, shaderObject, task)
 		end
 		
 		--clear buffers
-		if task:getObj().args.cleanup ~= false then
+		if subObj.obj.args.cleanup ~= false then
 			subObj.joints = nil
 			subObj.weights = nil
 		end
