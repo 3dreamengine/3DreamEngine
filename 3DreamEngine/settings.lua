@@ -571,3 +571,12 @@ end
 function lib:getMipmaps()
 	return self.textures_mipmaps
 end
+
+
+--set sun offset
+function lib:setInstanceBatchSize(i)
+	self.instanceBatchSize = i
+end
+function lib:getInstanceBatchSize()
+	return self.instanceBatchSize
+end

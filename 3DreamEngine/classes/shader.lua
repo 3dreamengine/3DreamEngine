@@ -7,7 +7,9 @@ return {
 	end,
 	
 	deactivateShaderModule = function(obj, name)
-		obj.modules[name] = nil
+		if obj.modules then
+			obj.modules[name] = nil
+		end
 	end,
 	
 	isShaderModuleActive = function(obj, name)

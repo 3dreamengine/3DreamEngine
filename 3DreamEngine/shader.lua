@@ -188,7 +188,7 @@ end
 --construct a shader
 local baseShader = love.filesystem.read(lib.root .. "/shaders/base.glsl")
 local baseShadowShader = love.filesystem.read(lib.root .. "/shaders/shadow.glsl")
-function lib:getRenderShader(obj, pass, canvases, light, shadows)
+function lib:getRenderShader(obj, pass, canvases, light, shadows, instances)
 	local mat = obj.material
 	local shaderType = obj.shaderType
 	local reflection = obj.reflection or obj.obj and obj.obj.reflection or self.sky_reflection
@@ -254,6 +254,9 @@ function lib:getRenderShader(obj, pass, canvases, light, shadows)
 			ID_settings = ID_settings + 2 ^ 8
 		end
 	end
+	if instances then
+		ID_settings = ID_settings + 2 ^ 9
+	end
 	
 	--construct full ID (8 bytes light, 1 byte base, 4 bytes modules and 1 byte settings
 	local ID = ID_light .. string.char(ID_base, (ID_modules / 256^3) % 256, (ID_modules / 256^2) % 256, (ID_modules / 256^1) % 256, (ID_modules / 256^0) % 256, math.floor(ID_settings / 256), ID_settings % 256)
@@ -272,7 +275,16 @@ function lib:getRenderShader(obj, pass, canvases, light, shadows)
 		}
 		local info = self.mainShaders[ID]
 		
-		if not shadows then
+		if shadows then
+			local globalDefines = { }
+			
+			if instances then
+				table.insert(globalDefines, "#define INSTANCES " .. self.instanceBatchSize)
+			end
+			
+			--setting specific defines
+			code = code:gsub("#import globalDefines", table.concat(globalDefines, "\n"))
+		else
 			--settings
 			local globalDefines = { }
 			if reflection then
@@ -301,6 +313,9 @@ function lib:getRenderShader(obj, pass, canvases, light, shadows)
 			end
 			if mat.translucent > 0 then
 				table.insert(globalDefines, "#define TRANSLUCENT_ENABLED")
+			end
+			if instances then
+				table.insert(globalDefines, "#define INSTANCES " .. self.instanceBatchSize)
 			end
 			
 			--setting specific defines

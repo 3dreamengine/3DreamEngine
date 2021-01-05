@@ -96,9 +96,10 @@ function lib:buildScene(cam, canvases, typ, blacklist, dynamic)
 									--check which individual tasks are visible
 									local valids
 									if frustumCheck and subObj.boundingBox.initialized then
+										subObj.rID = subObj.rID or math.random()
 										valids = { }
 										for _, task in ipairs(tasks) do
-											if self:planeInFrustum(cam, task:getPos(subObj), task:getSize(subObj), task:getTransform()) then
+											if self:planeInFrustum(cam, task:getPos(subObj), task:getSize(subObj), subObj.rID) then
 												valids[#valids+1] = task
 											end
 										end
@@ -107,7 +108,8 @@ function lib:buildScene(cam, canvases, typ, blacklist, dynamic)
 									end
 									
 									if valids[1] then
-										local shader = self:getRenderShader(subObj, pass, canvases, light, typ == "shadows")
+										--fetch shader
+										local shader = self:getRenderShader(subObj, pass, canvases, light, typ == "shadows", valids[2] and true or false)
 										local lightID = light.ID
 										local scene = (not canvases.alphaPass or pass == 1) and scene.solid or scene.alpha
 										
@@ -326,8 +328,28 @@ function lib:render(scene, canvases, cam)
 							end
 						end
 						
-						
-						for _,task in ipairs(tasks) do
+						local count = #tasks
+						if count > 1 then
+							love.graphics.setColor(tasks[1]:getColor())
+							
+							for batch = 0, math.ceil(count / self.instanceBatchSize)-1 do
+								--object transformation
+								local transforms = { }
+								for i = 1, self.instanceBatchSize do
+									local i2 = i + batch * self.instanceBatchSize
+									if tasks[i2] then
+										transforms[i] = tasks[i2]:getTransform()
+									else
+										break
+									end
+								end
+								
+								shader:send("transforms", unpack(transforms))
+								love.graphics.drawInstanced(subObj.mesh, #transforms)
+							end
+						else
+							local task = tasks[1]
+							
 							--object transformation
 							shader:send("transform", task:getTransform())
 							
@@ -496,7 +518,27 @@ function lib:renderShadows(scene, cam, canvas, blacklist, dynamic)
 		
 		--for each task
 		for tasks, subObj in pairs(shaderGroup) do
-			for _,task in ipairs(tasks) do
+			local count = #tasks
+			if count > 1 then
+				love.graphics.setColor(tasks[1]:getColor())
+				
+				for batch = 0, math.ceil(count / self.instanceBatchSize)-1 do
+					--object transformation
+					local transforms = { }
+					for i = 1, self.instanceBatchSize do
+						local i2 = i + batch * self.instanceBatchSize
+						if tasks[i2] then
+							transforms[i] = tasks[i2]:getTransform()
+						else
+							break
+						end
+					end
+					
+					shader:send("transforms", unpack(transforms))
+					love.graphics.drawInstanced(subObj.mesh, #transforms)
+				end
+			else
+				local task = tasks[1]
 				--object transformation
 				shader:send("transform", task:getTransform())
 				

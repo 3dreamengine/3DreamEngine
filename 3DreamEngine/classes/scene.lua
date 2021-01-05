@@ -56,9 +56,8 @@ return {
 			local dist
 			if LOD_min then
 				--harcoded distance after LOD_center transformation minus the camPos
-				--TODO cache dis
 				local b = s.LOD_center
-				dist = transform and math.sqrt(
+				dist = transform and (
 					(transform[1] * b[1] + transform[2] * b[2] + transform[3] * b[3] + transform[4] - camPos[1])^2 +
 					(transform[5] * b[1] + transform[6] * b[2] + transform[7] * b[3] + transform[8] - camPos[2])^2 +
 					(transform[9] * b[1] + transform[10] * b[2] + transform[11] * b[3] + transform[12] - camPos[3])^2
@@ -66,7 +65,7 @@ return {
 			end
 			
 			--task
-			if not dist or dist >= LOD_min and dist <= LOD_max then
+			if not dist or dist >= LOD_min*LOD_min and dist <= LOD_max*LOD_max then
 				if not self.instances[s] then
 					local tasks = { }
 					self.instances[s] = tasks
