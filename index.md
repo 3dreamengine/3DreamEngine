@@ -929,13 +929,13 @@ set:setAlphaPass(enabled)
 
 
 ## materials
-Materials can be either per model by providing a .mtl or .mat file with the same name as the object file or they can be in a global material library, in which case they got chosen first.
+Materials can be either per object by providing a .mtl or .mat file with the same name as the object file or they can be in a global material library, in which case they got chosen first.
 
 extends `clone`, `shader`
 
 Load materials into the library. If an objects now requires a material, it will first look into the library.
 
-A material library looks for material files (.mat) or for directory containing material.mat or at least one texture, linking them automatically. See for examplke Tavern demo.
+A material library looks for material files (.mat) or for directory containing material.mat or at least one texture, linking them automatically. See for example the Tavern demo.
 
 ```lua
 dream:loadMaterialLibrary(path)
@@ -951,27 +951,50 @@ All functions also have getters too. Colors are multiplied with textures. If a t
 material:setIOR(ior)
 material:setDither(enabled)
 
-material:color(r, g, b, a)
-material:albedoTex(tex)
+material:setColor(r, g, b, a)
+material:setAlbedoTex(tex)
 
-material:emission(r, g, b)
-material:emissionTex(tex)
+material:setEmission(r, g, b)
+material:setEmissionTex(tex)
 
-material:glossiness(value)
-material:glossinessTex(tex)
+material:setGlossiness(value)
+material:setGlossinessTex(tex)
 
-material:specular(value)
-material:specularTex(tex)
+material:setSpecular(value)
+material:setSpecularTex(tex)
 
-material:roughness(value)
-material:roughnessTex(tex)
+material:setRoughness(value)
+material:setRoughnessTex(tex)
 
-material:metallic(value)
-material:metallicTex(tex)
+material:setMetallic(value)
+material:setMetallicTex(tex)
 ```
-`enabled` custom dithering mode for this material instead of using the global one.
+`enabled` enable feature
 `tex` LÖVE drawable
 `r g b a` color
+
+
+### data structure
+```lua
+{
+	color = {0.5, 0.5, 0.5, 1.0},
+	glossiness = 0.1,
+	specular = 0.5,
+	emission = {0.0, 0.0, 0.0},
+	roughness = 0.5,
+	metallic = 0.0,
+	solid = true,
+	alpha = false,
+	discard = false,
+	name = "None",         --name, used for texture linking
+	dir = dir,             --directory, used for texture linking
+	ior = 1.0,
+	translucent = 0.0,
+	onFinsh = function(mat, obj)
+		//calls itself once after loading the object, or after adding to the material library, in which case obj is nil
+	end
+}
+```
 
 
 ### transparent materials
@@ -1122,18 +1145,6 @@ Name a (smaller) file "yourImage_thumb.ext" to let the texture loader automatica
 If the automatic thumbnail generator is enabled (true by default), this will be done automatically, but the first load will be without thumbnail.
 
 
-
-# data structures
-Here is a list of internat data structures. The `.mat` files for example use the same structure of materials.
-
-## object
-
-## subobject
-
-## material
-
-
-
 # Shaders
 The shader is constructed based on its base shader and additional/optional shader modules.
 There are basic default shaders and modules present, so this chapter is advanced usage.
@@ -1259,6 +1270,7 @@ But note that...
 
 
 # collisions
+DEPRICATED
 The collision extension supports exact collision detection between a collider and another collider or (nested) group.
 
 The second collider/group therefore creates an tree, allowing optimisation and recursive transformations.
