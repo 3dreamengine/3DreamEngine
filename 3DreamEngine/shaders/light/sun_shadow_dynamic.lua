@@ -31,7 +31,8 @@ function sh:constructDefinesGlobal(dream)
 		float sampleShadowSun2Smooth(Image tex, vec2 shadowUV, float depth) {
 			float shadow = 0.0;
 			for (int i = 0; i < 17; ++i) {
-				shadow += texture(tex, shadowUV + sampleOffset[i] * texelSize).x > depth ? 0.0588235 : 0.0;
+				vec2 r = texture(tex, shadowUV + sampleOffset[i] * texelSize).xy;
+				shadow += (min(r.x, r.y) > depth ? 0.0588235 : 0.0);
 			}
 			return shadow;
 		}
@@ -55,11 +56,16 @@ function sh:constructDefinesGlobal(dream)
 			float oy = float(fract(love_PixelCoord.y * 0.5) > 0.25) + ox;
 			if (oy > 1.1) oy = 0.0;
 			
+			vec2 r1 = texture(tex, shadowUV + vec2(-1.5 + ox, 0.5 + oy) * texelSize).xy;
+			vec2 r2 = texture(tex, shadowUV + vec2(0.5 + ox, 0.5 + oy) * texelSize).xy;
+			vec2 r3 = texture(tex, shadowUV + vec2(-1.5 + ox, -1.5 + oy) * texelSize).xy;
+			vec2 r4 = texture(tex, shadowUV + vec2(0.5 + ox, -1.5 + oy) * texelSize).xy;
+			
 			return
-				(texture(tex, shadowUV + vec2(-1.5 + ox, 0.5 + oy) * texelSize).x > depth ? 0.25 : 0.0) +
-				(texture(tex, shadowUV + vec2(0.5 + ox, 0.5 + oy) * texelSize).x > depth ? 0.25 : 0.0) +
-				(texture(tex, shadowUV + vec2(-1.5 + ox, -1.5 + oy) * texelSize).x > depth ? 0.25 : 0.0) +
-				(texture(tex, shadowUV + vec2(0.5 + ox, -1.5 + oy) * texelSize).x > depth ? 0.25 : 0.0);
+				(min(r1.x, r1.y) > depth ? 0.25 : 0.0) +
+				(min(r2.x, r2.y) > depth ? 0.25 : 0.0) +
+				(min(r3.x, r3.y) > depth ? 0.25 : 0.0) +
+				(min(r4.x, r4.y) > depth ? 0.25 : 0.0);
 		}
 		
 		float sampleShadowSun(vec3 vertexPos, mat4 sun_shadow_proj_1, mat4 sun_shadow_proj_2, mat4 sun_shadow_proj_3, Image sun_shadow_tex_1, Image sun_shadow_tex_2, Image sun_shadow_tex_3, vec3 bias) {

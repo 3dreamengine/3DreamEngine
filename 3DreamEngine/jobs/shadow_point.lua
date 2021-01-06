@@ -48,8 +48,6 @@ local transformations = {
 }
 
 function job:execute(times, delta, light, pos)
-	light.shadow.lastPos = pos
-	
 	--create new canvases if necessary
 	if not light.shadow.canvas then
 		light.shadow.canvas = lib:newShadowCanvas("point", light.shadow.res, light.shadow.static == "dynamic")

@@ -67,7 +67,7 @@ function lib:buildScene(cam, canvases, typ, blacklist, dynamic)
 		if not sc.visibility or sc.visibility[typ] then
 			--get light setup per scene
 			local light
-			if typ ~= "shadow" then
+			if typ ~= "shadows" then
 				light = self:getLightOverview(cam)
 				scene.lights[light.ID] = light
 			end
@@ -110,7 +110,6 @@ function lib:buildScene(cam, canvases, typ, blacklist, dynamic)
 									if valids[1] then
 										--fetch shader
 										local shader = self:getRenderShader(subObj, pass, canvases, light, typ == "shadows", valids[2] and true or false)
-										local lightID = light.ID
 										local scene = (not canvases.alphaPass or pass == 1) and scene.solid or scene.alpha
 										
 										--group shader and materials together to reduce shader switches
@@ -121,6 +120,7 @@ function lib:buildScene(cam, canvases, typ, blacklist, dynamic)
 										if typ == "shadows" then
 											scene[shader][valids] = subObj
 										else
+											local lightID = light.ID
 											if not scene[shader][lightID] then
 												scene[shader][lightID] = { }
 											end
@@ -504,6 +504,7 @@ function lib:renderShadows(scene, cam, canvas, blacklist, dynamic)
 	for shaderObject, shaderGroup in pairs(scene.solid) do
 		local shader = shaderObject.shader
 		love.graphics.setShader(shader)
+		shader:send("mode", cam.sun)
 		
 		--shader
 		for d,s in pairs(shaderObject.modules) do

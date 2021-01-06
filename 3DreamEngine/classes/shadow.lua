@@ -14,16 +14,14 @@ function lib:newShadow(typ, static, res)
 		done = { },
 		priority = 1.0,
 		lastUpdate = 0,
-		lastPos = vec3(0, 0, 0)
 	}, self.meta.shadow)
 end
 
 function lib:newShadowCanvas(typ, res, dynamic)
 	if typ == "sun" then
 		local canvas = love.graphics.newCanvas(res, res,
-			{format = "depth16", readable = true, msaa = 0, type = "2d"})
+			{format = dynamic and "rg16f" or "r16f", readable = true, msaa = 0, type = "2d"})
 		
-		canvas:setDepthSampleMode("greater")
 		canvas:setFilter("linear", "linear")
 		
 		return canvas

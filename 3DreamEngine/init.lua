@@ -92,7 +92,7 @@ lib:setMipmaps(true)
 
 --sun
 lib:setSunOffset(0.0, 0,0)
-lib:setSunShadow(true)
+lib:setSunShadow(true, "dynamic")
 
 --weather
 lib:setWeather(0.5)
@@ -308,7 +308,7 @@ function lib.init(self, w, h)
 	--TODO sun strength should receive setting
 	self.sunObject = lib:newLight("sun", 1, 1, 1, 1, 1, 1, 5)
 	if self.sun_shadow then
-		self.sunObject.shadow = lib:newShadow("sun")
+		self.sunObject.shadow = lib:newShadow("sun", self.sun_static)
 	else
 		self.sunObject.shadow = nil
 	end
@@ -368,11 +368,14 @@ function lib:draw(object, x, y, z, sx, sy, sz)
 	end
 	
 	--object container transform
-	if object.obj and object.obj.transform then
-		if transform then
-			transform = object.obj.transform * transform
-		else
-			transform = object.obj.transform
+	if object.obj then
+		dynamic = dynamic or object.obj.dynamic
+		if object.obj.transform then
+			if transform then
+				transform = object.obj.transform * transform
+			else
+				transform = object.obj.transform
+			end
 		end
 	end
 	
