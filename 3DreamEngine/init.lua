@@ -345,8 +345,6 @@ end
 function lib:draw(object, x, y, z, sx, sy, sz)
 	self.delton:start("draw")
 	
-	local obj = object.obj or object
-	
 	--prepare transform matrix
 	local transform
 	local dynamic = object.dynamic
@@ -360,13 +358,22 @@ function lib:draw(object, x, y, z, sx, sy, sz)
 		)
 		
 		--also applies objects own transformation if present
-		if obj.transform then
-			transform = transform * obj.transform
+		if object.transform then
+			transform = transform * object.transform
 		end
 		dynamic = true
 	else
 		--pre defined transform
-		transform = obj.transform
+		transform = object.transform
+	end
+	
+	--object container transform
+	if object.obj and object.obj.transform then
+		if transform then
+			transform = object.obj.transform * transform
+		else
+			transform = object.obj.transform
+		end
 	end
 	
 	--fetch current color
@@ -374,7 +381,7 @@ function lib:draw(object, x, y, z, sx, sy, sz)
 	
 	--add to scene
 	self.delton:start("add")
-	self.scene:add(object, transform, col, dynamic)
+	self.scene:addObject(object, transform, col, dynamic)
 	self.delton:stop()
 	
 	self.delton:stop()

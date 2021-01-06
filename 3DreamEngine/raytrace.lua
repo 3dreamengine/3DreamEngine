@@ -255,37 +255,46 @@ function raytrace:getObject()
 	return nearestObject
 end
 
-function raytrace:raytrace(object, o_origin, o_direction, mode, inner)
-	--apply transformation
-	local origin, direction
+local function transform(origin, direction, object)
 	if object.transform then
 		local m = object:getInvertedTransform()
-		origin = m * o_origin
-		direction = vec3({
-			m[1] * o_direction[1] + m[2] * o_direction[2] + m[3] * o_direction[3],
-			m[5] * o_direction[1] + m[6] * o_direction[2] + m[7] * o_direction[3],
-			m[9] * o_direction[1] + m[10] * o_direction[2] + m[11] * o_direction[3],
+		return m * origin, vec3({
+			m[1] * direction[1] + m[2] * direction[2] + m[3] * direction[3],
+			m[5] * direction[1] + m[6] * direction[2] + m[7] * direction[3],
+			m[9] * direction[1] + m[10] * direction[2] + m[11] * direction[3],
 		})
 	else
-		origin, direction = o_origin, o_direction
+		return origin, direction
 	end
-	
+end
+
+function raytrace:raytrace(object, origin, direction, mode, inner)
 	--clear
 	if not inner then
 		maxT, maxU, maxV, maxF = 1, false, false, false
 	end
 	
-	if object.objects then
+	if object.groups then
+		--object transform
+		local n_origin, n_direction = transform(origin, direction, object)
+		
 		--for all subobjects
 		local best = -1
-		for d,s in pairs(object.objects) do
-			local result = self:raytrace(s, origin, direction, mode, true)
-			if mode == "bool" and result then
-				return true
-			end
-			if best ~= maxT then
-				best = maxT
-				nearestObject = s
+		for _,group in pairs(object.groups) do
+			--group transform
+			local n2_origin, n2_direction = transform(n_origin, n_direction, group)
+			
+			for _,s in ipairs(group.objects) do
+				if s.tags.solid ~= false then
+					local result = self:raytrace(s, n2_origin, n2_direction, mode, true)
+					if mode == "bool" and result then
+						return true
+					end
+					if best ~= maxT then
+						best = maxT
+						nearestObject = s
+					end
+				end
 			end
 		end
 		if mode == "bool" then
@@ -317,7 +326,7 @@ function raytrace:raytrace(object, o_origin, o_direction, mode, inner)
 	
 	--return final position and normal
 	if not inner and maxU then
-		return o_origin + maxT * o_direction
+		return origin + maxT * direction
 	else
 		return false
 	end

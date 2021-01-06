@@ -19,7 +19,6 @@ function lib:getCollisionData(obj)
 	n.typ = "mesh"
 	n.boundary = 0
 	n.name = obj.name
-	n.group = obj.group
 	
 	--offset, a transformation will be directly applied
 	n.transform = obj.boundingBox.center

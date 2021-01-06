@@ -48,7 +48,6 @@ function lib:export3do(obj)
 	for d,o in pairs(obj.objects) do
 		local h = {
 			["name"] = o.name,
-			["group"] = o.group,
 			["LOD_min"] = o.LOD_min,
 			["LOD_max"] = o.LOD_max,
 			["LOD_adaptSize"] = o.LOD_adaptSize,

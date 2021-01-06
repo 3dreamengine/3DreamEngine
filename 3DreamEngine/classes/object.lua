@@ -12,8 +12,10 @@ function lib:newObject(path)
 			None = self:newMaterial()
 		},
 		objects = { },
+		groups = { },
 		positions = { },
 		lights = { },
+		physics = { },
 		args = { },
 		
 		path = path, --absolute path to object
@@ -74,48 +76,36 @@ return {
 		return o
 	end,
 	
+	updateGroups = function(self)
+		self.groups = { }
+		for d,o in pairs(self.objects) do
+			if not self.groups[o.name] then
+				self.groups[o.name] = lib:newGroup()
+				self.groups[o.name].transform = o.transform
+				self.groups[o.name].linked = o.linked
+			end
+			self.groups[o.name]:add(o)
+		end
+		
+		for d,s in ipairs(self.groups) do
+			s:updateBoundingBox()
+		end
+	end,
+	
 	print = function(self)
 		--general innformation
 		print(self)
 		
-		--group objects by their name
-		print("objects")
-		local groups = { }
-		local hash = { }
-		for d,s in pairs(self.objects) do
-			if not hash[s.name] then
-				hash[s.name] = true
-				groups[#groups+1] = s.name
-			end
-		end
-		table.sort(groups)
-		
 		--print objects
-		for _,group in ipairs(groups) do
+		for name,group in pairs(self.groups) do
 			--header
-			print("  " .. group)
+			print("  " .. name)
 			local width = 32
 			print("       # tags" .. string.rep(" ", width-4) .. "LOD     D S R  Vertexcount")
 			
-			--group together materials and particle meshes
+			--group together similar objects
 			local found = { }
-			local count = { }
-			local vertices = { }
-			for d,s in pairs(self.objects) do
-				if s.name == group then
-					local n = s.group or d
-					if not count[n] then
-						found[#found+1] = {d, n}
-					end
-					count[n] = (count[n] or 0) + 1
-					if s.mesh then
-						vertices[n] = (vertices[n] or 0) + s.mesh:getVertexCount()
-					end
-				end
-			end
-			
-			for _,d in ipairs(found) do
-				local s = self.objects[d[1]]
+			for _,s in ipairs(group.objects) do
 				local tags = { }
 				for d,s in pairs(s.tags) do
 					tags[#tags+1] = d
@@ -131,7 +121,14 @@ return {
 				local a, b, c = s:getVisibility()
 				local visibility = (a and "X" or " ") .. " " .. (b and "X" or " ") .. " " .. (c and "X" or " ")
 				
-				print(string.format("     % 3d %s%s%s%s%s %d", count[d[2]], tags, string.rep(" ", width - #tags), lod, string.rep(" ", 8 - #lod), visibility, vertices[d[2]] or 0))
+				local str = string.format("%s%s%s%s%s", tags, string.rep(" ", width - #tags), lod, string.rep(" ", 8 - #lod), visibility)
+				found[str] = found[str] or {0, 0}
+				found[str][1] = found[str][1] + 1
+				found[str][2] = found[str][2] + (s.mesh and s.mesh:getVertexCount() or 0)
+			end
+			
+			for str, count in pairs(found) do
+				print(string.format("     % 3d %s %d", count[1], str, count[2]))
 			end
 		end
 		

@@ -52,17 +52,26 @@ function lib:loadLibrary(path, shaderType, args, prefix)
 	end
 	
 	--insert into library
+	local changed = { }
 	for _,list in ipairs({"objects", "physics", "positions", "lights"}) do
 		for _,o in pairs(obj[list] or { }) do
 			local id = prefix .. o.name
 			if not self.objectLibrary[id] then
-				self.objectLibrary[id] = { }
+				self.objectLibrary[id] = self:newObject()
 			end
-			if not self.objectLibrary[id][list] then
-				self.objectLibrary[id][list] = { }
+			if list == "physics" and not self.objectLibrary[id].physics then
+				self.objectLibrary[id].physics = { }
 			end
+			changed[self.objectLibrary[id]] = true
 			table.insert(self.objectLibrary[id][list], o)
+			
+			o.transform = nil
 		end
+	end
+	
+	--update library objects
+	for d,s in pairs(changed) do
+		d:updateGroups()
 	end
 end
 
@@ -262,7 +271,6 @@ function lib:loadObject(path, shaderType, args)
 						local d2 = d .. "_" .. m.name
 						if not obj.objects[d2] then
 							local o2 = o:clone()
-							o2.group = d
 							o2.tags = table.copy(o.tags)
 							o2.tags.split = true
 							
@@ -404,22 +412,6 @@ function lib:loadObject(path, shaderType, args)
 	end
 	
 	
-	--get group center
-	do
-		local center = { }
-		local centerCount = { }
-		for d,o in pairs(obj.objects) do
-			local id = o.LOD_group or o.name
-			center[id] = (center[id] or vec3(0, 0, 0)) + o.boundingBox.center
-			centerCount[id] = (centerCount[id] or 0) + 1
-		end
-		for d,o in pairs(obj.objects) do
-			local id = o.LOD_group or o.name
-			o.LOD_center = center[id] / centerCount[id]
-		end
-	end
-	
-	
 	--extract physics
 	for d,o in pairs(obj.objects) do
 		if o.tags.physics or o.tags.collphy then
@@ -532,6 +524,8 @@ function lib:loadObject(path, shaderType, args)
 	if obj.args.export3do then
 		self:export3do(obj)
 	end
+	
+	obj:updateGroups()
 	
 	return obj
 end

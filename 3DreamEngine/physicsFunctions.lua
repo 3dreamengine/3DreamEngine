@@ -1,6 +1,6 @@
 --[[
 #part of the 3DreamEngine by Luke100000
-collisionFunctions.lua - contains collision and physics library relevant functions
+physicsFunctions.lua - contains physics library relevant functions
 --]]
 
 local lib = _3DreamEngine
@@ -68,7 +68,6 @@ function lib:getPhysicsData(obj)
 	p.normals = obj.normals
 	p.transform = obj.transform or mat4.getIdentity()
 	p.name = obj.name
-	p.group = obj.group
 	return p
 end
 

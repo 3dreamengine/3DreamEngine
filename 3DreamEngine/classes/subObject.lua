@@ -40,7 +40,6 @@ function lib:newSubObject(name, obj, mat)
 		faces = { },
 		
 		loaded = true,
-		LOD_center = vec3(0, 0, 0),
 		boundingBox = self:newBoundaryBox(),
 		
 		shaderType = shaderType,
@@ -51,7 +50,7 @@ function lib:newSubObject(name, obj, mat)
 end
 
 return {
-	link = {"clone", "transform", "shader", "visibility", "subObject"},
+	link = {"clone", "shader", "visibility", "subObject"},
 	
 	isLoaded = function(self)
 		return self.loaded
