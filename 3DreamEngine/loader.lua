@@ -84,6 +84,15 @@ local function cleanEmpties(obj)
 	end
 end
 
+local supportedFiles = {
+	"mtl", --obj material file
+	"mat", --3DreamEngine material file
+	"3do", --3DreamEngine object file - way faster than obj but does not keep vertex information
+	"vox", --magicka voxel
+	"obj", --obj file
+	"dae", --dae file
+}
+
 --loads an object
 --args is a table containing additional settings
 --path is the absolute path without extension
@@ -103,17 +112,10 @@ function lib:loadObject(path, shaderType, args)
 		end
 	end
 	
-	local supportedFiles = {
-		"mtl", --obj material file
-		"mat", --3DreamEngine material file
-		"3do", --3DreamEngine object file - way faster than obj but does not keep vertex information
-		"vox", --magicka voxel
-		"obj", --obj file
-		"dae", --dae file
-	}
-	
 	local obj = self:newObject(path)
 	obj.args = args
+	
+	self.deltonLoad:start("load " .. obj.name)
 	
 	--load files
 	--if two object files are available (.obj and .vox) it might crash, since it loads all)
@@ -213,6 +215,10 @@ function lib:loadObject(path, shaderType, args)
 				r = r + math.sqrt((v[1] - x)^2 + (v[2] - y)^2 + (v[3] - z)^2)
 			end
 			r = r / c
+			
+			if o.transform then
+				x, y, z = (o.transform * vec3(x, y, z)):unpack()
+			end
 			
 			--add position
 			obj.positions[#obj.positions+1] = {
@@ -527,6 +533,7 @@ function lib:loadObject(path, shaderType, args)
 	
 	obj:updateGroups()
 	
+	self.deltonLoad:stop()
 	return obj
 end
 

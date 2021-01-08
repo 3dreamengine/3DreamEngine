@@ -27,6 +27,20 @@ utils = require((...) .. "/libs/utils")
 packTable = require((...) .. "/libs/packTable")
 lib.ffi = require("ffi")
 
+--delton, disabled when not in debug mode
+lib.delton = require((...) .. "/libs/delton"):new(512)
+lib.deltonLoad = require((...) .. "/libs/delton"):new(1)
+lib.deltonLoad.maxAge = 999999
+
+if not _DEBUGMODE then
+	lib.delton.start = function() end
+	lib.delton.stop = lib.delton.start
+	lib.delton.step = lib.delton.start
+	lib.deltonLoad.start = function() end
+	lib.deltonLoad.stop = lib.delton.start
+	lib.deltonLoad.step = lib.delton.start
+end
+
 --load sub modules
 _3DreamEngine = lib
 lib.root = (...)
@@ -137,14 +151,6 @@ lib.scene = lib:newScene()
 
 --hardcoded mipmap count, do not change
 lib.reflections_levels = 5
-
---delton, disabled when not in debug mode
-lib.delton = require((...) .. "/libs/delton"):new(512)
-if not _DEBUGMODE then
-	lib.delton.start = function() end
-	lib.delton.stop = lib.delton.start
-	lib.delton.step = lib.delton.start
-end
 
 --default objects
 lib.object_sky = lib:loadObject(lib.root .. "/objects/sky", "Phong", {splitMaterials = false})

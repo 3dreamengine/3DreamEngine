@@ -47,7 +47,8 @@ function sh:constructDefinesGlobal(dream)
 				return sampleShadowSun2Smooth(sun_shadow_tex_2, vertexPosShadow.xy * 0.5 + 0.5, vertexPosShadow.z);
 			} else {
 				vec3 vertexPosShadow = (sun_shadow_proj_3 * vec4(vertexPos + bias * factor * factor, 1.0)).xyz;
-				return sampleShadowSun2Smooth(sun_shadow_tex_3, vertexPosShadow.xy * 0.5 + 0.5, vertexPosShadow.z);
+				float f = clamp(factor * factor - dist, 0.0, 1.0);
+				return mix(1.0, sampleShadowSun2Smooth(sun_shadow_tex_3, vertexPosShadow.xy * 0.5 + 0.5, vertexPosShadow.z), f);
 			}
 		}
 		
@@ -78,7 +79,8 @@ function sh:constructDefinesGlobal(dream)
 				return sampleShadowSun2(sun_shadow_tex_2, vertexPosShadow.xy * 0.5 + 0.5, vertexPosShadow.z);
 			} else {
 				vec3 vertexPosShadow = (sun_shadow_proj_3 * vec4(vertexPos + bias * factor * factor, 1.0)).xyz;
-				return sampleShadowSun2(sun_shadow_tex_3, vertexPosShadow.xy * 0.5 + 0.5, vertexPosShadow.z);
+				float f = clamp(factor * factor - dist, 0.0, 1.0);
+				return mix(1.0, sampleShadowSun2(sun_shadow_tex_3, vertexPosShadow.xy * 0.5 + 0.5, vertexPosShadow.z), f);
 			}
 		}
 	]]

@@ -128,7 +128,7 @@ return {
 			end
 			
 			for str, count in pairs(found) do
-				print(string.format("     % 3d %s %d", count[1], str, count[2]))
+				print(string.format("     % 3d %s  %d", count[1], str, count[2]))
 			end
 		end
 		

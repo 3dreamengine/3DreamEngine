@@ -194,11 +194,11 @@ function delton:prepareData(segment, depth)
 end
 
 --perform a step, add changes to buffer and reset counters
-function delton:step(segment)
+function delton:step(noClear, segment)
 	assert(self.current == self.root, "more starts than stops!")
 	
 	if not segment then
-		self:step(self.root)
+		self:step(noClear, self.root)
 	else
 		--add to buffer
 		segment.timeBuffer[segment.bufferIndex] = segment.time
@@ -206,12 +206,14 @@ function delton:step(segment)
 		segment.bufferIndex = segment.bufferIndex % self.bufferLength + 1
 		
 		--reset
-		segment.time = 0
-		segment.calls = 0
+		if not noClear then
+			segment.time = 0
+			segment.calls = 0
+		end
 		
 		--children
 		for d,s in pairs(segment.children) do
-			self:step(s)
+			self:step(noClear, s)
 		end
 	end
 end

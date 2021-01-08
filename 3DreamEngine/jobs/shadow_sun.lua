@@ -3,8 +3,21 @@ local lib = _3DreamEngine
 
 job.cost = 2
 
-function job:init()
+local function newStencil(res)
+	local canvas = love.graphics.newCanvas(res, res, {format = "depth24stencil8", readable = true, msaa = 0, type = "2d"})
 	
+	love.graphics.push("all")
+	love.graphics.setCanvas({depthstencil = canvas})
+	love.graphics.stencil(function()
+		love.graphics.circle("fill", res / 2, res / 2, res / 2)
+	end)
+	love.graphics.pop()
+	
+	return canvas
+end
+
+function job:init()
+	self.stencils = { }
 end
 
 function job:queue(times)
@@ -66,23 +79,31 @@ function job:execute(times, delta, light, pos, cascade)
 		})
 		
 		--generate canvas
-		light.shadow.canvases[cascade] = light.shadow.canvases[cascade] or lib:newShadowCanvas("sun", light.shadow.res, light.shadow.static == "dynamic")
+		if not light.shadow.canvases[cascade] then
+			local res = light.shadow.res
+			light.shadow.canvases[cascade] = lib:newShadowCanvas("sun", res, light.shadow.static == "dynamic")
+			if not self.stencils[res] then
+				--self.stencils[res] = newStencil(res)
+			end
+		end
 	end
 	
 	--only load scene for first canvas assuming nothing has changed in the meanwhile (TODO: possible instable, requires further inspection)
 	if not light.scene then
 		light.scene = lib:buildScene(shadowCam, lib.shadowSet, "shadows", light.blacklist, shadowCam.dynamic)
 		if shadowCam.dynamic ~= nil then
-			light.sceneDyn = lib:buildScene(shadowCam, lib.shadowSet, "shadows", light.blacklist, true)
+			light.sceneDyn = lib:buildScene(shadowCam, lib.shadowSet, "shadows", light.blacklist, true, true)
 		end
 	end
 	
+	local canvases = {light.shadow.canvases[cascade]}
+	
 	--render
-	lib:renderShadows(shadowCam.dynamic and light.sceneDyn or light.scene, shadowCam, {light.shadow.canvases[cascade]}, false, shadowCam.dynamic)
+	lib:renderShadows(shadowCam.dynamic and light.sceneDyn or light.scene, shadowCam, canvases, false, shadowCam.dynamic, true)
 	
 	--also render dyn if static only is rendered to keep up with transformation
 	if shadowCam.dynamic == false then
-		lib:renderShadows(light.sceneDyn, shadowCam, {light.shadow.canvases[cascade]}, false, true)
+		lib:renderShadows(light.sceneDyn, shadowCam, canvases, false, true)
 	end
 	
 	if light.shadow.static == "dynamic" then

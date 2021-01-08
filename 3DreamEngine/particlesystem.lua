@@ -49,6 +49,7 @@ local function getInput(input, o, f)
 			local dat = imageDataCache[input.path]
 			local width, height = dat:getDimensions()
 			local b = o[input.buffer or "texCoords"]
+			assert(b, "required buffer " .. input.buffer .. " not present")
 			local uv1 = b[f[1]]
 			local uv2 = b[f[2]]
 			local uv3 = b[f[3]]
@@ -69,11 +70,11 @@ local function getInput(input, o, f)
 				(1 - o.colors[f[1]][input.channel]) * (input.mul or 1.0) + (input.add or 0.0),
 				(1 - o.colors[f[2]][input.channel]) * (input.mul or 1.0) + (input.add or 0.0),
 				(1 - o.colors[f[3]][input.channel]) * (input.mul or 1.0) + (input.add or 0.0)
-			} or {
+			} or #o.colors > 0 and {
 				o.colors[f[1]][input.channel] * (input.mul or 1.0) + (input.add or 0.0),
 				o.colors[f[2]][input.channel] * (input.mul or 1.0) + (input.add or 0.0),
 				o.colors[f[3]][input.channel] * (input.mul or 1.0) + (input.add or 0.0)
-			}
+			} or {0, 0, 0}
 			
 			return {
 				get = function(self, u, v, w)
