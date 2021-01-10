@@ -8,10 +8,55 @@ local lib = _3DreamEngine
 lib.stats = {
 	vertices = 0,
 	shadersInUse = 0,
-	lightSetups = 0,
-	materialDraws = 0,
+	materialsUsed = 0,
 	draws = 0,
 }
+
+function lib:buildScene(typ, dynamic, alpha, cam, blacklist, frustumCheck)
+	self.delton:start("scene")
+	local IDs = {
+		[(dynamic ~= true and 0 or 2) + (alpha and 2 or 1)] = true,
+		[(dynamic ~= false and 2 or 0) + (alpha and 2 or 1)] = true,
+	}
+	local scene = { }
+	for sc, _ in pairs(self.scenes) do
+		for ID, _ in pairs(IDs) do
+			for shaderID, shaderGroup in pairs(sc.tasks[typ][ID]) do
+				for materialID, materialGroup in pairs(shaderGroup) do
+					for batchID, batch in pairs(materialGroup) do
+						local subObj = batch:getSubObj()
+						local obj = subObj.obj
+						if not blacklist or not (blacklist[obj] or blacklist[subObj]) then
+							if subObj.loaded and subObj.mesh then
+								--check which individual tasks are visible
+								local valids
+								if frustumCheck and subObj.boundingBox.initialized then
+									subObj.rID = subObj.rID or math.random()
+									valids = { }
+									for _, task in ipairs(batch:getTasks()) do
+										if self:planeInFrustum(cam, task:getPos(subObj), task:getSize(subObj), subObj.rID) then
+											valids[#valids+1] = task
+										end
+									end
+								else
+									valids = batch:getTasks()
+								end
+								
+								if valids[1] then
+									scene[#scene+1] = {shaderID, batch, valids}
+								end
+							else
+								subObj:request()
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+	self.delton:stop()
+	return scene
+end
 
 --sorting function for the alpha pass
 local sortPosition = vec3(0, 0, 0)
@@ -46,132 +91,8 @@ local function checkAndSend(shader, name, value)
 	end
 end
 
---use active scenes, current canvas set, the usage type and an optional blacklist to create a final, ready to render scene
---typ is the final scene typ and may be 'render', 'shadows' or 'reflections'
-function lib:buildScene(cam, canvases, typ, blacklist, dynamic)
-	self.delton:start("scene")
-	local scene = {
-		solid = { },
-		alpha = typ ~= "shadows" and { } or false,
-		lights = { }
-	}
-	
-	--update required acceleration data
-	local frustumCheck = self.frustumCheck and not cam.noFrustumCheck
-	if frustumCheck then
-		cam:updateFrustumPlanes()
-	end
-	
-	--add to scene
-	for sc,_ in pairs(self.scenes) do
-		if not sc.visibility or sc.visibility[typ] then
-			--get light setup per scene
-			local light
-			if typ ~= "shadows" then
-				light = self:getLightOverview(cam)
-				scene.lights[light.ID] = light
-			end
-			
-			for _,taskList in ipairs(dynamic == nil and {
-				sc.tasks[1].all,
-				sc.tasks[1][typ],
-				sc.tasks[2].all,
-				sc.tasks[2][typ]
-			} or dynamic == true and {
-				sc.tasks[2].all,
-				sc.tasks[2][typ]
-			} or {
-				sc.tasks[1].all,
-				sc.tasks[1][typ]
-			}) do
-				for subObj, tasks in pairs(taskList) do
-					local obj = subObj.obj
-					if not blacklist or not (blacklist[obj] or blacklist[subObj]) then
-						local mat = subObj.material
-						local solid = (mat.solid or not canvases.alphaPass) and 1 or 2
-						local alpha = canvases.alphaPass and mat.alpha and typ ~= "shadows" and 2 or 1
-						for pass = solid, alpha do
-							if subObj.loaded then
-								if subObj.mesh then
-									--check which individual tasks are visible
-									local valids
-									if frustumCheck and subObj.boundingBox.initialized then
-										subObj.rID = subObj.rID or math.random()
-										valids = { }
-										for _, task in ipairs(tasks) do
-											if self:planeInFrustum(cam, task:getPos(subObj), task:getSize(subObj), subObj.rID) then
-												valids[#valids+1] = task
-											end
-										end
-									else
-										valids = tasks
-									end
-									
-									if valids[1] then
-										--fetch shader
-										local shader = self:getRenderShader(subObj, pass, canvases, light, typ == "shadows", valids[2] and true or false)
-										local scene = (not canvases.alphaPass or pass == 1) and scene.solid or scene.alpha
-										
-										--group shader and materials together to reduce shader switches
-										if not scene[shader] then
-											scene[shader] = { }
-										end
-										
-										if typ == "shadows" then
-											scene[shader][valids] = subObj
-										else
-											local lightID = light.ID
-											if not scene[shader][lightID] then
-												scene[shader][lightID] = { }
-											end
-											if not scene[shader][lightID][mat] then
-												scene[shader][lightID][mat] = { }
-											end
-											
-											--add
-											scene[shader][lightID][mat][valids] = subObj
-											
-											--reflections
-											if typ == "render" then
-												local reflection = subObj.reflection or obj.reflection
-												if reflection and reflection.canvas then
-													local task = tasks[1]
-													self.reflections[reflection] = {
-														dist = (task:getPos(subObj) - cam.pos):length(),
-														obj = subObj.reflection and subObj or obj,
-														pos = reflection.pos or task:getPos(subObj),
-													}
-												end
-											end
-										end
-									end
-								end
-							else
-								subObj:request()
-							end
-						end
-					end
-				end
-			end
-		end
-	end
-	
-	--sort tables for materials requiring sorting
---	if scene.alpha then
---		sortPosition = cam.pos
---		for shader, shaderGroup in pairs(scene.alpha) do
---			for material, materialGroup in pairs(shaderGroup) do
---				table.sort(materialGroup, sortFunction)
---			end
---		end
---	end
-	
-	self.delton:stop()
-	return scene
-end
-
 --render the scene onto a canvas set using a specific view camera
-function lib:render(scene, canvases, cam)
+function lib:render(canvases, cam, reflections)
 	self.delton:start("prepare")
 	
 	--love shader friendly
@@ -193,191 +114,237 @@ function lib:render(scene, canvases, cam)
 	--render sky
 	self:renderSky(cam.transformProjOrigin, cam.transform, (cam.near + cam.far) / 2)
 	
+	--update required acceleration data
+	local frustumCheck = self.frustumCheck and not cam.noFrustumCheck
+	if frustumCheck then
+		cam:updateFrustumPlanes()
+	end
+	
+	--get light setup
+	local light = self:getLightOverview(cam)
+	
 	self.delton:stop()
+	
+	--current state
+	local shader
+	local shaderObject
+	local shaderEntry
+	local lastShader
+	local lastMaterial
+	local lastReflection
 	
 	--start both passes
 	for pass = 1, canvases.alphaPass and 2 or 1 do
-		--only first pass writes depth
-		love.graphics.setDepthMode("less", pass == 1)
-		if canvases.averageAlpha and pass == 2 then
-			love.graphics.setBlendMode("add")
-		else
-			love.graphics.setBlendMode("alpha", canvases.averageAlpha and "premultiplied" or "alphamultiply")
-		end
+		--setup final scene
+		local scene = self:buildScene("render", dynamic, pass == 2, cam, blacklist, frustumCheck)
 		
-		--set canvases
-		local dataAlpha = canvases.averageAlpha and pass == 2
-		if canvases.mode ~= "direct" then
-			if dataAlpha then
-				--average alpha
-				love.graphics.setCanvas({canvases.colorAlpha, canvases.dataAlpha, depthstencil = canvases.depth_buffer})
-				love.graphics.clear(true, false, false)
-			elseif canvases.refractions and pass == 2 then
-				--refractions only
-				love.graphics.setCanvas({canvases.colorAlpha, depthstencil = canvases.depth_buffer})
-				love.graphics.clear(true, false, false)
-			end
-		end
-		
-		--final draw
-		self.delton:start("shader")
-		for shaderObject, shaderGroup in pairs(pass == 1 and scene.solid or scene.alpha) do
-			local shader = shaderObject.shader
+		if #scene > 0 or canvases.firstAlphaFrame then
+			canvases.firstAlphaFrame = true
 			
-			--output settings
-			love.graphics.setShader(shader)
-			if hasUniform(shaderObject, "dataAlpha") then
-				shader:send("dataAlpha", dataAlpha)
+			--only first pass writes depth
+			love.graphics.setDepthMode("less", pass == 1)
+			if canvases.averageAlpha and pass == 2 then
+				love.graphics.setBlendMode("add")
+			else
+				love.graphics.setBlendMode("alpha", canvases.averageAlpha and "premultiplied" or "alphamultiply")
 			end
 			
-			--shader
-			local shaderEntry = self.shaderLibrary.base[shaderObject.shaderType]
-			shaderEntry:perShader(self, shaderObject)
-			for d,s in pairs(shaderObject.modules) do
-				s:perShader(self, shaderObject)
-			end
-			
-			--fog
-			if hasUniform(shaderObject, "fog_density") then
-				sendFogData(shader)
-			end
-			
-			--framebuffer
-			if hasUniform(shaderObject, "tex_depth") then
-				shader:send("tex_depth", canvases.depth)
-				shader:send("tex_color", canvases.color)
-				shader:send("screenScale", {1 / canvases.width, 1 / canvases.height})
-			end
-			
-			if hasUniform(shaderObject, "gamma") then shader:send("gamma", self.gamma) end
-			if hasUniform(shaderObject, "exposure") then shader:send("exposure", self.exposure) end
-			
-			--camera
-			shader:send("transformProj", cam.transformProj)
-			if hasUniform(shaderObject, "viewPos") then
-				shader:send("viewPos", viewPos)
-			end
-			
-			if not shaderObject.reflection then
-				shader:send("ambient", self.sun_ambient)
-			end
-			
-			--for each light setup
-			self.delton:start("light")
-			for lightID, lightGroup in pairs(shaderGroup) do
-				--light if using forward lighting
-				self:sendLightUniforms(scene.lights[lightID], shaderObject)
-				
-				--for each material
-				self.delton:start("material")
-				for material, materialGroup in pairs(lightGroup) do
-					--alpha
-					if hasUniform(shaderObject, "isSemi") then
-						shader:send("isSemi", canvases.alphaPass and material.solid and material.alpha and 1 or 0)
-					end
-					if hasUniform(shaderObject, "dither") then
-						if material.dither == nil then
-							shader:send("dither", self.dither and 1 or 0)
-						else
-							shader:send("dither", material.dither and 1 or 0)
-						end
-					end
-					
-					--ior
-					if hasUniform(shaderObject, "ior") then
-						shader:send("ior", 1.0 / material.ior)
-					end
-					
-					if hasUniform(shaderObject, "translucent") then
-						shader:send("translucent", material.translucent)
-					end
-					
-					--shader
-					shaderEntry:perMaterial(self, shaderObject, material)
-					for d,s in pairs(shaderObject.modules) do
-						s:perMaterial(self, shaderObject, material)
-					end
-					
-					--culling
-					love.graphics.setMeshCullMode(canvases.cullMode or material.cullMode or "back")
-					
-					--draw objects
-					for tasks, subObj in pairs(materialGroup) do
-						local obj = subObj.obj
-						
-						--sky texture
-						if shaderObject.reflection then
-							local ref = subObj.reflection or obj.reflection or (type(self.sky_reflection) == "table" and self.sky_reflection)
-							local tex = ref and (ref.image or ref.canvas)
-							if not tex and self.sky_reflection then
-								--use sky dome
-								tex = self.sky_reflectionCanvas
-							end
-							
-							shader:send("tex_background", tex or self.textures.sky_fallback)
-							shader:send("reflections_levels", (ref and ref.levels or self.reflections_levels) - 1)
-							
-							--box for local cubemaps
-							if ref and ref.first then
-								shader:send("reflections_enabled", true)
-								shader:send("reflections_pos", ref.pos)
-								shader:send("reflections_first", ref.first)
-								shader:send("reflections_second", ref.second)
-							else
-								shader:send("reflections_enabled", false)
-							end
-						end
-						
-						local count = #tasks
-						if count > 1 then
-							love.graphics.setColor(tasks[1]:getColor())
-							
-							for batch = 0, math.ceil(count / self.instanceBatchSize)-1 do
-								--object transformation
-								local transforms = { }
-								for i = 1, self.instanceBatchSize do
-									local i2 = i + batch * self.instanceBatchSize
-									if tasks[i2] then
-										transforms[i] = tasks[i2]:getTransform()
-									else
-										break
-									end
-								end
-								
-								shader:send("transforms", unpack(transforms))
-								love.graphics.drawInstanced(subObj.mesh, #transforms)
-							end
-						else
-							local task = tasks[1]
-							
-							--object transformation
-							shader:send("transform", task:getTransform())
-							
-							--shader
-							shaderEntry:perTask(self, shaderObject, task)
-							for d,s in pairs(shaderObject.modules) do
-								s:perTask(self, shaderObject, subObj, task)
-							end
-							
-							--render
-							love.graphics.setColor(task:getColor())
-							love.graphics.draw(subObj.mesh)
-							
-							self.stats.draws = self.stats.draws + 1
-							self.stats.vertices = self.stats.vertices + subObj.mesh:getVertexCount()
-						end
-					end
-					self.stats.materialDraws = self.stats.materialDraws + 1
+			--set canvases
+			local dataAlpha = canvases.averageAlpha and pass == 2
+			if canvases.mode ~= "direct" then
+				if dataAlpha then
+					--average alpha
+					love.graphics.setCanvas({canvases.colorAlpha, canvases.dataAlpha, depthstencil = canvases.depth_buffer})
+					love.graphics.clear(true, false, false)
+				elseif canvases.refractions and pass == 2 then
+					--refractions only
+					love.graphics.setCanvas({canvases.colorAlpha, depthstencil = canvases.depth_buffer})
+					love.graphics.clear(true, false, false)
 				end
-				self.delton:stop()
-				self.stats.lightSetups = self.stats.lightSetups + 1
 			end
-			self.delton:stop()
-			self.stats.shadersInUse = self.stats.shadersInUse + 1
+		end
+		
+		--start rendering
+		self.delton:start("render")
+		for d,s in ipairs(scene) do
+			local shaderID, batch, valids = unpack(s)
+			local subObj = batch:getSubObj()
+			local obj = subObj.obj
+			
+			--reflections
+			if not reflections then
+				local reflection = subObj.reflection or obj.reflection
+				if reflection and reflection.canvas then
+					local task = valids[1]
+					self.reflections[reflection] = {
+						dist = (task:getPos(subObj) - cam.pos):length(),
+						obj = subObj.reflection and subObj or obj,
+						pos = reflection.pos or task:getPos(subObj),
+					}
+				end
+			end
+			
+			--set active shader
+			if lastShader ~= shaderID then
+				lastShader = shaderID
+				lastMaterial = false
+				lastReflection = false
+				self.delton:start("shader")
+				
+				shaderObject = self:getRenderShader(shaderID, subObj, pass, canvases, light, false, valids[2] and true or false)
+				shaderEntry = self.shaderLibrary.base[shaderObject.shaderType]
+				shader = shaderObject.shader
+				love.graphics.setShader(shader)
+				
+				--light setup
+				self:sendLightUniforms(light, shaderObject)
+				
+				--output settings
+				if hasUniform(shaderObject, "dataAlpha") then
+					shader:send("dataAlpha", dataAlpha)
+				end
+				
+				--shader
+				shaderEntry:perShader(self, shaderObject)
+				for d,s in pairs(shaderObject.modules) do
+					s:perShader(self, shaderObject)
+				end
+				
+				--fog
+				if hasUniform(shaderObject, "fog_density") then
+					sendFogData(shader)
+				end
+				
+				--framebuffer
+				if hasUniform(shaderObject, "tex_depth") then
+					shader:send("tex_depth", canvases.depth)
+					shader:send("tex_color", canvases.color)
+					shader:send("screenScale", {1 / canvases.width, 1 / canvases.height})
+				end
+				
+				if hasUniform(shaderObject, "gamma") then shader:send("gamma", self.gamma) end
+				if hasUniform(shaderObject, "exposure") then shader:send("exposure", self.exposure) end
+				
+				--camera
+				shader:send("transformProj", cam.transformProj)
+				if hasUniform(shaderObject, "viewPos") then
+					shader:send("viewPos", viewPos)
+				end
+				
+				if not shaderObject.reflection then
+					shader:send("ambient", self.sun_ambient)
+				end
+				
+				self.delton:stop()
+				self.stats.shadersInUse = self.stats.shadersInUse + 1
+			end
+			
+			--set active material
+			local material = subObj.material
+			if lastMaterial ~= material then
+				lastMaterial = material
+				--self.delton:start("material")
+				
+				--alpha
+				if hasUniform(shaderObject, "dither") then
+					if material.dither == nil then
+						shader:send("dither", self.dither and 1 or 0)
+					else
+						shader:send("dither", material.dither and 1 or 0)
+					end
+				end
+				
+				--ior
+				if hasUniform(shaderObject, "ior") then
+					shader:send("ior", 1.0 / material.ior)
+				end
+				
+				if hasUniform(shaderObject, "translucent") then
+					shader:send("translucent", material.translucent)
+				end
+				
+				--shader
+				shaderEntry:perMaterial(self, shaderObject, material)
+				for d,s in pairs(shaderObject.modules) do
+					s:perMaterial(self, shaderObject, material)
+				end
+				
+				--culling
+				love.graphics.setMeshCullMode(canvases.cullMode or material.cullMode or "back")
+				
+				--self.delton:stop()
+				self.stats.materialsUsed = self.stats.materialsUsed + 1
+			end
+			
+			--reflection
+			if shaderObject.reflection then
+				local ref = subObj.reflection or obj.reflection or (type(self.sky_reflection) == "table" and self.sky_reflection)
+				local tex = ref and (ref.image or ref.canvas) or self.sky_reflection and self.sky_reflectionCanvas or self.textures.sky_fallback
+				if lastReflection ~= tex then
+					lastReflection = tex
+					self.delton:start("reflection")
+					
+					shader:send("tex_background", tex)
+					shader:send("reflections_levels", (ref and ref.levels or self.reflections_levels) - 1)
+					
+					--box for local cubemaps
+					if ref and ref.first then
+						shader:send("reflections_enabled", true)
+						shader:send("reflections_pos", ref.pos)
+						shader:send("reflections_first", ref.first)
+						shader:send("reflections_second", ref.second)
+					else
+						shader:send("reflections_enabled", false)
+					end
+					
+					self.delton:stop()
+				end
+			end
+			
+			--render
+			if shaderObject.instances then
+				love.graphics.setColor(valids[1]:getColor())
+				
+				for batch = 0, math.ceil(#valids / self.instanceBatchSize)-1 do
+					--object transformation
+					local transforms = { }
+					for i = 1, self.instanceBatchSize do
+						local i2 = i + batch * self.instanceBatchSize
+						if valids[i2] then
+							transforms[i] = valids[i2]:getTransform()
+						else
+							break
+						end
+					end
+					
+					shader:send("transforms", unpack(transforms))
+					love.graphics.drawInstanced(subObj.mesh, #transforms)
+				end
+			else
+				local task = valids[1]
+				
+				--object transformation
+				shader:send("transform", task:getTransform())
+				
+				--shader
+				shaderEntry:perTask(self, shaderObject, task, batch)
+				for d,s in pairs(shaderObject.modules) do
+					s:perTask(self, shaderObject, subObj, task, batch)
+				end
+				
+				--render
+				love.graphics.setColor(task:getColor())
+				love.graphics.draw(subObj.mesh)
+			end
+			
+			--stats
+			self.stats.draws = self.stats.draws + 1
+			--self.stats.vertices = self.stats.vertices + subObj.vertexCount
 		end
 		self.delton:stop()
-		love.graphics.setColor(1.0, 1.0, 1.0)
 	end
+	
+	love.graphics.setColor(1.0, 1.0, 1.0)
 	
 	--particles on the alpha pass
 	self.delton:start("particles")
@@ -479,7 +446,7 @@ function lib:render(scene, canvases, cam)
 end
 
 --only renders a depth variant
-function lib:renderShadows(scene, cam, canvas, blacklist, dynamic, stencil)
+function lib:renderShadows(cam, canvas, blacklist, dynamic, stencil)
 	self.delton:start("renderShadows")
 	
 	love.graphics.push("all")
@@ -498,73 +465,106 @@ function lib:renderShadows(scene, cam, canvas, blacklist, dynamic, stencil)
 	love.graphics.clear(255, 255, 255, 255, false, true)
 	
 	if stencil then
-		love.graphics.setStencilTest("equal", 1)
+		--love.graphics.setStencilTest("equal", 1)
 	end
 	
 	--love shader friendly
 	local viewPos = {cam.pos:unpack()}
 	
-	--final draw
-	for shaderObject, shaderGroup in pairs(scene.solid) do
-		local shader = shaderObject.shader
-		love.graphics.setShader(shader)
-		shader:send("mode", cam.sun)
+	--update required acceleration data
+	local frustumCheck = self.frustumCheck and not cam.noFrustumCheck
+	if frustumCheck then
+		cam:updateFrustumPlanes()
+	end
+	
+	--current state
+	local shader
+	local shaderObject
+	local shaderEntry
+	local lastShader
+	local lastMaterial
+	
+	--get scene
+	local scene = self:buildScene("shadows", dynamic, false, cam, blacklist, frustumCheck)
+	
+	--start rendering
+	for d,s in ipairs(scene) do
+		local shaderID, batch, valids = unpack(s)
+		local subObj = batch:getSubObj()
+		local obj = subObj.obj
 		
-		--shader
-		for d,s in pairs(shaderObject.modules) do
-			s:perShader(self, shaderObject)
-		end
-		
-		--camera
-		shader:send("transformProj", cam.transformProj)
-		if hasUniform(shaderObject, "viewPos") then
-			shader:send("viewPos", viewPos)
-		end
-		
-		--for each task
-		for tasks, subObj in pairs(shaderGroup) do
-			local count = #tasks
-			if count > 1 then
-				love.graphics.setColor(tasks[1]:getColor())
-				
-				for batch = 0, math.ceil(count / self.instanceBatchSize)-1 do
-					--object transformation
-					local transforms = { }
-					for i = 1, self.instanceBatchSize do
-						local i2 = i + batch * self.instanceBatchSize
-						if tasks[i2] then
-							transforms[i] = tasks[i2]:getTransform()
-						else
-							break
-						end
-					end
-					
-					shader:send("transforms", unpack(transforms))
-					love.graphics.drawInstanced(subObj.mesh, #transforms)
-				end
-			else
-				local task = tasks[1]
-				--object transformation
-				shader:send("transform", task:getTransform())
-				
-				--shader
-				for d,s in pairs(shaderObject.modules) do
-					s:perTask(self, shaderObject, subObj, task)
-				end
-				
-				--render
-				love.graphics.setColor(task:getColor())
-				love.graphics.draw(subObj.mesh)
+		--set active shader
+		if lastShader ~= shaderID then
+			lastShader = shaderID
+			lastMaterial = false
+			lastReflection = false
+			
+			shaderObject = self:getRenderShader(shaderID, subObj, pass, { }, nil, true, valids[2] and true or false)
+			shaderEntry = self.shaderLibrary.base[shaderObject.shaderType]
+			shader = shaderObject.shader
+			love.graphics.setShader(shader)
+			
+			shader:send("mode", cam.sun and true or false)
+			
+			--camera
+			shader:send("transformProj", cam.transformProj)
+			if hasUniform(shaderObject, "viewPos") then
+				shader:send("viewPos", viewPos)
 			end
+		end
+		
+		--set active material
+		local material = subObj.material
+		if lastMaterial ~= material then
+			lastMaterial = material
+			--TODO alpha texture
+		end
+		
+		--render
+		if shaderObject.instances then
+			love.graphics.setColor(valids[1]:getColor())
+			
+			for batch = 0, math.ceil(#valids / self.instanceBatchSize)-1 do
+				--object transformation
+				local transforms = { }
+				for i = 1, self.instanceBatchSize do
+					local i2 = i + batch * self.instanceBatchSize
+					if valids[i2] then
+						transforms[i] = valids[i2]:getTransform()
+					else
+						break
+					end
+				end
+				
+				shader:send("transforms", unpack(transforms))
+				love.graphics.drawInstanced(subObj.mesh, #transforms)
+			end
+		else
+			local task = valids[1]
+			
+			--object transformation
+			shader:send("transform", task:getTransform())
+			
+			--shader
+			shaderEntry:perTask(self, shaderObject, task, batch)
+			for d,s in pairs(shaderObject.modules) do
+				s:perTask(self, shaderObject, subObj, task, batch)
+			end
+			
+			--render
+			love.graphics.setColor(task:getColor())
+			love.graphics.draw(subObj.mesh)
 		end
 	end
 	
 	love.graphics.pop()
 	self.delton:stop()
+	
+	return scene
 end
 
 --full render, including bloom, fxaa, exposure and gamma correction
-function lib:renderFull(scene, cam, canvases)
+function lib:renderFull(cam, canvases, reflections)
 	love.graphics.push("all")
 	if canvases.mode ~= "direct" then
 		love.graphics.reset()
@@ -572,7 +572,7 @@ function lib:renderFull(scene, cam, canvases)
 	
 	--render
 	self.delton:start("render")
-	self:render(scene, canvases, cam)
+	self:render(canvases, cam, reflections)
 	self.delton:stop()
 	
 	if canvases.mode == "direct" then
@@ -676,7 +676,7 @@ function lib:renderFull(scene, cam, canvases)
 	self.delton:start("modules")
 	for d,s in pairs(self.allActiveShaderModules) do
 		if s.render then
-			s:render(self, cam, canvases, scene)
+			s:render(self, cam, canvases)
 		end
 	end
 	self.delton:stop()
@@ -766,10 +766,6 @@ function lib:present(cam, canvases, lite)
 		self.lastUsedCam = cam
 	end
 	
-	
-	--generate scene
-	local scene = self:buildScene(cam, canvases, "render")
-	
 	--process render jobs
 	if not lite then
 		self.delton:start("jobs")
@@ -779,7 +775,7 @@ function lib:present(cam, canvases, lite)
 	
 	--render
 	self.delton:start("renderFull")
-	self:renderFull(scene, cam, canvases)
+	self:renderFull(cam, canvases)
 	self.delton:stop()
 	self.delton:stop()
 	

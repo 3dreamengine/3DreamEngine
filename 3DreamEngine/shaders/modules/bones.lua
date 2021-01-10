@@ -46,7 +46,7 @@ function sh:perMaterial(dream, shaderObject, material)
 	
 end
 
-function sh:perTask(dream, shaderObject, subObj, task)
+function sh:perTask(dream, shaderObject, subObj, task, batch)
 	local shader = shaderObject.shader
 	
 	--initial prepare bone data
@@ -69,7 +69,7 @@ function sh:perTask(dream, shaderObject, subObj, task)
 		subObj.mesh:attachAttribute("VertexWeight", subObj.boneMesh)
 	end
 	
-	local bt = task:getBoneTransforms()
+	local bt = batch:getBoneTransforms()
 	assert(bt, "missing bone transforms")
 	
 	local matrices = {mat4:getIdentity()}

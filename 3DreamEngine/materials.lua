@@ -14,7 +14,6 @@ function lib:newMaterial(name, dir)
 		emission = {0.0, 0.0, 0.0},
 		roughness = 0.5,
 		metallic = 0.0,
-		solid = true,
 		alpha = false,
 		discard = false,
 		name = name or "None",        --name, used for texture linking

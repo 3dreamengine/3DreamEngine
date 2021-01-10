@@ -5,7 +5,7 @@ return {
 				["examples/firstpersongame/objects/grass"] = 20,
 			},
 			size = {2.5, 4.0},
-			rotation = 0.25,
+			rotation = 0.0,
 			normal = 0.9,
 			shader = "wind",
 			shaderValue = "grass",

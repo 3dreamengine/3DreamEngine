@@ -12,6 +12,7 @@ function lib:newSetSettings()
 		averageAlpha = false,
 		alphaPass = true,
 		mode = "normal",
+		shaderID = os.clock() + math.random(),
 	}, self.meta.setSettings)
 end
 

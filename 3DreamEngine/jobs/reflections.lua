@@ -60,11 +60,8 @@ function job:execute(times, delta, obj, pos, face)
 	love.graphics.clear()
 	obj.reflection.canvas = nil
 	
-	--generate scene
-	local scene = lib:buildScene(cam, lib.canvases_reflections, "reflections", {[obj] = true})
-	
 	--render
-	lib:renderFull(scene, cam, lib.canvases_reflections)
+	lib:renderFull(cam, lib.canvases_reflections, true)
 	
 	obj.reflection.canvas = canvas
 	love.graphics.pop()

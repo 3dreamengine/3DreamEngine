@@ -42,7 +42,6 @@ extern float gamma;
 
 //shader settings
 extern float dataAlpha;
-extern float isSemi;
 extern float dither;
 
 //reflection engine
@@ -67,21 +66,13 @@ void effect() {
 #import modulesPixelPre
 	
 	//dither alpha
-#ifdef ALPHA_PASS
-	if (abs(albedo.a - 0.495) * isSemi > 0.5) {
-		discard;
-	}
-#else
+#ifndef ALPHA_PASS
 #ifdef DISCARD_ENABLED
 	if (albedo.a < mix(
-			mix(
-				0.5,
-				fract(love_PixelCoord.x * 0.37 + love_PixelCoord.y * 73.73 + depth * 3.73),
-				dither
-			),
-			0.99,
-			isSemi
-		)) {
+		0.5,
+		fract(love_PixelCoord.x * 0.37 + love_PixelCoord.y * 73.73 + depth * 3.73),
+		dither
+	)) {
 		discard;
 	}
 #endif
@@ -105,21 +96,24 @@ vec3 col;
 
 	//calculate refractions
 #ifdef REFRACTIONS_ENABLED
-	vec2 startPixel = love_PixelCoord.xy * screenScale;
-	
-	//refract and transform back to pixel coord
-	vec3 endPoint = vertexPos + normalize(refract(-viewVec, normal, ior)) * 0.15;
-	vec4 endPixel = transformProj * vec4(endPoint, 1.0);
-	endPixel /= endPixel.w;
-	endPixel.xy = endPixel.xy * 0.5 + 0.5;
-	
-	//uv translation
-	vec2 vec = endPixel.xy - startPixel;
-	
-	//depth check
-	float d = Texel(tex_depth, startPixel + vec).r;
-	vec3 nc = Texel(tex_color, startPixel + vec * whenLt(0.0, d - depth)).xyz;
-	col = mix(mix(nc, nc * albedo.rgb, albedo.a), col, albedo.a);
+	if (ior != 1.0) {
+		vec2 startPixel = love_PixelCoord.xy * screenScale;
+		
+		//refract and transform back to pixel coord
+		vec3 endPoint = vertexPos + normalize(refract(-viewVec, normal, ior)) * 0.15;
+		vec4 endPixel = transformProj * vec4(endPoint, 1.0);
+		endPixel /= endPixel.w;
+		endPixel.xy = endPixel.xy * 0.5 + 0.5;
+		
+		//uv translation
+		vec2 vec = endPixel.xy - startPixel;
+		
+		//depth check
+		float d = Texel(tex_depth, startPixel + vec).r;
+		vec3 nc = Texel(tex_color, startPixel + vec * whenLt(0.0, d - depth)).xyz;
+		col = mix(mix(nc, nc * albedo.rgb, albedo.a), col, albedo.a);
+		albedo.a = 1.0;
+	}
 #endif
 
 	//fog
@@ -139,11 +133,7 @@ vec3 col;
 #endif
 	
 	//returns color
-#ifdef REFRACTIONS_ENABLED
-	love_Canvases[0] = vec4(col, 1.0);
-#else
 	love_Canvases[0] = vec4(col, albedo.a);
-#endif
 	
 	//alpha data
 #ifdef AVERAGE_ENABLED

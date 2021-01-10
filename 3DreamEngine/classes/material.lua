@@ -3,13 +3,12 @@ return {
 	
 	setterGetter = {
 		alpha = "boolean",
-		solid = "boolean",
 		discard = "boolean",
+		dither = "boolean",
 		translucent = "number",
 		cullMode = "string",
 		
 		IOR = "getter",
-		dither = "getter",
 		color = "getter",
 		albedoTex = "getter",
 		emission = "getter",
@@ -35,9 +34,6 @@ return {
 	--general settings
 	setIOR = function(self, ior)
 		self.ior = ior or 1.0
-	end,
-	setDither = function(self, dither)
-		self.dither = dither
 	end,
 	
 	--general material properties

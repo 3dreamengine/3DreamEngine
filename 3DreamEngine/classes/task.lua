@@ -28,10 +28,6 @@ return {
 		return self[1]
 	end,
 	
-	getBoneTransforms = function(self)
-		return self[5]
-	end,
-	
 	getSize = function(self, subObj)
 		if not self[4] then
 			local m = self[2]

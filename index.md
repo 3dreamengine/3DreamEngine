@@ -231,7 +231,7 @@ distance = dream:getLODDistance()
 
 
 ## dither
-Depth testing and dither do not like each other. You can choose between dithering or fixed 0.5 threshold.
+Depth testing and alpha gradients do not like each other. You can choose between dithering or a fixed 0.5 threshold. Heavily depends on your scene, and can be enabled per material for more control.
 
 ```lua
 dream:setDither(enabled)
@@ -983,7 +983,6 @@ material:setMetallicTex(tex)
 	emission = {0.0, 0.0, 0.0},
 	roughness = 0.5,
 	metallic = 0.0,
-	solid = true,
 	alpha = false,
 	discard = false,
 	name = "None",         --name, used for texture linking
@@ -999,10 +998,9 @@ material:setMetallicTex(tex)
 
 ### transparent materials
 You have to tell the engine how to render this material.  
-`Alpha` enabled will use the second pass.
-`Solid` enabled the first pass. Both can be enabled and makes sense for materials containing both full alpha parts and semi transparent parts.  
+`Alpha` enabled will use the Z-sorted second pass.
 `Translucent` puts light on the backside. Settings translucent via the functions also sets the cullmode to none.  
-`Discard` is required if the texture contains an alpha channel. It is always enabled if alpha is set to true (something else would not make sense) or if dithering is enabled. Discard is slow on some systems, especially slowing down direct rendering.
+`Discard` is required if the texture contains an alpha channel, but should not use the alpha pass. Discard is slow on some, usually weaker, systems.
 ```lua
 material:setAlpha(enabled)
 material:setSolid(enabled)
@@ -1018,9 +1016,9 @@ material:cullMode(cullmode)
 To make transparency possible, a few features have to be enabled. Enabling them by default would be slow, so this has to be done manually.  
 There are two render passes. The first, with depth writing, only render fully solid materials. The second pass render transparent materials.    
 
-* Does the material contain no solid alpha? -> `material:setSolid(false)` (by default enabled)
-* Does the material contain smooth alpha (values between 0 and 1)? -> `material:setAlpha(true)` (by default disabled)
-* Does the material contain any alpha? -> `material:setDiscard(true)` (by default disabled, `alpha=true` enables this automatically)
+* Does the material contain no alpha? -> `material:setAlpha(false)` (default)
+* Does the material contain smooth alpha (values between 0 and 1)? -> `material:setAlpha(true)` (by default disabled, requires enabled backface culling and should be used on convex meshes only)
+* Does the material contain alpha, but no visible gradient is required? -> `material:setDiscard(true)` (by default disabled)
 
 Additionally, if your scene contains a lot of transparent materials and the rather limited sorting of the alpha pass fails, enable average alpha mode. This is an approximation of correct alpha blending and may look better.  
 `dream.renderSet:setAverageAlpha(true)`

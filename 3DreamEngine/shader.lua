@@ -188,25 +188,21 @@ end
 --construct a shader
 local baseShader = love.filesystem.read(lib.root .. "/shaders/base.glsl")
 local baseShadowShader = love.filesystem.read(lib.root .. "/shaders/shadow.glsl")
-function lib:getRenderShader(obj, pass, canvases, light, shadows, instances)
+
+function lib:getRenderShaderID(obj, pass, shadows)
 	local mat = obj.material
-	local shaderType = obj.shaderType
 	local reflection = obj.reflection or obj.obj and obj.obj.reflection or self.sky_reflection
-	local refractions = canvases.refractions and mat.ior ~= 1.0
 	local modules = obj.modules or obj.obj and obj.obj.modules or mat.modules
 	
 	--get unique IDs for the components
-	local ID_base = self.shaderLibrary.base[shaderType]:getTypeID(self, mat)
-	local ID_light = shadows and "0" or light.ID
+	local ID_base = self.shaderLibrary.base[obj.shaderType]:getTypeID(self, mat)
 	local ID_settings = 0
 	local ID_modules = 0
 	
 	--global modules
-	local m = { }
 	for d,s in pairs(self.activeShaderModules) do
 		local sm = self:getShaderModule(d)
 		if not shadows or sm.shadow then
-			m[d] = sm
 			ID_modules = ID_modules + sm.ID
 		end
 	end
@@ -217,7 +213,6 @@ function lib:getRenderShader(obj, pass, canvases, light, shadows, instances)
 			if not self.activeShaderModules[d] then
 				local sm = self:getShaderModule(d)
 				if not shadows or sm.shadow then
-					m[d] = sm
 					ID_modules = ID_modules + sm.ID
 				end
 			end
@@ -227,53 +222,79 @@ function lib:getRenderShader(obj, pass, canvases, light, shadows, instances)
 	--settings
 	if not shadows then
 		if pass == 2 then
-			if refractions then
-				ID_settings = ID_settings + 2 ^ 1
-			end
-			if canvases.averageAlpha then
-				ID_settings = ID_settings + 2 ^ 2
-			end
-			ID_settings = ID_settings + 2 ^ 6
-		elseif mat.discard or mat.alpha or mat.dither or self.dither then
-			ID_settings = ID_settings + 2 ^ 7
+			--second pass
+			ID_settings = ID_settings + 2 ^ 0
+		elseif mat.discard or mat.dither or self.dither then
+			--requires alpha test (discard)
+			ID_settings = ID_settings + 2 ^ 1
 		end
 		
+		--simple cube map reflection and ambient light
 		if reflection then
-			ID_settings = ID_settings + 2 ^ 0
+			ID_settings = ID_settings + 2 ^ 2
 		end
-		if canvases.postEffects and self.exposure and earlyExposure(canvases) then
+		
+		--double sided lighting
+		if mat.translucent > 0 then
 			ID_settings = ID_settings + 2 ^ 3
 		end
-		if canvases.postEffects and self.gamma and earlyExposure(canvases) then
-			ID_settings = ID_settings + 2 ^ 4
-		end
-		if self.fog_enabled and canvases.mode ~= "normal" then
-			ID_settings = ID_settings + 2 ^ 5
-		end
-		if mat.translucent > 0 then
-			ID_settings = ID_settings + 2 ^ 8
-		end
-	end
-	if instances then
-		ID_settings = ID_settings + 2 ^ 9
 	end
 	
-	--construct full ID (8 bytes light, 1 byte base, 4 bytes modules and 1 byte settings
-	local ID = ID_light .. string.char(ID_base, (ID_modules / 256^3) % 256, (ID_modules / 256^2) % 256, (ID_modules / 256^1) % 256, (ID_modules / 256^0) % 256, math.floor(ID_settings / 256), ID_settings % 256)
+	--construct full ID
+	return string.char(ID_base, (ID_modules / 256^3) % 256, (ID_modules / 256^2) % 256, (ID_modules / 256^1) % 256, (ID_modules / 256^0) % 256, ID_settings % 256)
+end
+
+function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, instances)
+	local shaderID = (canvases and canvases.shaderID or 0) * 2 + (instances and 1 or 0)
+	if light then
+		shaderID = light.ID .. shaderID
+	end
 	
-	if not self.mainShaders[ID] then
+	if not self.mainShaders[shaderID] then
+		self.mainShaders[shaderID] = { }
+	end
+	
+	if not self.mainShaders[shaderID][ID] then
+		local mat = obj.material
+		local shaderType = obj.shaderType
+		local reflection = obj.reflection or obj.obj and obj.obj.reflection or self.sky_reflection
+		local refractions = canvases.refractions
+		local modules = obj.modules or obj.obj and obj.obj.modules or mat.modules
+		
+		--global modules
+		local m = { }
+		for d,s in pairs(self.activeShaderModules) do
+			local sm = self:getShaderModule(d)
+			if not shadows or sm.shadow then
+				m[d] = sm
+			end
+		end
+		
+		--local modules
+		if modules then
+			for d,s in pairs(modules) do
+				if not self.activeShaderModules[d] then
+					local sm = self:getShaderModule(d)
+					if not shadows or sm.shadow then
+						m[d] = sm
+					end
+				end
+			end
+		end
+		
 		--construct shader
 		local code = shadows and baseShadowShader or baseShader
 		
 		--additional data
-		self.mainShaders[ID] = {
+		local info = {
 			shaderType = shaderType,
 			modules = m,
 			reflection = not shadows and reflection,
 			shadows = shadows,
 			uniforms = { },
+			instances = instances,
 		}
-		local info = self.mainShaders[ID]
+		self.mainShaders[shaderID][ID] = info
 		
 		if shadows then
 			local globalDefines = { }
@@ -287,15 +308,20 @@ function lib:getRenderShader(obj, pass, canvases, light, shadows, instances)
 		else
 			--settings
 			local globalDefines = { }
-			if reflection then
-				ID_settings = ID_settings + 2 ^ 0
+			if pass == 1 then
+				if mat.discard or mat.dither or self.dither then
+					table.insert(globalDefines, "#define DISCARD_ENABLED")
+				end
+			elseif pass == 2 then
+				if refractions then
+					table.insert(globalDefines, "#define REFRACTIONS_ENABLED")
+				end
+				if canvases.averageAlpha then
+					table.insert(globalDefines, "#define AVERAGE_ENABLED")
+				end
+				table.insert(globalDefines, "#define ALPHA_PASS")
 			end
-			if refractions and pass == 2 then
-				table.insert(globalDefines, "#define REFRACTIONS_ENABLED")
-			end
-			if canvases.averageAlpha and pass == 2 then
-				table.insert(globalDefines, "#define AVERAGE_ENABLED")
-			end
+			
 			if canvases.postEffects and self.exposure and earlyExposure(canvases) then
 				table.insert(globalDefines, "#define EXPOSURE_ENABLED")
 			end
@@ -304,12 +330,6 @@ function lib:getRenderShader(obj, pass, canvases, light, shadows, instances)
 			end
 			if self.fog_enabled and canvases.mode ~= "normal" then
 				table.insert(globalDefines, "#define FOG_ENABLED")
-			end
-			if pass == 2 then
-				table.insert(globalDefines, "#define ALPHA_PASS")
-			end
-			if pass == 1 and (mat.discard or mat.alpha or mat.dither or self.dither) then
-				table.insert(globalDefines, "#define DISCARD_ENABLED")
 			end
 			if mat.translucent > 0 then
 				table.insert(globalDefines, "#define TRANSLUCENT_ENABLED")
@@ -376,13 +396,14 @@ function lib:getRenderShader(obj, pass, canvases, light, shadows, instances)
 		code = code:gsub("	", "")
 		
 		--compile
+		info.code = code
 		info.shader = love.graphics.newShader(code)
 		
 		--count
 		self.mainShaderCount = self.mainShaderCount + 1
 	end
 	
-	return self.mainShaders[ID]
+	return self.mainShaders[shaderID][ID]
 end
 
 local baseParticlesShader = love.filesystem.read(lib.root .. "/shaders/particles.glsl")

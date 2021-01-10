@@ -195,12 +195,13 @@ function lib.initTextures:sky()
 end
 
 --a canvas set is used to render a scene to
-function lib.newCanvasSet(self, settings, w, h)
+function lib:newCanvasSet(settings, w, h)
 	local set = { }
 	w = w or settings.resolution
 	h = h or settings.resolution
 	
 	--settings
+	set.shaderID = settings.shaderID
 	set.width = w
 	set.height = h
 	set.msaa = settings.msaa
@@ -342,8 +343,7 @@ function lib:prepare()
 	--reset stats
 	self.stats.vertices = 0
 	self.stats.shadersInUse = 0
-	self.stats.lightSetups = 0
-	self.stats.materialDraws = 0
+	self.stats.materialsUsed = 0
 	self.stats.draws = 0
 end
 

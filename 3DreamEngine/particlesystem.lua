@@ -14,8 +14,8 @@ local function loadParticles(self, particleSystems)
 		
 		--default values
 		ps.size = ps.size or {0.75, 1.25}
-		ps.rotation = ps.rotation or 1.0
-		ps.tilt = ps.tilt or 0.0
+		ps.rotation = ps.rotation or 0.0
+		ps.tilt = ps.tilt or 1.0
 		
 		ps.input = ps.input or { }
 		
@@ -187,13 +187,13 @@ function lib:addParticlesystems(obj)
 								
 								--optionally transform normal to match expected orientation
 								if o.transform then
-									n = o.transform:invert() * n
+									n = o.transform:subm():invert() * n
 								end
 								
 								--randomize normal
 								local normal
-								if ps.rotation > 10 then
-									normal = vec3(math.random(), math.random(), math.random()) * ps.rotation + vec3(-n.x, -n.z, n.y) * (1 - ps.rotation)
+								if ps.rotation > 0 then
+									normal = vec3(math.random(), math.random(), math.random()) * ps.rotation + vec3(n.x, n.y, n.z) * (1 - ps.rotation)
 								else
 									normal = vec3(n.x, n.y, n.z)
 								end

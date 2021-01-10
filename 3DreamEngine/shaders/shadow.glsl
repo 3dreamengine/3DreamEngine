@@ -25,6 +25,7 @@ extern bool mode;
 #ifdef PIXEL
 
 void effect() {
+#import modulesPixelPre
 	vec3 viewVec = normalize(viewPos - vertexPos);
 	
 #import modulesPixel
@@ -59,6 +60,8 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	
 	//extract and pass depth
 	depth = vPos.z;
+	
+#import modulesVertexPost
 	
 	return vPos;
 }

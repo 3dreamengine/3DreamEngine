@@ -66,8 +66,7 @@ function job:execute(times, delta, light, pos)
 		t[1][12] = t[4]:dot(pos)
 		
 		local shadowCam = lib:newCam(t[1], lib.cubeMapProjection, pos, lib.lookNormals[face])
-		local scene = lib:buildScene(shadowCam, lib.shadowSet, "shadows", light.blacklist, dynamic)
-		lib:renderShadows(scene, shadowCam, {{light.shadow.canvas, face = face}}, false, dynamic)
+		lib:renderShadows(shadowCam, {{light.shadow.canvas, face = face}}, light.blacklist, dynamic)
 	end
 	
 	light.shadow.done[1] = true

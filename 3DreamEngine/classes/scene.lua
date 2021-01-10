@@ -24,17 +24,11 @@ return {
 	clear = function(self)
 		--static tasks
 		self.tasks = {
-			{ --static
-				all = { },
-				render = { },
-				shadows = { },
-				reflections = { },
+			render = {
+				{}, {}, {}, {},
 			},
-			{ --dynamic
-				all = { },
-				render = { },
-				shadows = { },
-				reflections = { },
+			shadows = {
+				{}, {}, {}, {},
 			},
 		}
 		
@@ -81,35 +75,55 @@ return {
 	
 	add = function(self, s, transform, col, dynamic)
 		if not self.instances[s] then
-			local tasks = { }
-			self.instances[s] = tasks
-			
-			--material shadow override
-			local noShadow = s.material.shadow == false
-			
 			--insert into respective rendering queues
 			local visibility = s.visibility or s.obj.visibility
-			local dyn = (dynamic or s.dynamic) and 2 or 1
-			if visibility then
-				if visibility.render then
-					self.tasks[dyn].render[s] = tasks
-				end
-				if visibility.shadows and not noShadow then
-					self.tasks[dyn].shadows[s] = tasks
-				end
-				if visibility.reflections then
-					self.tasks[dyn].reflections[s] = tasks
-				end
-			elseif noShadow then
-				self.tasks[dyn].render[s] = tasks
-				self.tasks[dyn].reflections[s] = tasks
-			else
-				self.tasks[dyn].all[s] = tasks
+			local dyn = (dynamic or s.dynamic) and 2 or 0
+			local alpha = s.material.alpha
+			local id = dyn + (alpha and 2 or 1)
+			
+			local i = { }
+			self.instances[s] = i
+			
+			--render pass
+			if not visibility or visibility.render then
+				i.render = self:addTo(self.tasks.render[id], s, pass, false)
+			end
+			
+			if not alpha and (not visibility or visibility.shadows) and s.material.shadow ~= false then
+				i.shadows = self:addTo(self.tasks.shadows[id], s, pass, true)
 			end
 		end
 		
 		--create and insert task
-		local task = setmetatable({col or white, transform, false, false, s.obj.boneTransforms}, lib.meta.task)
-		table.insert(self.instances[s], task)
+		local task = setmetatable({col or white, transform, false, false}, lib.meta.task)
+		for d,s in pairs(self.instances[s]) do
+			table.insert(s[1], task)
+		end
 	end,
+	
+	addTo = function(self, t, s, pass, shadow)
+		local shaderID = lib:getRenderShaderID(s, pass, shadow)
+		local mat = s.material
+		
+		--create lists
+		if not t[shaderID] then
+			t[shaderID] = { }
+		end
+		if not t[shaderID][mat] then
+			t[shaderID][mat] = { }
+		end
+		
+		--task batch
+		local batchID = #t[shaderID][mat] + 1
+		local batch = setmetatable({
+			{ },
+			s,
+			shaderID,
+			mat,
+			batchID,
+			s.obj.boneTransforms,
+		}, lib.meta.batch)
+		t[shaderID][mat][batchID] = batch
+		return batch
+	end
 }

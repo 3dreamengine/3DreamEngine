@@ -41,7 +41,7 @@ function job:execute(times, delta, light, pos, cascade)
 	end
 	
 	local shadowCam = light.shadow.cams[cascade]
-	if not shadowCam or (lib.lastUsedCam.pos - shadowCam.pos):lengthSquared() > 1 then
+	if not shadowCam or (lib.lastUsedCam.pos - shadowCam.pos):lengthSquared() > 1 or (pos - shadowCam.normal):lengthSquared() > 0 then
 		--render
 		local r = lib.shadow_distance / 2 * (lib.shadow_factor ^ (cascade-1))
 		local l = -r
@@ -88,30 +88,18 @@ function job:execute(times, delta, light, pos, cascade)
 		end
 	end
 	
-	--only load scene for first canvas assuming nothing has changed in the meanwhile (TODO: possible instable, requires further inspection)
-	if not light.scene then
-		light.scene = lib:buildScene(shadowCam, lib.shadowSet, "shadows", light.blacklist, shadowCam.dynamic)
-		if shadowCam.dynamic ~= nil then
-			light.sceneDyn = lib:buildScene(shadowCam, lib.shadowSet, "shadows", light.blacklist, true, true)
-		end
-	end
-	
 	local canvases = {light.shadow.canvases[cascade]}
 	
 	--render
-	lib:renderShadows(shadowCam.dynamic and light.sceneDyn or light.scene, shadowCam, canvases, false, shadowCam.dynamic, true)
+	lib:renderShadows(shadowCam, canvases, light.blacklist, shadowCam.dynamic, true)
 	
 	--also render dyn if static only is rendered to keep up with transformation
 	if shadowCam.dynamic == false then
-		lib:renderShadows(light.sceneDyn, shadowCam, canvases, false, true)
+		lib:renderShadows(shadowCam, canvases, false, true)
 	end
 	
 	if light.shadow.static == "dynamic" then
 		shadowCam.dynamic = true
-	end
-	if cascade == 3 then
-		light.scene = nil
-		light.sceneDyn = nil
 	end
 end
 

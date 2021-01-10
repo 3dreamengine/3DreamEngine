@@ -2,7 +2,7 @@ local sh = { }
 
 sh.type = "module"
 
-sh.shadow = true
+sh.shadow = false
 
 function sh:init(dream)
 	self.fadeDistance = 10

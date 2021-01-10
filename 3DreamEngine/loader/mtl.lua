@@ -24,7 +24,6 @@ return function(self, obj, path)
 			material.color[4] = tonumber(v[2])
 			if material.color[4] < 1 then
 				material.alpha = true
-				material.solid = false
 			end
 		elseif v[1] == "Tr" then
 			material.color[4] = 1.0 - tonumber(v[2])
