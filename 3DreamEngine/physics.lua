@@ -46,6 +46,7 @@ local worldMeta = {
 			c.body = love.physics.newBody(self.world, x or 0, z or 0, bodyType or "static")
 			c.body:setUserData(c)
 			c.body:setLinearDamping(10)
+			c.body:setActive(true)
 			
 			for index,shape in ipairs(shape.objects) do
 				love.physics.newFixture(c.body, shape):setUserData(index)
@@ -190,9 +191,10 @@ local function attemptSolve(a, b)
 	local l = colliderB.y + math.max(lowest[1] * w1 + lowest[2] * w2 + lowest[3] * w3, low)
 	
 	--mark top and bottom
+	local stepSize = 0.5
 	if h + l > colliderA.y*2 + colliderA.height then
 		local diff = colliderA.y + colliderA.height - l
-		if diff > 0 and diff < 0.3 then
+		if diff > 0 and diff < stepSize then
 			colliderA.newY = math.min(colliderA.newY or colliderA.y, l - colliderA.height)
 		elseif diff > 0 then
 			return true
@@ -202,7 +204,7 @@ local function attemptSolve(a, b)
 		colliderA.topY = math.min(colliderA.topY or l, l)
 	else
 		local diff = h - colliderA.y
-		if diff > 0 and diff < 0.3 then
+		if diff > 0 and diff < stepSize then
 			colliderA.newY = math.max(colliderA.newY or colliderA.y, h)
 			
 			local n = colliderB.normals[index]

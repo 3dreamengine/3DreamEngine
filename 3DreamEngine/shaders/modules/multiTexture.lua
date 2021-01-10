@@ -36,7 +36,7 @@ function sh:constructPixel(dream, mat)
 	return [[
 	float mask = Texel(tex_mask, VaryingTexCoord2.xy).r;
 	float blend = Texel(tex_blend, VaryingTexCoord2.xy * 64.0).r;
-	mask = clamp((mask*1.25-0.125 - blend) * 16.0, 0.0, 1.0);
+	mask = clamp((mask*3.0 - 1.0 + blend), 0.0, 1.0);
 	
 	vec2 uv2 = VaryingTexCoord.xy * uv2Scale;
 	

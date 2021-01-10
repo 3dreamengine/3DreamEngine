@@ -5,6 +5,11 @@ physicsFunctions.lua - contains physics library relevant functions
 
 local lib = _3DreamEngine
 
+local interpolate = false
+function lib:interpolatePhysicsVertices(i)
+	interpolate = i
+end
+
 --receives an array of faces defined by three indices and an array with vertices and returns an array of connected subsets and an array of subset vertices indices
 --connected sets are defined by a single shared vertex, recognized by its reference
 function lib:groupVertices(faces, vertices)
@@ -183,7 +188,7 @@ function lib:getPhysicsObject(phy)
 				end
 				
 				--no real opposite vertex found, interpolate and retriangulate opposite face
-				if math.abs(opposite[d] - s.y) == 0 then
+				if interpolate and math.abs(opposite[d] - s.y) == 0 then
 					lib.deltonLoad:start("interpolate")
 					local g = phy.groups[group]
 					for faceID, face in ipairs(g) do
