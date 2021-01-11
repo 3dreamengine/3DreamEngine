@@ -446,7 +446,7 @@ function lib:render(canvases, cam, reflections)
 end
 
 --only renders a depth variant
-function lib:renderShadows(cam, canvas, blacklist, dynamic, stencil)
+function lib:renderShadows(cam, canvas, blacklist, dynamic)
 	self.delton:start("renderShadows")
 	
 	love.graphics.push("all")
@@ -462,11 +462,7 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, stencil)
 	else
 		love.graphics.setColorMask(true, false, false, false)
 	end
-	love.graphics.clear(255, 255, 255, 255, false, true)
-	
-	if stencil then
-		--love.graphics.setStencilTest("equal", 1)
-	end
+	love.graphics.clear(255, 255, 255, 255)
 	
 	--love shader friendly
 	local viewPos = {cam.pos:unpack()}

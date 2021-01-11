@@ -1,5 +1,5 @@
 return {
-	alpha = true,
+	discard = true,
 	shadow = false,
 	extra = 0.0,
 	cullMode = "none",
