@@ -27,11 +27,12 @@ function job:execute(times, delta, light, cascade)
 	end
 	
 	local dynamic = light.shadow.static == "dynamic"
-	local stepSize = 1 * 2.3 ^ (cascade-1)
-	local pos = vec3(light.x, light.y, light.z):normalize()
+	local stepSize = light.shadow.refreshStepSize * 2.3 ^ (cascade-1)
+	local normal = vec3(light.x, light.y, light.z):normalize()
+	local pos = light.shadow.target and light.shadow.target:clone() or lib.lastUsedCam.pos
 	
 	local shadowCam = light.shadow.cams[cascade]
-	if not shadowCam or (lib.lastUsedCam.pos - shadowCam.pos):lengthSquared() > stepSize or (pos - shadowCam.normal):lengthSquared() > 0 then
+	if not shadowCam or (pos - shadowCam.pos):lengthSquared() > stepSize or (normal - shadowCam.normal):lengthSquared() > 0 then
 		--create shadow camera
 		if not shadowCam then
 			light.shadow.cams[cascade] = lib:newCam()
@@ -45,8 +46,8 @@ function job:execute(times, delta, light, cascade)
 		local f = 100
 		
 		--camera orientation
-		shadowCam.pos = lib.lastUsedCam.pos
-		shadowCam.normal = pos
+		shadowCam.pos = pos
+		shadowCam.normal = normal
 		shadowCam.transform = lib:lookAt(shadowCam.pos + shadowCam.normal * (f * 0.5), shadowCam.pos, vec3(0.0, 1.0, 0.0))
 		shadowCam.dynamic = false
 		

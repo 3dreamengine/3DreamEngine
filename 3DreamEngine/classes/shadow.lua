@@ -1,6 +1,10 @@
 local lib = _3DreamEngine
 
 function lib:newShadow(typ, static, res)
+	if static == nil then
+		static = "dynamic"
+	end
+	
 	if typ == "point" then
 		res = res or self.shadow_cube_resolution
 	else
@@ -14,6 +18,8 @@ function lib:newShadow(typ, static, res)
 		done = { },
 		priority = 1.0,
 		lastUpdate = 0,
+		target = false,
+		refreshStepSize = 1.0,
 	}, self.meta.shadow)
 end
 
@@ -38,14 +44,26 @@ end
 return {
 	link = {"shadow"},
 	
+	setterGetter = {
+		refreshStepSize = "number",
+	},
+	
 	refresh = function(self)
 		self.done = { }
 	end,
 	
 	setStatic = function(self, static)
+		assert(static == true or static == false or static == "dynamic", "static has to be true, false or 'dynamic'")
 		self.static = static
 	end,
 	getStatic = function(self)
 		return self.static
 	end,
+	
+	setTarget = function(self, target)
+		self.target = target
+	end,
+	getTarget = function(self)
+		return self.target
+	end
 }
