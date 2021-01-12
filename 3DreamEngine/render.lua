@@ -12,6 +12,11 @@ lib.stats = {
 	draws = 0,
 }
 
+--sorting function for the alpha pass
+local function sortFunction(a, b)
+	return a:getDistance() > b:getDistance()
+end
+
 function lib:buildScene(typ, dynamic, alpha, cam, blacklist, frustumCheck)
 	self.delton:start("scene")
 	local IDs = {
@@ -19,37 +24,62 @@ function lib:buildScene(typ, dynamic, alpha, cam, blacklist, frustumCheck)
 		[(dynamic ~= false and 2 or 0) + (alpha and 2 or 1)] = true,
 	}
 	
-	local scene = { }
+	--preprocess scenes to group together shader
+	local t = love.timer.getTime()
+	local groups = { }
 	for sc, _ in pairs(self.scenes) do
 		for ID, _ in pairs(IDs) do
 			for shaderID, shaderGroup in pairs(sc.tasks[typ][ID]) do
 				for materialID, materialGroup in pairs(shaderGroup) do
-					for _, task in pairs(materialGroup) do
-						local subObj = task:getSubObj()
-						local obj = subObj.obj
-						if not blacklist or not (blacklist[obj] or blacklist[subObj]) then
-							if subObj.loaded and subObj.mesh then
-								if not frustumCheck or self:planeInFrustum(cam, task:getPos(subObj), task:getSize(subObj), subObj.rID) then
-									task:setShaderID(shaderID)
-									scene[#scene+1] = task
-								end
-							else
-								subObj:request()
+					if not groups[shaderID] then
+						groups[shaderID] = { }
+					end
+					if groups[shaderID][materialID] then
+						table.insert(groups[shaderID][materialID], materialGroup)
+					else
+						groups[shaderID][materialID] = {materialGroup}
+					end
+				end
+			end
+		end
+	end
+	
+	--build sorted scene list
+	local scene = { }
+	for shaderID, shaderGroup in pairs(groups) do
+		for materialID, materialGroups in pairs(shaderGroup) do
+			for _, materialGroup in ipairs(materialGroups) do
+				for _, task in pairs(materialGroup) do
+					local subObj = task:getSubObj()
+					local obj = subObj.obj
+					if not blacklist or not (blacklist[obj] or blacklist[subObj]) then
+						if subObj.loaded and subObj.mesh then
+							if not frustumCheck or self:planeInFrustum(cam, task:getPos(), task:getSize(), subObj.rID) then
+								task:setShaderID(shaderID)
+								scene[#scene+1] = task
 							end
+						else
+							subObj:request()
 						end
 					end
 				end
 			end
 		end
 	end
+	
+	--sort tables for materials requiring sorting
+	if alpha then
+		self.delton:start("sort")
+		for d,task in ipairs(scene) do
+			local dist = (task:getPos() - cam.pos):lengthSquared()
+			task:setDistance(dist)
+		end
+		table.sort(scene, sortFunction)
+		self.delton:stop()
+	end
+	
 	self.delton:stop()
 	return scene
-end
-
---sorting function for the alpha pass
-local sortPosition = vec3(0, 0, 0)
-local function sortFunction(a, b)
-	return (a.pos - sortPosition):lengthSquared() > (b.pos - sortPosition):lengthSquared()
 end
 
 --sends fog relevant data to the given shader
@@ -311,8 +341,8 @@ function lib:render(canvases, cam, reflections)
 	love.graphics.setColor(1.0, 1.0, 1.0)
 	
 	--particles on the alpha pass
+	if dynamic ~= false then
 	self.delton:start("particles")
-	local light = self:getLightOverview(cam)
 	for e = 1, 2 do
 		local emissive = e == 1
 		

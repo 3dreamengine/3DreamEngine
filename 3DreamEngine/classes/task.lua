@@ -11,9 +11,9 @@ return {
 		return self[2] or identityMatrix
 	end,
 	
-	getPos = function(self, subObj)
+	getPos = function(self)
 		if not self[3] then
-			local bb = subObj.boundingBox
+			local bb = self[5].boundingBox
 			local transform = self[2]
 			if transform then
 				--mat4 * vec4(vec3, 1) multiplication, for performance reasons hardcoded
@@ -28,7 +28,7 @@ return {
 		return self[3]
 	end,
 	
-	getSize = function(self, subObj)
+	getSize = function(self)
 		if not self[4] then
 			local m = self[2]
 			local scale = m and math.max(
@@ -37,7 +37,7 @@ return {
 				(m[3]^2 + m[7]^2 + m[11]^2)
 			) or 1
 			
-			self[4] = math.sqrt(3 * subObj.boundingBox.size^2 * scale)
+			self[4] = math.sqrt(3 * self[5].boundingBox.size^2 * scale)
 		end
 		return self[4]
 	end,
@@ -56,5 +56,13 @@ return {
 	
 	getBoneTransforms = function(self)
 		return self[7]
+	end,
+	
+	getDistance = function(self)
+		return self[8]
+	end,
+	
+	setDistance = function(self, d)
+		self[8] = d
 	end,
 }

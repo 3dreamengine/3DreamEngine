@@ -102,17 +102,17 @@ return {
 	
 	addTo = function(self, task, t, s, pass, shadow)
 		local shaderID = lib:getRenderShaderID(s, pass, shadow)
-		local mat = s.material
+		local materialID = s.material
 		
 		--create lists
 		if not t[shaderID] then
 			t[shaderID] = { }
 		end
-		if not t[shaderID][mat] then
-			t[shaderID][mat] = { }
+		if not t[shaderID][materialID] then
+			t[shaderID][materialID] = { }
 		end
 		
 		--task batch
-		table.insert(t[shaderID][mat], task)
+		table.insert(t[shaderID][materialID], task)
 	end
 }
