@@ -3,6 +3,10 @@ local identityMatrix = mat4:getIdentity()
 return {
 	link = {"task"},
 	
+	getColor = function(self)
+		return self[1]
+	end,
+	
 	getTransform = function(self)
 		return self[2] or identityMatrix
 	end,
@@ -24,10 +28,6 @@ return {
 		return self[3]
 	end,
 	
-	getColor = function(self)
-		return self[1]
-	end,
-	
 	getSize = function(self, subObj)
 		if not self[4] then
 			local m = self[2]
@@ -40,5 +40,21 @@ return {
 			self[4] = math.sqrt(3 * subObj.boundingBox.size^2 * scale)
 		end
 		return self[4]
+	end,
+	
+	getSubObj = function(self)
+		return self[5]
+	end,
+	
+	setShaderID = function(self, sh)
+		self[6] = sh
+	end,
+	
+	getShaderID = function(self)
+		return self[6]
+	end,
+	
+	getBoneTransforms = function(self)
+		return self[7]
 	end,
 }

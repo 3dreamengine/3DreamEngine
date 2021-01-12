@@ -31,8 +31,6 @@ return {
 				{}, {}, {}, {},
 			},
 		}
-		
-		self.instances = { }
 	end,
 	
 	addObject = function(self, object, parentTransform, col, dynamic)
@@ -74,34 +72,35 @@ return {
 	end,
 	
 	add = function(self, s, transform, col, dynamic)
-		if not self.instances[s] then
-			--insert into respective rendering queues
-			local visibility = s.visibility or s.obj.visibility
-			local dyn = (dynamic or s.dynamic) and 2 or 0
-			local alpha = s.material.alpha
-			local id = dyn + (alpha and 2 or 1)
-			
-			local i = { }
-			self.instances[s] = i
-			
-			--render pass
-			if not visibility or visibility.render then
-				i.render = self:addTo(self.tasks.render[id], s, pass, false)
-			end
-			
-			if not alpha and (not visibility or visibility.shadows) and s.material.shadow ~= false then
-				i.shadows = self:addTo(self.tasks.shadows[id], s, pass, true)
-			end
+		local task = setmetatable({
+			col or white,
+			transform,
+			false,
+			false,
+			s,
+			false,
+			s.obj.boneTransforms,
+		}, lib.meta.task)
+		
+		s.rID = s.rID or math.random()
+		
+		--insert into respective rendering queues
+		local visibility = s.visibility or s.obj.visibility
+		local dyn = (dynamic or s.dynamic) and 2 or 0
+		local alpha = s.material.alpha
+		local id = dyn + (alpha and 2 or 1)
+		
+		--render pass
+		if not visibility or visibility.render then
+			self:addTo(task, self.tasks.render[id], s, pass, false)
 		end
 		
-		--create and insert task
-		local task = setmetatable({col or white, transform, false, false}, lib.meta.task)
-		for d,s in pairs(self.instances[s]) do
-			table.insert(s[1], task)
+		if not alpha and (not visibility or visibility.shadows) and s.material.shadow ~= false then
+			self:addTo(task, self.tasks.shadows[id], s, pass, true)
 		end
 	end,
 	
-	addTo = function(self, t, s, pass, shadow)
+	addTo = function(self, task, t, s, pass, shadow)
 		local shaderID = lib:getRenderShaderID(s, pass, shadow)
 		local mat = s.material
 		
@@ -114,16 +113,6 @@ return {
 		end
 		
 		--task batch
-		local batchID = #t[shaderID][mat] + 1
-		local batch = setmetatable({
-			{ },
-			s,
-			shaderID,
-			mat,
-			batchID,
-			s.obj.boneTransforms,
-		}, lib.meta.batch)
-		t[shaderID][mat][batchID] = batch
-		return batch
+		table.insert(t[shaderID][mat], task)
 	end
 }

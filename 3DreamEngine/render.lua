@@ -18,32 +18,20 @@ function lib:buildScene(typ, dynamic, alpha, cam, blacklist, frustumCheck)
 		[(dynamic ~= true and 0 or 2) + (alpha and 2 or 1)] = true,
 		[(dynamic ~= false and 2 or 0) + (alpha and 2 or 1)] = true,
 	}
+	
 	local scene = { }
 	for sc, _ in pairs(self.scenes) do
 		for ID, _ in pairs(IDs) do
 			for shaderID, shaderGroup in pairs(sc.tasks[typ][ID]) do
 				for materialID, materialGroup in pairs(shaderGroup) do
-					for batchID, batch in pairs(materialGroup) do
-						local subObj = batch:getSubObj()
+					for _, task in pairs(materialGroup) do
+						local subObj = task:getSubObj()
 						local obj = subObj.obj
 						if not blacklist or not (blacklist[obj] or blacklist[subObj]) then
 							if subObj.loaded and subObj.mesh then
-								--check which individual tasks are visible
-								local valids
-								if frustumCheck and subObj.boundingBox.initialized then
-									subObj.rID = subObj.rID or math.random()
-									valids = { }
-									for _, task in ipairs(batch:getTasks()) do
-										if self:planeInFrustum(cam, task:getPos(subObj), task:getSize(subObj), subObj.rID) then
-											valids[#valids+1] = task
-										end
-									end
-								else
-									valids = batch:getTasks()
-								end
-								
-								if valids[1] then
-									scene[#scene+1] = {shaderID, batch, valids}
+								if not frustumCheck or self:planeInFrustum(cam, task:getPos(subObj), task:getSize(subObj), subObj.rID) then
+									task:setShaderID(shaderID)
+									scene[#scene+1] = task
 								end
 							else
 								subObj:request()
@@ -166,20 +154,19 @@ function lib:render(canvases, cam, reflections)
 		
 		--start rendering
 		self.delton:start("render")
-		for d,s in ipairs(scene) do
-			local shaderID, batch, valids = unpack(s)
-			local subObj = batch:getSubObj()
+		for d,task in ipairs(scene) do
+			local subObj = task:getSubObj()
+			local shaderID = task:getShaderID()
 			local obj = subObj.obj
 			
 			--reflections
 			if not reflections then
-				local reflection = subObj.reflection or obj.reflection
-				if reflection and reflection.canvas then
-					local task = valids[1]
-					self.reflections[reflection] = {
+				local ref = subObj.reflection or obj.reflection
+				if ref and ref.canvas then
+					self.reflections[ref] = {
 						dist = (task:getPos(subObj) - cam.pos):length(),
 						obj = subObj.reflection and subObj or obj,
-						pos = reflection.pos or task:getPos(subObj),
+						pos = ref.pos or task:getPos(subObj),
 					}
 				end
 			end
@@ -191,7 +178,7 @@ function lib:render(canvases, cam, reflections)
 				lastReflection = false
 				self.delton:start("shader")
 				
-				shaderObject = self:getRenderShader(shaderID, subObj, pass, canvases, light, false, valids[2] and true or false)
+				shaderObject = self:getRenderShader(shaderID, subObj, pass, canvases, light, false, false)
 				shaderEntry = self.shaderLibrary.base[shaderObject.shaderType]
 				shader = shaderObject.shader
 				love.graphics.setShader(shader)
@@ -301,41 +288,18 @@ function lib:render(canvases, cam, reflections)
 				end
 			end
 			
-			--render
-			if shaderObject.instances then
-				love.graphics.setColor(valids[1]:getColor())
-				
-				for batch = 0, math.ceil(#valids / self.instanceBatchSize)-1 do
-					--object transformation
-					local transforms = { }
-					for i = 1, self.instanceBatchSize do
-						local i2 = i + batch * self.instanceBatchSize
-						if valids[i2] then
-							transforms[i] = valids[i2]:getTransform()
-						else
-							break
-						end
-					end
-					
-					shader:send("transforms", unpack(transforms))
-					love.graphics.drawInstanced(subObj.mesh, #transforms)
-				end
-			else
-				local task = valids[1]
-				
-				--object transformation
-				shader:send("transform", task:getTransform())
-				
-				--shader
-				shaderEntry:perTask(self, shaderObject, task, batch)
-				for d,s in pairs(shaderObject.modules) do
-					s:perTask(self, shaderObject, subObj, task, batch)
-				end
-				
-				--render
-				love.graphics.setColor(task:getColor())
-				love.graphics.draw(subObj.mesh)
+			--object transformation
+			shader:send("transform", task:getTransform())
+			
+			--shader
+			shaderEntry:perTask(self, shaderObject, task, task)
+			for d,s in pairs(shaderObject.modules) do
+				s:perTask(self, shaderObject, subObj, task, task)
 			end
+			
+			--render
+			love.graphics.setColor(task:getColor())
+			love.graphics.draw(subObj.mesh)
 			
 			--stats
 			self.stats.draws = self.stats.draws + 1
@@ -484,9 +448,9 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic)
 	local scene = self:buildScene("shadows", dynamic, false, cam, blacklist, frustumCheck)
 	
 	--start rendering
-	for d,s in ipairs(scene) do
-		local shaderID, batch, valids = unpack(s)
-		local subObj = batch:getSubObj()
+	for d,task in ipairs(scene) do
+		local subObj = task:getSubObj()
+		local shaderID = task:getShaderID()
 		local obj = subObj.obj
 		
 		--set active shader
@@ -495,7 +459,7 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic)
 			lastMaterial = false
 			lastReflection = false
 			
-			shaderObject = self:getRenderShader(shaderID, subObj, pass, { }, nil, true, valids[2] and true or false)
+			shaderObject = self:getRenderShader(shaderID, subObj, pass, { }, nil, true, false)
 			shaderEntry = self.shaderLibrary.base[shaderObject.shaderType]
 			shader = shaderObject.shader
 			love.graphics.setShader(shader)
@@ -516,41 +480,18 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic)
 			--TODO alpha texture
 		end
 		
-		--render
-		if shaderObject.instances then
-			love.graphics.setColor(valids[1]:getColor())
-			
-			for batch = 0, math.ceil(#valids / self.instanceBatchSize)-1 do
-				--object transformation
-				local transforms = { }
-				for i = 1, self.instanceBatchSize do
-					local i2 = i + batch * self.instanceBatchSize
-					if valids[i2] then
-						transforms[i] = valids[i2]:getTransform()
-					else
-						break
-					end
-				end
-				
-				shader:send("transforms", unpack(transforms))
-				love.graphics.drawInstanced(subObj.mesh, #transforms)
-			end
-		else
-			local task = valids[1]
-			
-			--object transformation
-			shader:send("transform", task:getTransform())
-			
-			--shader
-			shaderEntry:perTask(self, shaderObject, task, batch)
-			for d,s in pairs(shaderObject.modules) do
-				s:perTask(self, shaderObject, subObj, task, batch)
-			end
-			
-			--render
-			love.graphics.setColor(task:getColor())
-			love.graphics.draw(subObj.mesh)
+		--object transformation
+		shader:send("transform", task:getTransform())
+		
+		--shader
+		shaderEntry:perTask(self, shaderObject, task, task)
+		for d,s in pairs(shaderObject.modules) do
+			s:perTask(self, shaderObject, subObj, task, task)
 		end
+		
+		--render
+		love.graphics.setColor(task:getColor())
+		love.graphics.draw(subObj.mesh)
 	end
 	
 	love.graphics.pop()
