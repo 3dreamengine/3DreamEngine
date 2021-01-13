@@ -63,7 +63,16 @@ return function(self, obj, path)
 	
 	--recreate lights
 	for d,s in pairs(obj.lights) do
-		obj.lights[d] = table.merge(self:newLight(), s)
+		local l = self:newLight()
+		for d,s in pairs(s) do
+			local m = type(l[d]) == "table" and getmetatable(l[d])
+			if m then
+				l[d] = setmetatable(s, m)
+			else
+				l[d] = s
+			end
+		end
+		obj.lights[d] = l
 	end
 	
 	--recreate objects

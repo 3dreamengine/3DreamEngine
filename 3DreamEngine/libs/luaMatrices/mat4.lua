@@ -74,6 +74,22 @@ mat = {
 			0, 0, 0, 1,
 		})
 	end,
+	
+	getRotate = function(self, u, a)
+		local l = u.x
+		local m = u.y
+		local n = u.z
+		
+		local sin = math.sin(a)
+		local cos = math.cos(a)
+		
+		return mat3{
+			l * l * (1-cos) + cos, m * l * (1-cos) - n * sin, n * l * (1-cos) + m * sin, 0.0,
+			l * m * (1-cos) + n * sin, m * m * (1-cos) + cos, n * m * (1-cos) - l * sin, 0.0,
+			l * n * (1-cos) - m * sin, m * n * (1-cos) + l * sin, n * n * (1-cos) + cos, 0.0,
+			0.0, 0.0, 0.0, 1.0
+		}
+	end,
 
 	getRotateX = function(self, rx)
 		local c = math.cos(rx or 0)

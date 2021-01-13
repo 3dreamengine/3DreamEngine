@@ -144,6 +144,8 @@ function lib:addParticlesystems(obj)
 					end
 					local t = transforms[mat]
 					
+					local top = particle.transform and (particle.transform:subm():invert() * vec3(0, 1, 0)) or vec3(0, 1, 0)
+					
 					--per face
 					local particleDensity = particle.particleDensity / #ps.loadedObjects
 					for _,f in ipairs(o.faces) do
@@ -182,48 +184,30 @@ function lib:addParticlesystems(obj)
 							--interpolated per vertex density
 							if maxDensity == 1.0 or density:get(u, v, w) / maxDensity > math.random() then
 								--interpolated normal and position
-								local n = vec3(o.normals[f[1]]) * u + vec3(o.normals[f[1]]) * v + vec3(o.normals[f[1]]) * w
-								local p = v1 * u + vec3(v2) * v + vec3(v3) * w
-								
-								--optionally transform normal to match expected orientation
-								if o.transform then
-									n = o.transform:subm():invert() * n
-								end
+								local normal = vec3(o.normals[f[1]]) * u + vec3(o.normals[f[1]]) * v + vec3(o.normals[f[1]]) * w
 								
 								--randomize normal
-								local normal
 								if ps.rotation > 0 then
-									normal = vec3(math.random(), math.random(), math.random()) * ps.rotation + vec3(n.x, n.y, n.z) * (1 - ps.rotation)
-								else
-									normal = vec3(n.x, n.y, n.z)
+									normal = vec3(math.random()-0.5, math.random()-0.5, math.random()-0.5) * ps.rotation + normal * (1 - ps.rotation)
 								end
-								
-								--randomize front
-								local font
-								if ps.tilt > 0 then
-									local tangent = n:cross(vec3(1, 2, 3))
-									local bitangent = n:cross(tangent)
-									front = tangent * (math.random()-0.5) + bitangent * (math.random()-0.5) * ps.tilt + vec3(0, 0, -1) * (1 - ps.tilt)
-								else
-									front = vec3(0, 0, -1)
-								end
+								normal = normal:normalize()
 								
 								--scale
-								local esc = size:get(u, v, w)
-								local sc = math.random() * (ps.size[2] - ps.size[1]) + ps.size[1] * esc
+								local sc = (math.random() * (ps.size[2] - ps.size[1]) + ps.size[1]) * size:get(u, v, w)
 								
-								--custom mat3 lookup with scale
-								local zaxis = front:normalize()
-								local xaxis = zaxis:cross(normal):normalize()
-								local yaxis = xaxis:cross(zaxis)
+								--get transformation matrix to transform from particle to normal
+								local vec = top:cross(normal)
+								local angle = math.acos(top:dot(normal))
+								local dir = (vec:length() == 0 and normal:cross(vec3(1, 2, 3)) or vec):normalize()
+								local transform = mat3:getRotate(dir, angle) * sc
 								
-								local transform = mat3:getScale(sc, sc, sc) * mat3(
-									xaxis.x, xaxis.y, xaxis.z,
-									yaxis.x, yaxis.y, yaxis.z,
-									-zaxis.x, -zaxis.y, -zaxis.z
-								):invert()
+								--tilt
+								if ps.tilt > 0 then
+									transform = mat3:getRotate(normal, (math.random() - 0.5) * math.pi * 2) * transform
+								end
 								
 								--insert
+								local p = v1 * u + vec3(v2) * v + vec3(v3) * w
 								t.min = t.min:min(p)
 								t.max = t.max:max(p)
 								t.vertices = t.vertices + #particle.vertices
@@ -240,6 +224,10 @@ function lib:addParticlesystems(obj)
 				--for each material of the transforms
 				local matID = 0
 				for mat, transforms in pairs(transforms) do
+					local t = 0.0001
+					transforms.min = transforms.min - vec3(t, t, t)
+					transforms.max = transforms.max + vec3(t, t, t)
+					
 					--find best splitting layout
 					local target = 10000
 					local splits = vec3(1, 1, 1)
@@ -262,6 +250,7 @@ function lib:addParticlesystems(obj)
 						for y = transforms.min.y, transforms.max.y, delta.y do
 							for z = transforms.min.z, transforms.max.z, delta.z do
 								ID = ID + 1
+								
 								local pname = oName .. "_ps_" .. psID .. "_" .. matID .. "_" .. ID
 								local po = dream:newSubObject(o.name, obj, ps.loadedObjects[1].material)
 								obj.objects[pname] = po
@@ -269,10 +258,9 @@ function lib:addParticlesystems(obj)
 								po.tags.particle = true
 								po.LOD_center = true
 								po:setLOD(0, 1, true)
-								
 								for _, s in ipairs(transforms) do
 									local p = s.pos
-									if p.x > x and p.x < x + delta.x and p.y > y and p.y < y + delta.y and p.z > z and p.z < z + delta.z then
+									if p.x > x and p.x <= x + delta.x and p.y > y and p.y <= y + delta.y and p.z > z and p.z <= z + delta.z then
 										local transform = s.transform
 										local particle = s.particle
 										

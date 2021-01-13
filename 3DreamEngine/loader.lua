@@ -44,10 +44,7 @@ function lib:loadLibrary(path, shaderType, args, prefix)
 		end
 		
 		if master and master.transform then
-			local p = master.transform:invert() * vec3(s.x, s.y, s.z)
-			s.x = p.x
-			s.y = p.y
-			s.z = p.z
+			s.pos = master.transform:invert() * s.pos
 		end
 	end
 	
@@ -471,10 +468,7 @@ function lib:loadObject(path, shaderType, args)
 					local co = list == "objects" and self:newLinkedObject(no) or no.clone and no:clone() or clone(no)
 					
 					if list == "lights" or list == "positions" then
-						local p = link.transform * vec3(co.x, co.y, co.z)
-						co.x = p.x
-						co.y = p.y
-						co.z = p.z
+						co.pos = link.transform * co.pos
 					else
 						co.transform = link.transform
 					end
@@ -565,7 +559,7 @@ lib.meshTypeFormats = {
 
 --takes an final and face table and generates the mesh and vertexMap
 --note that .3do files has it's own mesh loader
-function lib.createMesh(self, o)
+function lib:createMesh(o)
 	--set up vertex map
 	local vertexMap = { }
 	for d,f in ipairs(o.faces) do
