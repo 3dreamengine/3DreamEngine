@@ -44,6 +44,10 @@ extern float gamma;
 extern float dataAlpha;
 extern float dither;
 
+//material
+extern float ior;
+extern float translucent;
+
 //reflection engine
 #import reflections
 
@@ -52,10 +56,6 @@ extern float dither;
 
 //uniforms required by the lighting
 #import lightingSystemInit
-
-//material
-extern float ior;
-extern float translucent;
 
 float whenLt(float x, float y) {
 	return max(sign(y - x), 0.0);

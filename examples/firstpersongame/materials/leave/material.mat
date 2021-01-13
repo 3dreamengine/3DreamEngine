@@ -1,5 +1,6 @@
 return {
 	discard = true,
+	translucent = 1.0,
 	shadow = false,
 	extra = 0.0,
 	cullMode = "none",

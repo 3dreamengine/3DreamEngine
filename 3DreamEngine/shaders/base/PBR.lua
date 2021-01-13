@@ -172,6 +172,13 @@ function sh:constructLightFunction(dream, mat)
 	}
 
 	vec3 getLight(vec3 lightColor, vec3 viewVec, vec3 lightVec, vec3 normal, vec3 albedo, float roughness, float metallic) {
+		#ifdef TRANSLUCENT_ENABLED
+			if (dot(normal, lightVec) < 0.0) {
+				lightVec = -lightVec;
+				lightColor *= translucent;
+			}
+		#endif
+		
 		//reflectance
 		vec3 F0 = mix(vec3(0.04), albedo, metallic);
 		

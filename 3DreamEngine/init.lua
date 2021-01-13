@@ -91,7 +91,6 @@ lib:setNameDecoder("^(.+)_([^_]+)$")
 lib:setFrustumCheck(true, false)
 lib:setLODDistance(20)
 lib:setDither(false)
-lib:setInstanceBatchSize(32)
 
 --shadows
 lib:setShadowResolution(1024, 512)

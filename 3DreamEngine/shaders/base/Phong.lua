@@ -122,6 +122,13 @@ function sh:constructLightFunction(dream, mat)
 	const float adaptToPBR = 0.25;
 
 	vec3 getLight(vec3 lightColor, vec3 viewVec, vec3 lightVec, vec3 normal, vec3 albedo, float specular, float glossiness) {
+		#ifdef TRANSLUCENT_ENABLED
+			if (dot(normal, lightVec) < 0.0) {
+				lightVec = -lightVec;
+				lightColor *= translucent;
+			}
+		#endif
+		
 		float lambertian = max(dot(lightVec, normal), 0.0);
 		float spec = 0.0;
 		

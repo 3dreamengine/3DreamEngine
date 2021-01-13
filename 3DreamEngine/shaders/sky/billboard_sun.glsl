@@ -6,7 +6,7 @@ extern Image MainTex;
 void effect() {
 	float brightness = 4.0 * clamp(height * 10.0, 0.0, 1.0);
 	love_Canvases[0] = Texel(MainTex, VaryingTexCoord.xy) * VaryingColor * vec4(brightness, brightness, brightness, 1.0);
-	love_Canvases[1] = vec4(65504.0, 0.0, 0.0, 1.0);
+	love_Canvases[1] = vec4(0.0, 0.0, 0.0, 0.0);
 }
 #endif
 

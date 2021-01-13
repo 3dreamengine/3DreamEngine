@@ -5,7 +5,6 @@ sh.type = "module"
 sh.shadow = false
 
 function sh:init(dream)
-	self.fadeDistance = 10
 	self.fadeWidth = 1
 end
 

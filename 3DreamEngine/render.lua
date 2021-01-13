@@ -342,99 +342,100 @@ function lib:render(canvases, cam, reflections)
 	
 	--particles on the alpha pass
 	if dynamic ~= false then
-	self.delton:start("particles")
-	for e = 1, 2 do
-		local emissive = e == 1
-		
-		--batches
-		if self.particleBatchesActive[emissive] then
-			local shaderObject = lib:getParticlesShader(canvases, light, emissive)
-			local shader = shaderObject.shader
-			love.graphics.setShader(shader)
+		self.delton:start("particles")
+		for e = 1, 2 do
+			local emissive = e == 1
 			
-			shader:send("transformProj", cam.transformProj)
-			if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", {cam.pos:unpack()}) end
-			if hasUniform(shaderObject, "gamma") then shader:send("gamma", self.gamma) end
-			if hasUniform(shaderObject, "exposure") then shader:send("exposure", self.exposure) end
-			
-			--light if using forward lighting
-			self:sendLightUniforms(light, shaderObject)
-			
-			--fog
-			if hasUniform(shaderObject, "fog_density") then
-				sendFogData(shader)
+			--batches
+			if self.particleBatchesActive[emissive] then
+				local shaderObject = lib:getParticlesShader(canvases, light, emissive)
+				local shader = shaderObject.shader
+				love.graphics.setShader(shader)
+				
+				shader:send("transformProj", cam.transformProj)
+				if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", {cam.pos:unpack()}) end
+				if hasUniform(shaderObject, "gamma") then shader:send("gamma", self.gamma) end
+				if hasUniform(shaderObject, "exposure") then shader:send("exposure", self.exposure) end
+				
+				--light if using forward lighting
+				self:sendLightUniforms(light, shaderObject)
+				
+				--fog
+				if hasUniform(shaderObject, "fog_density") then
+					sendFogData(shader)
+				end
+				
+				--render particle batches
+				for batch,_ in pairs(self.particleBatches) do
+					if (batch.emissionTexture and true or false) == emissive then
+						local v = 1.0 - batch.vertical
+						local right = vec3(cam.transform[1], cam.transform[2] * v, cam.transform[3]):normalize()
+						local up = vec3(cam.transform[5] * v, cam.transform[6], cam.transform[7] * v)
+						shader:send("up", {up:unpack()})
+						shader:send("right", {right:unpack()})
+						
+						--emission texture
+						if hasUniform(shaderObject, "tex_emission") then
+							shader:send("tex_emission", batch.emissionTexture)
+						end
+						
+						batch:present(cam.pos)
+					end
+				end
 			end
 			
-			--render particle batches
-			for batch,_ in pairs(self.particleBatches) do
-				if (batch.emissionTexture and true or false) == emissive then
-					local v = 1.0 - batch.vertical
+			--single particles on the alpha pass
+			local p = emissive and self.particlesEmissive or self.particles
+			if p[1] then
+				local shaderObject = lib:getParticlesShader(canvases, light, emissive, true)
+				local shader = shaderObject.shader
+				love.graphics.setShader(shader)
+				
+				shader:send("transformProj", cam.transformProj)
+				shader:send("dataAlpha", canvases.averageAlpha)
+				if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", {cam.pos:unpack()}) end
+				if hasUniform(shaderObject, "gamma") then shader:send("gamma", self.gamma) end
+				if hasUniform(shaderObject, "exposure") then shader:send("exposure", self.exposure) end
+				
+				--light if using forward lighting
+				self:sendLightUniforms(light, shaderObject)
+				
+				--fog
+				if hasUniform(shaderObject, "fog_density") then
+					sendFogData(shader)
+				end
+				
+				--render particles
+				for d,s in ipairs(p) do
+					local nr = #s - 6
+					local v = 1.0 - s[4 + nr]
 					local right = vec3(cam.transform[1], cam.transform[2] * v, cam.transform[3]):normalize()
 					local up = vec3(cam.transform[5] * v, cam.transform[6], cam.transform[7] * v)
+					
 					shader:send("up", {up:unpack()})
 					shader:send("right", {right:unpack()})
 					
+					--position, size and emission multiplier
+					shader:send("InstanceCenter", s[2 + nr])
+					shader:send("InstanceEmission", s[5 + nr])
+					
 					--emission texture
 					if hasUniform(shaderObject, "tex_emission") then
-						shader:send("tex_emission", batch.emissionTexture)
+						shader:send("tex_emission", s[2])
 					end
 					
-					batch:present(cam.pos)
+					--draw
+					love.graphics.setColor(s[3 + nr])
+					if s[1 + nr].getViewport then
+						love.graphics.draw(s[1], s[1 + nr], 0, 0, unpack(s[6 + nr]))
+					else
+						love.graphics.draw(s[1], 0, 0, unpack(s[6 + nr]))
+					end
 				end
 			end
 		end
-		
-		--single particles on the alpha pass
-		local p = emissive and self.particlesEmissive or self.particles
-		if p[1] then
-			local shaderObject = lib:getParticlesShader(canvases, light, emissive, true)
-			local shader = shaderObject.shader
-			love.graphics.setShader(shader)
-			
-			shader:send("transformProj", cam.transformProj)
-			shader:send("dataAlpha", canvases.averageAlpha)
-			if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", {cam.pos:unpack()}) end
-			if hasUniform(shaderObject, "gamma") then shader:send("gamma", self.gamma) end
-			if hasUniform(shaderObject, "exposure") then shader:send("exposure", self.exposure) end
-			
-			--light if using forward lighting
-			self:sendLightUniforms(light, shaderObject)
-			
-			--fog
-			if hasUniform(shaderObject, "fog_density") then
-				sendFogData(shader)
-			end
-			
-			--render particles
-			for d,s in ipairs(p) do
-				local nr = #s - 6
-				local v = 1.0 - s[4 + nr]
-				local right = vec3(cam.transform[1], cam.transform[2] * v, cam.transform[3]):normalize()
-				local up = vec3(cam.transform[5] * v, cam.transform[6], cam.transform[7] * v)
-				
-				shader:send("up", {up:unpack()})
-				shader:send("right", {right:unpack()})
-				
-				--position, size and emission multiplier
-				shader:send("InstanceCenter", s[2 + nr])
-				shader:send("InstanceEmission", s[5 + nr])
-				
-				--emission texture
-				if hasUniform(shaderObject, "tex_emission") then
-					shader:send("tex_emission", s[2])
-				end
-				
-				--draw
-				love.graphics.setColor(s[3 + nr])
-				if s[1 + nr].getViewport then
-					love.graphics.draw(s[1], s[1 + nr], 0, 0, unpack(s[6 + nr]))
-				else
-					love.graphics.draw(s[1], 0, 0, unpack(s[6 + nr]))
-				end
-			end
-		end
+		self.delton:stop()
 	end
-	self.delton:stop()
 	
 	love.graphics.pop()
 end

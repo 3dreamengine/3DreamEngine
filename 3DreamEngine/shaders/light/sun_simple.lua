@@ -24,11 +24,6 @@ end
 function sh:constructPixel(dream, ID)
 	return ([[
 		light += getLight(sun_simple_color_#ID#, viewVec, sun_simple_vec_#ID#, normal, albedo.rgb, material.x, material.y);
-		
-		//backface light
-		#ifdef TRANSLUCENT_ENABLED
-			light += getLight(sun_simple_color_#ID#, viewVec, sun_simple_vec_#ID#, reflect(normal, normalRaw), albedo.rgb, material.x, material.y) * translucent;
-		#endif
 	]]):gsub("#ID#", ID)
 end
 
