@@ -192,10 +192,10 @@ function sh:sendUniforms(dream, shaderObject, light, ID)
 			shader:send("ss_smooth_" .. ID, light.smooth)
 		end
 		
-		shader:send("ss_color_" .. ID,  {light.r * light.brightness, light.g * light.brightness, light.b * light.brightness})
+		shader:send("ss_color_" .. ID,  {(light.color * light.brightness):unpack()})
 		
 		if shader:hasUniform("ss_vec_" .. ID) then
-			shader:send("ss_vec_" .. ID, {vec3(light.x, light.y, light.z):normalize():unpack()})
+			shader:send("ss_vec_" .. ID, {light.direction:unpack()})
 		end
 	else
 		shader:send("ss_color_" .. ID, {0, 0, 0})

@@ -85,17 +85,17 @@ return {
 		s.rID = s.rID or math.random()
 		
 		--insert into respective rendering queues
-		local visibility = s.visibility or s.obj.visibility
-		local dyn = (dynamic or s.dynamic) and 2 or 0
+		local dyn = dynamic or s.dynamic
 		local alpha = s.material.alpha
-		local id = dyn + (alpha and 2 or 1)
+		local id = (dyn and 2 or 0) + (alpha and 2 or 1)
 		
 		--render pass
-		if not visibility or visibility.render then
+		if s.renderVisibility ~= false and s.obj.renderVisibility ~= false then
 			self:addTo(task, self.tasks.render[id], s, pass, false)
 		end
 		
-		if not alpha and (not visibility or visibility.shadows) and s.material.shadow ~= false then
+		--shadow pass
+		if not alpha and (s.shadowVisibility ~= false and s.obj.shadowVisibility ~= false) and s.material.shadow ~= false then
 			self:addTo(task, self.tasks.shadows[id], s, pass, true)
 		end
 	end,

@@ -101,7 +101,7 @@ return {
 			--header
 			print("  " .. name)
 			local width = 32
-			print("       # tags" .. string.rep(" ", width-4) .. "LOD     D S R  Vertexcount")
+			print("       # tags" .. string.rep(" ", width-4) .. "LOD     D S  Vertexcount")
 			
 			--group together similar objects
 			local found = { }
@@ -118,8 +118,7 @@ return {
 				local tags = table.concat(tags, ", "):sub(1, width)
 				local min, max = s:getLOD()
 				local lod = max and (min .. " - " .. max) or ""
-				local a, b, c = s:getVisibility()
-				local visibility = (a and "X" or " ") .. " " .. (b and "X" or " ") .. " " .. (c and "X" or " ")
+				local visibility = (s.renderVisibility ~= false and "X" or " ") .. " " .. (s.shadowVisibility ~= false and "X" or " ")
 				
 				local str = string.format("%s%s%s%s%s", tags, string.rep(" ", width - #tags), lod, string.rep(" ", 8 - #lod), visibility)
 				found[str] = found[str] or {0, 0}

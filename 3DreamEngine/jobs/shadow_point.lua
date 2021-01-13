@@ -11,12 +11,10 @@ function job:queue(times)
 	--shadows
 	for d,s in ipairs(lib.lighting) do
 		if s.shadow and s.active and s.shadow.typ == "point" then
-			local pos = vec3(s.x, s.y, s.z)
-			local dist = (pos - lib.lastUsedCam.pos):length() / 10.0 + 1.0
-			
+			local dist = (s.pos - lib.lastUsedCam.pos):length() / 10.0 + 1.0
 			if s.shadow.static ~= true or not s.shadow.done[1] then
 				local id = "shadow_point_" .. tostring(s.shadow)
-				lib:addOperation("shadow_point", s.shadow.priority / dist, id, s.frameSkip, s, pos)
+				lib:addOperation("shadow_point", s.shadow.priority / dist, id, s.frameSkip, s)
 			end
 		end
 	end
@@ -47,7 +45,7 @@ local transformations = {
 	{lookAt(lib.lookNormals[6], vec3(0, -1, 0))},
 }
 
-function job:execute(times, delta, light, pos)
+function job:execute(times, delta, light)
 	--create new canvases if necessary
 	if not light.shadow.canvas then
 		light.shadow.canvas = lib:newShadowCanvas("point", light.shadow.res, light.shadow.static == "dynamic")
@@ -61,11 +59,11 @@ function job:execute(times, delta, light, pos)
 		end
 		
 		local t = transformations[face]
-		t[1][4] = t[2]:dot(pos)
-		t[1][8] = t[3]:dot(pos)
-		t[1][12] = t[4]:dot(pos)
+		t[1][4] = t[2]:dot(light.pos)
+		t[1][8] = t[3]:dot(light.pos)
+		t[1][12] = t[4]:dot(light.pos)
 		
-		local shadowCam = lib:newCam(t[1], lib.cubeMapProjection, pos, lib.lookNormals[face])
+		local shadowCam = lib:newCam(t[1], lib.cubeMapProjection, light.pos, lib.lookNormals[face])
 		lib:renderShadows(shadowCam, {{light.shadow.canvas, face = face}}, light.blacklist, dynamic)
 	end
 	

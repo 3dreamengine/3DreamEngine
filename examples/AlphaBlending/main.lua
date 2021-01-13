@@ -20,7 +20,7 @@ scene = dream:loadObject(projectDir .. "scene", "PBR")
 --light
 local p = scene.positions[1]
 local light = dream:newLight("point", p.x, p.y, p.z, 1.4, 1.2, 1.0, 20.0)
-light:addShadow()
+light:addShadow(true)
 light:setSmoothing(true)
 light.blacklist = {[scene.objects.chandelier_glass_None] = true, [scene.objects.chandelier_WhiteGlass] = true}
 

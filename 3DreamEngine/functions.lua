@@ -9,15 +9,9 @@ function lib:resetLight(noDayLight)
 	self.lighting = { }
 	
 	if not noDayLight then
-		local l = self.sun:normalize()
-		local c = self.sun_color
-		
-		self.sunObject.x = l[1]
-		self.sunObject.y = l[2]
-		self.sunObject.z = l[3]
-		self.sunObject.r = c[1]
-		self.sunObject.g = c[2]
-		self.sunObject.b = c[3]
+		self.sunObject.pos = self.cam.pos
+		self.sunObject.direction = self.sun:normalize()
+		self.sunObject.color = self.sun_color
 		
 		self:addLight(self.sunObject)
 	end

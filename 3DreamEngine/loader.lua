@@ -330,14 +330,14 @@ function lib:loadObject(path, shaderType, args)
 	for d,o in pairs(obj.objects) do
 		if o.tags.shadow then
 			if o.tags.shadow == "false" then
-				o:setVisibility(true, false, true)
+				o:setShadowVisibility(false)
 			else
-				o:setVisibility(false, true, false)
+				o:setRenderVisibility(false)
 				
 				--hide rest of group in shadow pass
 				for d2,o2 in pairs(obj.objects) do
 					if o2.name == o.name and not o.tags.shadow then
-						o:setVisibility(true, false, true)
+						o:setShadowVisibility(false)
 					end
 				end
 			end
@@ -346,10 +346,10 @@ function lib:loadObject(path, shaderType, args)
 	
 	
 	--LOD detection
-	for _,typ in ipairs({"render", "shadows", "reflections"}) do
+	for _,typ in ipairs({"renderVisibility", "shadowVisibility"}) do
 		local max = { }
 		for d,o in pairs(obj.objects) do
-			if (not o.visibility or o.visibility[typ]) and o.tags.lod then
+			if o[typ] ~= false and o.tags.lod then
 				local nr = tonumber(o.tags.lod)
 				assert(nr, "LOD nr malformed: " .. o.name .. " (use 'LOD:integer')")
 				max[o.name] = math.max(max[o.name] or 0, nr)
@@ -358,7 +358,7 @@ function lib:loadObject(path, shaderType, args)
 		
 		--apply LOD level
 		for d,o in pairs(obj.objects) do
-			if (not o.visibility or o.visibility[typ]) and max[o.name] then
+			if o[typ] ~= false and max[o.name] then
 				local nr = tonumber(o.tags.lod) or 0
 				o:setLOD(nr, max[o.name] == nr and math.huge or nr+1)
 			end

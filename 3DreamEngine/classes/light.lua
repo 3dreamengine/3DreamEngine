@@ -5,21 +5,22 @@ local function removePostfix(t)
 	return v or t
 end
 
-function lib:newLight(typ, posX, posY, posZ, r, g, b, brightness)
-	r = r or 1.0
-	g = g or 1.0
-	b = b or 1.0
-	local v = math.sqrt(r^2 + g^2 + b^2)
+local convertOldLight = function(x, y, z, r, g, b, brightness)
+	return vec3(x or 0, y or 0, z or 0), vec3(r or 1, g or 1, b or 1), brightness or 1
+end
+
+--backwards compatibility
+function lib:newLight(typ, pos, color, brightness, old, ...)
+	if old then
+		pos, color, brightness = convertOldLight(pos, color, brightness, old, ...)
+	end
 	
 	local l = {
 		typ = typ or "point",
 		name = "unnamed",
-		x = posX or 0,
-		y = posY or 0,
-		z = posZ or 0,
-		r = v == 0 and 0 or r / v,
-		g = v == 0 and 0 or g / v,
-		b = v == 0 and 0 or b / v,
+		pos = pos or vec3(0, 0, 0),
+		color = color and color:normalize() or vec3(1, 1, 1),
+		direction = vec3(0, -1, 0),
 		smooth = nil,
 		frameSkip = 0,
 		brightness = brightness or 1.0,
@@ -48,28 +49,24 @@ return {
 	end,
 	
 	setColor = function(self, r, g, b)
-		if type(r) == "table" then
-			r, g, b = r[1], r[2], r[3]
-		end
-		local v = math.sqrt(r^2 + g^2 + b^2)
-		self.r = v == 0 and 0 or r / v
-		self.g = v == 0 and 0 or g / v
-		self.b = v == 0 and 0 or b / v
+		self.color = vec3(r, g, b):normalize()
 	end,
 	getColor = function(self)
-		return self.r, self.g, self.b
+		return self.color
 	end,
 	
 	setPosition = function(self, x, y, z)
-		if type(x) == "table" then
-			x, y, z = x[1], x[2], x[3]
-		end
-		self.x = x
-		self.y = y
-		self.z = z
+		self.pos = vec3(x, y, z)
 	end,
 	getPosition = function(self)
-		return self.x, self.y, self.z
+		return self.pos
+	end,
+	
+	setDirection = function(self, x, y, z)
+		self.direction = vec3(x, y, z):normalize()
+	end,
+	getDirection = function(self)
+		return self.direction
 	end,
 	
 	addShadow = function(self, static, res)

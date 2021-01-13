@@ -16,6 +16,7 @@
 	- [scene](#scene)
 	- [setSettings](#setsettings)
 	- [materials](#materials)
+	- [tasks](#tasks)
 
 ## transform class
 Sets the transform matrix using helper functions.
@@ -32,6 +33,12 @@ self:setDirection(normal)
 self:setDirection(normal, up)
 ```
 
+```lua
+self:setDynamic(dynamic)
+dynamic = self:isDynamic(dynamic)
+```
+`dynamic` is set when calling any transformation automatically and affects how often it gets refreshed when using dynamic shadows.
+
 
 
 ## visibility class
@@ -46,13 +53,26 @@ map = self:getLOD()
 <br />
 
 ```lua
-self:setVisibility()
-self:setVisibility(render, shadow, reflections)
-render, shadow, reflections = self:setVisibility()
+self:setRenderVisibility(enable)
+enable = self:getRenderVisibility()
 ```
-`render` enabled in default render pass  
-`shadow` enabled in shadow render pass  
-`reflections` enabled in reflections render pass 
+`enable` enabled in default render pass  
+
+<br />
+
+```lua
+self:setShadowVisibility(enable)
+enable = self:getShadowVisibility()
+```
+`enable` enabled in default shadow pass  
+
+<br />
+
+```lua
+self:setFarVisibility(enable)
+enable = self:getFarVisibility()
+```
+`enable` draw in cascade level > 1. Disable for small objects to achieve higher sun shadow performance.
 
 
 
@@ -141,26 +161,32 @@ Lights are stored in an active light queue and will be chosen per scene as it fi
 
 ```lua
 light = dream:newLight()
-light = dream:newLight(typ, x, y, z, r, g, b, brightness)
+light = dream:newLight(typ, pos, color, brightness)
 ```
 `light` a new light object, without shadow  
 `typ ("point")` a light type  
-`x y z (0)` initial position  
-`r, g, b (1)` initial color  
+`pos (vec3(0, 0, 0))` initial position  
+`color (vec3(1, 1, 1))` initial color  
 `brightness (1)` initial brightness  
 
 <br />
 
-change light data
+change light data. If you want to modify the sun, update `dream.sunObject` after `resetLight`, since `resetLight` overwrites the sun object with data. 
 ```lua
 light:setBrightness(b)
 b = light:getBrightness()
 
 light:setColor(r, g, b)
-r, g, b = light:getColor()
+light:setColor(vec3)
+vec3 = light:getColor()
 
 light:setPosition(x, y, z)
-x, y, z = light:getPosition()
+light:setPosition(vec3)
+vec3 = light:getPosition()
+
+light:setDirection(x, y, z)
+light:setDirection(vec3)
+vec3 = light:getDirection()
 ```
 
 <br />
@@ -217,7 +243,10 @@ A shadow can be attached to a lightsource.
 dream:newShadow(typ, static, res)
 ```
 `typ` "point" or "sun"
-`static` render only once
+`static` 
+- 'false' render realtime (slow, not recommended) 
+- 'true' render once, sun will updates on position (with respective step size) or direction changes 
+- 'dynamic' (default) render once, then render all dynamics realtime. Much faster than no static with minor memory impact. 
 `res` resolution
 
 <br />
@@ -226,6 +255,15 @@ Refresh the shadow as soon as possible (relevant for static shadows)
 ```lua
 shadow:refresh()
 ```
+
+<br />
+
+Sets the max distance the sun light can move without re-rendering the static part. Change if artefacts occur, especially when changing the distance of shadow cascades.
+```lua
+shadow:setRefreshStepSize(step)
+step = shadow:getRefreshStepSize()
+```
+`step (1)` distance in units to update first cascade. Second cascade at 2.3 * step and third cascade at 2.3^2 * step. This wierd scales ensure that the distribution of re renders are more even.
 
 
 
@@ -429,3 +467,8 @@ material:setTranslucent(value)
 material:cullMode(cullmode)
 ```
 `cullmode` LÖVE cullmode ("none", "back")  
+
+
+
+## tasks
+A task is a small class containing a scene entry ready to draw. It's not intended to be used directly so I skip further documentation here.

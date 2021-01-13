@@ -17,7 +17,7 @@ local function sortFunction(a, b)
 	return a:getDistance() > b:getDistance()
 end
 
-function lib:buildScene(typ, dynamic, alpha, cam, blacklist, frustumCheck)
+function lib:buildScene(typ, dynamic, alpha, cam, blacklist, frustumCheck, noSmallObjects)
 	self.delton:start("scene")
 	local IDs = {
 		[(dynamic ~= true and 0 or 2) + (alpha and 2 or 1)] = true,
@@ -52,9 +52,9 @@ function lib:buildScene(typ, dynamic, alpha, cam, blacklist, frustumCheck)
 				for _, task in pairs(materialGroup) do
 					local subObj = task:getSubObj()
 					local obj = subObj.obj
-					if not blacklist or not (blacklist[obj] or blacklist[subObj]) then
+					if (not blacklist or not (blacklist[obj] or blacklist[subObj])) and (not noSmallObjects or subObj.farVisibility ~= false and obj.farVisibility ~= false) then
 						if subObj.loaded and subObj.mesh then
-							if not frustumCheck or self:planeInFrustum(cam, task:getPos(), task:getSize(), subObj.rID) then
+							if not frustumCheck or not subObj.boundingBox.initialized or self:planeInFrustum(cam, task:getPos(), task:getSize(), subObj.rID) then
 								task:setShaderID(shaderID)
 								scene[#scene+1] = task
 							end
@@ -441,7 +441,7 @@ function lib:render(canvases, cam, reflections)
 end
 
 --only renders a depth variant
-function lib:renderShadows(cam, canvas, blacklist, dynamic)
+function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 	self.delton:start("renderShadows")
 	
 	love.graphics.push("all")
@@ -476,7 +476,7 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic)
 	local lastMaterial
 	
 	--get scene
-	local scene = self:buildScene("shadows", dynamic, false, cam, blacklist, frustumCheck)
+	local scene = self:buildScene("shadows", dynamic, false, cam, blacklist, frustumCheck, noSmallObjects)
 	
 	--start rendering
 	for d,task in ipairs(scene) do

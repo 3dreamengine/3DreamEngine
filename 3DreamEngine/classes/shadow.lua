@@ -48,22 +48,15 @@ return {
 		refreshStepSize = "number",
 	},
 	
+	setterGetter = {
+		refreshStepSize = "number",
+	},
+	
 	refresh = function(self)
 		self.done = { }
 	end,
 	
-	setStatic = function(self, static)
-		assert(static == true or static == false or static == "dynamic", "static has to be true, false or 'dynamic'")
-		self.static = static
-	end,
 	getStatic = function(self)
 		return self.static
 	end,
-	
-	setTarget = function(self, target)
-		self.target = target
-	end,
-	getTarget = function(self)
-		return self.target
-	end
 }

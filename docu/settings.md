@@ -215,10 +215,11 @@ distance, factor = dream:getShadowCascade()
 <br />
 
 ```lua
-dream:setSunShadow(enabled)
-enabled = dream:getSunShadow()
+dream:setSunShadow(enabled, static)
+enabled, static = dream:getSunShadow()
 ```
-`enabled (true)` If the sun light object should receive a shadow.
+`enabled (true)` If the automatic generated sun light object should receive a shadow. 
+`static ("dynamic")` The static level, look up the static description in the shadow class. 
 
 
 

@@ -40,9 +40,9 @@ end
 function sh:sendUniforms(dream, shaderObject, light, ID)
 	local shader = shaderObject.shader
 	
-	shader:send("sun_simple_color_" .. ID,  {light.r * light.brightness, light.g * light.brightness, light.b * light.brightness})
+	shader:send("sun_simple_color_" .. ID,  {(light.color * light.brightness):unpack()})
 	if shader:hasUniform("sun_simple_vec_" .. ID) then
-		shader:send("sun_simple_vec_" .. ID, {vec3(light.x, light.y, light.z):normalize():unpack()})
+		shader:send("sun_simple_vec_" .. ID, {light.direction:unpack()})
 	end
 end
 

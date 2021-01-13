@@ -121,8 +121,8 @@ function sh:sendUniforms(dream, shaderObject, light, ID)
 			shader:send("point_shadow_smooth_" .. ID, light.smooth)
 		end
 		shader:send("point_shadow_tex_" .. ID, light.shadow.canvas)
-		shader:send("point_shadow_color_" .. ID, {light.r * light.brightness, light.g * light.brightness, light.b * light.brightness})
-		shader:send("point_shadow_pos_" .. ID, {light.x, light.y, light.z})
+		shader:send("point_shadow_color_" .. ID, {(light.color * light.brightness):unpack()})
+		shader:send("point_shadow_pos_" .. ID, {light.pos:unpack()})
 	else
 		shader:send("point_shadow_color_" .. ID, {0, 0, 0})
 	end

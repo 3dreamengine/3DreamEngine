@@ -15,31 +15,27 @@ return {
 		end
 	end,
 	
-	setVisibility = function(self, render, shadows, reflections)
-		if render == nil then
-			self.visibility = false
-		elseif type(render) == "table" then
-			self.visibility = render
-		else
-			self.visibility = {
-				render = render,
-				shadows = shadows,
-				reflections = reflections,
-			}
-		end
+	setRenderVisibility = function(self, b)
+		assert(type(b) == "boolean", "arg has to be a boolean")
+		self.renderVisibility = b
 	end,
-	getVisibility = function(self)
-		if self.visibility then
-			return self.visibility.render, self.visibility.shadows, self.visibility.reflections
-		else
-			return true, true, true
-		end
+	getRenderVisibility = function(self)
+		return self.renderVisibility == true
 	end,
 	
-	setDynamic = function(self, dynamic)
-		self.dynamic = dynamic or false
+	setShadowVisibility = function(self, b)
+		assert(type(b) == "boolean", "arg has to be a boolean")
+		self.shadowVisibility = b
 	end,
-	isDynamic = function(self)
-		return self.dynamic
-	end
+	getShadowVisibility = function(self)
+		return self.shadowVisibility == true
+	end,
+	
+	setFarVisibility = function(self, b)
+		assert(type(b) == "boolean", "arg has to be a boolean")
+		self.farVisibility = b
+	end,
+	getFarVisibility = function(self)
+		return self.farVisibility == true
+	end,
 }

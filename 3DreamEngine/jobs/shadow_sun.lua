@@ -28,8 +28,8 @@ function job:execute(times, delta, light, cascade)
 	
 	local dynamic = light.shadow.static == "dynamic"
 	local stepSize = light.shadow.refreshStepSize * 2.3 ^ (cascade-1)
-	local normal = vec3(light.x, light.y, light.z):normalize()
-	local pos = light.shadow.target and light.shadow.target:clone() or lib.lastUsedCam.pos
+	local normal = light.direction
+	local pos = light.pos
 	
 	local shadowCam = light.shadow.cams[cascade]
 	if not shadowCam or (pos - shadowCam.pos):lengthSquared() > stepSize or (normal - shadowCam.normal):lengthSquared() > 0 then
@@ -76,15 +76,15 @@ function job:execute(times, delta, light, cascade)
 	--render
 	if light.shadow.static then
 		if dynamic or not shadowCam.dynamic then
-			lib:renderShadows(shadowCam, canvases, light.blacklist, shadowCam.dynamic, true)
+			lib:renderShadows(shadowCam, canvases, light.blacklist, shadowCam.dynamic, shadowCam.dynamic and cascade > 1)
 		end
 	else
-		lib:renderShadows(shadowCam, canvases, light.blacklist, nil, true)
+		lib:renderShadows(shadowCam, canvases, light.blacklist, nil)
 	end
 	
 	--also render dynamic if static only is rendered to keep up with transformation
 	if dynamic and not shadowCam.dynamic then
-		lib:renderShadows(shadowCam, canvases, false, true)
+		lib:renderShadows(shadowCam, canvases, light.blacklist, true, cascade > 1)
 	end
 	
 	--next render will be a dynamic
