@@ -291,6 +291,53 @@ function lib:newBoundaryBox(initialized)
 	}
 end
 
+function lib:applyTransform(mesh, transform)
+	if type(mesh) ~= "userdata" then
+		if mesh.class == "subObject" then
+			transform = mesh.transform
+			mesh.transform = nil
+			mesh = mesh.mesh
+		elseif mesh.class == "object" then
+			for d,s in ipairs(mesh) do
+				self:applyTransform(s)
+			end
+			return
+		else
+			error("mesh, object or subObject expected")
+		end
+	end
+	
+	--parse mesh format
+	local f = mesh:getVertexFormat()
+	local indices = { }
+	local index = 1
+	for d,s in ipairs(f) do
+		indices[s[1]] = index
+		index = index + s[3]
+	end
+	
+	--normal transforation
+	local subm = transform:subm()
+	
+	for i = 1, mesh:getVertexCount() do
+		local data = {mesh:getVertex(i)}
+		
+		--transform vertices
+		local p = indices.VertexPosition
+		if p then
+			data[p], data[p+1], data[p+2] = transform * vec3(data[p], data[p+1], data[p+2])
+		end
+		
+		--transform vertices
+		local p = indices.VertexNormal
+		if p then
+			data[p], data[p+1], data[p+2] = subm * vec3(data[p], data[p+1], data[p+2])
+		end
+		
+		mesh:setVertex(i, unpack(data))
+	end
+end
+
 do
 	local blurVecs = {
 		{

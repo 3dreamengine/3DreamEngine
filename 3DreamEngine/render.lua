@@ -109,6 +109,14 @@ local function checkAndSend(shader, name, value)
 	end
 end
 
+--checks if this uniform exists and sends if not already cached
+function checkAndSendCached(shaderObject, name, value)
+	if hasUniform(shaderObject, name) and shaderObject.cache[name] ~= value then
+		shaderObject.shader:send(name, value)
+		shaderObject.cache[name] = value
+	end
+end
+
 --render the scene onto a canvas set using a specific view camera
 function lib:render(canvases, cam, reflections)
 	self.delton:start("prepare")
@@ -150,6 +158,7 @@ function lib:render(canvases, cam, reflections)
 	local lastShader
 	local lastMaterial
 	local lastReflection
+	local sessionID = math.random()
 	
 	--start both passes
 	for pass = 1, canvases.alphaPass and 2 or 1 do
@@ -211,45 +220,49 @@ function lib:render(canvases, cam, reflections)
 				shaderObject = self:getRenderShader(shaderID, subObj, pass, canvases, light, false, false)
 				shaderEntry = self.shaderLibrary.base[shaderObject.shaderType]
 				shader = shaderObject.shader
+				if shaderObject.sessionID ~= sessionID then
+					shaderObject.session = { }
+					shaderObject.cache = shaderObject.cache or { }
+				end
 				love.graphics.setShader(shader)
 				
-				--light setup
-				self:sendLightUniforms(light, shaderObject)
-				
-				--output settings
-				if hasUniform(shaderObject, "dataAlpha") then
-					shader:send("dataAlpha", dataAlpha)
-				end
-				
-				--shader
-				shaderEntry:perShader(self, shaderObject)
-				for d,s in pairs(shaderObject.modules) do
-					s:perShader(self, shaderObject)
-				end
-				
-				--fog
-				if hasUniform(shaderObject, "fog_density") then
-					sendFogData(shader)
-				end
-				
-				--framebuffer
-				if hasUniform(shaderObject, "tex_depth") then
-					shader:send("tex_depth", canvases.depth)
-					shader:send("tex_color", canvases.color)
-					shader:send("screenScale", {1 / canvases.width, 1 / canvases.height})
-				end
-				
-				if hasUniform(shaderObject, "gamma") then shader:send("gamma", self.gamma) end
-				if hasUniform(shaderObject, "exposure") then shader:send("exposure", self.exposure) end
-				
-				--camera
-				shader:send("transformProj", cam.transformProj)
-				if hasUniform(shaderObject, "viewPos") then
-					shader:send("viewPos", viewPos)
-				end
-				
-				if not shaderObject.reflection then
-					shader:send("ambient", self.sun_ambient)
+				if not shaderObject.session.init then
+					shaderObject.session.init = true
+					
+					--light setup
+					self:sendLightUniforms(light, shaderObject)
+					
+					--output settings
+					if hasUniform(shaderObject, "dataAlpha") then
+						shader:send("dataAlpha", dataAlpha)
+					end
+					
+					--shader
+					shaderEntry:perShader(self, shaderObject)
+					for d,s in pairs(shaderObject.modules) do
+						s:perShader(self, shaderObject)
+					end
+					
+					--fog
+					if hasUniform(shaderObject, "fog_density") then
+						sendFogData(shader)
+					end
+					
+					--framebuffer
+					if hasUniform(shaderObject, "tex_depth") then
+						shader:send("tex_depth", canvases.depth)
+						shader:send("tex_color", canvases.color)
+						shader:send("screenScale", {1 / canvases.width, 1 / canvases.height})
+					end
+					
+					checkAndSendCached(shaderObject, "gamma", self.gamma)
+					checkAndSendCached(shaderObject, "exposure", self.exposure)
+					
+					--camera
+					shader:send("transformProj", cam.transformProj)
+					checkAndSendCached(shaderObject, "viewPos", viewPos)
+					
+					checkAndSendCached(shaderObject, "ambient", self.sun_ambient)
 				end
 				
 				self.delton:stop()
@@ -263,22 +276,16 @@ function lib:render(canvases, cam, reflections)
 				--self.delton:start("material")
 				
 				--alpha
-				if hasUniform(shaderObject, "dither") then
-					if material.dither == nil then
-						shader:send("dither", self.dither and 1 or 0)
-					else
-						shader:send("dither", material.dither and 1 or 0)
-					end
+				if material.dither == nil then
+					checkAndSendCached(shaderObject, "dither", self.dither and 1 or 0)
+				else
+					checkAndSendCached(shaderObject, "dither", material.dither and 1 or 0)
 				end
 				
 				--ior
-				if hasUniform(shaderObject, "ior") then
-					shader:send("ior", 1.0 / material.ior)
-				end
+				checkAndSendCached(shaderObject, "ior", 1.0 / material.ior)
 				
-				if hasUniform(shaderObject, "translucent") then
-					shader:send("translucent", material.translucent)
-				end
+				checkAndSendCached(shaderObject, "translucent", material.translucent)
 				
 				--shader
 				shaderEntry:perMaterial(self, shaderObject, material)
@@ -322,9 +329,9 @@ function lib:render(canvases, cam, reflections)
 			shader:send("transform", task:getTransform())
 			
 			--shader
-			shaderEntry:perTask(self, shaderObject, task, task)
+			shaderEntry:perTask(self, shaderObject, task)
 			for d,s in pairs(shaderObject.modules) do
-				s:perTask(self, shaderObject, subObj, task, task)
+				s:perTask(self, shaderObject, subObj, task)
 			end
 			
 			--render
@@ -493,6 +500,7 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 			shaderObject = self:getRenderShader(shaderID, subObj, pass, { }, nil, true, false)
 			shaderEntry = self.shaderLibrary.base[shaderObject.shaderType]
 			shader = shaderObject.shader
+			shaderObject.session = { }
 			love.graphics.setShader(shader)
 			
 			shader:send("mode", cam.sun and true or false)
@@ -515,9 +523,9 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 		shader:send("transform", task:getTransform())
 		
 		--shader
-		shaderEntry:perTask(self, shaderObject, task, task)
+		shaderEntry:perTask(self, shaderObject, task)
 		for d,s in pairs(shaderObject.modules) do
-			s:perTask(self, shaderObject, subObj, task, task)
+			s:perTask(self, shaderObject, subObj, task)
 		end
 		
 		--render

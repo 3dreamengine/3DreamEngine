@@ -9,6 +9,7 @@ local metas = { }
 for d,s in pairs(love.filesystem.getDirectoryItems(lib.root .. "/classes")) do
 	local name = s:sub(1, #s-4)
 	metas[name] = require(lib.root .. "/classes/" .. name)
+	metas[name].class = name
 end
 
 --link several metatables together

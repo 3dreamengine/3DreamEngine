@@ -46,7 +46,7 @@ function sh:perMaterial(dream, shaderObject, material)
 	
 end
 
-function sh:perTask(dream, shaderObject, subObj, task, batch)
+function sh:perTask(dream, shaderObject, subObj, task)
 	local shader = shaderObject.shader
 	
 	--initial prepare bone data
@@ -69,16 +69,19 @@ function sh:perTask(dream, shaderObject, subObj, task, batch)
 		subObj.mesh:attachAttribute("VertexWeight", subObj.boneMesh)
 	end
 	
-	local bt = batch:getBoneTransforms()
+	local bt = task:getBoneTransforms()
 	assert(bt, "missing bone transforms")
 	
-	local matrices = {mat4:getIdentity()}
-	if subObj.jointIDs then
-		for i,j in ipairs(subObj.jointIDs) do
-			matrices[i+1] = bt[j]
+	if shaderObject.session.bones ~= bt then
+		shaderObject.session.bones = bt
+		local matrices = {mat4:getIdentity()}
+		if subObj.jointIDs then
+			for i,j in ipairs(subObj.jointIDs) do
+				matrices[i+1] = bt[j]
+			end
 		end
+		shader:send("jointTransforms", unpack(matrices))
 	end
-	shader:send("jointTransforms", unpack(matrices))
 end
 
 return sh
