@@ -19,7 +19,7 @@ function lib:newScene()
 end
 
 return {
-	link = {"scene", "visibility"},
+	link = {"scene"},
 	
 	clear = function(self)
 		--static tasks

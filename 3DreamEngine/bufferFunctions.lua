@@ -84,7 +84,9 @@ function lib:mergeSubObjects(obj)
 	local objects = { }
 	for d,s in pairs(obj.objects) do
 		if not s.LOD_max or s.LOD_max >= math.huge then
-			objects[d] = s
+			if s.tags.merge ~= false then
+				objects[d] = s
+			end
 		end
 	end
 	
@@ -162,31 +164,6 @@ function lib:mergeSubObjects(obj)
 	final:updateGroups()
 	
 	return final
-end
-
-function lib:cleanObject(obj)
-	if obj.class == "object" then
-		for d,s in pairs(obj.objects) do
-			self:cleanObject(s)
-		end
-	elseif obj.class == "subObject" then
-		if obj.obj.args.cleanup then
-			--clean important data only on request to allow reusage
-			obj.vertices = nil
-			obj.faces = nil
-			obj.normals = nil
-		end
-		
-		--cleanup irrelevant data
-		obj.texCoords = nil
-		obj.colors = nil
-		obj.materials = nil
-		obj.extras = nil
-		
-		obj.tangents = nil
-	else
-		error("object or subObject expected")
-	end
 end
 
 --add tangents buffer

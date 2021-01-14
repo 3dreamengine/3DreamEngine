@@ -107,5 +107,20 @@ return {
 			max = math.max(max, pos:lengthSquared())
 		end
 		self.boundingBox.size = math.max(math.sqrt(max), self.boundingBox.size)
-	end
+	end,
+	
+	--clean most primary buffers
+	cleanup = function(self, lite)
+		if not lite then
+			self.vertices = nil
+			self.faces = nil
+			self.normals = nil
+		end
+		
+		self.texCoords = nil
+		self.colors = nil
+		self.materials = nil
+		self.extras = nil
+		self.tangents = nil
+	end,
 }

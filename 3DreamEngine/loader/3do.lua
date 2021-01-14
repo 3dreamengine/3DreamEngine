@@ -48,8 +48,8 @@ return function(self, obj, path)
 	local header = packTable.unpack(love.data.decompress("string", compressed, headerData))
 	table.merge(obj, header)
 	
-	obj.args.noParticleSystem = true
-	obj.args.noMesh = true
+	obj.args.particleSystems = false
+	obj.args.mesh = false
 	obj.args.export3do = false
 	
 	obj.DO_dataOffset = 12 + headerLength
@@ -142,7 +142,7 @@ return function(self, obj, path)
 		end
 	end
 	
-	if not obj.args.no3doRequest then
+	if obj.args.request3do then
 		obj:request()
 	end
 	

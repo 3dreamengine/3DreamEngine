@@ -115,6 +115,12 @@ return {
 		end
 	end,
 	
+	cleanup = function(self, lite)
+		for d,s in pairs(self.objects) do
+			s:cleanup(lite)
+		end
+	end,
+	
 	print = function(self)
 		--general innformation
 		print(self)

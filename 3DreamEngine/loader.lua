@@ -5,6 +5,16 @@ loader.lua - loads objects
 
 local lib = _3DreamEngine
 
+lib.defaultArgs = {
+	cleanup = true,
+	cleanupLite = true,
+	mesh = true,
+	export3do = false,
+	request3do = true,
+	skip3do = false,
+	particlesystems = true,
+}
+
 local function clone(t)
 	local n = { }
 	for d,s in pairs(t) do
@@ -13,17 +23,29 @@ local function clone(t)
 	return n
 end
 
+local function prepareArgs(args)
+	args = table.copy(args or { })
+	
+	for d,s in pairs(lib.defaultArgs) do
+		if args[d] == nil then
+			args[d] = s
+		end
+	end
+	
+	return args
+end
+
 --add to object library instead
 function lib:loadLibrary(path, shaderType, args, prefix)
 	if type(shaderType) == "table" then
 		return self:loadLibrary(path, shaderType and shaderType.shaderType, shaderType)
 	end
-	args = table.copy(args or { })
+	args = prepareArgs(args)
 	args.shaderType = shaderType or args.shaderType
 	
 	prefix = prefix or ""
 	
-	args.no3doRequest = true
+	args.request3do = false
 	args.loadAsLibrary = true
 	
 	--load
@@ -98,7 +120,7 @@ function lib:loadObject(path, shaderType, args)
 	if type(shaderType) == "table" then
 		return self:loadObject(path, shaderType and shaderType.shaderType, shaderType)
 	end
-	args = table.copy(args or { })
+	args = prepareArgs(args)
 	args.shaderType = shaderType or args.shaderType
 	
 	--some shaderType specific settings
@@ -364,7 +386,7 @@ function lib:loadObject(path, shaderType, args)
 	
 	
 	--create particle systems
-	if not obj.args.noParticleSystem then
+	if obj.args.particlesystems then
 		self:addParticlesystems(obj)
 	end
 	
@@ -448,14 +470,14 @@ function lib:loadObject(path, shaderType, args)
 	
 	
 	--create meshes
-	if not obj.args.noMesh then
+	if obj.args.mesh then
 		self:createMesh(obj)
 	end
 	
 	
 	--cleaning up
-	if obj.args.cleanup ~= false then
-		self:cleanObject(obj)
+	if obj.args.cleanup then
+		obj:cleanup(obj.args.cleanupLite)
 	end
 	
 	

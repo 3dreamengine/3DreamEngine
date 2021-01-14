@@ -21,7 +21,7 @@ local function loadParticles(self, particleSystems)
 		
 		ps.loadedObjects = { }
 		for i,v in pairs(ps.objects) do
-			local o = self:loadObject(i, {cleanup = false, noMesh = true, noParticleSystem = true})
+			local o = self:loadObject(i, {cleanup = false, mesh = false, particleSystems = false})
 			
 			--extract subObjects
 			for d,s in pairs(o.objects) do

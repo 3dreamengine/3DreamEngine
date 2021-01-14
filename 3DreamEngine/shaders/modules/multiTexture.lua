@@ -77,7 +77,7 @@ function sh:perTask(dream, shaderObject, subObj, task)
 	--initial prepare bone data
 	if not subObj.uv2Mesh then
 		assert(subObj.texCoords_2, "To use the multiTetxure module at least a second UV map for the mask texture is required.")
-		subObj.uv2Mesh = love.graphics.newMesh({{"VertexTexCoord2", "float", 2}}, #subObj.vertices, "triangles", "static")
+		subObj.uv2Mesh = love.graphics.newMesh({{"VertexTexCoord2", "float", 2}}, #subObj.texCoords_2, "triangles", "static")
 		
 		--create mesh
 		for d,uv in ipairs(subObj.texCoords_2) do
@@ -85,7 +85,7 @@ function sh:perTask(dream, shaderObject, subObj, task)
 		end
 		
 		--clear buffers
-		if subObj.obj.args.cleanup ~= false then
+		if subObj.obj.args.cleanup then
 			subObj.texCoords_2 = nil
 		end
 		

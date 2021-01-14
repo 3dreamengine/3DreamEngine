@@ -60,7 +60,7 @@ function sh:perTask(dream, shaderObject, subObj, task)
 		end
 		
 		--clear buffers
-		if subObj.obj.args.cleanup ~= false then
+		if subObj.obj.args.cleanup then
 			subObj.joints = nil
 			subObj.weights = nil
 		end

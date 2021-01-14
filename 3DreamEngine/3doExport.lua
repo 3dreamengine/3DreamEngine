@@ -62,22 +62,18 @@ function lib:export3do(obj)
 			["tags"] = o.tags,
 		}
 		
-		--additional data
+		--export data
 		if not o.linked then
 			h["weights"] = o.weights
 			h["jointIDs"] = o.jointIDs
-			
-			for i = 2, 10 do
-				h["texCoords_" .. i] = o["texCoords_" .. i]
-			end
-		end
-		
-		--extended data
-		if obj.args.export3doVertices and not o.linked then
 			h["vertices"] = o.vertices
 			h["normals"] = o.normals
 			h["faces"] = o.faces
 			h["texCoords"] = o.texCoords
+			
+			for i = 2, 10 do
+				h["texCoords_" .. i] = o["texCoords_" .. i]
+			end
 		end
 		
 		header.objects[d] = h

@@ -126,7 +126,9 @@ function lib:bakeMaterial(o)
 			
 			for d,s in ipairs(atlas) do
 				if s[4] then
-					local tex = self:getTexture(s[4][name], true)
+					local tex = type(s[4][name]) == "string" and self:getTexture(s[4][name], true)
+					
+					--TODO special treatment for combined textures using masked draw
 					
 					local uv = uvs[s[4]]
 					local mesh = love.graphics.newMesh({
