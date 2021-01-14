@@ -18,7 +18,7 @@ function lib:newSubObject(name, obj, mat)
 		else
 			shaderType = "simple"
 			
-			if mat.tex_albedo or mat.tex_normal then
+			if mat and (mat.tex_albedo or mat.tex_normal) then
 				shaderType = "Phong"
 			end
 		end
@@ -86,5 +86,26 @@ return {
 	end,
 	getName = function(self)
 		return name
+	end,
+	
+	updateBoundingBox = function(self)
+		self.boundingBox = lib:newBoundaryBox(true)
+		
+		--get aabb
+		for i,v in ipairs(self.vertices) do
+			local pos = vec3(v)
+			self.boundingBox.first = self.boundingBox.first:min(pos)
+			self.boundingBox.second = self.boundingBox.second:max(pos)
+		end
+		self.boundingBox.center = (self.boundingBox.second + self.boundingBox.first) / 2
+		
+		--get size
+		local max = 0
+		local c = self.boundingBox.center
+		for i,v in ipairs(self.vertices) do
+			local pos = vec3(v) - c
+			max = math.max(max, pos:lengthSquared())
+		end
+		self.boundingBox.size = math.max(math.sqrt(max), self.boundingBox.size)
 	end
 }

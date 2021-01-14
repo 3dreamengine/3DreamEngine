@@ -45,6 +45,7 @@ end
 _3DreamEngine = lib
 lib.root = (...)
 require((...) .. "/functions")
+require((...) .. "/bufferFunctions")
 require((...) .. "/settings")
 require((...) .. "/classes")
 require((...) .. "/shader")

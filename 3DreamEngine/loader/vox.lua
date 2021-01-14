@@ -146,7 +146,7 @@ return function(self, obj, path)
 			
 			nodes[id] = {id = id, childId = childId, nodeAttributes = att, parent = currNode, attributes = parseDICT(i+i2+36), children = { }}
 			if nodes[id].attributes._t then
-				nodes[id].transform = self:split(nodes[id].attributes._t, " ")
+				nodes[id].transform = string.split(nodes[id].attributes._t, " ")
 				for cc = 1, 3 do
 					nodes[id].transform[cc] = tonumber(nodes[id].transform[cc]) or 0
 				end

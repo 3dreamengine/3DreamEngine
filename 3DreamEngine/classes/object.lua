@@ -3,7 +3,7 @@ local lib = _3DreamEngine
 function lib:newObject(path)
 	--get name and dir
 	path = path or "unknown"
-	local n = self:split(path, "/")
+	local n = string.split(path, "/")
 	local name = n[#n] or path
 	local dir = #n > 1 and table.concat(n, "/", 1, #n-1) or ""
 	
@@ -89,6 +89,29 @@ return {
 		
 		for d,s in ipairs(self.groups) do
 			s:updateBoundingBox()
+		end
+	end,
+	
+	updateBoundingBox = function(self)
+		for d,s in pairs(self.objects) do
+			if not s.boundingBox.initialized then
+				s:updateBoundingBox()
+			end
+		end
+		
+		--calculate total bounding box
+		self.boundingBox = lib:newBoundaryBox(true)
+		for d,s in pairs(self.objects) do
+			local sz = vec3(s.boundingBox.size, s.boundingBox.size, s.boundingBox.size)
+			
+			self.boundingBox.first = s.boundingBox.first:min(self.boundingBox.first - sz)
+			self.boundingBox.second = s.boundingBox.second:max(self.boundingBox.second + sz)
+			self.boundingBox.center = (self.boundingBox.second + self.boundingBox.first) / 2
+		end
+		
+		for d,s in pairs(self.objects) do
+			local o = s.boundingBox.center - self.boundingBox.center
+			self.boundingBox.size = math.max(self.boundingBox.size, s.boundingBox.size + o:lengthSquared())
 		end
 	end,
 	

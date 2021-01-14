@@ -25,13 +25,6 @@ function lib:addNewLight(...)
 	self:addLight(self:newLight(...))
 end
 
-function lib:split(text, sep)
-	local sep, fields = sep or ":", { }
-	local pattern = string.format("([^%s]+)", sep)
-	text:gsub(pattern, function(c) fields[#fields+1] = c end)
-	return fields
-end
-
 function lib:lookAt(eye, at, up)
 	up = up or vec3(0.0, 1.0, 0.0)
 	
@@ -60,78 +53,6 @@ function lib:lookInDirection(at, up)
 		-zaxis.x, -zaxis.y, -zaxis.z, 0.0,
 		0, 0, 0, 1
 	)
-end
-
---add tangents to a 3Dream vertex format
---x, y, z, shaderData, nx, ny, nz, materialID, u, v, tx, ty, tz, btx, bty, btz
-local empty = {0, 0, 0}
-function lib:calcTangents(o)
-	o.tangents = { }
-	for i = 1, #o.vertices do
-		o.tangents[i] = {0, 0, 0, 0}
-	end
-	
-	for i,f in ipairs(o.faces) do
-		--vertices
-		local v1 = o.vertices[f[1]] or empty
-		local v2 = o.vertices[f[2]] or empty
-		local v3 = o.vertices[f[3]] or empty
-		
-		--tex coords
-		local uv1 = o.texCoords[f[1]] or empty
-		local uv2 = o.texCoords[f[2]] or empty
-		local uv3 = o.texCoords[f[3]] or empty
-		
-		local tangent = { }
-		
-		local edge1 = {v2[1] - v1[1], v2[2] - v1[2], v2[3] - v1[3]}
-		local edge2 = {v3[1] - v1[1], v3[2] - v1[2], v3[3] - v1[3]}
-		local edge1uv = {uv2[1] - uv1[1], uv2[2] - uv1[2]}
-		local edge2uv = {uv3[1] - uv1[1], uv3[2] - uv1[2]}
-		
-		local cp = edge1uv[1] * edge2uv[2] - edge1uv[2] * edge2uv[1]
-		
-		if cp ~= 0.0 then
-			--handle clockwise-uvs
-			local clockwise = mat3(uv1[1], uv1[2], 1, uv2[1], uv2[2], 1, uv3[1], uv3[2], 1):det() > 0
-			
-			for i = 1, 3 do
-				tangent[i] = (edge1[i] * edge2uv[2] - edge2[i] * edge1uv[2]) / cp
-			end
-			
-			--sum up tangents to smooth across shared vertices
-			for i = 1, 3 do
-				o.tangents[f[i]][1] = o.tangents[f[i]][1] + tangent[1]
-				o.tangents[f[i]][2] = o.tangents[f[i]][2] + tangent[2]
-				o.tangents[f[i]][3] = o.tangents[f[i]][3] + tangent[3]
-				o.tangents[f[i]][4] = o.tangents[f[i]][4] + (clockwise and 1 or 0)
-			end
-		end
-	end
-	
-	--normalize
-	for i,f in ipairs(o.tangents) do
-		local l = math.sqrt(f[1]^2 + f[2]^2 + f[3]^2)
-		f[1] = f[1] / l
-		f[2] = f[2] / l
-		f[3] = f[3] / l
-	end	
-	
-	--complete smoothing step
-	for i,f in ipairs(o.tangents) do
-		local n = o.normals[i]
-		
-		--Gram-Schmidt orthogonalization
-		local dot = (f[1] * n[1] + f[2] * n[2] + f[3] * n[3])
-		f[1] = f[1] - n[1] * dot
-		f[2] = f[2] - n[2] * dot
-		f[3] = f[3] - n[3] * dot
-		
-		local l = math.sqrt(f[1]^2 + f[2]^2 + f[3]^2)
-		f[1] = f[1] / l
-		f[2] = f[2] / l
-		f[3] = f[3] / l
-	end
 end
 
 function lib:HSVtoRGB(h, s, v)
@@ -289,53 +210,6 @@ function lib:newBoundaryBox(initialized)
 		size = 0,
 		initialized = initialized or false
 	}
-end
-
-function lib:applyTransform(mesh, transform)
-	if type(mesh) ~= "userdata" then
-		if mesh.class == "subObject" then
-			transform = mesh.transform
-			mesh.transform = nil
-			mesh = mesh.mesh
-		elseif mesh.class == "object" then
-			for d,s in ipairs(mesh) do
-				self:applyTransform(s)
-			end
-			return
-		else
-			error("mesh, object or subObject expected")
-		end
-	end
-	
-	--parse mesh format
-	local f = mesh:getVertexFormat()
-	local indices = { }
-	local index = 1
-	for d,s in ipairs(f) do
-		indices[s[1]] = index
-		index = index + s[3]
-	end
-	
-	--normal transforation
-	local subm = transform:subm()
-	
-	for i = 1, mesh:getVertexCount() do
-		local data = {mesh:getVertex(i)}
-		
-		--transform vertices
-		local p = indices.VertexPosition
-		if p then
-			data[p], data[p+1], data[p+2] = transform * vec3(data[p], data[p+1], data[p+2])
-		end
-		
-		--transform vertices
-		local p = indices.VertexNormal
-		if p then
-			data[p], data[p+1], data[p+2] = subm * vec3(data[p], data[p+1], data[p+2])
-		end
-		
-		mesh:setVertex(i, unpack(data))
-	end
 end
 
 do

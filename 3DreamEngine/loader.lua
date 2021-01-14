@@ -255,7 +255,7 @@ function lib:loadObject(path, shaderType, args)
 		while changes do
 			changes = false
 			for d,o in pairs(obj.objects) do
-				--buffer detection
+				--buffers
 				local buffers = {
 					"vertices",
 					"normals",
@@ -375,43 +375,7 @@ function lib:loadObject(path, shaderType, args)
 	
 	--calculate bounding box
 	if not obj.boundingBox.initialized then
-		for d,s in pairs(obj.objects) do
-			if not s.boundingBox.initialized then
-				s.boundingBox = self:newBoundaryBox(true)
-				
-				--get aabb
-				for i,v in ipairs(s.vertices) do
-					local pos = vec3(v)
-					s.boundingBox.first = s.boundingBox.first:min(pos)
-					s.boundingBox.second = s.boundingBox.second:max(pos)
-				end
-				s.boundingBox.center = (s.boundingBox.second + s.boundingBox.first) / 2
-				
-				--get size
-				local max = 0
-				local c = s.boundingBox.center
-				for i,v in ipairs(s.vertices) do
-					local pos = vec3(v) - c
-					max = math.max(max, pos:lengthSquared())
-				end
-				s.boundingBox.size = math.max(math.sqrt(max), s.boundingBox.size)
-			end
-		end
-		
-		--calculate total bounding box
-		obj.boundingBox = self:newBoundaryBox(true)
-		for d,s in pairs(obj.objects) do
-			local sz = vec3(s.boundingBox.size, s.boundingBox.size, s.boundingBox.size)
-			
-			obj.boundingBox.first = s.boundingBox.first:min(obj.boundingBox.first - sz)
-			obj.boundingBox.second = s.boundingBox.second:max(obj.boundingBox.second + sz)
-			obj.boundingBox.center = (obj.boundingBox.second + obj.boundingBox.first) / 2
-		end
-		
-		for d,s in pairs(obj.objects) do
-			local o = s.boundingBox.center - obj.boundingBox.center
-			obj.boundingBox.size = math.max(obj.boundingBox.size, s.boundingBox.size + o:lengthSquared())
-		end
+		obj:updateBoundingBox()
 	end
 	
 	
@@ -485,149 +449,25 @@ function lib:loadObject(path, shaderType, args)
 	
 	--create meshes
 	if not obj.args.noMesh then
-		local cache = { }
-		for d,o in pairs(obj.objects) do
-			if not o.linked then
-				if cache[o.vertices] then
-					o.mesh = cache[o.vertices].mesh
-					o.tangents = cache[o.vertices].tangents
-				else
-					self:createMesh(o)
-					cache[o.vertices] = o
-				end
-			end
-		end
+		self:createMesh(obj)
 	end
 	
 	
 	--cleaning up
 	if obj.args.cleanup ~= false then
-		for d,s in pairs(obj.objects) do
-			if obj.args.cleanup then
-				--clean important data only on request to allow reusage
-				s.vertices = nil
-				s.faces = nil
-				s.normals = nil
-			end
-			
-			--cleanup irrelevant data
-			s.texCoords = nil
-			s.colors = nil
-			s.materials = nil
-			s.extras = nil
-			
-			s.tangents = nil
-		end
+		self:cleanObject(obj)
 	end
+	
 	
 	--3do exporter
 	if obj.args.export3do then
 		self:export3do(obj)
 	end
 	
+	
 	obj:updateGroups()
+	
 	
 	self.deltonLoad:stop()
 	return obj
-end
-
-lib.meshTypeFormats = {
-	textured = {
-		{"VertexPosition", "float", 4},     -- x, y, z, extra
-		{"VertexTexCoord", "float", 2},     -- UV
-		{"VertexNormal", "byte", 4},        -- normal
-		{"VertexTangent", "byte", 4},       -- normal tangent
-	},
-	textured_array = {
-		{"VertexPosition", "float", 4},     -- x, y, z, extra
-		{"VertexTexCoord", "float", 3},     -- UV
-		{"VertexNormal", "byte", 4},        -- normal
-		{"VertexTangent", "byte", 4},       -- normal tangent
-	},
-	simple = {
-		{"VertexPosition", "float", 4},     -- x, y, z, extra
-		{"VertexTexCoord", "float", 3},     -- normal
-		{"VertexMaterial", "float", 3},     -- specular, glossiness, emissive
-		{"VertexColor", "byte", 4},         -- color
-	},
-	material = {
-		{"VertexPosition", "float", 4},     -- x, y, z, extra
-		{"VertexTexCoord", "float", 3},     -- normal
-		{"VertexMaterial", "float", 1},     -- material
-	},
-}
-
---takes an final and face table and generates the mesh and vertexMap
---note that .3do files has it's own mesh loader
-function lib:createMesh(o)
-	--set up vertex map
-	local vertexMap = { }
-	for d,f in ipairs(o.faces) do
-		vertexMap[#vertexMap+1] = f[1]
-		vertexMap[#vertexMap+1] = f[2]
-		vertexMap[#vertexMap+1] = f[3]
-	end
-	
-	--calculate vertex normals and uv normals
-	local shader = self.shaderLibrary.base[o.shaderType]
-	assert(shader, "shader '" .. tostring(o.shaderType) .. "' for object '" .. tostring(o.name) .. "' does not exist")
-	if shader.requireTangents then
-		self:calcTangents(o)
-	end
-	
-	--create mesh
-	local meshLayout = table.copy(self.meshTypeFormats[o.meshType])
-	o.mesh = love.graphics.newMesh(meshLayout, #o.vertices, "triangles", "static")
-	
-	--vertex map
-	o.mesh:setVertexMap(vertexMap)
-	
-	--set vertices
-	local empty = {1, 0, 1, 1}
-	for i = 1, #o.vertices do
-		local vertex = o.vertices[i] or empty
-		local normal = o.normals[i] or empty
-		local texCoord = o.texCoords[i] or empty
-		
-		if o.meshType == "textured" then
-			local tangent = o.tangents[i] or empty
-			o.mesh:setVertex(i,
-				vertex[1], vertex[2], vertex[3], o.extras[i] or 1,
-				texCoord[1], texCoord[2],
-				normal[1]*0.5+0.5, normal[2]*0.5+0.5, normal[3]*0.5+0.5, 0.0,
-				tangent[1]*0.5+0.5, tangent[2]*0.5+0.5, tangent[3]*0.5+0.5, tangent[4] or 0.0
-			)
-		elseif o.meshType == "textured_array" then
-			local tangent = o.tangents[i] or empty
-			o.mesh:setVertex(i,
-				vertex[1], vertex[2], vertex[3], o.extras[i] or 1,
-				texCoord[1], texCoord[2], texCoord[3], 
-				normal[1]*0.5+0.5, normal[2]*0.5+0.5, normal[3]*0.5+0.5, 0.0,
-				tangent[1]*0.5+0.5, tangent[2]*0.5+0.5, tangent[3]*0.5+0.5, tangent[4] or 0.0
-			)
-		elseif o.meshType == "simple" then
-			local material = o.materials[i] or empty
-			local color = o.colors[i] or material.color or empty
-			
-			local specular = material.specular or material[1] or 0
-			local glossiness = material.glossiness or material[2] or 0
-			local emission = material.emission or material[3] or 0
-			if type(emission) == "table" then
-				emission = emission[1] / 3 + emission[2] / 3 + emission[3] / 3
-			end
-			
-			o.mesh:setVertex(i,
-				vertex[1], vertex[2], vertex[3], o.extras[i] or 1,
-				normal[1], normal[2], normal[3],
-				specular, glossiness, emission,
-				color[1], color[2], color[3], color[4]
-			)
-		elseif o.meshType == "material" then
-			o.mesh:setVertex(i,
-				vertex[1], vertex[2], vertex[3], o.extras[i] or 1,
-				normal[1], normal[2], normal[3],
-				texCoord
-			)
-		end
-	end
 end

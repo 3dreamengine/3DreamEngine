@@ -77,6 +77,7 @@ function lib:export3do(obj)
 			h["vertices"] = o.vertices
 			h["normals"] = o.normals
 			h["faces"] = o.faces
+			h["texCoords"] = o.texCoords
 		end
 		
 		header.objects[d] = h

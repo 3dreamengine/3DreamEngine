@@ -110,7 +110,7 @@ function lib:bakeMaterial(o)
 	local res = 1024
 	local canvases = {
 		tex_albedo = love.graphics.newCanvas(res, res, {mipmaps = "manual"}),
-		--tex_material = love.graphics.newCanvas(res, res, {mipmaps = "manual"}),
+		tex_material = love.graphics.newCanvas(res, res, {mipmaps = "manual"}),
 		tex_normal = love.graphics.newCanvas(res, res, {mipmaps = "manual"}),
 		tex_emission = love.graphics.newCanvas(res, res, {mipmaps = "manual"}),
 	}
@@ -125,20 +125,37 @@ function lib:bakeMaterial(o)
 			love.graphics.scale(w / 2^(i-1), h / 2^(i-1))
 			
 			for d,s in ipairs(atlas) do
-				if s[4] and s[4][name] then
+				if s[4] then
 					local tex = self:getTexture(s[4][name], true)
-					if tex then
-						local uv = uvs[s[4]]
-						local mesh = love.graphics.newMesh({
-							{0, 0, uv[1], uv[2]},
-							{1, 0, uv[3], uv[2]},
-							{1, 1, uv[3], uv[4]},
-							{0, 1, uv[1], uv[4]},
-						})
-						mesh:setTexture(tex)
-						love.graphics.draw(mesh, s[1], s[2], 0, s[3])
+					
+					local uv = uvs[s[4]]
+					local mesh = love.graphics.newMesh({
+						{0, 0, uv[1], uv[2]},
+						{1, 0, uv[3], uv[2]},
+						{1, 1, uv[3], uv[4]},
+						{0, 1, uv[1], uv[4]},
+					})
+					
+					if name == "tex_albedo" then
+						love.graphics.setColor(s[4].color)
+						used[name] = true
+					elseif name == "tex_material" then
+						love.graphics.setColor(s[4].roughness, s[4].metallic, 1.0)
+						used[name] = true
+					elseif name == "tex_emission" then
+						if s[4].emission then
+							love.graphics.setColor(s[4].emission)
+							used[name] = true
+						end
+					elseif tex then
+						love.graphics.setColor(1, 1, 1)
 						used[name] = true
 					end
+					
+					if tex then
+						mesh:setTexture(tex)
+					end
+					love.graphics.draw(mesh, s[1], s[2], 0, s[3])
 				end
 			end
 			love.graphics.pop()

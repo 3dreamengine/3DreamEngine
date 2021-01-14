@@ -6,7 +6,7 @@ return function(self, obj, path)
 	--materials
 	local material = obj.materials.None
 	for l in love.filesystem.lines(path) do
-		local v = self:split(l, " ")
+		local v = string.split(l, " ")
 		if v[1] == "newmtl" then
 			obj.materials[l:sub(8)] = self:newMaterial(l:sub(8))
 			material = obj.materials[l:sub(8)]

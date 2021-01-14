@@ -16,7 +16,7 @@ return function(self, obj, path)
 	objectID = "object"
 	
 	for l in love.filesystem.lines(path) do
-		local v = self:split(l, " ")
+		local v = string.split(l, " ")
 		
 		if v[1] == "v" then
 			vertices[#vertices+1] = {tonumber(v[2]), tonumber(v[3]), tonumber(v[4])}
@@ -33,7 +33,7 @@ return function(self, obj, path)
 			--combine vertex and data into one
 			local index = #o.vertices
 			for i = 1, verts do
-				local v2 = self:split(v[i+1]:gsub("//", "/0/"), "/")
+				local v2 = string.split(v[i+1]:gsub("//", "/0/"), "/")
 				index = index + 1
 				o.vertices[index] = vertices[tonumber(v2[1])]
 				o.texCoords[index] = texture[tonumber(v2[2])]
