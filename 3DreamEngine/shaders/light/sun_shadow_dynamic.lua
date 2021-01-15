@@ -153,10 +153,12 @@ end
 function sh:constructPixelBasic(dream, ID)
 	return ([[
 		float shadow;
+		vec3 bias = normalize(vertexPos - viewPos) * 8.0 * ss_texelSize;
+		
 		if (ss_smooth_#ID#) {
-			shadow = sampleShadowSunSmooth(vertexPos, ss_pos_#ID#, ss_proj_1_#ID#, ss_proj_2_#ID#, ss_proj_3_#ID#, ss_tex_1_#ID#, ss_tex_2_#ID#, ss_tex_3_#ID#, 0.001);
+			shadow = sampleShadowSunSmooth(vertexPos, ss_pos_#ID#, ss_proj_1_#ID#, ss_proj_2_#ID#, ss_proj_3_#ID#, ss_tex_1_#ID#, ss_tex_2_#ID#, ss_tex_3_#ID#, bias);
 		} else {
-			shadow = sampleShadowSun(vertexPos, ss_pos_#ID#, ss_proj_1_#ID#, ss_proj_2_#ID#, ss_proj_3_#ID#, ss_tex_1_#ID#, ss_tex_2_#ID#, ss_tex_3_#ID#, 0.001);
+			shadow = sampleShadowSun(vertexPos, ss_pos_#ID#, ss_proj_1_#ID#, ss_proj_2_#ID#, ss_proj_3_#ID#, ss_tex_1_#ID#, ss_tex_2_#ID#, ss_tex_3_#ID#, bias);
 		}
 		
 		light += ss_color_#ID# * shadow;

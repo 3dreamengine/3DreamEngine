@@ -347,6 +347,59 @@ function lib:render(canvases, cam, reflections)
 	
 	love.graphics.setColor(1.0, 1.0, 1.0)
 	
+	if dynamics ~= false and not love.keyboard.isDown("g") then
+		local positions = { }
+		local colors = { }
+		local sizes = { }
+		for d,s in ipairs(light.lights) do
+			local pos
+			if s.typ == "sun" then
+				pos = cam.transformProjOrigin * vec4(s.direction.x, s.direction.y, s.direction.z, 1.0)
+			else
+				pos = cam.transformProj * vec4(s.pos.x, s.pos.y, s.pos.z, 1.0)
+			end
+			pos = vec3(pos.x / pos.w * 0.5 + 0.5, pos.y / pos.w * 0.5 + 0.5, pos.z)
+			pos.z = s.typ == "sun" and 1000 or pos.z
+			
+			if pos.z > 0 and pos.x > 0 and pos.x < 1 and pos.y > 0 and pos.y < 1 then
+				local fade = math.min(1.0, math.min(pos.x, pos.y, 1-pos.x, 1-pos.y) * 32.0)
+				local b = fade * s.brightness * (s.typ == "sun" and 0.25 or 0.75 / (1.0 + pos.z))
+				table.insert(positions, pos)
+				table.insert(colors, s.color)
+				table.insert(sizes, {s.typ == "sun" and 0.1 or 0.035, b * (s.typ == "sun" and 0.25 or 0.05)})
+			end
+			
+			if #colors == 8 then
+				break
+			end
+		end
+		
+		if #colors > 0 then
+			local shader = lib:getShader("godrays")
+			love.graphics.setShader(shader)
+			
+			shader:send("density", 1.0)
+			shader:send("decay", 1.25)
+			shader:send("noiseStrength", 0.33)
+			
+			shader:send("noise", self.textures.godray)
+			
+			shader:send("sampleCount", 16)
+			shader:send("scale", {1, canvases.height / canvases.width})
+			
+			shader:send("positions", unpack(positions))
+			shader:send("colors", unpack(colors))
+			shader:send("sizes", unpack(sizes))
+			shader:send("sourceCount", #colors)
+			
+			love.graphics.setCanvas(canvases.color)
+			love.graphics.setBlendMode("add", "premultiplied")
+			love.graphics.draw(canvases.depth)
+			love.graphics.setBlendMode("alpha")
+			love.graphics.setShader()
+		end
+	end
+	
 	--particles on the alpha pass
 	if dynamic ~= false then
 		self.delton:start("particles")

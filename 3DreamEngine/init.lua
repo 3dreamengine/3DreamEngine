@@ -161,9 +161,11 @@ lib.object_plane = lib:loadObject(lib.root .. "/objects/plane", "Phong", {splitM
 local pix = love.image.newImageData(2, 2)
 lib.textures = {
 	default = love.graphics.newImage(lib.root .. "/res/default.png"),
+	godray = love.graphics.newImage(lib.root .. "/res/godray.png"),
 	default_normal = love.graphics.newImage(lib.root .. "/res/default_normal.png"),
 	sky_fallback = love.graphics.newCubeImage({pix, pix, pix, pix, pix, pix}),
 }
+lib.textures.godray:setWrap("repeat", "repeat")
 
 --load textures once actually needed
 lib.initTextures = { }
