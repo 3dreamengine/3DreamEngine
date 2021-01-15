@@ -82,7 +82,7 @@ return function(self, obj, path)
 	
 	--relink materials
 	for d,s in pairs(obj.objects) do
-		local mat = self.materialLibrary[s.material] or obj.materials[s.material]
+		local mat = type(s.material) == "table" and s.material or self.materialLibrary[s.material] or obj.materials[s.material]
 		if mat then
 			s.material = mat
 		else

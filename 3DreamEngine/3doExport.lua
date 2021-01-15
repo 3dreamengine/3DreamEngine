@@ -54,13 +54,18 @@ function lib:export3do(obj)
 			["LOD_center"] = o.LOD_center,
 			["shaderType"] = o.shaderType,
 			["meshType"] = o.meshType,
-			["material"] = o.material.name,
 			["boundingBox"] = o.boundingBox,
 			["transform"] = o.transform,
 			["joints"] = o.joints,
 			["linked"] = o.linked,
 			["tags"] = o.tags,
 		}
+		
+		if o.material.library then
+			h["material"] = o.material.name
+		else
+			h["material"] = o.material
+		end
 		
 		--export data
 		if not o.linked then

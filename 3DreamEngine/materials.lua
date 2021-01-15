@@ -20,6 +20,7 @@ function lib:newMaterial(name, dir)
 		dir = dir,                    --directory, used for texture linking
 		ior = 1.0,
 		translucent = 0.0,
+		libraray = false,
 	}
 end
 
@@ -39,6 +40,7 @@ function lib:loadMaterialLibrary(path, prefix)
 			for i,v in pairs(dummyObj.materials) do
 				v.dir = path
 				v.name = prefix .. i
+				v.library = true
 				self:finishMaterial(v)
 				self.materialLibrary[v.name] = v
 			end
@@ -51,11 +53,13 @@ function lib:loadMaterialLibrary(path, prefix)
 			mat.dir = p
 			mat.name = prefix .. s
 			self:finishMaterial(mat)
+			mat.library = true
 			self.materialLibrary[mat.name] = mat
 		elseif self.imageDirectories[p] then
 			--directory is a material since it contains at least one texture
 			local mat = self:newMaterial(prefix .. s, p)
 			self:finishMaterial(mat)
+			mat.library = true
 			self.materialLibrary[mat.name] = mat
 		elseif love.filesystem.getInfo(p, "directory") then
 			--directory is not a material, but maybe its child directories

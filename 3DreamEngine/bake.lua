@@ -6,6 +6,7 @@ bake.lua - merges several materials into one
 local lib = _3DreamEngine
 
 function lib:bakeMaterial(o)
+	ID = o.obj.path .. "_" .. o.name
 	if not o.materials then
 		return
 	end
@@ -109,17 +110,19 @@ function lib:bakeMaterial(o)
 	--bake
 	local res = 1024
 	local canvases = {
-		tex_albedo = love.graphics.newCanvas(res, res, {mipmaps = "manual"}),
-		tex_material = love.graphics.newCanvas(res, res, {mipmaps = "manual"}),
-		tex_normal = love.graphics.newCanvas(res, res, {mipmaps = "manual"}),
-		tex_emission = love.graphics.newCanvas(res, res, {mipmaps = "manual"}),
+		"tex_albedo",
+		"tex_material",
+		"tex_normal",
+		"tex_emission",
 	}
 	local used = { }
 	
 	--render individual images
-	for name, canvas in pairs(canvases) do
+	for _, name in pairs(canvases) do
+		local canvas = love.graphics.newCanvas(res, res, {mipmaps = "manual"})
 		for i = 1, canvas:getMipmapCount() do
 			love.graphics.push("all")
+			love.graphics.setBlendMode("replace", "premultiplied")
 			love.graphics.setCanvas(canvas, i)
 			local w, h = canvas:getDimensions()
 			love.graphics.scale(w / 2^(i-1), h / 2^(i-1))
@@ -127,8 +130,6 @@ function lib:bakeMaterial(o)
 			for d,s in ipairs(atlas) do
 				if s[4] then
 					local tex = type(s[4][name]) == "string" and self:getTexture(s[4][name], true)
-					
-					--TODO special treatment for combined textures using masked draw
 					
 					local uv = uvs[s[4]]
 					local mesh = love.graphics.newMesh({
@@ -144,9 +145,26 @@ function lib:bakeMaterial(o)
 					elseif name == "tex_material" then
 						love.graphics.setColor(s[4].roughness, s[4].metallic, 1.0)
 						used[name] = true
+						
+						if type(s[4][name]) == "table" then
+							for i = 1, 3 do
+								local tex = self:getTexture(s[4][name][i+2], true)
+								love.graphics.setColorMask(i == 1, i == 2, i == 3, false)
+								if tex then
+									mesh:setTexture(tex)
+									love.graphics.setColor(1, 1, 1)
+								else
+									mesh:setTexture()
+									love.graphics.setColor(s[4].roughness, s[4].metallic, 1.0)
+								end
+								love.graphics.draw(mesh, s[1], s[2], 0, s[3])
+								love.graphics.setColorMask(true, true, true, true)
+							end
+							mesh = false
+						end
 					elseif name == "tex_emission" then
-						if s[4].emission then
-							love.graphics.setColor(s[4].emission)
+						love.graphics.setColor(s[4].emission)
+						if s[4].emission[1] + s[4].emission[2] + s[4].emission[3] > 0 then
 							used[name] = true
 						end
 					elseif tex then
@@ -154,14 +172,19 @@ function lib:bakeMaterial(o)
 						used[name] = true
 					end
 					
-					if tex then
-						mesh:setTexture(tex)
+					if mesh then
+						if tex then
+							mesh:setTexture(tex)
+						end
+						love.graphics.draw(mesh, s[1], s[2], 0, s[3])
 					end
-					love.graphics.draw(mesh, s[1], s[2], 0, s[3])
 				end
 			end
 			love.graphics.pop()
 		end
+		
+		love.filesystem.createDirectory("bakedMaterials/" .. o.obj.dir)
+		canvas:newImageData():encode("tga", "bakedMaterials/" .. ID .. "_" .. name .. ".tga")
 	end
 	
 	--adapt UV
@@ -185,16 +208,16 @@ function lib:bakeMaterial(o)
 	o.material = self:newMaterial()
 	
 	if used.tex_albedo then
-		o.material.tex_albedo = canvases.tex_albedo
+		o.material.tex_albedo = "bakedMaterials/" .. ID .. "_tex_albedo.tga"
 		o.material.color = {1, 1, 1, 1}
 	end
 	
 	if used.tex_normal then
-		o.material.tex_normal = canvases.tex_normal
+		o.material.tex_normal = "bakedMaterials/" .. ID .. "_tex_normal.tga"
 	end
 	
 	if used.tex_material then
-		o.material.tex_material = canvases.tex_material
+		o.material.tex_material = "bakedMaterials/" .. ID .. "_tex_material.tga"
 		o.material.specular = 1.0
 		o.material.glossiness = 1.0
 		o.material.roughness = 1.0
@@ -202,7 +225,7 @@ function lib:bakeMaterial(o)
 	end
 	
 	if used.tex_emission then
-		o.material.tex_emission = canvases.tex_emission
+		o.material.tex_emission = "bakedMaterials/" .. ID .. "_tex_emission.tga"
 		o.material.emission = {1, 1, 1}
 	end
 end

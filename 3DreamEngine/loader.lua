@@ -50,6 +50,9 @@ function lib:loadLibrary(path, shaderType, args, prefix)
 	
 	--load
 	local obj = self:loadObject(path, shaderType, args)
+	for d,s in pairs(obj.objects) do
+		print(d, s.material.tex_albedo)
+	end
 	
 	--prepare lights for library entry
 	for d,s in pairs(obj.lights) do
