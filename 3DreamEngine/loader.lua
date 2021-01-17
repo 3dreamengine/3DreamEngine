@@ -50,9 +50,6 @@ function lib:loadLibrary(path, shaderType, args, prefix)
 	
 	--load
 	local obj = self:loadObject(path, shaderType, args)
-	for d,s in pairs(obj.objects) do
-		print(d, s.material.tex_albedo)
-	end
 	
 	--prepare lights for library entry
 	for d,s in pairs(obj.lights) do
@@ -196,6 +193,7 @@ function lib:loadObject(path, shaderType, args)
 			["BAKE"] = true,
 			["SHADOW"] = true,
 			["ID"] = true,
+			["RAYTRACE"] = true,
 		}
 		for d,o in pairs(obj.objects) do
 			o.tags = { }
@@ -436,9 +434,19 @@ function lib:loadObject(path, shaderType, args)
 	
 	
 	--bake
-	for d,o in pairs(obj.objects) do
-		if o.tags.bake then
-			self:bakeMaterial(o)
+	do
+		local groups = { }
+		for d,o in pairs(obj.objects) do
+			if o.tags.bake then
+				if not groups[o.tags.bake] then
+					groups[o.tags.bake] = {o}
+				else
+					table.insert(groups[o.tags.bake], o)
+				end
+			end
+		end
+		for d,s in pairs(groups) do
+			self:bakeMaterials(s, obj.path .. "_" .. tostring(d))
 		end
 	end
 	
