@@ -94,7 +94,7 @@ local function sendFogData(shader)
 end
 
 --improve speed of uniform check
-local function hasUniform(shaderObject, name)
+function hasUniform(shaderObject, name)
 	local uniforms = shaderObject.uniforms
 	if uniforms[name] == nil then
 		uniforms[name] = shaderObject.shader:hasUniform(name)
@@ -359,9 +359,9 @@ function lib:render(canvases, cam, reflections)
 				pos = cam.transformProj * vec4(s.pos.x, s.pos.y, s.pos.z, 1.0)
 			end
 			pos = vec3(pos.x / pos.w * 0.5 + 0.5, pos.y / pos.w * 0.5 + 0.5, pos.z)
-			pos.z = s.typ == "sun" and 1000 or pos.z
 			
 			if pos.z > 0 and pos.x > 0 and pos.x < 1 and pos.y > 0 and pos.y < 1 then
+				pos.z = s.typ == "sun" and 1000 or pos.z
 				local fade = math.min(1.0, math.min(pos.x, pos.y, 1-pos.x, 1-pos.y) * 32.0)
 				local b = fade * s.brightness * (s.typ == "sun" and 0.25 or 0.75 / (1.0 + pos.z))
 				table.insert(positions, pos)

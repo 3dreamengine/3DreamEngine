@@ -62,6 +62,8 @@ float whenLt(float x, float y) {
 }
 
 void effect() {
+	vec3 caustics = vec3(0.0);
+	
 #import mainPixelPre
 #import modulesPixelPre
 	
@@ -110,7 +112,7 @@ vec3 col;
 		
 		//depth check
 		float d = Texel(tex_depth, startPixel + vec).r;
-		vec3 nc = Texel(tex_color, startPixel + vec * whenLt(0.0, d - depth)).xyz;
+		vec3 nc = Texel(tex_color, startPixel + vec * whenLt(0.0, d - depth)).xyz + caustics;
 		col = mix(mix(nc, nc * albedo.rgb, albedo.a), col, albedo.a);
 		albedo.a = 1.0;
 	}

@@ -19,7 +19,8 @@ local function generateThumbnail(path, imageData, info)
 		local w, h = imageData:getDimensions()
 		local nw = math.floor(w / factor)
 		local nh = math.floor(h / factor)
-		local thumb = love.image.newImageData(nw, nh, imageData:getFormat())
+		--local thumb = love.image.newImageData(nw, nh, imageData:getFormat())
+		local thumb = love.image.newImageData(nw, nh)
 		
 		for x = 0, nw-1 do
 			for y = 0, nh-1 do
