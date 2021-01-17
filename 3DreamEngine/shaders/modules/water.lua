@@ -72,13 +72,15 @@ function sh:constructPixel(dream)
 	albedo.a = (c_water.a * (1.0 - mixValue) + mixValue) * color_albedo.a;
 	
 	//caustics
-	vec3 causticsPos = vertexPos + viewVec * (foamDepth - depth);
-	caustics = (
-		Texel(tex_caustics, (causticsPos.xz + waterUV1) * causticsScale).rgb +
-		Texel(tex_caustics, (causticsPos.xz + waterUV2) * causticsScale).rgb
-	) * causticsColor * 0.5;
-	
-	material = mix(m_water, m_foam, mixValue);
+	if (dot(normalRaw, viewVec) > 0.0) {
+		vec3 causticsPos = vertexPos + viewVec * (foamDepth - depth);
+		caustics = (
+			Texel(tex_caustics, (causticsPos.xz + waterUV1) * causticsScale).rgb +
+			Texel(tex_caustics, (causticsPos.xz + waterUV2) * causticsScale).rgb
+		) * causticsColor * 0.5;
+		
+		material = mix(m_water, m_foam, mixValue);
+	}
 #endif
 	}
 	]]
@@ -97,23 +99,23 @@ function sh:perMaterial(dream, shaderObject, material)
 	
 	local shader = shaderObject.shader
 	
-	shader:send("waterScale", material.waterScale or 1 / 64)
-	shader:send("waterSpeed", material.waterSpeed or 1.0)
-	shader:send("waterHeight", 1 / (material.waterHeight or 4.0))
+	checkAndSendCached(shaderObject, "waterScale", material.waterScale or 1 / 64)
+	checkAndSendCached(shaderObject, "waterSpeed", material.waterSpeed or 1)
+	checkAndSendCached(shaderObject, "waterHeight", 1 / (material.waterHeight or 4))
 	
 	if hasUniform(shaderObject, "foamWidth") then
-		shader:send("material_foam", {material.material_foam[1], material.material_foam[2]})
-		shader:send("tex_foam", dream:getTexture(material.tex_foam) or dream.textures.default)
-		shader:send("tex_caustics", dream:getTexture(material.tex_caustics) or dream.textures.default)
+		checkAndSendCached(shaderObject, "material_foam", {material.material_foam[1], material.material_foam[2]})
+		checkAndSendCached(shaderObject, "tex_foam", dream:getTexture(material.tex_foam) or dream.textures.default)
+		checkAndSendCached(shaderObject, "tex_caustics", dream:getTexture(material.tex_caustics) or dream.textures.default)
 		
-		shader:send("foamMode", material.foamMode and 1 or 0)
+		checkAndSendCached(shaderObject, "foamMode", material.foamMode and 1 or 0)
 		
-		shader:send("foamScale", material.foamScale or 1 / 8)
-		shader:send("foamWidth", 1 / (material.foamWidth or 0.5))
-		shader:send("foamDisortion", material.foamDisortion or 0.5)
+		checkAndSendCached(shaderObject, "foamScale", material.foamScale or 1 / 8)
+		checkAndSendCached(shaderObject, "foamWidth", 1 / (material.foamWidth or 0.5))
+		checkAndSendCached(shaderObject, "foamDisortion", material.foamDisortion or 0.5)
 		
-	shader:send("causticsColor", dream.sun_color)
-	shader:send("causticsScale", material.causticsScale or 1 / 16)
+		checkAndSendCached(shaderObject, "causticsColor", dream.sun_color)
+		checkAndSendCached(shaderObject, "causticsScale", material.causticsScale or 1 / 16)
 	end
 end
 
