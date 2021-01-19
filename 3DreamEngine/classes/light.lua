@@ -9,8 +9,8 @@ local convertOldLight = function(x, y, z, r, g, b, brightness)
 	return vec3(x or 0, y or 0, z or 0), vec3(r or 1, g or 1, b or 1), brightness or 1
 end
 
---backwards compatibility
 function lib:newLight(typ, pos, color, brightness, old, ...)
+	--backwards compatibility
 	if old then
 		pos, color, brightness = convertOldLight(pos, color, brightness, old, ...)
 	end

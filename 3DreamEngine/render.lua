@@ -165,29 +165,32 @@ function lib:render(canvases, cam, reflections)
 		--setup final scene
 		local scene = self:buildScene("render", dynamic, pass == 2, cam, blacklist, frustumCheck)
 		
-		if #scene > 0 or canvases.firstAlphaFrame then
-			canvases.firstAlphaFrame = true
-			
-			--only first pass writes depth
-			love.graphics.setDepthMode("less", pass == 1)
+		--only first pass writes depth
+		love.graphics.setDepthMode("less", pass == 1)
+		
+		--set correct blend mode
+		if canvases.averageAlpha and pass == 2 then
+			love.graphics.setBlendMode("add")
+		elseif canvases.refractions and pass == 2 then
+			love.graphics.setBlendMode("alpha", "premultiplied")
+		else
+			love.graphics.setBlendMode("alpha", "alphamultiply")
+		end
+		
+		--set canvases
+		if canvases.mode ~= "direct" then
 			if canvases.averageAlpha and pass == 2 then
-				love.graphics.setBlendMode("add")
-			else
-				love.graphics.setBlendMode("alpha", canvases.averageAlpha and "premultiplied" or "alphamultiply")
-			end
-			
-			--set canvases
-			local dataAlpha = canvases.averageAlpha and pass == 2
-			if canvases.mode ~= "direct" then
-				if dataAlpha then
-					--average alpha
+				--average alpha
+				if canvases.refractions then
+					love.graphics.setCanvas({canvases.colorAlpha, canvases.distortion, canvases.dataAlpha, depthstencil = canvases.depth_buffer})
+				else
 					love.graphics.setCanvas({canvases.colorAlpha, canvases.dataAlpha, depthstencil = canvases.depth_buffer})
-					love.graphics.clear(true, false, false)
-				elseif canvases.refractions and pass == 2 then
-					--refractions only
-					love.graphics.setCanvas({canvases.colorAlpha, depthstencil = canvases.depth_buffer})
-					love.graphics.clear(true, false, false)
 				end
+				love.graphics.clear(true, false, false)
+			elseif canvases.refractions and pass == 2 then
+				--refractions only
+				love.graphics.setCanvas({canvases.colorAlpha, canvases.distortion, depthstencil = canvases.depth_buffer})
+				love.graphics.clear(true, false, false)
 			end
 		end
 		
@@ -217,7 +220,7 @@ function lib:render(canvases, cam, reflections)
 				lastReflection = false
 				self.delton:start("shader")
 				
-				shaderObject = self:getRenderShader(shaderID, subObj, pass, canvases, light, false, false)
+				shaderObject = self:getRenderShader(shaderID, subObj, pass, canvases, light, false)
 				shaderEntry = self.shaderLibrary.base[shaderObject.shaderType]
 				shader = shaderObject.shader
 				if shaderObject.sessionID ~= sessionID then
@@ -251,7 +254,9 @@ function lib:render(canvases, cam, reflections)
 					--framebuffer
 					if hasUniform(shaderObject, "tex_depth") then
 						shader:send("tex_depth", canvases.depth)
-						shader:send("tex_color", canvases.color)
+					end
+					
+					if hasUniform(shaderObject, "screenScale") then
 						shader:send("screenScale", {1 / canvases.width, 1 / canvases.height})
 					end
 					
@@ -343,11 +348,117 @@ function lib:render(canvases, cam, reflections)
 			--self.stats.vertices = self.stats.vertices + subObj.vertexCount
 		end
 		self.delton:stop()
+		
+		
+		--particles on the alpha pass
+		if dynamic ~= false then
+			love.graphics.setColor(1.0, 1.0, 1.0)
+			self.delton:start("particles")
+			for ID, batches in pairs(self.particleBatches[pass]) do
+				local emissive = ID == 2 or ID == 4
+				local distortion = ID == 3 or ID == 4
+				
+				--batches
+				local shaderObject = lib:getParticlesShader(pass, canvases, light, emissive, distortion)
+				local shader = shaderObject.shader
+				love.graphics.setShader(shader)
+				
+				shader:send("transformProj", cam.transformProj)
+				if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", {cam.pos:unpack()}) end
+				if hasUniform(shaderObject, "gamma") then shader:send("gamma", self.gamma) end
+				if hasUniform(shaderObject, "exposure") then shader:send("exposure", self.exposure) end
+				
+				--light if using forward lighting
+				self:sendLightUniforms(light, shaderObject)
+				
+				--fog
+				if hasUniform(shaderObject, "fog_density") then
+					sendFogData(shader)
+				end
+				
+				--render particle batches
+				for batch,_ in pairs(batches) do
+					local v = 1.0 - batch.vertical
+					local right = vec3(cam.transform[1], cam.transform[2] * v, cam.transform[3]):normalize()
+					local up = vec3(cam.transform[5] * v, cam.transform[6], cam.transform[7] * v)
+					shader:send("up", {up:unpack()})
+					shader:send("right", {right:unpack()})
+					
+					--emission texture
+					if hasUniform(shaderObject, "tex_emission") then
+						shader:send("tex_emission", batch.emissionTexture)
+					end
+					
+					--distortion texture
+					if hasUniform(shaderObject, "tex_distortion") then
+						shader:send("tex_distortion", batch.distortionTexture)
+					end
+					
+					batch:present(cam.pos)
+				end
+			end
+			
+			--single particles on the alpha pass
+			for ID, p in pairs(self.particles[pass]) do
+				local emissive = ID == 2 or ID == 4
+				local distortion = ID == 3 or ID == 4
+				
+				local shaderObject = lib:getParticlesShader(pass, canvases, light, emissive, distortion, true)
+				local shader = shaderObject.shader
+				love.graphics.setShader(shader)
+				
+				shader:send("transformProj", cam.transformProj)
+				if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", {cam.pos:unpack()}) end
+				if hasUniform(shaderObject, "gamma") then shader:send("gamma", self.gamma) end
+				if hasUniform(shaderObject, "exposure") then shader:send("exposure", self.exposure) end
+				
+				--light if using forward lighting
+				self:sendLightUniforms(light, shaderObject)
+				
+				--fog
+				if hasUniform(shaderObject, "fog_density") then
+					sendFogData(shader)
+				end
+				
+				--render particles
+				for d,s in ipairs(p) do
+					local v = 1 - s.vertical
+					local right = vec3(cam.transform[1], cam.transform[2] * v, cam.transform[3]):normalize()
+					local up = vec3(cam.transform[5] * v, cam.transform[6], cam.transform[7] * v)
+					
+					shader:send("up", {up:unpack()})
+					shader:send("right", {right:unpack()})
+					
+					--position, size and emission multiplier
+					shader:send("InstanceCenter", s.position)
+					shader:send("InstanceEmission", s.emission)
+					
+					--emission texture
+					if hasUniform(shaderObject, "tex_emission") then
+						shader:send("tex_emission", s.emissionTexture)
+					end
+					
+					--emission texture
+					if hasUniform(shaderObject, "tex_distortion") then
+						shader:send("tex_distortion", s.distortionTexture)
+						shader:send("InstanceDistortion", s.distortion)
+					end
+					
+					--draw
+					love.graphics.setColor(s.color)
+					if s.quad then
+						love.graphics.draw(s.texture, s.quad, 0, 0, s.transform[1], s.transform[2], s.transform[3], s.transform[4], s.transform[5])
+					else
+						love.graphics.draw(s.texture, 0, 0, s.transform[1], s.transform[2], s.transform[3], s.transform[4], s.transform[5])
+					end
+				end
+			end
+			self.delton:stop()
+		end
 	end
 	
-	love.graphics.setColor(1.0, 1.0, 1.0)
-	
-	if dynamics ~= false and not love.keyboard.isDown("g") then
+	--godrays
+	if dynamics ~= false then
 		local positions = { }
 		local colors = { }
 		local sizes = { }
@@ -398,103 +509,6 @@ function lib:render(canvases, cam, reflections)
 			love.graphics.setBlendMode("alpha")
 			love.graphics.setShader()
 		end
-	end
-	
-	--particles on the alpha pass
-	if dynamic ~= false then
-		self.delton:start("particles")
-		for e = 1, 2 do
-			local emissive = e == 1
-			
-			--batches
-			if self.particleBatchesActive[emissive] then
-				local shaderObject = lib:getParticlesShader(canvases, light, emissive)
-				local shader = shaderObject.shader
-				love.graphics.setShader(shader)
-				
-				shader:send("transformProj", cam.transformProj)
-				if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", {cam.pos:unpack()}) end
-				if hasUniform(shaderObject, "gamma") then shader:send("gamma", self.gamma) end
-				if hasUniform(shaderObject, "exposure") then shader:send("exposure", self.exposure) end
-				
-				--light if using forward lighting
-				self:sendLightUniforms(light, shaderObject)
-				
-				--fog
-				if hasUniform(shaderObject, "fog_density") then
-					sendFogData(shader)
-				end
-				
-				--render particle batches
-				for batch,_ in pairs(self.particleBatches) do
-					if (batch.emissionTexture and true or false) == emissive then
-						local v = 1.0 - batch.vertical
-						local right = vec3(cam.transform[1], cam.transform[2] * v, cam.transform[3]):normalize()
-						local up = vec3(cam.transform[5] * v, cam.transform[6], cam.transform[7] * v)
-						shader:send("up", {up:unpack()})
-						shader:send("right", {right:unpack()})
-						
-						--emission texture
-						if hasUniform(shaderObject, "tex_emission") then
-							shader:send("tex_emission", batch.emissionTexture)
-						end
-						
-						batch:present(cam.pos)
-					end
-				end
-			end
-			
-			--single particles on the alpha pass
-			local p = emissive and self.particlesEmissive or self.particles
-			if p[1] then
-				local shaderObject = lib:getParticlesShader(canvases, light, emissive, true)
-				local shader = shaderObject.shader
-				love.graphics.setShader(shader)
-				
-				shader:send("transformProj", cam.transformProj)
-				shader:send("dataAlpha", canvases.averageAlpha)
-				if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", {cam.pos:unpack()}) end
-				if hasUniform(shaderObject, "gamma") then shader:send("gamma", self.gamma) end
-				if hasUniform(shaderObject, "exposure") then shader:send("exposure", self.exposure) end
-				
-				--light if using forward lighting
-				self:sendLightUniforms(light, shaderObject)
-				
-				--fog
-				if hasUniform(shaderObject, "fog_density") then
-					sendFogData(shader)
-				end
-				
-				--render particles
-				for d,s in ipairs(p) do
-					local nr = #s - 6
-					local v = 1.0 - s[4 + nr]
-					local right = vec3(cam.transform[1], cam.transform[2] * v, cam.transform[3]):normalize()
-					local up = vec3(cam.transform[5] * v, cam.transform[6], cam.transform[7] * v)
-					
-					shader:send("up", {up:unpack()})
-					shader:send("right", {right:unpack()})
-					
-					--position, size and emission multiplier
-					shader:send("InstanceCenter", s[2 + nr])
-					shader:send("InstanceEmission", s[5 + nr])
-					
-					--emission texture
-					if hasUniform(shaderObject, "tex_emission") then
-						shader:send("tex_emission", s[2])
-					end
-					
-					--draw
-					love.graphics.setColor(s[3 + nr])
-					if s[1 + nr].getViewport then
-						love.graphics.draw(s[1], s[1 + nr], 0, 0, unpack(s[6 + nr]))
-					else
-						love.graphics.draw(s[1], 0, 0, unpack(s[6 + nr]))
-					end
-				end
-			end
-		end
-		self.delton:stop()
 	end
 	
 	love.graphics.pop()
@@ -550,7 +564,7 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 			lastMaterial = false
 			lastReflection = false
 			
-			shaderObject = self:getRenderShader(shaderID, subObj, pass, { }, nil, true, false)
+			shaderObject = self:getRenderShader(shaderID, subObj, pass, { }, nil, true)
 			shaderEntry = self.shaderLibrary.base[shaderObject.shaderType]
 			shader = shaderObject.shader
 			shaderObject.session = { }
@@ -723,6 +737,7 @@ function lib:renderFull(cam, canvases, reflections)
 		checkAndSend(shader, "canvas_ao", canvases.AO_1)
 		
 		checkAndSend(shader, "canvas_alpha", canvases.colorAlpha)
+		checkAndSend(shader, "canvas_distortion", canvases.distortion)
 		checkAndSend(shader, "canvas_alphaData", canvases.dataAlpha)
 		
 		checkAndSend(shader, "canvas_exposure", self.canvas_exposure)

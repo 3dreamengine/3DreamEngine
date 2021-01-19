@@ -4,6 +4,7 @@ extern Image canvas_bloom;
 extern Image canvas_ao;
 
 extern Image canvas_alpha;
+extern Image canvas_distortion;
 extern Image canvas_alphaData;
 
 extern Image canvas_exposure;
@@ -83,29 +84,33 @@ vec4 fxaa(Image tex, vec2 tc) {
 
 #ifdef PIXEL
 vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
+	//distortion
+	vec2 tcd = tc;
+#ifdef REFRACTIONS_ENABLED
+	tcd = tc + Texel(canvas_distortion, tc).xy;
+#endif
+	
 	//color
 #ifdef FXAA_ENABLED
-	vec4 col = fxaa(canvas_color, tc);
+	vec4 col = fxaa(canvas_color, tcd);
 #else
-	vec4 col = Texel(canvas_color, tc);
+	vec4 col = Texel(canvas_color, tcd);
 #endif
 	
 	//ao
 #ifdef AO_ENABLED
-	float ao = Texel(canvas_ao, tc).r;
+	float ao = Texel(canvas_ao, tcd).r;
 	col.rgb *= ao;
 #endif
 	
 	//fetch depth for fog
 #ifdef FOG_ENABLED
-	float depth = Texel(canvas_depth, tc).r;
+	float depth = Texel(canvas_depth, tcd).r;
 #endif
 
-	//alpha
-#ifdef ALPHAPASS_ENABLED
-#ifdef AVERAGE_ALPHA
 	//average alpha
-	vec3 dat = Texel(canvas_alphaData, tc).xyz;
+#ifdef AVERAGE_ALPHA
+	vec2 dat = Texel(canvas_alphaData, tc).xy;
 	if (dat.x > 0.0) {
 #ifdef FXAA_ENABLED
 		vec4 ca = fxaa(canvas_alpha, tc);
@@ -114,15 +119,13 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 #endif
 		ca.rgb = ca.rgb / dat.y;
 		ca.a = dat.y / dat.x;
-		col = mix(col, ca, ca.a);
-		
-#ifdef FOG_ENABLED
-		//blend between alpha and background depth
-		depth = mix(depth, dat.z / dat.x, ca.a);
-#endif
+		col.rgb = mix(col.rgb, ca.rgb, ca.a);
+		col.a = col.a * (1.0 - ca.a) + ca.a;
 	}
-#else
-	//no average alpha
+#endif
+	
+	//simple alpha
+#ifdef REFRACTIONS_ENABLED
 #ifdef FXAA_ENABLED
 	vec4 ca = fxaa(canvas_alpha, tc);
 #else
@@ -131,12 +134,10 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 	col.rgb = mix(col.rgb, ca.rgb, ca.a);
 	col.a = col.a * (1.0 - ca.a) + ca.a;
 #endif
-
-#endif
 	
 	//bloom
 #ifdef BLOOM_ENABLED
-	vec3 bloom = Texel(canvas_bloom, tc).rgb;
+	vec3 bloom = Texel(canvas_bloom, tcd).rgb;
 	col.rgb += bloom;
 #endif
 

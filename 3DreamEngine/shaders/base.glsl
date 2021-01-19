@@ -22,9 +22,9 @@ varying vec3 normalRawV;           //depth
 #import modulesDefines
 #import mainDefines
 
-#ifdef REFRACTIONS_ENABLED
 extern Image tex_depth;
-extern Image tex_color;
+
+#ifdef REFRACTIONS_ENABLED
 extern vec2 screenScale;
 #endif
 
@@ -63,6 +63,10 @@ float whenLt(float x, float y) {
 
 void effect() {
 	vec3 caustics = vec3(0.0);
+
+#ifdef REFRACTIONS_ENABLED
+	vec2 distortion = vec2(0.0);
+#endif
 	
 #import mainPixelPre
 #import modulesPixelPre
@@ -108,13 +112,7 @@ vec3 col;
 		endPixel.xy = endPixel.xy * 0.5 + 0.5;
 		
 		//uv translation
-		vec2 vec = endPixel.xy - startPixel;
-		
-		//depth check
-		float d = Texel(tex_depth, startPixel + vec).r;
-		vec3 nc = Texel(tex_color, startPixel + vec * whenLt(0.0, d - depth)).xyz + caustics;
-		col = mix(mix(nc, nc * albedo.rgb, albedo.a), col, albedo.a);
-		albedo.a = 1.0;
+		distortion = endPixel.xy - startPixel;
 	}
 #endif
 
@@ -134,19 +132,30 @@ vec3 col;
 	col = pow(col, vec3(1.0 / gamma));
 #endif
 	
+	//alpha data and distortion
+#ifdef AVERAGE_ENABLED
+#ifdef REFRACTIONS_ENABLED
+		love_Canvases[1] = vec4(distortion, 0.0, 1.0);
+		love_Canvases[2] = vec4(1.0, albedo.a, 0.0, 1.0);
+#else
+		love_Canvases[1] = vec4(1.0, albedo.a, 0.0, 1.0);
+#endif
+#else
+#ifdef REFRACTIONS_ENABLED
+		//to allow distortion blending we use premultiplied alpha blending, which required manual rgb math here
+		col *= albedo.a;
+		
+		love_Canvases[1] = vec4(distortion, 0.0, 0.0);
+#endif
+#endif
+	
 	//returns color
 	love_Canvases[0] = vec4(col, albedo.a);
 	
-	//alpha data
-#ifdef AVERAGE_ENABLED
-#ifdef REFRACTIONS_ENABLED
-		love_Canvases[1] = vec4(1.0, 1.0, depth, 1.0);
-#else
-		love_Canvases[1] = vec4(1.0, albedo.a, depth, 1.0);
-#endif
-#else
+	//def
 #ifndef REFRACTIONS_ENABLED
-		love_Canvases[1] = vec4(depth, 0.0, 0.0, albedo.a);
+#ifndef AVERAGE_ENABLED
+	love_Canvases[1] = vec4(depth, 0.0, 0.0, albedo.a);
 #endif
 #endif
 }

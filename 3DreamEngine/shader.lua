@@ -125,7 +125,7 @@ function lib.getFinalShader(self, canvases)
 	parts[#parts+1] = self.fog_enabled and "#define FOG_ENABLED" or nil
 	parts[#parts+1] = self.AO_enabled and "#define AO_ENABLED" or nil
 	
-	parts[#parts+1] = (canvases.refractions or canvases.averageAlpha) and "#define ALPHAPASS_ENABLED" or nil
+	parts[#parts+1] = canvases.refractions and "#define REFRACTIONS_ENABLED" or nil
 	parts[#parts+1] = canvases.averageAlpha and "#define AVERAGE_ALPHA" or nil
 	
 	parts[#parts+1] = (canvases.fxaa and canvases.msaa == 0) and "#define FXAA_ENABLED" or nil
@@ -244,8 +244,8 @@ function lib:getRenderShaderID(obj, pass, shadows)
 	return string.char(ID_base, (ID_modules / 256^3) % 256, (ID_modules / 256^2) % 256, (ID_modules / 256^1) % 256, (ID_modules / 256^0) % 256, ID_settings % 256)
 end
 
-function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, instances)
-	local shaderID = (canvases and canvases.shaderID or 0) * 2 + (instances and 1 or 0)
+function lib:getRenderShader(ID, obj, pass, canvases, light, shadows)
+	local shaderID = (canvases and canvases.shaderID or 0) * 2
 	if light then
 		shaderID = light.ID .. shaderID
 	end
@@ -292,20 +292,10 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, instances)
 			reflection = not shadows and reflection,
 			shadows = shadows,
 			uniforms = { },
-			instances = instances,
 		}
 		self.mainShaders[shaderID][ID] = info
 		
-		if shadows then
-			local globalDefines = { }
-			
-			if instances then
-				table.insert(globalDefines, "#define INSTANCES " .. self.instanceBatchSize)
-			end
-			
-			--setting specific defines
-			code = code:gsub("#import globalDefines", table.concat(globalDefines, "\n"))
-		else
+		if not shadows then
 			--settings
 			local globalDefines = { }
 			if pass == 1 then
@@ -333,9 +323,6 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, instances)
 			end
 			if mat.translucent > 0 then
 				table.insert(globalDefines, "#define TRANSLUCENT_ENABLED")
-			end
-			if instances then
-				table.insert(globalDefines, "#define INSTANCES " .. self.instanceBatchSize)
 			end
 			
 			--setting specific defines
@@ -406,33 +393,47 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, instances)
 	return self.mainShaders[shaderID][ID]
 end
 
-local baseParticlesShader = love.filesystem.read(lib.root .. "/shaders/particles.glsl")
 local baseParticleShader = love.filesystem.read(lib.root .. "/shaders/particle.glsl")
-function lib:getParticlesShader(canvases, light, emissive, single)
+function lib:getParticlesShader(pass, canvases, light, emissive, distortion, single)
 	--additional settings
 	local ID_settings = 0
 	if emissive then
 		ID_settings = ID_settings + 2^0
 	end
-	if canvases.postEffects and self.exposure and earlyExposure(canvases) then
+	if distortion and pass == 2 then
 		ID_settings = ID_settings + 2^1
 	end
-	if canvases.postEffects and self.gamma and earlyExposure(canvases) then
+	if canvases.postEffects and self.exposure and earlyExposure(canvases) then
 		ID_settings = ID_settings + 2^2
+	end
+	if canvases.postEffects and self.gamma and earlyExposure(canvases) then
+		ID_settings = ID_settings + 2^3
 	end
 	if self.fog_enabled and canvases.mode ~= "normal" then
 		ID_settings = ID_settings + 2^4
 	end
-	if single then
+	if canvases.refractions and pass == 2 then
 		ID_settings = ID_settings + 2^5
 	end
+	if canvases.averageAlpha and pass == 2 then
+		ID_settings = ID_settings + 2^6
+	end
+	if pass == 1 and canvases.mode ~= "direct" then
+		ID_settings = ID_settings + 2^7
+	end
+	if single then
+		ID_settings = ID_settings + 2^9
+	end
 	
-	local ID = light.ID .. string.char(ID_settings)
+	local ID = light.ID .. string.char(ID_settings % 256, math.floor(ID_settings / 256))
 	
 	if not self.particlesShader[ID] then
 		local globalDefines = { }
 		if emissive then
 			table.insert(globalDefines, "#define TEX_EMISSION")
+		end
+		if distortion and pass == 2 then
+			table.insert(globalDefines, "#define TEX_DISORTION")
 		end
 		if canvases.postEffects and self.exposure and earlyExposure(canvases) then
 			table.insert(globalDefines, "#define EXPOSURE_ENABLED")
@@ -443,13 +444,25 @@ function lib:getParticlesShader(canvases, light, emissive, single)
 		if self.fog_enabled and canvases.mode ~= "normal" then
 			table.insert(globalDefines, "#define FOG_ENABLED")
 		end
+		if canvases.refractions and pass == 2 then
+			table.insert(globalDefines, "#define REFRACTIONS_ENABLED")
+		end
+		if canvases.averageAlpha and pass == 2 then
+			table.insert(globalDefines, "#define AVERAGE_ENABLED")
+		end
+		if pass == 1 and canvases.mode ~= "direct" then
+			table.insert(globalDefines, "#define DEPTH_ENABLED")
+		end
+		if single then
+			table.insert(globalDefines, "#define SINGLE")
+		end
 		
 		local info = {
 			uniforms = { }
 		}
 		
 		--construct shader
-		local code = single and baseParticleShader or baseParticlesShader
+		local code = baseParticleShader
 		
 		--setting specific defines
 		code = code:gsub("#import globalDefines", table.concat(globalDefines, "\n"))
