@@ -5,11 +5,7 @@
 
 //camera uniforms
 extern highp mat4 transformProj;   //projective transformation
-#ifdef INSTANCES
-extern highp mat4 transforms[INSTANCES];
-#else
 extern highp mat4 transform;       //model transformation
-#endif
 extern highp vec3 viewPos;         //camera position
 
 //varyings
@@ -97,6 +93,9 @@ vec3 col;
 #import lightingSystem
 	col += light;
 	
+	//apply caustics
+	col += caustics / albedo.a;
+	
 #import mainPixelPost
 #import modulesPixelPost
 
@@ -170,11 +169,7 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 #import mainVertex
 	
 	//apply final vertex transform
-#ifdef INSTANCES
-	vertexPos = (transforms[love_InstanceID] * vec4(vertexPos, 1.0)).xyz;
-#else
 	vertexPos = (transform * vec4(vertexPos, 1.0)).xyz;
-#endif
 	
 	//projection transform for the vertex
 	vec4 vPos = transformProj * vec4(vertexPos, 1.0);

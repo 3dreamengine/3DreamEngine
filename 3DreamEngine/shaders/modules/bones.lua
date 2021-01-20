@@ -10,6 +10,25 @@ function sh:init(dream)
 	
 end
 
+function sh:initObject(dream, obj)
+	--initial prepare bone data
+	if not obj.boneMesh and not obj.meshes then
+		assert(obj.joints and obj.weights, "GPU bones require a joint and weight buffer")
+		obj.boneMesh = love.graphics.newMesh({{"VertexJoint", "byte", 4}, {"VertexWeight", "byte", 4}}, #obj.joints, "triangles", "static")
+		
+		--create mesh
+		for d,s in ipairs(obj.joints) do
+			local w = obj.weights[d]
+			obj.boneMesh:setVertex(d, (s[1] or 0) / 255, (s[2] or 0) / 255, (s[3] or 0) / 255, (s[4] or 0) / 255, w[1] or 0, w[2] or 0, w[3] or 0, w[4] or 0)
+		end
+	end
+	
+	if obj.boneMesh then
+		obj.mesh:attachAttribute("VertexJoint", obj.boneMesh)
+		obj.mesh:attachAttribute("VertexWeight", obj.boneMesh)
+	end
+end
+
 function sh:constructDefines(dream)
 	return [[
 		#ifdef VERTEX
@@ -47,28 +66,6 @@ function sh:perMaterial(dream, shaderObject, material)
 end
 
 function sh:perTask(dream, shaderObject, subObj, task)
-	local shader = shaderObject.shader
-	
-	--initial prepare bone data
-	if not subObj.boneMesh and subObj.joints then
-		subObj.boneMesh = love.graphics.newMesh({{"VertexJoint", "byte", 4}, {"VertexWeight", "byte", 4}}, #subObj.joints, "triangles", "static")
-		
-		--create mesh
-		for d,s in ipairs(subObj.joints) do
-			local w = subObj.weights[d]
-			subObj.boneMesh:setVertex(d, (s[1] or 0) / 255, (s[2] or 0) / 255, (s[3] or 0) / 255, (s[4] or 0) / 255, w[1] or 0, w[2] or 0, w[3] or 0, w[4] or 0)
-		end
-		
-		--clear buffers
-		if subObj.obj.args.cleanup then
-			subObj.joints = nil
-			subObj.weights = nil
-		end
-		
-		subObj.mesh:attachAttribute("VertexJoint", subObj.boneMesh)
-		subObj.mesh:attachAttribute("VertexWeight", subObj.boneMesh)
-	end
-	
 	local bt = task:getBoneTransforms()
 	assert(bt, "missing bone transforms")
 	
@@ -80,7 +77,7 @@ function sh:perTask(dream, shaderObject, subObj, task)
 				matrices[i+1] = bt[j]
 			end
 		end
-		shader:send("jointTransforms", unpack(matrices))
+		shaderObject.shader:send("jointTransforms", unpack(matrices))
 	end
 end
 

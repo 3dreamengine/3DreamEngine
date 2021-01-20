@@ -34,24 +34,28 @@ return function(self, obj, path)
 	local typ = file:read(4)
 	
 	--check if up to date
-	if typ ~= "3DO2" then
+	if typ ~= "3DO3" then
 		print("3DO file " .. path .. " seems to be outdated and will be skipped")
 		file:close()
 		return true
 	end
 	
+	--header
 	local compressed = file:read(4):sub(1, 3)
 	local l = file:read(4)
 	local headerLength = love.data.unpack("J", l)
 	local headerData = file:read(headerLength)
 	
+	--object lua data
 	local header = packTable.unpack(love.data.decompress("string", compressed, headerData))
 	table.merge(obj, header)
 	
+	--mesh creation and 3DO exporting makes no longer sense
 	obj.args.particleSystems = false
 	obj.args.mesh = false
 	obj.args.export3do = false
 	
+	--store 3DO data for the loader
 	obj.DO_dataOffset = 12 + headerLength
 	obj.DO_compressed = compressed
 	obj.DO_path = path
@@ -133,12 +137,13 @@ return function(self, obj, path)
 	
 	--cleanup
 	for d,o in pairs(obj.objects) do
-		if o.meshDataIndex then
+		for _,_ in pairs(o.meshes) do
 			if #o.vertices == 0 then
 				o.vertices = nil
 			end
 			o.loaded = false
 			obj.loaded = false
+			break
 		end
 	end
 	

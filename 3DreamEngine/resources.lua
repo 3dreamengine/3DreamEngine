@@ -20,10 +20,10 @@ for i = 1, math.max(1, require("love.system").getProcessorCount()-2) do
 end
 
 --add a new job to be handled by a loader thread
-function lib:addResourceJob(typ, obj, priority, ...)
+function lib:addResourceJob(typ, obj, priority, data)
 	self.lastResourceJob = self.lastResourceJob + 1
 	self.resourceJobs[self.lastResourceJob] = obj
-	self[priority and "channel_jobs_priority" or "channel_jobs"]:push({"3do", self.lastResourceJob, ...})
+	self[priority and "channel_jobs_priority" or "channel_jobs"]:push({"3do", self.lastResourceJob, data})
 end
 
 --input channels and result
@@ -100,24 +100,48 @@ function lib:update()
 		if msg[1] == "3do" then
 			--3do mesh data
 			local obj = self.resourceJobs[msg[2]]
-			local mesh
 			
-			for d,o in pairs(obj.objects) do
-				if o.meshDataIndex then
-					local index = o.obj.DO_dataOffset + o.meshDataIndex
-					if msg[3] == index then
-						if not mesh then
-							mesh = love.graphics.newMesh(o.vertexFormat, o.vertexCount, "triangles", "static")
-							mesh:setVertexMap(o.vertexMap)
-							mesh:setVertices(msg[4])
-							vertexMap = nil
+			--index all meshes available
+			local changes = { }
+			for name, meshData in pairs(msg[3]) do
+				local finalMesh
+				for d,o in pairs(obj.objects) do
+					if o.meshes then
+						local mesh = o.meshes[name]
+						if mesh then
+							local index = obj.DO_dataOffset + mesh.meshDataIndex
+							if index == meshData[1] then
+								if not finalMesh then
+									finalMesh = love.graphics.newMesh(mesh.vertexFormat, mesh.vertexCount, "triangles", "static")
+									finalMesh:setVertexMap(mesh.vertexMap)
+									finalMesh:setVertices(meshData[2])
+									mesh.vertexMap = nil
+								end
+								
+								o[name] = finalMesh
+								o.loaded = true
+								changes[o] = true
+							end
 						end
-						
-						o.mesh = mesh
-						o.loaded = true
 					end
 				end
 			end
+			
+			--refresh shader modules
+			for o,_ in pairs(changes) do
+				local complete = true
+				for name,mesh in pairs(o.meshes) do
+					if not o[name] then
+						complete = false
+						break
+					end
+				end
+				
+				if complete then
+					o:initModules()
+				end
+			end
+			
 			self.resourceJobs[msg[2]] = nil
 		else
 			--image

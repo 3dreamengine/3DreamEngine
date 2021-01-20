@@ -486,6 +486,16 @@ function lib:loadObject(path, shaderType, args)
 	end
 	
 	
+	--callback
+	if obj.args.callback then
+		obj.args.callback(obj)
+	end
+	
+	
+	--init modules
+	obj:initModules()
+	
+	
 	--cleaning up
 	if obj.args.cleanup then
 		obj:cleanup(obj.args.cleanupLite)

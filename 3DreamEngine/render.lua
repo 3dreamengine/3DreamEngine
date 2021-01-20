@@ -334,6 +334,9 @@ function lib:render(canvases, cam, reflections)
 			shader:send("transform", task:getTransform())
 			
 			--shader
+			if not subObj.modulesInitialized then
+				subObj:initModules()
+			end
 			shaderEntry:perTask(self, shaderObject, task)
 			for d,s in pairs(shaderObject.modules) do
 				s:perTask(self, shaderObject, subObj, task)

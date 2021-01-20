@@ -57,16 +57,20 @@ return {
 	end,
 	
 	request = function(self)
-		if not self.loaded and self.meshDataIndex then
+		if not self.loaded and self.meshes then
 			self.obj.loadRequests = self.obj.loadRequests or { }
 			
-			local index = self.obj.DO_dataOffset + self.meshDataIndex
-			if not self.obj.loadRequests[index] then
-				self.obj.loadRequests[index] = true
-				lib:addResourceJob("3do", self.obj, true, self.obj.DO_path, index, self.meshDataSize, self.obj.DO_compressed)
-				return true
-			else
-				return false
+			local requests
+			for name, mesh in pairs(self.meshes) do
+				local index = self.obj.DO_dataOffset + mesh.meshDataIndex
+				if not self.obj.loadRequests[index] then
+					self.obj.loadRequests[index] = true
+					requests = requests or { }
+					requests[name] = {index, mesh.meshDataSize}
+				end
+			end
+			if requests then
+				lib:addResourceJob("3do", self.obj, true, {path = self.obj.DO_path, compression = self.obj.DO_compressed, requests = requests})
 			end
 		end
 	end,
@@ -109,6 +113,32 @@ return {
 		self.boundingBox.size = math.max(math.sqrt(max), self.boundingBox.size)
 	end,
 	
+	initModules = function(self)
+		local modules = self.modules or self.obj and self.obj.modules or self.material.modules
+		
+		--global modules
+		local m = { }
+		for d,s in pairs(lib.activeShaderModules) do
+			m[d] = lib:getShaderModule(d)
+		end
+		
+		--local modules
+		if modules then
+			for d,s in pairs(modules) do
+				m[d] = lib:getShaderModule(d)
+			end
+		end
+		
+		--apply modules
+		for d,s in pairs(m) do
+			if s.initObject then
+				s:initObject(lib, self)
+			end
+		end
+		
+		self.modulesInitialized = true
+	end,
+	
 	--clean most primary buffers
 	cleanup = function(self, lite)
 		if not lite then
@@ -122,5 +152,13 @@ return {
 		self.materials = nil
 		self.extras = nil
 		self.tangents = nil
+		
+		self.joints = nil
+		self.weights = nil
+		
+		for i = 1, 10 do
+			self["texCoords_" .. i] = nil
+			self["colors_" .. i] = nil
+		end
 	end,
 }

@@ -87,7 +87,8 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 	//distortion
 	vec2 tcd = tc;
 #ifdef REFRACTIONS_ENABLED
-	tcd = tc + Texel(canvas_distortion, tc).xy;
+	vec2 distortion = Texel(canvas_distortion, tc).xy;
+	tcd = tc + distortion;
 #endif
 	
 	//color

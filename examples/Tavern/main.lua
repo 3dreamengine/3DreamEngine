@@ -233,11 +233,11 @@ end
 
 function love.keypressed(key)
 	if tonumber(key) then
-		if key == "9" then
-			dream:setBloom(false)
-		else
-			dream:setBloom(tonumber(key))
-		end
+--		if key == "9" then
+--			dream:setBloom(false)
+--		else
+--			dream:setBloom(tonumber(key))
+--		end
 	end
 	
 	--screenshots!
@@ -287,17 +287,17 @@ function love.keypressed(key)
 		rotateCamera = not rotateCamera
 	end
 	
-	if key == "11" then
+	if key == "1" then
 		dream.renderSet:setRefractions(not dream.renderSet:getRefractions())
 		dream:init()
 	end
 	
-	if key == "21" then
+	if key == "2" then
 		dream.renderSet:setAverageAlpha(not dream.renderSet:getAverageAlpha())
 		dream:init()
 	end
 	
-	if key == "33" then
+	if key == "3" then
 		local cullMode = dream:getAlphaCullMode()
 		dream:init()
 	end

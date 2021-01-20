@@ -16,7 +16,7 @@ function lib:applyTransform(s, transform)
 			index = index + s[3]
 		end
 		
-		--normal transforation
+		--normal transformation
 		local subm = transform:subm()
 		
 		for i = 1, s:getVertexCount() do

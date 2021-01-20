@@ -4,6 +4,10 @@ return {
 			obj.modules = { }
 		end
 		obj.modules[name] = true
+		
+		if obj.initModules then
+			obj:initModules()
+		end
 	end,
 	
 	deactivateShaderModule = function(obj, name)

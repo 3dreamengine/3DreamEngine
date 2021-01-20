@@ -115,6 +115,12 @@ return {
 		end
 	end,
 	
+	initModules = function(self)
+		for d,s in pairs(self.objects) do
+			s:initModules()
+		end
+	end,
+	
 	cleanup = function(self, lite)
 		for d,s in pairs(self.objects) do
 			s:cleanup(lite)

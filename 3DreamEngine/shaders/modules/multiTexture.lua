@@ -6,6 +6,23 @@ function sh:init(dream)
 	
 end
 
+function sh:initObject(dream, obj)
+	--initial prepare bone data
+	if not obj.uv2Mesh and not obj.meshes then
+		assert(obj.texCoords_2, "To use the multiTetxure module at least a second UV map for the mask texture is required.")
+		obj.uv2Mesh = love.graphics.newMesh({{"VertexTexCoord2", "float", 2}}, #obj.texCoords_2, "triangles", "static")
+		
+		--create mesh
+		for d,uv in ipairs(obj.texCoords_2) do
+			obj.uv2Mesh:setVertex(d, uv[1], uv[2])
+		end
+	end
+	
+	if obj.uv2Mesh then
+		obj.mesh:attachAttribute("VertexTexCoord2", obj.uv2Mesh)
+	end
+end
+
 function sh:constructDefines(dream)
 	return [[
 	extern Image tex_albedo_2;
@@ -73,24 +90,6 @@ end
 
 function sh:perTask(dream, shaderObject, subObj, task)
 	local shader = shaderObject.shader
-	
-	--initial prepare bone data
-	if not subObj.uv2Mesh then
-		assert(subObj.texCoords_2, "To use the multiTetxure module at least a second UV map for the mask texture is required.")
-		subObj.uv2Mesh = love.graphics.newMesh({{"VertexTexCoord2", "float", 2}}, #subObj.texCoords_2, "triangles", "static")
-		
-		--create mesh
-		for d,uv in ipairs(subObj.texCoords_2) do
-			subObj.uv2Mesh:setVertex(d, uv[1], uv[2])
-		end
-		
-		--clear buffers
-		if subObj.obj.args.cleanup then
-			subObj.texCoords_2 = nil
-		end
-		
-		subObj.mesh:attachAttribute("VertexTexCoord2", subObj.uv2Mesh)
-	end
 	
 	local material = subObj.material_2
 	assert(material, "set subObject.material_2 to a material")

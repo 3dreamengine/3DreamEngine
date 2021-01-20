@@ -53,12 +53,13 @@ function lib:export3do(obj)
 			["LOD_adaptSize"] = o.LOD_adaptSize,
 			["LOD_center"] = o.LOD_center,
 			["shaderType"] = o.shaderType,
-			["meshType"] = o.meshType,
+			["meshType"] = meshType,
 			["boundingBox"] = o.boundingBox,
 			["transform"] = o.transform,
 			["joints"] = o.joints,
 			["linked"] = o.linked,
 			["tags"] = o.tags,
+			["meshes"] = { },
 		}
 		
 		if o.material.library then
@@ -74,81 +75,80 @@ function lib:export3do(obj)
 			h["vertices"] = o.vertices
 			h["normals"] = o.normals
 			h["faces"] = o.faces
-			h["texCoords"] = o.texCoords
-			
-			for i = 2, 10 do
-				h["texCoords_" .. i] = o["texCoords_" .. i]
-			end
 		end
 		
 		header.objects[d] = h
 		
-		if o.mesh and not o.linked then
-			if meshCache[o.mesh] then
-				h.vertexCount = meshCache[o.mesh].vertexCount
-				h.vertexMap = meshCache[o.mesh].vertexMap
-				h.vertexFormat = meshCache[o.mesh].vertexFormat
-				h.meshDataIndex = meshCache[o.mesh].meshDataIndex
-				h.meshDataSize = meshCache[o.mesh].meshDataSize
-			else
-				meshCache[o.mesh] = h
-				local f = o.mesh:getVertexFormat()
-				h.vertexCount = o.mesh:getVertexCount()
-				h.vertexMap = o.mesh:getVertexMap()
-				h.vertexFormat = f
-				
-				--give a unique hash for the vertex format
-				local md5 = love.data.hash("md5", packTable.pack(f))
-				local hash = love.data.encode("string", "hex", md5)
-				
-				--build a C struct to make sure data match
-				local str = "typedef struct {" .. "\n"
-				local attrCount = 0
-				local types = { }
-				for _,ff in ipairs(f) do
-					if ff[2] == "float" then
-						str = str .. "float "
-					elseif ff[2] == "byte" then
-						str = str .. "unsigned char "
+		if not o.linked then
+			--look for meshes
+			for name, mesh in pairs(o) do
+				if type(mesh) == "userdata" and mesh:typeOf("Mesh") then
+					if meshCache[mesh] then
+						h.meshes[name] = meshCache[mesh]
 					else
-						error("unknown data type " .. ff[2])
+						local m = { }
+						meshCache[mesh] = m
+						h.meshes[name] = m
+						
+						local f = mesh:getVertexFormat()
+						m.vertexCount = mesh:getVertexCount()
+						m.vertexMap = mesh:getVertexMap()
+						m.vertexFormat = f
+						
+						--give a unique hash for the vertex format
+						local md5 = love.data.hash("md5", packTable.pack(f))
+						local hash = love.data.encode("string", "hex", md5)
+						
+						--build a C struct to make sure data match
+						local str = "typedef struct {" .. "\n"
+						local attrCount = 0
+						local types = { }
+						for _,ff in ipairs(f) do
+							if ff[2] == "float" then
+								str = str .. "float "
+							elseif ff[2] == "byte" then
+								str = str .. "unsigned char "
+							else
+								error("unknown data type " .. ff[2])
+							end
+							
+							for i = 1, ff[3] do
+								attrCount = attrCount + 1
+								types[attrCount] = ff[2]
+								str = str .. "x" .. attrCount .. (i == ff[3] and ";" or ", ")
+							end
+							str = str .. "\n"
+						end
+						str = str .. "} mesh_vertex_" .. hash .. ";"
+						self.ffi.cdef(str)
+						
+						--byte data
+						local byteData = love.data.newByteData(mesh:getVertexCount() * self.ffi.sizeof("mesh_vertex_" .. hash))
+						local meshData = self.ffi.cast("mesh_vertex_" .. hash .. "*", byteData:getPointer())
+						
+						--fill data
+						for i = 1, mesh:getVertexCount() do
+							local v = {mesh:getVertex(i)}
+							for i2 = 1, attrCount do
+								meshData[i-1]["x" .. i2] = (types[i2] == "byte" and math.floor(v[i2]*255) or v[i2])
+							end
+						end
+						
+						--convert to string and store
+						local c = love.data.compress("string", compressed, byteData:getString(), compressedLevel)
+						dataStrings[#dataStrings+1] = c
+						m.meshDataIndex = dataIndex
+						m.meshDataSize = #c
+						dataIndex = dataIndex + m.meshDataSize
 					end
-					
-					for i = 1, ff[3] do
-						attrCount = attrCount + 1
-						types[attrCount] = ff[2]
-						str = str .. "x" .. attrCount .. (i == ff[3] and ";" or ", ")
-					end
-					str = str .. "\n"
 				end
-				str = str .. "} mesh_vertex_" .. hash .. ";"
-				self.ffi.cdef(str)
-				
-				--byte data
-				local byteData = love.data.newByteData(o.mesh:getVertexCount() * self.ffi.sizeof("mesh_vertex_" .. hash))
-				local meshData = self.ffi.cast("mesh_vertex_" .. hash .. "*", byteData:getPointer())
-				
-				--fill data
-				for i = 1, o.mesh:getVertexCount() do
-					local v = {o.mesh:getVertex(i)}
-					for i2 = 1, attrCount do
-						meshData[i-1]["x" .. i2] = (types[i2] == "byte" and math.floor(v[i2]*255) or v[i2])
-					end
-				end
-				
-				--convert to string and store
-				local c = love.data.compress("string", compressed, byteData:getString(), compressedLevel)
-				dataStrings[#dataStrings+1] = c
-				h.meshDataIndex = dataIndex
-				h.meshDataSize = #c
-				dataIndex = dataIndex + h.meshDataSize
 			end
 		end
 	end
 	
 	--export
 	local headerData = love.data.compress("string", compressed, packTable.pack(header), compressedLevel)
-	local final = "3DO2" .. compressed .. " " .. love.data.pack("string", "J", #headerData) .. headerData .. table.concat(dataStrings, "")
+	local final = "3DO3" .. compressed .. " " .. love.data.pack("string", "J", #headerData) .. headerData .. table.concat(dataStrings, "")
 	love.filesystem.createDirectory(obj.dir)
 	love.filesystem.write(obj.dir .. "/" .. obj.name .. ".3do", final)
 end
