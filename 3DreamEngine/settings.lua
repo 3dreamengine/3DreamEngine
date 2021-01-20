@@ -572,3 +572,18 @@ end
 function lib:getMipmaps()
 	return self.textures_mipmaps
 end
+
+
+--godrays
+function lib:setGodrays(quality, allSources)
+	if quality then
+		self.godrays_enabled = true
+		self.godrays_quality = quality
+		self.godrays_allSources = allSources
+	else
+		self.godrays_enabled = false
+	end
+end
+function lib:getGodrays()
+	return self.godrays_enabled, self.godrays_quality, self.godrays_allSources
+end

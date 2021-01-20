@@ -428,3 +428,17 @@ dream:setMipmaps(enabled)
 enabled = dream:getMipmaps()
 ```
 `enabled` if the loader should generate mipmaps  
+
+<br />
+
+Godrays simulate shadow shafts in (dusty) air. Other than volumetric rendering, this is a very fast, multi light source implementation.
+Max source count is currently hardcoded to 8. Settings are hardcoded and will receive appropiate setters soon.
+
+```lua
+dream:setGodrays(false)
+dream:setGodrays(quality, allSources)
+enabled, quality, allSources = dream:getGodrays()
+```
+`enabled (true)` if the godray pass is active 
+`quality (16)` the samples used to determine occlusion 
+`allSources (false)` if not manually set per source, only sun objects receive godrays 

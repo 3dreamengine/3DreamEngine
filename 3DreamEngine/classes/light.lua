@@ -24,6 +24,9 @@ function lib:newLight(typ, pos, color, brightness, old, ...)
 		smooth = nil,
 		frameSkip = 0,
 		brightness = brightness or 1.0,
+		godray = nil,
+		godrayLength = typ == "sun" and 0.15 or 0.05,
+		godraySize = typ == "sun" and 0.1 or 0.035,
 	}
 	
 	return setmetatable(l, self.meta.light)
@@ -35,10 +38,19 @@ return {
 	setterGetter = {
 		frameSkip = "number",
 		name = "string",
+		godrayLength = "number",
+		godraySize = "number",
 	},
 	
 	setName = function(self, name)
 		self.name = removePostfix(name)
+	end,
+	
+	setGodrays = function(self, e)
+		self.godrays = e
+	end,
+	getGodrays = function(self)
+		return self.godrays
 	end,
 	
 	setBrightness = function(self, brightness)

@@ -1,8 +1,10 @@
 #pragma language glsl3
 
-extern vec2 sizes[8];
-extern vec3 positions[8];
-extern vec3 colors[8];
+#define MAX_SOURCES 8
+
+extern vec2 sizes[MAX_SOURCES];
+extern vec3 positions[MAX_SOURCES];
+extern vec3 colors[MAX_SOURCES];
 extern int sourceCount;
 extern int sampleCount;
 

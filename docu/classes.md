@@ -234,6 +234,16 @@ dream:addLight(light)
 dream:addNewLight(...)
 ```
 
+<br />
+
+To control the godray on that specific source.
+```lua
+dream:setGodrays(enabled)
+dream:setGodrayLength(length)
+dream:setGodraySize(size)
+```
+`enabled (nil)` enable this light for the godray pass, nil uses the default set by the global setting. 
+
 
 
 ## shadow

@@ -5,9 +5,14 @@ physicsFunctions.lua - contains physics library relevant functions
 
 local lib = _3DreamEngine
 
-local interpolate = false
-function lib:interpolatePhysicsVertices(i)
-	interpolate = i
+local physicsLowerMode = "full"
+
+function lib:setPhysicsLowerMode(m)
+	assert(m == "complex" or m == m == "full" or m == "simple" or m == "height", "lower mode has to be complex, full, simple or height")
+	physicsLowerMode = m
+end
+function lib:getPhysicsLowerMode()
+	return physicsLowerMode
 end
 
 --receives an array of faces defined by three indices and an array with vertices and returns an array of connected subsets and an array of subset vertices indices
@@ -131,7 +136,9 @@ function lib:getPhysicsObject(phy)
 	end
 	lib.deltonLoad:stop()
 	
+	local bothSides = physicsLowerMode == "complex" or physicsLowerMode == "full"
 	local normalThreshold = 0.01
+	
 	for group, faces in ipairs(phy.groups) do
 		--create vertex group for faster access
 		lib.deltonLoad:start("height")
@@ -139,6 +146,7 @@ function lib:getPhysicsObject(phy)
 		local verts_top = { }
 		local verts_bottom = { }
 		local sides = { }
+		local lowest = math.huge
 		for faceID,face in ipairs(faces) do
 			--store all vertices in a threshold sized 2D grid for fast lookups
 			local a = vertices[face[1]]
@@ -151,13 +159,16 @@ function lib:getPhysicsObject(phy)
 			--wether it is a top faced triangle or not
 			local n = (b-a):cross(c-a):normalize().y
 			
+			--remember lowest for simple lower mode
+			lowest = math.min(lowest, a.y, b.y, c.y)
+			
 			--add either to the top or bottom list, instead of remembering the side for each vertex
 			if n > normalThreshold then
 				verts_top[face[1]] = a
 				verts_top[face[2]] = b
 				verts_top[face[3]] = c
 				sides[faceID] = true
-			elseif n < -normalThreshold and n > -1 then
+			elseif bothSides and n < -normalThreshold and n > -1 then
 				verts_bottom[face[1]] = a
 				verts_bottom[face[2]] = b
 				verts_bottom[face[3]] = c
@@ -168,6 +179,10 @@ function lib:getPhysicsObject(phy)
 		local opposite = { }
 		for side = 1, 2 do
 			for d,s in pairs(side == 1 and verts_top or verts_bottom) do
+				if physicsLowerMode == "simple" then
+					opposite[d] = lowest
+				end
+				
 				--find the bottom most vertex
 				if not opposite[d] then
 					lib.deltonLoad:start("find")
@@ -188,7 +203,7 @@ function lib:getPhysicsObject(phy)
 				end
 				
 				--no real opposite vertex found, interpolate and retriangulate opposite face
-				if interpolate and math.abs(opposite[d] - s.y) == 0 then
+				if physicsLowerMode == "complex" and math.abs(opposite[d] - s.y) == 0 then
 					lib.deltonLoad:start("interpolate")
 					local g = phy.groups[group]
 					for faceID, face in ipairs(g) do
@@ -210,6 +225,10 @@ function lib:getPhysicsObject(phy)
 					end
 					::done::
 					lib.deltonLoad:stop()
+				end
+				
+				if not opposite[d] and physicsLowerMode == "height" then
+					opposite[d] = -math.huge
 				end
 			end
 		end

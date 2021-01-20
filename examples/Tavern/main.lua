@@ -56,7 +56,7 @@ local particleBatch = dream:newParticleBatch(texture_candle)
 particleBatch:setVertical(0.75)
 
 local particleBatchDust = dream:newParticleBatch(love.graphics.newImage(projectDir .. "dust.png"))
-particleBatchDust:setSorting(false)
+--particleBatchDust:setSorting(false)
 
 local lights = { }
 for d,s in ipairs(scene.positions) do

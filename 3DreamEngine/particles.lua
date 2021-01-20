@@ -29,13 +29,10 @@ local mesh = love.graphics.newMesh(f, {
 	{0.5, -0.5, 0.0, 0.0, 1.0},
 	{0.5, 0.5, 0.0, 0.0, 0.0},
 	{-0.5, 0.5, 0.0, 1.0, 0.0},
-}, "triangles", "dynamic")
-mesh:setVertexMap(1, 2, 3, 1, 3, 4)
-print("particle mesh can use fan")
+}, "fan", "static")
 
 
---sorter
-print("particles require faster sorter")
+--sorter (surprisingly this works faster than caching the distances
 local sortingCamPos
 local sortFunction = function(a, b)
 	local distA = (a[1] - sortingCamPos[1])^2 + (a[2] - sortingCamPos[2])^2 + (a[3] - sortingCamPos[3])^2
