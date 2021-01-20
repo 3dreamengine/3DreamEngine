@@ -121,9 +121,9 @@ return {
 		end
 	end,
 	
-	cleanup = function(self, lite)
+	cleanup = function(self)
 		for d,s in pairs(self.objects) do
-			s:cleanup(lite)
+			s:cleanup(s)
 		end
 	end,
 	

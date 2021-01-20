@@ -140,12 +140,10 @@ return {
 	end,
 	
 	--clean most primary buffers
-	cleanup = function(self, lite)
-		if not lite then
-			self.vertices = nil
-			self.faces = nil
-			self.normals = nil
-		end
+	cleanup = function(self)
+		self.vertices = nil
+		self.faces = nil
+		self.normals = nil
 		
 		self.texCoords = nil
 		self.colors = nil

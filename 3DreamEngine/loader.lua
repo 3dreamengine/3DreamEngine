@@ -7,7 +7,6 @@ local lib = _3DreamEngine
 
 lib.defaultArgs = {
 	cleanup = true,
-	cleanupLite = true,
 	mesh = true,
 	export3do = false,
 	request3do = true,
@@ -498,7 +497,7 @@ function lib:loadObject(path, shaderType, args)
 	
 	--cleaning up
 	if obj.args.cleanup then
-		obj:cleanup(obj.args.cleanupLite)
+		obj:cleanup()
 	end
 	
 	
