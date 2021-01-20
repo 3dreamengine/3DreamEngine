@@ -39,7 +39,7 @@ return function(self, obj, path)
 				o.texCoords[index] = texture[tonumber(v2[2])]
 				o.normals[index] = normals[tonumber(v2[3])]
 				o.materials[index] = material
-				o.extras[index] = material.extra or o.extra or 1.0
+				o.extras[index] = material.extra or 1.0
 			end
 			
 			local index = #o.vertices

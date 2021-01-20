@@ -220,7 +220,9 @@ function lib:getRenderShaderID(obj, pass, shadows)
 	end
 	
 	--settings
-	if not shadows then
+	if shadows then
+		ID_settings = mat.discard and 1 or 0
+	else
 		if pass == 2 then
 			--second pass
 			ID_settings = ID_settings + 2 ^ 0
@@ -295,7 +297,15 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows)
 		}
 		self.mainShaders[shaderID][ID] = info
 		
-		if not shadows then
+		if shadows then
+			local globalDefines = { }
+			
+			if mat.discard then
+				table.insert(globalDefines, "#define DISCARD_ENABLED")
+			end
+			
+			code = code:gsub("#import globalDefines", table.concat(globalDefines, "\n"))
+		else
 			--settings
 			local globalDefines = { }
 			if pass == 1 then

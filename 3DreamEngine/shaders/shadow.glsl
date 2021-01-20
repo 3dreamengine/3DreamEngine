@@ -13,6 +13,10 @@ varying highp vec3 vertexPos;      //vertex position for pixel shader
 varying float depth;               //depth
 extern bool mode;
 
+#ifdef DISCARD_ENABLED
+extern Image tex_alpha;
+#endif
+
 //shader specific defines
 #import vertexDefines
 #import modulesDefines
@@ -22,6 +26,14 @@ extern bool mode;
 
 void effect() {
 #import modulesPixelPre
+
+#ifdef DISCARD_ENABLED
+	float alpha = Texel(tex_alpha, VaryingTexCoord.xy).a;
+	if (alpha < 0.5) {
+		discard;
+	}
+#endif
+
 	vec3 viewVec = normalize(viewPos - vertexPos);
 	
 #import modulesPixel

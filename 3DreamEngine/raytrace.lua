@@ -285,7 +285,7 @@ function raytrace:raytrace(object, origin, direction, mode, inner)
 			local n2_origin, n2_direction = transform(n_origin, n_direction, group)
 			
 			for _,s in ipairs(group.objects) do
-				if s.tags.solid ~= false then
+				if s.vertices then
 					local result = self:raytrace(s, n2_origin, n2_direction, mode, true)
 					if mode == "bool" and result then
 						return true

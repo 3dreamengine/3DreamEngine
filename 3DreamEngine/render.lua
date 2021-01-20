@@ -586,7 +586,10 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 		local material = subObj.material
 		if lastMaterial ~= material then
 			lastMaterial = material
-			--TODO alpha texture
+			
+			if hasUniform(shaderObject, "tex_alpha") then
+				shaderObject.shader:send("tex_alpha", dream:getTexture(material.tex_albedo) or self.textures.default)
+			end
 		end
 		
 		--object transformation

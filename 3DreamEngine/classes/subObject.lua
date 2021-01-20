@@ -141,9 +141,11 @@ return {
 	
 	--clean most primary buffers
 	cleanup = function(self)
-		self.vertices = nil
-		self.faces = nil
-		self.normals = nil
+		if not self.tags.raytrace then
+			self.vertices = nil
+			self.faces = nil
+			self.normals = nil
+		end
 		
 		self.texCoords = nil
 		self.colors = nil
