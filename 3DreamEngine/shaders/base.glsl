@@ -164,6 +164,7 @@ vec3 col;
 #ifdef VERTEX
 vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	vertexPos = vertex_position.xyz;
+	normalRawV = VertexNormal;
 	
 #import modulesVertex
 #import mainVertex

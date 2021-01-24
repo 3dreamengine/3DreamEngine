@@ -2,7 +2,7 @@ local sh = { }
 
 sh.type = "module"
 
-sh.maxJoints = 32
+sh.maxJoints = 16
 
 sh.shadow = true
 
@@ -11,21 +11,23 @@ function sh:init(dream)
 end
 
 function sh:initObject(dream, obj)
-	--initial prepare bone data
-	if not obj.boneMesh and not obj.meshes then
-		assert(obj.joints and obj.weights, "GPU bones require a joint and weight buffer")
-		obj.boneMesh = love.graphics.newMesh({{"VertexJoint", "byte", 4}, {"VertexWeight", "byte", 4}}, #obj.joints, "triangles", "static")
-		
-		--create mesh
-		for d,s in ipairs(obj.joints) do
-			local w = obj.weights[d]
-			obj.boneMesh:setVertex(d, (s[1] or 0) / 255, (s[2] or 0) / 255, (s[3] or 0) / 255, (s[4] or 0) / 255, w[1] or 0, w[2] or 0, w[3] or 0, w[4] or 0)
+	if obj.mesh then
+		--initial prepare bone data
+		if not obj.boneMesh and not obj.meshes then
+			assert(obj.joints and obj.weights, "GPU bones require a joint and weight buffer")
+			obj.boneMesh = love.graphics.newMesh({{"VertexJoint", "byte", 4}, {"VertexWeight", "byte", 4}}, #obj.joints, "triangles", "static")
+			
+			--create mesh
+			for d,s in ipairs(obj.joints) do
+				local w = obj.weights[d]
+				obj.boneMesh:setVertex(d, (s[1] or 0) / 255, (s[2] or 0) / 255, (s[3] or 0) / 255, (s[4] or 0) / 255, w[1] or 0, w[2] or 0, w[3] or 0, w[4] or 0)
+			end
 		end
-	end
-	
-	if obj.boneMesh then
-		obj.mesh:attachAttribute("VertexJoint", obj.boneMesh)
-		obj.mesh:attachAttribute("VertexWeight", obj.boneMesh)
+		
+		if obj.boneMesh then
+			obj.mesh:attachAttribute("VertexJoint", obj.boneMesh)
+			obj.mesh:attachAttribute("VertexWeight", obj.boneMesh)
+		end
 	end
 end
 
@@ -54,6 +56,9 @@ function sh:constructVertex(dream)
 			jointTransforms[int(VertexJoint[3]*255.0)] * VertexWeight[3]
 		);
 		vertexPos = (boneTransform * vec4(vertexPos, 1.0)).xyz;
+#ifndef IS_SHADOW
+		normalRawV = mat3(boneTransform) * normalRawV;
+#endif
 	]==]
 end
 

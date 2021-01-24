@@ -290,6 +290,7 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows)
 		--additional data
 		local info = {
 			shaderType = shaderType,
+			material = mat,
 			modules = m,
 			reflection = not shadows and reflection,
 			shadows = shadows,
@@ -299,6 +300,8 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows)
 		
 		if shadows then
 			local globalDefines = { }
+			
+			table.insert(globalDefines, "#define IS_SHADOW")
 			
 			if mat.discard then
 				table.insert(globalDefines, "#define DISCARD_ENABLED")

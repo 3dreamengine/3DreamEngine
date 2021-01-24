@@ -16,6 +16,9 @@ return {
 		obj.dynamic = true
 		return obj
 	end,
+	getTransform = function(obj)
+		return obj.transform
+	end,
 
 	translate = function(obj, x, y, z)
 		obj.transform = (obj.transform or I):translate(x, y, z)

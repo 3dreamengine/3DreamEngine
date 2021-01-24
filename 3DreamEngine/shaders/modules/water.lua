@@ -8,7 +8,12 @@ function sh:init(dream)
 	
 end
 
-function sh:constructDefines(dream)
+function sh:constructDefines(dream, info)
+for d,s in pairs(info.material) do print(d,s) end
+	assert(info.material.alpha, "water shader modules requires alpha pass set to true in material")
+	assert(info.material.tex_normal, "water shader modules requires a normal texture")
+	assert(info.material.tex_caustics, "water shader modules requires a caustics texture")
+	
 	return [[
 	extern float time;
 	
@@ -79,10 +84,6 @@ function sh:perShader(dream, shaderObject)
 end
 
 function sh:perMaterial(dream, shaderObject, material)
-	assert(material.alpha, "water shader modules requires alpha pass set to true in material")
-	assert(material.tex_normal, "water shader modules requires a normal texture")
-	assert(material.tex_caustics, "water shader modules requires a caustics texture")
-	
 	local shader = shaderObject.shader
 	
 	checkAndSendCached(shaderObject, "waterScale", material.waterScale or 1 / 64)

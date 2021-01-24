@@ -89,7 +89,7 @@ return function(self, obj, path)
 					if typ == "JOINT" then
 						a.jointIDs = loadArray(v.Name_array[1][1])
 						for d,s in ipairs(a.jointIDs) do
-							a.jointIDs[d] = localToGlobal[s] or s
+							a.jointIDs[d] = (localToGlobal[s] or s):gsub("Armature_", "")
 						end
 					elseif typ == "WEIGHT" then
 						weights = loadFloatArray(v.float_array[1][1])
@@ -419,8 +419,9 @@ return function(self, obj, path)
 						local transform = mat4(loadFloatArray(s.matrix[1][1]))
 						addObject(name, mesh, transform)
 					end
+					
 					if s._attr.type == "JOINT" then
-						local name = s._attr.id
+						local name = s._attr.id:gsub("Armature_", "")
 						
 						local m = mat4(loadFloatArray(s.matrix[1][1]))
 						local bindTransform = parentTransform and parentTransform * m or m
@@ -454,7 +455,7 @@ return function(self, obj, path)
 					loadAnimation(a.animation)
 				else
 					local keyframes = { }
-					local name = a.channel[1]._attr.target:sub(1, -11)
+					local name = a.channel[1]._attr.target:sub(1, -11):gsub("Armature_", "")
 					
 					--parse sources
 					local sources = { }

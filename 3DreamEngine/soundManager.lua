@@ -1,119 +1,91 @@
-local soundManager = { }
+local soundManager = {
+	paths = { },
+	sounds = { },
+	maxSounds = 16,
+}
 
---supported file types
-local supportedFileTypes = { }
-for _,typ in ipairs({"wav", "mp3", "ogg", "oga", "ogv", "flac"}) do
-	supportedFileTypes[typ] = true
-end
-
-local reserved = { }
-local reservedIDs = { }
-
-soundManager.sounds = { }
-soundManager.maxSounds = 16
-soundManager.reserveTime = 1 / 5
-soundManager.reserveFadeTime = 1 / 10
-
-local function newSound(path, sound)
-	return {
-		path = path,
-		sounds = {sound},
-	}
+--reverb effects
+for i = 1, 10 do
+	love.audio.setEffect("reverb_" .. i, {
+		type = "reverb",
+		decaytime = i / 2,
+		density = 0.5,
+	})
 end
 
 --add a directory to the sound library
+local supportedFileTypes = table.toSet({"wav", "mp3", "ogg", "oga", "ogv", "flac"})
 function soundManager:addLibrary(path, into)
-	local function rec(p, into)
-		for d,s in ipairs(love.filesystem.getDirectoryItems(p)) do
-			if love.filesystem.getInfo(p .. "/" .. s, "directory") then
-				rec(p .. "/" .. s, (#into == "" and "" or (into .. "/")) .. s)
-			else
-				local ext = (s:match("^.+(%..+)$") or ""):sub(2)
-				if supportedFileTypes[ext] then
-					soundManager.sounds[into .. "/" .. s:sub(1, #s-#ext-1)] = newSound(p .. "/" .. s)
-				end
-			end
-		end
-	end
-	rec(path, into or "")
-end
-
---play a sound
---path can be a library path or an actual sound
-function soundManager:play(path, x, y, z, volume, pitch, ID)
-	assert(type(path) ~= "string" or soundManager.sounds[path], "sound does not exist")
-	
-	--register new sound
-	if not soundManager.sounds[path] then
-		assert(path:getChannelCount() == 1, s.path .. " is not a mono source!")
-		soundManager.sounds[path] = newSound(false, path)
-	end
-	
-	local s = soundManager.sounds[path]
-	
-	--use reserved sound if available
-	local sound
-	if ID then
-		sound = reserved[ID] and reserved[ID].sound
-	end
-	
-	--look for available sound
-	if not sound then
-		for d,s in ipairs(s.sounds) do
-			if not reservedIDs[s] and not s:isPlaying() then
-				sound = s
-				break
-			end
-		end
-	end
-	
-	--load or clone new sound
-	if not sound then
-		if not s.sounds[1] then
-			--load new source from disk
-			local sound = love.audio.newSource(s.path, "static")
-			assert(sound:getChannelCount() == 1, s.path .. " is not a mono source!")
-			s.sounds[1] = sound
-		elseif #s.sounds < self.maxSounds then
-			--clone sound
-			s.sounds[#s.sounds+1] = s.sounds[1]:clone()
-		end
-	end
-	
-	--play it
-	if sound then
-		--reserve sound
-		if ID then
-			reservedIDs[sound] = ID
-			reserved[ID] = {ID = ID, time = self.reserveTime, volume = volume, sound = sound}
-		end
-		
-		--play sound
-		if ID then
-			sound:setLooping(true)
+	for d,s in ipairs(love.filesystem.getDirectoryItems(path)) do
+		if love.filesystem.getInfo(path .. "/" .. s, "directory") then
+			self:addLibrary(path .. "/" .. s, (into and (into .. "/") or "") .. s)
 		else
-			sound:seek(0)
-			sound:setLooping(false)
+			local ext = (s:match("^.+(%..+)$") or ""):sub(2)
+			if supportedFileTypes[ext] then
+				soundManager.paths[(into and (into .. "/") or "") .. s:sub(1, #s-#ext-1)] = path .. "/" .. s
+			end
 		end
-		sound:setVolume(volume)
-		sound:setPitch(pitch)
-		sound:setPosition(x, y, z)
-		sound:play()
 	end
 end
 
---update and remove reserved sounds
-function soundManager:update(dt)
-	for i,v in pairs(reserved) do
-		v.time = v.time - dt
-		if v.time < 0 then
-			v.sound:stop()
-			reserved[i] = nil
-			reservedIDs[v.sound] = nil
-		elseif v.time < self.reserveFadeTime then
-			v.sound:setVolume(v.volume / self.reserveFadeTime * v.time)
-		end
+local sort = function(n1, n2)
+	return n1:tell() < n2:tell()
+end
+
+function soundManager:play(name, position, volume, pitch, echo, muffle)
+	assert(self.paths[name], "sound not in library")
+	if not self.sounds[name] then
+		self.sounds[name] = {
+			love.audio.newSource(self.paths[name], "static")
+		}
 	end
+	
+	--sort sounds
+	table.sort(self.sounds[name], sort)
+	
+	--take the best sound
+	local sound
+	if self.sounds[name][1] and not self.sounds[name][1]:isPlaying() then
+		sound = self.sounds[name][1]
+	elseif #self.sounds[name] < self.maxSounds then
+		sound = self.sounds[name][1]:clone()
+		self.sounds[name][#self.sounds[name]+1] = sound
+	else
+		sound = self.sounds[name][#self.sounds[name]]
+	end
+	
+	--muffle filter
+	local filter = muffle and muffle > 0 and {
+		type = "lowpass",
+		volume = 1.0,
+		highgain =  1.0 - muffle * 0.999,
+	} or nil
+	
+	--deactivate effetcs
+	for _,e in ipairs(sound:getActiveEffects()) do
+		sound:setEffect(e, false)
+	end
+	
+	--echo
+	if echo and echo > 0 then
+		local i = math.min(10, math.max(1, math.ceil(echo * 10)))
+		sound:setEffect("reverb_" .. i, filter)
+	else
+		sound:setFilter(filter)
+	end
+	
+	--launch the sound!
+	sound:setVolume(volume or 1)
+	sound:setPitch(pitch or 1)
+	sound:seek(0)
+	if position then
+		sound:setRelative(false)
+		sound:setPosition(position:unpack())
+	else
+		sound:setRelative(true)
+		sound:setPosition(0, 0, 0)
+	end
+	sound:play()
 end
 
 return soundManager

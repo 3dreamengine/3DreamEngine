@@ -145,6 +145,9 @@ return {
 			self.vertices = nil
 			self.faces = nil
 			self.normals = nil
+			
+			self.joints = nil
+			self.weights = nil
 		end
 		
 		self.texCoords = nil
@@ -152,9 +155,6 @@ return {
 		self.materials = nil
 		self.extras = nil
 		self.tangents = nil
-		
-		self.joints = nil
-		self.weights = nil
 		
 		for i = 1, 10 do
 			self["texCoords_" .. i] = nil

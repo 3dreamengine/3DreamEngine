@@ -269,7 +269,7 @@ function lib:createMesh(obj)
 	if obj.class == "object" then
 		local cache = { }
 		for d,o in pairs(obj.objects) do
-			if not o.linked then
+			if not o.linked and not o.tags.raytrace then
 				if cache[o.vertices] then
 					o.mesh = cache[o.vertices].mesh
 					o.tangents = cache[o.vertices].tangents

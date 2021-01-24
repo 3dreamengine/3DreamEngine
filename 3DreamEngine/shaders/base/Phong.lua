@@ -95,7 +95,7 @@ function sh:constructVertex(dream, mat)
 #endif
 	
 	//raw normal vector without normal map;
-	normalRawV = normalTransform * (VertexNormal - 0.5);
+	normalRawV = normalTransform * (normalRawV - 0.5);
 	
 	#ifdef TEX_NORMAL
 		vec3 T = normalize(normalTransform * (VertexTangent.xyz - 0.5));

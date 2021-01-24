@@ -32,13 +32,13 @@ function lib:getPose(object, time, animation)
 	for joint,frames in pairs(anim) do
 		--general data
 		local start = frames[1].time
-		local t = time % length + start
+		local t = (time == length and time or time % length) + start
 		
 		--find two frames
 		local f1 = frames[1]
 		local f2 = frames[2]
 		for f = 2, #frames do
-			if frames[f].time > t then
+			if frames[f].time >= t then
 				f1 = frames[f-1]
 				f2 = frames[f]
 				break
@@ -66,7 +66,7 @@ function lib:applyPose(object, pose, skeleton, parentTransform)
 	
 	for name,joint in pairs(skeleton or object.skeleton) do
 		local poseTransform = mat4:getTranslate(pose[name].position) * pose[name].rotation:toMatrix()
-		local localTransform = (parentTransform or mat4:getIdentity()) * poseTransform
+		local localTransform = parentTransform and parentTransform * poseTransform or poseTransform
 		object.boneTransforms[name] = localTransform * joint.inverseBindTransform
 		
 		if joint.children then
@@ -89,30 +89,38 @@ end
 
 --apply joints to mesh data directly
 function lib:applyJoints(object)
-	for _,o in pairs(object.objects) do
-		if o.joints then
+	if object.class == "object" then
+		for _,o in pairs(object.objects) do
+			self:applyJoints(o)
+		end
+	elseif object.class == "subObject" then
+		if object.joints then
 			--make a copy of vertices
-			if not o.verticesOld then
-				o.verticesOld = o.vertices
-				o.normalsOld = o.normals
-				o.vertices = { }
-				o.normals = { }
+			if not object.verticesOld then
+				object.verticesOld = object.vertices
+				object.normalsOld = object.normals
+				object.vertices = { }
+				object.normals = { }
 			end
 			
 			--apply joint transforms
-			for i,v in ipairs(o.verticesOld) do
-				local m = mat4()
-				for jointNr = 1, #o.joints[i] do
-					local joint = o.jointIDs[ o.joints[i][jointNr] ]
-					m = m + object.boneTransforms[ joint ] * o.weights[i][jointNr]
-				end
-				
-				o.vertices[i] = m * vec3(v)
-				o.normals[i] = m:subm() * vec3(o.normalsOld[i])
+			for i,v in ipairs(object.verticesOld) do
+				local m = lib:getJointMat(object, i)
+				object.vertices[i] = m * vec3(v)
+				object.normals[i] = m:subm() * vec3(object.normalsOld[i])
 			end
-			
-			--recreate mesh
-			dream:createMesh(o)
 		end
+	else
+		error("object or subObject expected")
 	end
+end
+
+function lib:getJointMat(o, i)
+	local m = mat4()
+	local obj = o.obj
+	for jointNr = 1, #o.joints[i] do
+		local joint = o.jointIDs[ o.joints[i][jointNr] ]
+		m = m + obj.boneTransforms[ joint ] * o.weights[i][jointNr]
+	end
+	return m
 end
