@@ -26,20 +26,14 @@ local worldMeta = {
 		if shape.typ == "group" then
 			local g = { }
 			for d,s in ipairs(shape.objects) do
-				table.insert(g, self:add(s, bodyType, x, y, z))
+				local c = self:add(s, bodyType, x, y, z)
+				table.insert(g, c)
+				c.name = shape.name
 			end
 			return g
 		else
 			local c = { }
-			
-			c.typ = shape.typ
-			c.normals = shape.normals
-			c.highest = shape.highest
-			c.lowest = shape.lowest
-			
-			c.height = shape.height or 1.0
-			c.radius = shape.radius
-			
+			c.shape = shape
 			c.ay = 0
 			c.y = y or 0
 			
@@ -58,8 +52,8 @@ local worldMeta = {
 	
 	update = function(self, dt)
 		for d,s in ipairs(self.world:getBodies()) do
-			local c = s:getUserData()
-			if c.typ == "circle" then
+			if s:getType() == "dynamic" then
+				local c = s:getUserData()
 				--store old pos for emergency reset
 				c.oldX, c.oldZ = c.pre_oldX, c.pre_oldZ
 				c.pre_oldX, c.pre_oldZ = c.body:getPosition()
@@ -82,10 +76,10 @@ local worldMeta = {
 		self.world:update(dt)
 		
 		for d,s in ipairs(self.world:getBodies()) do
-			local c = s:getUserData()
-			if c.typ == "circle" then
+			if s:getType() == "dynamic" then
+				local c = s:getUserData()
 				--stuck between roof and floor -> reset position
-				if c.bottomY and c.topY and c.topY - c.bottomY < c.height then
+				if c.bottomY and c.topY and c.topY - c.bottomY < c.shape.height then
 					c.y = c.oldY
 					c.ay = 0
 					c.body:setPosition(c.oldX, c.oldZ)
@@ -94,8 +88,6 @@ local worldMeta = {
 					c.newY = nil
 					c.groundNormal = nil
 				end
-				
-				c.body:setFixedRotation(true)
 				
 				--perform step
 				if c.newY then
@@ -114,6 +106,7 @@ local worldMeta = {
 local objectMeta = { }
 
 --gets the gradient of a triangle
+--bruteforce solution since I failed to find a mathematical solution
 local function getDirection(weights, x1, y1, x2, y2, x3, y3)
 	if weights[4] then
 		return weights[4], weights[5]
@@ -152,17 +145,15 @@ local function attemptSolve(a, b)
 	local colliderB = b:getBody():getUserData()
 	local index = b:getUserData()
 	
-	local highest = colliderB.highest[index]
-	local lowest = colliderB.lowest[index]
-	local top = math.max(highest[1], highest[2], highest[3])
-	local low = math.min(lowest[1], lowest[2], lowest[3])
+	local highest = colliderB.shape.highest[index]
+	local lowest = colliderB.shape.lowest[index]
 	
-	--triangulate
+	--get collision
 	local x, y = b:getBody():getLocalPoint(a:getBody():getPosition())
 	local x1, y1, x2, y2, x3, y3 = b:getShape():getPoints()
 	
 	--extend x,y to outer radius
-	local radius = colliderA.radius
+	local radius = colliderA.shape.radius
 	local tx, ty
 	if radius then
 		local dx, dy = getDirection(highest, x1, y1, x2, y2, x3, y3)
@@ -173,29 +164,31 @@ local function attemptSolve(a, b)
 		ty = y
 	end
 	
-	local w1, w2, w3 = lib:getBarycentric(tx, ty, x1, y1, x2, y2, x3, y3)
-	local h = colliderB.y + math.min(highest[1] * w1 + highest[2] * w2 + highest[3] * w3, top)
+	--interpolate height
+	local w1, w2, w3 = lib:getBarycentricClamped(tx, ty, x1, y1, x2, y2, x3, y3)
+	local h = colliderB.y + highest[1] * w1 + highest[2] * w2 + highest[3] * w3
 	
-	--extend head 
-	local tx, ty
+	--extend head
+	local w1l, w2l, w3l
 	if radius then
 		local dx, dy = getDirection(lowest, x1, y1, x2, y2, x3, y3)
 		tx = x - dx * radius * 2.0
 		ty = y - dy * radius * 2.0
+		
+		w1l, w2l, w3l = lib:getBarycentricClamped(tx, ty, x1, y1, x2, y2, x3, y3)
 	else
-		tx = x
-		ty = y
+		w1l, w2l, w3l = w1, w2, w3
 	end
 	
-	local w1, w2, w3 = lib:getBarycentric(tx, ty, x1, y1, x2, y2, x3, y3)
-	local l = colliderB.y + math.max(lowest[1] * w1 + lowest[2] * w2 + lowest[3] * w3, low)
+	--interpolate depth
+	local l = colliderB.y + lowest[1] * w1l + lowest[2] * w2l + lowest[3] * w3l
 	
 	--mark top and bottom
 	local stepSize = 0.5
-	if h + l > colliderA.y*2 + colliderA.height then
-		local diff = colliderA.y + colliderA.height - l
+	if h + l > colliderA.y*2 + colliderA.shape.height then
+		local diff = colliderA.y + colliderA.shape.height - l
 		if diff > 0 and diff < stepSize then
-			colliderA.newY = math.min(colliderA.newY or colliderA.y, l - colliderA.height)
+			colliderA.newY = math.min(colliderA.newY or colliderA.y, l - colliderA.shape.height)
 		elseif diff > 0 then
 			return true
 		end
@@ -204,12 +197,12 @@ local function attemptSolve(a, b)
 		colliderA.topY = math.min(colliderA.topY or l, l)
 	else
 		local diff = h - colliderA.y
-		if diff > 0 and diff < stepSize then
+		if diff > 0 and diff < stepSize and colliderA.ay <= 0 then
 			colliderA.newY = math.max(colliderA.newY or colliderA.y, h)
 			
-			local n = colliderB.normals[index]
-			local normal = n[1] * w1 + n[2] * w2 + n[3] * w3
-			colliderA.groundNormal = (colliderA.groundNormal or vec3(0, 0, 0)) + normal:normalize()
+			local n = colliderB.shape.normals[index]
+			local normal = (n[1] * w1 + n[2] * w2 + n[3] * w3):normalize()
+			colliderA.groundNormal = colliderA.groundNormal and colliderA.groundNormal + normal or normal
 		elseif diff > 0 then
 			return true
 		end
@@ -231,6 +224,10 @@ local function preSolve(a, b, c)
 		coll = attemptSolve(a, b)
 	elseif t2 and not t1 then
 		coll = attemptSolve(b, a)
+	elseif t1 and t2 then
+		local colliderA = a:getBody():getUserData()
+		local colliderB = b:getBody():getUserData()
+		coll = colliderA.y < colliderB.y + colliderB.shape.height and colliderA.y + colliderA.shape.height > colliderB.y
 	end
 	
 	c:setEnabled(coll)

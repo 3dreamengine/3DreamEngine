@@ -202,6 +202,136 @@ function lib:getBarycentric(x, y, x1, y1, x2, y2, x3, y3)
 	return w1, w2, w3
 end
 
+--4 times slower but performs correct clamping to the edge
+--code translated and adapted from www.geometrictools.com
+function lib:getBarycentricClamped(x, y, x1, y1, x2, y2, x3, y3)
+	local diffX = x1 - x
+	local diffY = y1 - y
+	local edge1X = x2 - x1
+	local edge1Y = y2 - y1
+	local edge2X = x3 - x1
+	local edge2Y = y3 - y1
+	local a00 = edge1X^2 + edge1Y^2
+	local a01 = edge1X * edge2X + edge1Y * edge2Y
+	local a11 = edge2X^2 + edge2Y^2
+	local b0 = diffX * edge1X + diffY * edge1Y
+	local b1 = diffX * edge2X + diffY * edge2Y
+	local det = a00 * a11 - a01 * a01
+	local t1 = a01 * b1 - a11 * b0
+	local t2 = a01 * b0 - a00 * b1
+
+	if t1 + t2 <= det then
+		if t1 < 0 then
+			if t2 < 0 then
+				if b0 < 0 then
+					t2 = 0
+					if -b0 >= a00 then
+						t1 = 1
+					else
+						t1 = -b0 / a00
+					end
+				else
+					t1 = 0
+					if b1 >= 0 then
+						t2 = 0
+					elseif -b1 >= a11 then
+						t2 = 1
+					else
+						t2 = -b1 / a11
+					end
+				end
+			else
+				t1 = 0
+				if b1 >= 0 then
+					t2 = 0
+				elseif -b1 >= a11 then
+					t2 = 1
+				else
+					t2 = -b1 / a11
+				end
+			end
+		elseif t2 < 0 then
+			t2 = 0
+			if b0 >= 0 then
+				t1 = 0
+			elseif -b0 >= a00 then
+				t1 = 1
+			else
+				t1 = -b0 / a00
+			end
+		else
+			local invDet = 1 / det
+			t1 = t1 * invDet
+			t2 = t2 * invDet
+		end
+	else
+		if t1 < 0 then
+			local tmp0 = a01 + b0
+			local tmp1 = a11 + b1
+			if tmp1 > tmp0 then
+				local numer = tmp1 - tmp0
+				local denom = a00 - 2 * a01 + a11
+				if numer >= denom then
+					t1 = 1
+					t2 = 0
+				else
+					t1 = numer / denom
+					t2 = 1 - t1
+				end
+			else
+				t1 = 0
+				if tmp1 <= 0 then
+					t2 = 1
+				elseif b1 >= 0 then
+					t2 = 0
+				else
+					t2 = -b1 / a11
+				end
+			end
+		elseif t2 < 0 then
+			local tmp0 = a01 + b1
+			local tmp1 = a00 + b0
+			if tmp1 > tmp0 then
+				local numer = tmp1 - tmp0
+				local denom = a00 - 2 * a01 + a11
+				if numer >= denom then
+					t2 = 1
+					t1 = 0
+				else
+					t2 = numer / denom
+					t1 = 1 - t2
+				end
+			else
+				t2 = 0
+				if tmp1 <= 0 then
+					t1 = 1
+				elseif b0 >= 0 then
+					t1 = 0
+				else
+					t1 = -b0 / a00
+				end
+			end
+		else
+			local numer = a11 + b1 - a01 - b0
+			if numer <= 0 then
+				t1 = 0
+				t2 = 1
+			else
+				local denom = a00 - 2 * a01 + a11
+				if numer >= denom then
+					t1 = 1
+					t2 = 0
+				else
+					t1 = numer / denom
+					t2 = 1 - t1
+				end
+			end
+		end
+	end
+	
+	return 1 - t1 - t2, t1, t2
+end
+
 function lib:newBoundaryBox(initialized)
 	return {
 		first = vec3(math.huge, math.huge, math.huge),

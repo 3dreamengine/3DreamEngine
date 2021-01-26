@@ -75,8 +75,8 @@ do
 		if index[t] then
 			print(string.rep(" ", tab*2) .. (count == 0 and "└─" or "├─") .. " (repeat)")
 			return
-		else
-			index[t] = t
+		elseif type(t) == "table" then
+			index[t] = true
 		end
 		for d,s in pairs(t) do
 			count = count - 1

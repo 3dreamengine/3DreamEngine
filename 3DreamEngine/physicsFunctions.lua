@@ -107,7 +107,8 @@ end
 function lib:getPhysicsObject(phy)
 	local n = { }
 	
-	n.typ = "triangle"
+	n.typ = "mesh"
+	n.name = phy.name
 	n.objects = { }
 	n.normals = { }
 	n.highest = { }
@@ -168,7 +169,7 @@ function lib:getPhysicsObject(phy)
 				verts_top[face[2]] = b
 				verts_top[face[3]] = c
 				sides[faceID] = true
-			elseif bothSides and n < -normalThreshold and n > -1 then
+			elseif bothSides and n < -normalThreshold then
 				verts_bottom[face[1]] = a
 				verts_bottom[face[2]] = b
 				verts_bottom[face[3]] = c
@@ -179,7 +180,9 @@ function lib:getPhysicsObject(phy)
 		local opposite = { }
 		for side = 1, 2 do
 			for d,s in pairs(side == 1 and verts_top or verts_bottom) do
-				if physicsLowerMode == "simple" then
+				if physicsLowerMode == "height" then
+					opposite[d] = -math.huge
+				elseif physicsLowerMode == "simple" then
 					opposite[d] = lowest
 				end
 				
@@ -203,32 +206,32 @@ function lib:getPhysicsObject(phy)
 				end
 				
 				--no real opposite vertex found, interpolate and retriangulate opposite face
-				if physicsLowerMode == "complex" and math.abs(opposite[d] - s.y) == 0 then
-					lib.deltonLoad:start("interpolate")
-					local g = phy.groups[group]
-					for faceID, face in ipairs(g) do
-						--vertices
-						local a = vertices[face[1]]
-						local b = vertices[face[2]]
-						local c = vertices[face[3]]
-						
-						local w1, w2, w3 = self:getBarycentric(s.x, s.z, a.x, a.z, b.x, b.z, c.x, c.z)
-						local inside = w1 >= 0 and w2 >= 0 and w3 >= 0 and w1 <= 1 and w2 <= 1 and w3 <= 1
-						if inside then
-							local h = a.y * w1 + b.y * w2 + c.y * w3
+				if math.abs(opposite[d] - s.y) == 0 then
+					if physicsLowerMode == "complex" then
+						lib.deltonLoad:start("interpolate")
+						local g = phy.groups[group]
+						for faceID, face in ipairs(g) do
+							--vertices
+							local a = vertices[face[1]]
+							local b = vertices[face[2]]
+							local c = vertices[face[3]]
 							
-							if side == 1 and h < s.y or side == 2 and h > s.y then
-								opposite[d] = h
-								goto done
+							local w1, w2, w3 = self:getBarycentric(s.x, s.z, a.x, a.z, b.x, b.z, c.x, c.z)
+							local inside = w1 >= 0 and w2 >= 0 and w3 >= 0 and w1 <= 1 and w2 <= 1 and w3 <= 1
+							if inside then
+								local h = a.y * w1 + b.y * w2 + c.y * w3
+								
+								if side == 1 and h < s.y or side == 2 and h > s.y then
+									opposite[d] = h
+									goto done
+								end
 							end
 						end
+						::done::
+						lib.deltonLoad:stop()
+					else
+						opposite[d] = lowest
 					end
-					::done::
-					lib.deltonLoad:stop()
-				end
-				
-				if not opposite[d] and physicsLowerMode == "height" then
-					opposite[d] = -math.huge
 				end
 			end
 		end
@@ -236,6 +239,7 @@ function lib:getPhysicsObject(phy)
 		
 		--create polygons
 		lib.deltonLoad:start("triangles")
+		local cache = { }
 		for faceID,face in ipairs(faces) do
 			--verify
 			local side = sides[faceID]
@@ -252,34 +256,53 @@ function lib:getPhysicsObject(phy)
 					--reconstruct the order, since the polygon might have restructured itself
 					local x1, y1, x2, y2, x3, y3 = shape:getPoints()
 					local translation = {
-						face[smallest(a.x, a.z, x1, y1, x2, y2, x3, y3)],
-						face[smallest(b.x, b.z, x1, y1, x2, y2, x3, y3)],
-						face[smallest(c.x, c.z, x1, y1, x2, y2, x3, y3)],
+						[smallest(a.x, a.z, x1, y1, x2, y2, x3, y3)] = face[1],
+						[smallest(b.x, b.z, x1, y1, x2, y2, x3, y3)] = face[2],
+						[smallest(c.x, c.z, x1, y1, x2, y2, x3, y3)] = face[3],
 					}
 					
-					--add shape
-					table.insert(n.objects, shape)
+					--avoid duplicates
+					local ID = math.floor(math.min(a.x, b.x, c.x) * 1000)
+					local center = a + b + c
+					for i = ID-1, ID+1 do
+						if cache[i] then
+							for _,c in pairs(cache[i]) do
+								if (center.x - c.x)^2 + (center.z - c.z)^2 < 1 / 1000 then
+									ID = nil
+									break
+								end
+							end
+						end
+					end
 					
-					--face normal
-					table.insert(n.normals, {
-						normals[translation[1]] * (side and 1 or -1),
-						normals[translation[2]] * (side and 1 or -1),
-						normals[translation[3]] * (side and 1 or -1),
-					})
-					
-					--triangle height
-					table.insert(n[side and "highest" or "lowest"], {
-						vertices[translation[1]].y,
-						vertices[translation[2]].y,
-						vertices[translation[3]].y,
-					})
-					
-					--triangle lowest
-					table.insert(n[side and "lowest" or "highest"], {
-						opposite[translation[1]],
-						opposite[translation[2]],
-						opposite[translation[3]],
-					})
+					if ID then
+						cache[ID] = cache[ID] or { }
+						table.insert(cache[ID], center)
+						
+						--add shape
+						table.insert(n.objects, shape)
+						
+						--face normal
+						table.insert(n.normals, {
+							normals[translation[1]] * (side and 1 or -1),
+							normals[translation[2]] * (side and 1 or -1),
+							normals[translation[3]] * (side and 1 or -1),
+						})
+						
+						--triangle height
+						table.insert(n[side and "highest" or "lowest"], {
+							vertices[translation[1]].y,
+							vertices[translation[2]].y,
+							vertices[translation[3]].y,
+						})
+						
+						--triangle lowest
+						table.insert(n[side and "lowest" or "highest"], {
+							opposite[translation[1]],
+							opposite[translation[2]],
+							opposite[translation[3]],
+						})
+					end
 				end
 			end
 		end

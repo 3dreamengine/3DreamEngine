@@ -106,7 +106,7 @@ function lib:update()
 			for name, meshData in pairs(msg[3]) do
 				local finalMesh
 				for d,o in pairs(obj.objects) do
-					if o.meshes then
+					if o.meshes and obj.DO_path == o.obj.DO_path then
 						local mesh = o.meshes[name]
 						if mesh then
 							local index = obj.DO_dataOffset + mesh.meshDataIndex
@@ -117,7 +117,6 @@ function lib:update()
 									finalMesh:setVertices(meshData[2])
 									mesh.vertexMap = nil
 								end
-								
 								o[name] = finalMesh
 								o.loaded = true
 								changes[o] = true

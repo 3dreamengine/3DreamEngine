@@ -14,7 +14,7 @@ local function interpolateFrames(f1, f2, factor)
 end
 
 --returns a new animated pose at a specific time stamp
-function lib:getPose(object, time, animation)
+function lib:getPose(object, animation, time)
 	local pose = { }
 	
 	--create rest pose
@@ -25,30 +25,54 @@ function lib:getPose(object, time, animation)
 		}
 	end
 	
+	--type on animation input
+	local inputType
+	if type(animation) == "table" then
+		if animation[1] then
+			inputType = "simple"
+		else
+			inputType = "complex"
+		end
+	else
+		inputType = "single"
+	end
+	
 	--get frame of animation
-	local anim = object.animations[animation or "default"]
-	local length = object.animationLengths[animation or "default"]
-	assert(anim and length, "animation is nil")
-	for joint,frames in pairs(anim) do
-		--general data
-		local start = frames[1].time
-		local t = (time == length and time or time % length) + start
+	for i,animation in ipairs(type(animation) == "table" and animation or {{animation, time}}) do
+		local anim = object.animations[animation[1]]
+		local length = object.animationLengths[animation[1]]
+		local time = animation[2] or 0
+		local blend = animation[3] or i > 1 and 1 / i
+		assert(anim and length, "animation is nil")
 		
-		--find two frames
-		local f1 = frames[1]
-		local f2 = frames[2]
-		for f = 2, #frames do
-			if frames[f].time >= t then
-				f1 = frames[f-1]
-				f2 = frames[f]
-				break
+		for joint,frames in pairs(anim) do
+			if not animation[4] or animation[4][joint] then
+				--general data
+				local start = frames[1].time
+				local t = (time == length and time or time % length) + start
+				
+				--find two frames
+				local f1 = frames[1]
+				local f2 = frames[2]
+				for f = 2, #frames do
+					if frames[f].time >= t then
+						f1 = frames[f-1]
+						f2 = frames[f]
+						break
+					end
+				end
+				
+				--get interpolation factor
+				local diff = (f2.time - f1.time)
+				local factor = diff == 0 and 0.5 or (t - f1.time) / diff
+				local f = interpolateFrames(f1, f2, factor)
+				if blend then
+					pose[joint] = interpolateFrames(pose[joint], f, blend)
+				else
+					pose[joint] = f
+				end
 			end
 		end
-		
-		--get interpolation factor
-		local diff = (f2.time - f1.time)
-		local factor = diff == 0 and 0.5 or (t - f1.time) / diff
-		pose[joint] = interpolateFrames(f1, f2, factor)
 	end
 	
 	return pose
@@ -76,14 +100,8 @@ function lib:applyPose(object, pose, skeleton, parentTransform)
 end
 
 --all in one
-function lib:setPose(object, time, first, second, blend)
-	local p = self:getPose(object, time, first)
-	if second then
-		local p2 = self:getPose(object, time, second)
-		for joint,frame in pairs(p) do
-			p[joint] = interpolateFrames(frame, p2[joint], math.clamp(blend, 0.0, 1.0))
-		end
-	end
+function lib:setPose(object, animation, time)
+	local p = self:getPose(object, animation, time)
 	self:applyPose(object, p)
 end
 

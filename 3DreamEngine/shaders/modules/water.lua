@@ -9,7 +9,6 @@ function sh:init(dream)
 end
 
 function sh:constructDefines(dream, info)
-for d,s in pairs(info.material) do print(d,s) end
 	assert(info.material.alpha, "water shader modules requires alpha pass set to true in material")
 	assert(info.material.tex_normal, "water shader modules requires a normal texture")
 	assert(info.material.tex_caustics, "water shader modules requires a caustics texture")

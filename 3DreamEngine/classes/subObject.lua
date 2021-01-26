@@ -62,11 +62,11 @@ return {
 			
 			local requests
 			for name, mesh in pairs(self.meshes) do
-				local index = self.obj.DO_dataOffset + mesh.meshDataIndex
+				local index = mesh.meshDataIndex
 				if not self.obj.loadRequests[index] then
 					self.obj.loadRequests[index] = true
 					requests = requests or { }
-					requests[name] = {index, mesh.meshDataSize}
+					requests[name] = {self.obj.DO_dataOffset + index, mesh.meshDataSize}
 				end
 			end
 			if requests then
