@@ -94,7 +94,7 @@ function love.draw()
 		local x = noise(i, 1 + c) * 100 % 10.5 - 5.25
 		local y = noise(i, 2 + c) * 100 % 4.5 - 0.25
 		local z = noise(i, 3 + c) * 100 % 10.5 - 5.25
-		particleBatchDust:add(x, y, z, (i % 10 + 10) * 0.002)
+		particleBatchDust:add(x, y, z, 0, (i % 10 + 10) * 0.002)
 	end
 	
 	--update lights
@@ -107,10 +107,10 @@ function love.draw()
 			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 200.0
 			lights[d]:setBrightness(power)
 			dream:addLight(lights[d])
-			particleBatch:addQuad(quads[math.ceil(d + love.timer.getTime() * 24) % 25 + 1], s.x, s.y + 0.02, s.z, power * 0.015, nil, 3.0)
+			particleBatch:addQuad(quads[math.ceil(d + love.timer.getTime() * 24) % 25 + 1], s.x, s.y + 0.02, s.z, 0, power * 0.015, nil, 3.0)
 		elseif s.name == "CANDLE" then
 			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 200.0
-			particleBatch:addQuad(quads[math.ceil(d + love.timer.getTime() * 24) % 25 + 1], s.x, s.y + 0.02, s.z, power * 0.015, nil, 3.0)
+			particleBatch:addQuad(quads[math.ceil(d + love.timer.getTime() * 24) % 25 + 1], s.x, s.y + 0.02, s.z, 0, power * 0.015, nil, 3.0)
 		elseif s.name == "FIRE" then
 			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 200.0
 			lights[d]:setBrightness(power)

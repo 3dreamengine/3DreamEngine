@@ -33,6 +33,8 @@ extern float gamma;
 //uniforms required by the lighting
 #import lightingSystemInit
 
+extern vec3 ambient;
+
 extern Image MainTex;
 
 void effect() {
@@ -71,7 +73,10 @@ void effect() {
 		col += light * albedo.rgb * albedo.a;
 	}
 	
-	//fog (moving this to vertex had negative results)
+	//ambient lighting
+	col += ambient;
+	
+	//fog (TODO moving this to vertex had negative results, requires further testing)
 #ifdef FOG_ENABLED
 	vec4 fogColor = getFog(depth, -viewVec, viewPos);
 	col = mix(col, fogColor.rgb, fogColor.a);
@@ -124,6 +129,7 @@ attribute vec3 InstanceCenter;
 attribute float InstanceEmission;
 attribute float InstanceDistortion;
 attribute vec2 InstanceSize;
+attribute float InstanceRotation;
 attribute vec2 InstanceTexScale;
 attribute vec2 InstanceTexOffset;
 attribute vec4 InstanceColor;
@@ -142,7 +148,15 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	VaryingTexCoord = vec4(VertexTexCoord.xy * InstanceTexScale + InstanceTexOffset, 0.0, 0.0);
 	VaryingColor = InstanceColor;
 	
-	vertexPos = InstanceCenter + (right * vertex_position.x * InstanceSize.x + up * vertex_position.y * InstanceSize.y);
+	//rotate
+	float c = cos(InstanceRotation);
+	float s = sin(InstanceRotation);
+	vec2 p = vec2(
+		vertex_position.x * c - vertex_position.y * s,
+		vertex_position.x * s + vertex_position.y * c
+	);
+	
+	vertexPos = InstanceCenter + (right * p.x * InstanceSize.x + up * p.y * InstanceSize.y);
 #endif
 
 	VaryingEmission = InstanceEmission;

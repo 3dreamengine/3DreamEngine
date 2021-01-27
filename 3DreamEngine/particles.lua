@@ -11,11 +11,12 @@ local maxCount = 1024 * 32
 --instancemesh
 local instanceFormat = {
 	{"InstanceCenter", "float", 3},    -- x, y, z
+	{"InstanceRotation", "float", 1},  -- rotation
 	{"InstanceSize", "float", 2},      -- size
 	{"InstanceTexOffset", "float", 2}, -- uv offset
 	{"InstanceTexScale", "float", 2},  -- uv scale
 	{"InstanceEmission", "float", 1},  -- emission
-	{"InstanceDistortion", "float", 1}, -- distortion strength
+	{"InstanceDistortion", "float", 1},-- distortion strength
 	{"InstanceColor", "byte", 4},      -- color
 }
 
@@ -47,23 +48,23 @@ local meta = {
 	end,
 	
 	--add a new particle to this batch
-	add = function(self, x, y, z, sx, sy, emission, distortion)
+	add = function(self, x, y, z, rot, sx, sy, emission, distortion)
 		local n = #self.instances
 		if n < maxCount then
 			local r, g, b, a = love.graphics.getColor()
-			self.instances[n+1] = {x, y, z, sx, sy or sx, 0, 0, 1, 1, emission or (self.emissionTexture and 1 or 0), distortion or 1, r, g, b, a}
+			self.instances[n+1] = {x, y, z, rot or 0, sx, sy or sx or 1, 0, 0, 1, 1, emission or (self.emissionTexture and 1 or 0), distortion or 1, r, g, b, a}
 		end
 	end,
 	
 	--add a new particle with quad to this batch
-	addQuad = function(self, quad, x, y, z, sx, sy, emission, distortion)
+	addQuad = function(self, quad, x, y, z, rot, sx, sy, emission, distortion)
 		local n = #self.instances
 		if n < maxCount then
 			local qx, qy, w, h = quad:getViewport()
 			local sw, sh = quad:getTextureDimensions()
 			local ratio = h / w
 			local r, g, b, a = love.graphics.getColor()
-			self.instances[n+1] = {x, y, z, sx, (sy or sx) * ratio, qx / sw, qy / sh, w / sw, h / sh, emission or (self.emissionTexture and 1 or 0), distortion or 1, r, g, b, a}
+			self.instances[n+1] = {x, y, z, rot or 0, sx or 1, (sy or sx or 1) * ratio, qx / sw, qy / sh, w / sw, h / sh, emission or (self.emissionTexture and 1 or 0), distortion or 1, r, g, b, a}
 		end
 	end,
 	
@@ -83,7 +84,7 @@ local meta = {
 			instanceMesh = love.graphics.newMesh(instanceFormat, math.ceil(#self.instances / minIncreaseStep) * minIncreaseStep, "triangles", "dynamic")
 			
 			--attach instance mesh
-			for d,s in pairs({"InstanceCenter", "InstanceSize", "InstanceTexScale", "InstanceTexOffset", "InstanceEmission", "InstanceDistortion", "InstanceColor"}) do
+			for d,s in pairs({"InstanceCenter", "InstanceRotation", "InstanceSize", "InstanceTexScale", "InstanceTexOffset", "InstanceEmission", "InstanceDistortion", "InstanceColor"}) do
 				mesh:detachAttribute(s)
 				mesh:attachAttribute(s, instanceMesh, "perinstance")
 			end

@@ -362,12 +362,14 @@ function lib:render(canvases, cam, reflections)
 				--batches
 				local shaderObject = lib:getParticlesShader(pass, canvases, light, emissive, distortion)
 				local shader = shaderObject.shader
+				shaderObject.cache = shaderObject.cache or { }
 				love.graphics.setShader(shader)
 				
 				shader:send("transformProj", cam.transformProj)
 				if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", {cam.pos:unpack()}) end
-				if hasUniform(shaderObject, "gamma") then shader:send("gamma", self.gamma) end
-				if hasUniform(shaderObject, "exposure") then shader:send("exposure", self.exposure) end
+				checkAndSendCached(shaderObject, "gamma", self.gamma)
+				checkAndSendCached(shaderObject, "exposure", self.exposure)
+				checkAndSendCached(shaderObject, "ambient", self.sun_ambient)
 				
 				--light if using forward lighting
 				self:sendLightUniforms(light, shaderObject)
@@ -406,12 +408,14 @@ function lib:render(canvases, cam, reflections)
 				
 				local shaderObject = lib:getParticlesShader(pass, canvases, light, emissive, distortion, true)
 				local shader = shaderObject.shader
+				shaderObject.cache = shaderObject.cache or { }
 				love.graphics.setShader(shader)
 				
 				shader:send("transformProj", cam.transformProj)
 				if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", {cam.pos:unpack()}) end
-				if hasUniform(shaderObject, "gamma") then shader:send("gamma", self.gamma) end
-				if hasUniform(shaderObject, "exposure") then shader:send("exposure", self.exposure) end
+				checkAndSendCached(shaderObject, "gamma", self.gamma)
+				checkAndSendCached(shaderObject, "exposure", self.exposure)
+				checkAndSendCached(shaderObject, "ambient", self.sun_ambient)
 				
 				--light if using forward lighting
 				self:sendLightUniforms(light, shaderObject)
