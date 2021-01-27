@@ -2,14 +2,26 @@ local lib = _3DreamEngine
 
 local white = vec4(1.0, 1.0, 1.0, 1.0)
 
+local LODsActive = true
+function lib:setLODs(e)
+	LODsActive = e
+end
+function lib:getLODs(e)
+	return LODsActive
+end
+
 --harcoded distance after center transformation minus the camPos
 local function getDistance( b, transform)
-	local camPos = dream.cam.pos or vec3(0, 0, 0)
-	return transform and (
-		(transform[1] * b[1] + transform[2] * b[2] + transform[3] * b[3] + transform[4] - camPos[1])^2 +
-		(transform[5] * b[1] + transform[6] * b[2] + transform[7] * b[3] + transform[8] - camPos[2])^2 +
-		(transform[9] * b[1] + transform[10] * b[2] + transform[11] * b[3] + transform[12] - camPos[3])^2
-	) or (b - camPos):lengthSquared()
+	local camPos = dream.cam.pos
+	if camPos then
+		return transform and (
+			(transform[1] * b[1] + transform[2] * b[2] + transform[3] * b[3] + transform[4] - camPos[1])^2 +
+			(transform[5] * b[1] + transform[6] * b[2] + transform[7] * b[3] + transform[8] - camPos[2])^2 +
+			(transform[9] * b[1] + transform[10] * b[2] + transform[11] * b[3] + transform[12] - camPos[3])^2
+		) or (b - camPos):lengthSquared()
+	else
+		return 0
+	end
 end
 
 function lib:newScene()
@@ -50,9 +62,10 @@ return {
 				end
 				
 				--task
-				if group.hasLOD then
+				if group.hasLOD and LODsActive then
 					local dist = getDistance(group.boundingBox.center, transform)
 					for _,o in ipairs(group.objects) do
+						o:request()
 						local LOD_min, LOD_max = o:getScaledLOD()
 						local aDist = LOD_min and o.LOD_center and getDistance(o.boundingBox.center, transform) or dist
 						if not LOD_min or aDist >= LOD_min^2 and aDist <= LOD_max^2 then
@@ -61,6 +74,7 @@ return {
 					end
 				else
 					for _,o in ipairs(group.objects) do
+						o:request()
 						self:add(o, transform, col, dynamic)
 					end
 				end

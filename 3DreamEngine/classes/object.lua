@@ -16,6 +16,7 @@ function lib:newObject(path)
 		positions = { },
 		lights = { },
 		physics = { },
+		reflections = { },
 		args = { },
 		
 		path = path, --absolute path to object
@@ -124,6 +125,12 @@ return {
 	cleanup = function(self)
 		for d,s in pairs(self.objects) do
 			s:cleanup(s)
+		end
+	end,
+	
+	loadTextures = function(self, force)
+		for d,s in pairs(self.objects) do
+			s.material:loadTextures(force)
 		end
 	end,
 	

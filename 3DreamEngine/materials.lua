@@ -7,7 +7,7 @@ local lib = _3DreamEngine
 
 --creates an empty material
 function lib:newMaterial(name, dir)
-	return {
+	return setmetatable({
 		color = {0.5, 0.5, 0.5, 1.0},
 		glossiness = 0.1,
 		specular = 0.5,
@@ -20,8 +20,8 @@ function lib:newMaterial(name, dir)
 		dir = dir,                    --directory, used for texture linking
 		ior = 1.0,
 		translucent = 0.0,
-		libraray = false,
-	}
+		library = false,
+	}, self.meta.material)
 end
 
 --recognise mat files and directories with an albedo texture or "material.mat" as materials
@@ -80,15 +80,13 @@ local function texSetter(mat, typ, tex)
 end
 
 function lib:finishMaterial(mat, obj)
-	setmetatable(mat, self.meta.material)
-	
 	for _,typ in ipairs({"albedo", "normal", "roughness", "metallic", "emission", "ao", "specular", "glossiness", "material"}) do
 		local custom = mat["tex_" .. typ]
 		mat["tex_" .. typ] = nil
 		if custom then
 			if type(custom) == "userdata" then
 				texSetter(mat, typ, custom)
-			else
+			elseif type(custom) == "string" then
 				--path specified
 				custom = custom and custom:match("(.+)%..+") or custom
 				for _,p in pairs({

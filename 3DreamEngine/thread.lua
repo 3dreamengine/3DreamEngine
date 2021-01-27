@@ -1,6 +1,7 @@
-channel_jobs_priority = love.thread.getChannel("3DreamEngine_channel_jobs_priority")
-channel_jobs = love.thread.getChannel("3DreamEngine_channel_jobs")
-channel_results = love.thread.getChannel("3DreamEngine_channel_results")
+local channel_busy = love.thread.getChannel("3DreamEngine_channel_jobs_channel_busy")
+local channel_jobs_priority = love.thread.getChannel("3DreamEngine_channel_jobs_priority")
+local channel_jobs = love.thread.getChannel("3DreamEngine_channel_jobs")
+local channel_results = love.thread.getChannel("3DreamEngine_channel_results")
 
 require("love.image")
 
@@ -84,6 +85,7 @@ end
 while true do
 	local msg = channel_jobs_priority:demand(1/10) or channel_jobs:pop()
 	if msg then
+		channel_busy:push(true)
 		if msg[1] == "3do" then
 			--load 3do mesh
 			local data = msg[3]
@@ -147,5 +149,6 @@ while true do
 			--generate thumbnail for next time
 			generateThumbnail(msg[2], combined, info or love.filesystem.getInfo(exportPath))
 		end
+		channel_busy:pop()
 	end
 end

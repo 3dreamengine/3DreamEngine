@@ -1,3 +1,5 @@
+local lib = _3DreamEngine
+
 return {
 	link = {"clone", "shader", "material"},
 	
@@ -104,6 +106,14 @@ return {
 		
 		if not self.mat or not self.mat.metallic then
 			self.metallic = 1.0
+		end
+	end,
+	
+	loadTextures = function(self, force)
+		for d,s in pairs(self) do
+			if type(s) == "string" and love.filesystem.getInfo(s, "file") then
+				lib:getTexture(s, force)
+			end
 		end
 	end,
 }

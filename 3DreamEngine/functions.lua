@@ -472,7 +472,7 @@ function lib:take3DScreenshot(pos, resolution, path)
 		
 		--render
 		local cam = self:newCam(transformations[face], self.cubeMapProjection, pos, lookNormals[face])
-		lib:renderFull(cam, canvases)
+		lib:renderFull(cam, canvases, true)
 		
 		love.graphics.pop()
 	end
@@ -484,6 +484,8 @@ function lib:take3DScreenshot(pos, resolution, path)
 	
 	--export cimg data
 	cimg:export(results, path or "results.cimg")
+	
+	return results
 end
 
 --view normals

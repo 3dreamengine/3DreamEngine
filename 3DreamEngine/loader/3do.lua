@@ -88,7 +88,7 @@ return function(self, obj, path)
 	for d,s in pairs(obj.objects) do
 		local mat = type(s.material) == "table" and s.material or self.materialLibrary[s.material] or obj.materials[s.material]
 		if mat then
-			s.material = mat
+			s.material = setmetatable(mat, self.meta.material)
 		else
 			file:close()
 			error("material " .. tostring(s.material) .. " required by object " .. tostring(obj.name) .. " does not exist!")
@@ -101,6 +101,15 @@ return function(self, obj, path)
 		convert(o.boundingBox)
 		if o.transform then
 			o.transform = mat4(o.transform)
+		end
+	end
+	
+	--reflections
+	if obj.reflections then
+		for _,reflection in ipairs(obj.reflections) do
+			reflection.pos = vec3(reflection.pos)
+			reflection.first = vec3(reflection.first)
+			reflection.second = vec3(reflection.second)
 		end
 	end
 	

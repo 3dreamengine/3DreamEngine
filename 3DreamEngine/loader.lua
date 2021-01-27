@@ -193,6 +193,7 @@ function lib:loadObject(path, shaderType, args)
 			["SHADOW"] = true,
 			["ID"] = true,
 			["RAYTRACE"] = true,
+			["REFLECTION"] = true,
 		}
 		for d,o in pairs(obj.objects) do
 			o.tags = { }
@@ -250,6 +251,41 @@ function lib:loadObject(path, shaderType, args)
 			obj.objects[d] = nil
 		end
 	end
+	
+	
+	--extract reflections
+	for d,o in pairs(obj.objects) do
+		if o.tags.reflection then
+			--average position
+			local h = math.huge
+			local min = vec3(h, h, h)
+			local max = vec3(-h, -h, -h)
+			for i,v in ipairs(o.vertices) do
+				min = min:min(vec3(v))
+				max = max:max(vec3(v))
+			end
+			
+			--new reflection object
+			local r = self:newReflection(self.textures.sky_fallback)
+			
+			--fill with dimension and id
+			r.first = min
+			r.second = max
+			r.ID = d
+			
+			if o.transform then
+				r.first = o.transform * r.first
+				r.second = o.transform * r.second
+			end
+			
+			r.pos = (r.first + r.second) / 2
+			
+			--remove as object
+			table.insert(obj.reflections, r)
+			obj.objects[d] = nil
+		end
+	end
+	
 	
 	
 	--detect links
@@ -426,9 +462,19 @@ function lib:loadObject(path, shaderType, args)
 	
 	
 	--post load materials
-	for d,s in pairs(obj.materials) do
-		s.dir = s.dir or obj.args.textures or obj.dir
-		self:finishMaterial(s, obj)
+	do
+		local done = { }
+		for d,s in pairs(obj.materials) do
+			s.dir = s.dir or obj.args.textures or obj.dir
+			self:finishMaterial(s, obj)
+			done[s] = true
+		end
+		for d,s in pairs(obj.objects) do
+			if not done[s] then
+				done[s]  = true
+				self:finishMaterial(s.material, obj)
+			end
+		end
 	end
 	
 	

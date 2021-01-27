@@ -27,9 +27,17 @@ function lib:addResourceJob(typ, obj, priority, data)
 end
 
 --input channels and result
+lib.channel_busy = love.thread.getChannel("3DreamEngine_channel_jobs_channel_busy")
 lib.channel_jobs_priority = love.thread.getChannel("3DreamEngine_channel_jobs_priority")
 lib.channel_jobs = love.thread.getChannel("3DreamEngine_channel_jobs")
 lib.channel_results = love.thread.getChannel("3DreamEngine_channel_results")
+
+function lib:getLoaderThreadUsage()
+	local todo = self.channel_jobs:getCount() + self.channel_jobs_priority:getCount()
+	local working = self.channel_busy:getCount()
+	local done = self.channel_results:getCount()
+	return todo + working + done, todo, working, done
+end
 
 --buffer image for fastLoading
 local bufferData, buffer

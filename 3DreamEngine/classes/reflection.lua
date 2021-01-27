@@ -22,6 +22,8 @@ function lib:newReflection(static, res, noRoughness)
 		priority = priority or 1.0,
 		lastUpdate = 0,
 		pos = pos,
+		first = false,
+		second = false,
 		levels = false,
 		frameSkip = 0,
 		roughness = not noRoughness,

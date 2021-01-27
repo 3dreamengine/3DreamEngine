@@ -43,6 +43,7 @@ function lib:export3do(obj)
 		["linked"] = obj.linked,
 		["objects"] = { },
 		["physics"] = obj.physics,
+		["reflections"] = obj.reflections,
 	}
 	
 	for d,o in pairs(obj.objects) do

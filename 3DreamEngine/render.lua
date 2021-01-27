@@ -58,8 +58,6 @@ function lib:buildScene(typ, dynamic, alpha, cam, blacklist, frustumCheck, noSma
 								task:setShaderID(shaderID)
 								scene[#scene+1] = task
 							end
-						else
-							subObj:request()
 						end
 					end
 				end
@@ -461,7 +459,7 @@ function lib:render(canvases, cam, reflections)
 	end
 	
 	--godrays
-	if dynamics ~= false and self.godrays_enabled then
+	if dynamics ~= false and self.godrays_enabled and canvases.depth then
 		self:renderGodrays(light, canvases, cam)
 	end
 	
