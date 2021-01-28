@@ -232,7 +232,7 @@ end
 --start of actual physics lib
 local raytrace = { }
 
-function raytrace:getNormal()
+function raytrace:getNormal(object, maxU, maxV, maxF)
 	if object.normals then
 		local a = vec3(object.normals[maxF[1]])
 		local b = vec3(object.normals[maxF[2]])
@@ -258,6 +258,7 @@ end
 local function transform(origin, direction, object)
 	if object.transform then
 		local m = object:getInvertedTransform()
+		
 		return m * origin, vec3({
 			m[1] * direction[1] + m[2] * direction[2] + m[3] * direction[3],
 			m[5] * direction[1] + m[6] * direction[2] + m[7] * direction[3],
@@ -268,25 +269,26 @@ local function transform(origin, direction, object)
 	end
 end
 
-function raytrace:raytrace(object, origin, direction, mode, inner)
+function raytrace:raytrace(object, o_origin, o_direction, mode, inner)
 	--clear
+	local origin, direction = o_origin, o_direction
 	if not inner then
 		maxT, maxU, maxV, maxF = 1, false, false, false
+		
+		--object transform
+		origin, direction = transform(o_origin, o_direction, object)
 	end
 	
 	if object.groups then
-		--object transform
-		local n_origin, n_direction = transform(origin, direction, object)
-		
 		--for all subobjects
 		local best = -1
 		for _,group in pairs(object.groups) do
 			--group transform
-			local n2_origin, n2_direction = transform(n_origin, n_direction, group)
+			local n_origin, n_direction = transform(origin, direction, group)
 			
 			for _,s in ipairs(group.objects) do
 				if s.vertices then
-					local result = self:raytrace(s, n2_origin, n2_direction, mode, true)
+					local result = self:raytrace(s, n_origin, n_direction, mode, true)
 					if mode == "bool" and result then
 						return true
 					end
@@ -326,7 +328,7 @@ function raytrace:raytrace(object, origin, direction, mode, inner)
 	
 	--return final position and normal
 	if not inner and maxU then
-		return origin + maxT * direction
+		return o_origin + maxT * o_direction
 	else
 		return false
 	end

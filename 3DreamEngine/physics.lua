@@ -105,38 +105,17 @@ local worldMeta = {
 
 local objectMeta = { }
 
---gets the gradient of a triangle
---bruteforce solution since I failed to find a mathematical solution
-local function getDirection(weights, x1, y1, x2, y2, x3, y3)
-	if weights[4] then
-		return weights[4], weights[5]
+--gets the gradient of a triangle (normalized derivatives x and y from the baycentric transformation)
+local function getDirection(w, x1, y1, x2, y2, x3, y3)
+	local det = (x1 * y2 - x1 * y3 - x2 * y1 + x2 * y3 + x3 * y1 - x3 * y2)
+	local x = (w[1] * y2 - w[1] * y3 - w[2] * y1 + w[2] * y3 + w[3] * y1 - w[3] * y2) / det
+	local y = (-w[1] * x2 + w[1] * x3 + w[2] * x1 - w[2] * x3 - w[3] * x1 + w[3] * x2) / det
+	local l = math.sqrt(x^2 + y^2)
+	if l > 0 then
+		return x / l, y / l
+	else
+		return 0, 0
 	end
-	
-	local mx = (x1 + x2 + x3) / 3
-	local my = (y1 + y2 + y3) / 3
-	local rs = 0
-	local re = math.pi * 2
-	
-	for i = 1, 20 do
-		local r1 = rs * 0.75 + re * 0.25
-		local r2 = rs * 0.25 + re * 0.75
-		
-		local w1, w2, w3 = lib:getBarycentric(mx + math.cos(r1), my + math.sin(r1), x1, y1, x2, y2, x3, y3)
-		local v1 = weights[1] * w1 + weights[2] * w2 + weights[3] * w3
-		
-		local w1, w2, w3 = lib:getBarycentric(mx + math.cos(r2), my + math.sin(r2), x1, y1, x2, y2, x3, y3)
-		local v2 = weights[1] * w1 + weights[2] * w2 + weights[3] * w3
-		
-		if v1 < v2 then
-			rs = (r1 + r2) / 2
-		else
-			re = (r1 + r2) / 2
-		end
-	end
-	
-	local a = rs * 0.5 + re * 0.5
-	weights[4], weights[5] = math.cos(a), math.sin(a)
-	return weights[4], weights[5]
 end
 
 --tries to resolve a collision and returns true if failed to do so

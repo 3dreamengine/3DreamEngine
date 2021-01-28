@@ -54,18 +54,9 @@ function lib:loadLibrary(path, shaderType, args, prefix)
 	for d,s in pairs(obj.lights) do
 		local best = math.huge
 		local master
-		for _,o in pairs(obj.objects) do
-			if s.name == o.name then
-				local _, max = o:getLOD()
-				if max or 99999999 < best then
-					best = max or 99999999
-					master = o
-				end
-			end
-		end
-		
-		if master and master.transform then
-			s.pos = master.transform:invert() * s.pos
+		local g = obj.groups[s.name]
+		if g and g.transform then
+			s.pos = g.transform:invert() * s.pos
 		end
 	end
 	
