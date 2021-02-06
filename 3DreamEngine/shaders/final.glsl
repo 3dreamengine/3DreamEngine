@@ -112,7 +112,7 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 	//average alpha
 #ifdef AVERAGE_ALPHA
 	vec2 dat = Texel(canvas_alphaData, tc).xy;
-	if (dat.x > 0.0) {
+	if (dat.y > 0.0) {
 #ifdef FXAA_ENABLED
 		vec4 ca = fxaa(canvas_alpha, tc);
 #else

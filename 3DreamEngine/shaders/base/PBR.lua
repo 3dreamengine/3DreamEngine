@@ -107,15 +107,10 @@ end
 
 function sh:constructVertex(dream, mat)
 	return [[
-	//transform from tangential space into world space
-#ifdef INSTANCES
-	mat3 normalTransform = mat3(transforms[love_InstanceID]);
-#else
 	mat3 normalTransform = mat3(transform);
-#endif
 	
 	//raw normal vector without normal map;
-	normalRawV = normalTransform * (normalRawV - 0.5);
+	normalRawV = normalTransform * (VertexNormal - 0.5);
 	
 	#ifdef TEX_NORMAL
 		vec3 T = normalize(normalTransform * (VertexTangent.xyz - 0.5));

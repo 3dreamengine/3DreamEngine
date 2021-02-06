@@ -134,24 +134,24 @@ vec3 col;
 	//alpha data and distortion
 #ifdef AVERAGE_ENABLED
 #ifdef REFRACTIONS_ENABLED
-		love_Canvases[1] = vec4(distortion, 0.0, 1.0);
-		love_Canvases[2] = vec4(1.0, albedo.a, 0.0, 1.0);
+	love_Canvases[1] = vec4(distortion, 0.0, 1.0);
+	love_Canvases[2] = vec4(1.0, albedo.a, 0.0, 1.0);
 #else
-		love_Canvases[1] = vec4(1.0, albedo.a, 0.0, 1.0);
+	love_Canvases[1] = vec4(1.0, albedo.a, 0.0, 1.0);
 #endif
 #else
 #ifdef REFRACTIONS_ENABLED
-		//to allow distortion blending we use premultiplied alpha blending, which required manual rgb math here
-		col *= albedo.a;
-		
-		love_Canvases[1] = vec4(distortion, 0.0, 0.0);
+	//to allow distortion blending we use premultiplied alpha blending, which required manual rgb math here
+	col *= albedo.a;
+	
+	love_Canvases[1] = vec4(distortion, 0.0, 0.0);
 #endif
 #endif
 	
 	//returns color
 	love_Canvases[0] = vec4(col, albedo.a);
 	
-	//def
+	//depth
 #ifndef REFRACTIONS_ENABLED
 #ifndef AVERAGE_ENABLED
 	love_Canvases[1] = vec4(depth, 0.0, 0.0, albedo.a);
@@ -164,7 +164,6 @@ vec3 col;
 #ifdef VERTEX
 vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	vertexPos = vertex_position.xyz;
-	normalRawV = VertexNormal;
 	
 #import modulesVertex
 #import mainVertex

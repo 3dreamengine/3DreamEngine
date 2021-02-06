@@ -130,7 +130,7 @@ function love.draw()
 		love.graphics.setColor(1, 1, 1)
 		love.graphics.print(table.concat({
 			"R to toggle rain (" .. tostring(dream:isShaderModuleActive("rain")) .. ")",
-			"U to toggle auto exposure (" .. tostring(dream.autoExposure_enabled),
+			"U to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")",
 			"B to toggle smooth light (" .. tostring(dream.shadow_smooth) .. ")",
 			"F to toggle fog (" .. tostring(dream.fog_enabled) .. ")",
 			"L to toggle looking at check (" .. tostring(lookingAtCheck) .. ")",

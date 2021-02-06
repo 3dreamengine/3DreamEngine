@@ -109,6 +109,7 @@ void effect() {
 #endif
 #endif
 
+	//depth
 #ifdef DEPTH_ENABLED
 	love_Canvases[1] = vec4(depth, 0.0, 0.0, 1.0);
 #endif
