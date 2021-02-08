@@ -92,7 +92,7 @@ end
 function sh:perMaterial(dream, shaderObject, material)
 	local shader = shaderObject.shader
 	
-	shader:send("tex_lookup", dream:getTexture(material.tex_lookup) or dream.textures.default)
+	shader:send("tex_lookup", dream:getImage(material.tex_lookup) or dream.textures.default)
 end
 
 function sh:perTask(dream, shaderObject, task)

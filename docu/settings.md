@@ -395,11 +395,10 @@ resolution, format, skip = dream:getSkyReflectionFormat()
 The resource loader can load textures threaded to avoid loading times or lags.
 
 ```lua
-dream:setResourceLoader(threaded, thumbnails)
-threaded, thumbnails = dream:getResourceLoader()
+dream:setResourceLoader(threaded)
+threaded = dream:getResourceLoader()
 ```
 `threaded (true)` use several cores to load images in the background  
-`thumbnails (true)` generate thumbnails, which will be loaded first next time to deliver results faster  
 
 large images cause a lag when pushing to the GPU, by using 3Dreams smooth loader this can be avoided.
 However images will then be canvases instead, which should not make a different.

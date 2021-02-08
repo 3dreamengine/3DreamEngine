@@ -112,7 +112,7 @@ return {
 	loadTextures = function(self, force)
 		for d,s in pairs(self) do
 			if type(s) == "string" and love.filesystem.getInfo(s, "file") then
-				lib:getTexture(s, force)
+				lib:getImage(s, force)
 			end
 		end
 	end,

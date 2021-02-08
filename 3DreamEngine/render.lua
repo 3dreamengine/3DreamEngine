@@ -541,7 +541,7 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 			lastMaterial = material
 			
 			if hasUniform(shaderObject, "tex_alpha") then
-				shaderObject.shader:send("tex_alpha", dream:getTexture(material.tex_albedo) or self.textures.default)
+				shaderObject.shader:send("tex_alpha", dream:getImage(material.tex_albedo) or self.textures.default)
 			end
 		end
 		

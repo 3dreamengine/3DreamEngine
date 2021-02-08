@@ -49,11 +49,7 @@ To add textures to the model ...
 
 
 ### thumbnails
-Subject to change. Texture loader will receive together with the final LOD update more features which may change thumbnails.
-
-Name a (smaller) file "yourImage_thumb.ext" to let the texture loader automatically load it first, then load the full textures at the end.
-
-If the automatic thumbnail generator is enabled (true by default), this will be done automatically, but the first load will be without thumbnail.
+Name a (very small) file "yourImage_thumb.ext" to let the texture loader automatically load it first immediately, then load the full textures at the end.
 
 
 

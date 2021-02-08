@@ -11,7 +11,7 @@ lib.lastResourceJob = 0
 lib.threads = { }
 
 lib.texturesLoaded = { }
-lib.thumbnailPaths = { }
+lib.thumbnailsLoaded = { }
 
 --start the threads (all except 2 cores planned for renderer and seperate client thread)
 for i = 1, math.max(1, require("love.system").getProcessorCount()-2) do
@@ -23,21 +23,45 @@ end
 function lib:addResourceJob(typ, obj, priority, data)
 	self.lastResourceJob = self.lastResourceJob + 1
 	self.resourceJobs[self.lastResourceJob] = obj
-	self[priority and "channel_jobs_priority" or "channel_jobs"]:push({"3do", self.lastResourceJob, data})
+	self[priority and "channel_jobs" or "channel_jobs"]:push({"3do", self.lastResourceJob, data})
 end
 
 --input channels and result
 lib.channel_busy = love.thread.getChannel("3DreamEngine_channel_jobs_channel_busy")
-lib.channel_jobs_priority = love.thread.getChannel("3DreamEngine_channel_jobs_priority")
 lib.channel_jobs = love.thread.getChannel("3DreamEngine_channel_jobs")
 lib.channel_results = love.thread.getChannel("3DreamEngine_channel_results")
 
+--returns statistics of the loader threads
 function lib:getLoaderThreadUsage()
-	local todo = self.channel_jobs:getCount() + self.channel_jobs_priority:getCount()
+	local todo = self.channel_jobs:getCount() + self.channel_jobs:getCount()
 	local working = self.channel_busy:getCount()
 	local done = self.channel_results:getCount()
 	return todo + working + done, todo, working, done
 end
+
+--scan for image files and adds path to image library
+local imageFormats = table.toSet({"tga", "png", "gif", "bmp", "exr", "hdr", "dds", "dxt", "pkm", "jpg", "jpe", "jpeg", "jp2"})
+local images = { }
+local priority = { }
+local function scan(path)
+	if path:sub(1, 1) ~= "." then
+		for d,s in ipairs(love.filesystem.getDirectoryItems(path)) do
+			if love.filesystem.getInfo(path .. "/" .. s, "directory") then
+				scan(path .. (#path > 0 and "/" or "") .. s)
+			else
+				local name, ext = s:match("^(.+)%.(.+)$")
+				if ext and imageFormats[ext] then
+					local p = path .. "/" .. name
+					if not images[p] or imageFormats[ext] < priority[p] then
+						images[p] = path .. "/" .. s
+						priority[p] = imageFormats[ext]
+					end
+				end
+			end
+		end
+	end
+end
+scan("")
 
 --buffer image for fastLoading
 local bufferData, buffer
@@ -85,11 +109,6 @@ function lib:update()
 						s.canvas:generateMipmaps()
 					end
 					
-					--delete thumbnail since it is no longer required
-					if self.thumbnailPaths[s.path] then
-						self.texturesLoaded[self.thumbnailPaths[s.path]] = nil
-					end
-					
 					--close job
 					fastLoadingJob = false
 				end
@@ -109,7 +128,7 @@ function lib:update()
 			--3do mesh data
 			local obj = self.resourceJobs[msg[2]]
 			
-			--index all meshes available
+			--assign new meshes
 			local changes = { }
 			for name, meshData in pairs(msg[3]) do
 				local finalMesh
@@ -177,11 +196,6 @@ function lib:update()
 				
 				--store
 				self.texturesLoaded[msg[2]] = tex
-				
-				--clear thumbnail
-				if self.thumbnailPaths[msg[2]] then
-					self.texturesLoaded[self.thumbnailPaths[msg[2]]] = nil
-				end
 			end
 		end
 		return true
@@ -189,9 +203,14 @@ function lib:update()
 	return false
 end
 
+--get image path if present
+function lib:getImagePath(path)
+	return images[path]
+end
+
 --get a texture, load it threaded if enabled and therefore may return nil first
 --if a thumbnail is provided, it may return the thumbnail until fully loaded
-function lib:getTexture(path, force)
+function lib:getImage(path, force)
 	if type(path) == "userdata" then
 		return path
 	end
@@ -208,8 +227,8 @@ function lib:getTexture(path, force)
 		return self.texturesLoaded[path]
 	end
 	
-	--request image load, optional a thumbnail first, table indicates a thread instruction, e.g. a RMA combine request
-	local tex = self.texturesLoaded[path] or self.thumbnailPaths[path] and self.texturesLoaded[self.thumbnailPaths[path]] or type(path) == "table" and self.texturesLoaded[path[2]]
+	--request image load, table indicates a thread instruction, e.g. a RMA combine request
+	local tex = self.texturesLoaded[path] or self.thumbnailsLoaded[path] or type(path) == "table" and self.texturesLoaded[path[2]]
 	if not tex and self.texturesLoaded[path] == nil then
 		--mark as in progress
 		self.texturesLoaded[path] = false
@@ -225,55 +244,23 @@ function lib:getTexture(path, force)
 			end
 		else
 			--request texture load
-			self.channel_jobs:push({"image", path, self.textures_generateThumbnails})
+			self.channel_jobs:push({"image", path})
 		end
 		
 		--try to detect thumbnails
 		if path then
-			local ext = path:match("^.+(%..+)$") or ""
-			local path_thumb = self.images[path:sub(1, #path-#ext) .. "_thumb"]
-			local path_thumb_cached = self.images["thumbs/" .. path:sub(1, #path-#ext) .. "_thumb"]
+			local path_thumb = self:getImagePath(path:match("(.*)[.]?.*") .. "_thumb")
 			
 			--also request thumbnail in the priority channel
 			if path_thumb then
-				self.thumbnailPaths[path] = path_thumb
-				self.channel_jobs_priority:push({"image", path_thumb})
-			elseif path_thumb_cached then
-				self.thumbnailPaths[path] = path_thumb_cached
-				self.channel_jobs_priority:push({"image", path_thumb_cached})
+				self.thumbnailsLoaded[path] = love.graphics.newImage(path_thumb)
+				self.channel_jobs:push({"image", path_thumb})
 			end
 		end
 	end
 	
 	return tex
 end
-
---scan for image files and adds path to image library
-local imageFormats = table.toSet({"tga", "png", "gif", "bmp", "exr", "hdr", "dds", "dxt", "pkm", "jpg", "jpe", "jpeg", "jp2"})
-lib.images = { }
-lib.imageDirectories = { }
-local priority = { }
-local function scan(path)
-	if path:sub(1, 1) ~= "." then
-		for d,s in ipairs(love.filesystem.getDirectoryItems(path)) do
-			if love.filesystem.getInfo(path .. "/" .. s, "directory") then
-				scan(path .. (#path > 0 and "/" or "") .. s)
-			else
-				local name, ext = s:match("^(.+)%.(.+)$")
-				if ext and imageFormats[ext] then
-					local p = path .. "/" .. name
-					if not lib.images[p] or imageFormats[ext] < priority[p] then
-						lib.images[p] = path .. "/" .. s
-						lib.imageDirectories[path] = lib.imageDirectories[path] or { }
-						lib.imageDirectories[path][s] = path .. "/" .. s
-						priority[p] = imageFormats[ext]
-					end
-				end
-			end
-		end
-	end
-end
-scan("")
 
 --combine 3 textures to use only one texture
 function lib:combineTextures(metallicSpecular, roughnessGlossines, AO)

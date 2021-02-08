@@ -525,17 +525,12 @@ end
 
 
 --set resource loader settings
-function lib:setResourceLoader(threaded, thumbnails)
-	if threaded then
-		check(thumbnails, "boolean", 2)
-		self.textures_threaded = true
-		self.textures_generateThumbnails = thumbnails
-	else
-		self.textures_threaded = false
-	end
+function lib:setResourceLoader(threaded)
+	check(threaded, "boolean")
+	self.textures_threaded = threaded
 end
 function lib:getResourceLoader()
-	return self.textures_threaded, self.textures_generateThumbnails
+	return self.textures_threaded
 end
 
 

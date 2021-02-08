@@ -62,8 +62,8 @@ function lib:renderSky(transformProj, camTransform, transformScale)
 			local up = vec3(camTransform[5], camTransform[6], camTransform[7]) * size
 			
 			if sunMoon == 1 then
-				local moon = self:getTexture(self.textures.moon)
-				local moon_normal = self:getTexture(self.textures.moon_normal)
+				local moon = self:getImage(self.textures.moon)
+				local moon_normal = self:getImage(self.textures.moon_normal)
 				
 				if moon and moon_normal then
 					love.graphics.setColor(1.0, 1.0, 1.0)
@@ -82,7 +82,7 @@ function lib:renderSky(transformProj, camTransform, transformScale)
 					self.object_plane.objects.Plane.mesh:setTexture(moon)
 				end
 			else
-				local sun = self:getTexture(self.textures.sun)
+				local sun = self:getImage(self.textures.sun)
 				
 				if sun then
 					love.graphics.setColor(self.sun_color)

@@ -119,9 +119,9 @@ function lib:addParticlesystems(obj)
 				for _,input in pairs(ps.input) do
 					if input.source == "image" then
 						if not imageDataCache[input.path] then
-							assert(self.images[input.path], "image " .. tostring(input.path) .. " does not exist!")
+							assert(self:getImagePath(input.path), "image " .. tostring(input.path) .. " does not exist!")
 							print("warning: particlesystem #" .. psID .. " of material " .. o.material.name .. " uses an (slow) image source. Use 3DO export for the final build")
-							imageDataCache[input.path] = love.image.newImageData(self.images[input.path])
+							imageDataCache[input.path] = love.image.newImageData(self:getImagePath(input.path))
 						end
 					end
 				end

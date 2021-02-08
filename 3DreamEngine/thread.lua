@@ -1,50 +1,8 @@
 local channel_busy = love.thread.getChannel("3DreamEngine_channel_jobs_channel_busy")
-local channel_jobs_priority = love.thread.getChannel("3DreamEngine_channel_jobs_priority")
 local channel_jobs = love.thread.getChannel("3DreamEngine_channel_jobs")
 local channel_results = love.thread.getChannel("3DreamEngine_channel_results")
 
 require("love.image")
-
---generate a thumbnail, 8 times smaller
-local function generateThumbnail(path, imageData, info)
-	local thumbPath = "thumbs/" .. path
-	local ext = thumbPath:match("^.+(%..+)$") or ""
-	thumbPath = thumbPath:sub(1, #thumbPath - #ext) .. "_thumb.tga"
-	
-	local info_thumb = love.filesystem.getInfo(thumbPath)
-	if not info_thumb or (info.modtime or 0) > (info and info_thumb.modtime or 0) then
-		print("generating thumbnail for " .. path)
-		local factor = 8
-		local skip = 2
-		
-		local w, h = imageData:getDimensions()
-		local nw = math.floor(w / factor)
-		local nh = math.floor(h / factor)
-		--local thumb = love.image.newImageData(nw, nh, imageData:getFormat())
-		local thumb = love.image.newImageData(nw, nh)
-		
-		for x = 0, nw-1 do
-			for y = 0, nh-1 do
-				local r, g, b, a = 0, 0, 0, 0
-				local c = 0
-				for x2 = 0, factor-1, skip do
-					for y2 = 0, factor-1, skip do
-						local nr, ng, nb, na = imageData:getPixel(x * factor + x2, y * factor + y2)
-						r = r + nr
-						g = g + ng
-						b = b + nb
-						a = a + na
-						c = c + 1
-					end
-				end
-				thumb:setPixel(x, y, r / c, g / c, b / c, a / c)
-			end
-		end
-		
-		love.filesystem.createDirectory(thumbPath:match("(.*[/\\])"))
-		thumb:encode("tga", thumbPath)
-	end
-end
 
 --combine three image datas
 local function combineImages(red, green, blue, exportFormat, exportPath)
@@ -83,7 +41,7 @@ local function combineImages(red, green, blue, exportFormat, exportPath)
 end
 
 while true do
-	local msg = channel_jobs_priority:demand(1/10) or channel_jobs:pop()
+	local msg = channel_jobs:demand()
 	if msg then
 		channel_busy:push(true)
 		if msg[1] == "3do" then
@@ -110,11 +68,6 @@ while true do
 			local isCompressed = love.image.isCompressed(msg[2])
 			local imageData = isCompressed and love.image.newCompressedData(msg[2]) or love.image.newImageData(msg[2])
 			channel_results:push({"image", msg[2], imageData, isCompressed})
-			
-			--generate thumbnail
-			if msg[3] and not isCompressed then
-				generateThumbnail(msg[2], imageData, info)
-			end
 		elseif msg[1] == "combine" then
 			local exportFormat = "tga"
 			local dir = "combined"
@@ -145,9 +98,6 @@ while true do
 			
 			--send result
 			channel_results:push({"image", msg[2], combined})
-			
-			--generate thumbnail for next time
-			generateThumbnail(msg[2], combined, info or love.filesystem.getInfo(exportPath))
 		end
 		channel_busy:pop()
 	end

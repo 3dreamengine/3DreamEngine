@@ -30,7 +30,6 @@ function lib:loadMaterialLibrary(path, prefix)
 	prefix = prefix or ""
 	for d,s in ipairs(love.filesystem.getDirectoryItems(path)) do
 		local p = path .. "/" .. s
-		
 		if s:sub(#s-4) == ".mat" then
 			--found material file
 			local dummyObj = {materials = { }, dir = path}
@@ -55,7 +54,7 @@ function lib:loadMaterialLibrary(path, prefix)
 			self:finishMaterial(mat)
 			mat.library = true
 			self.materialLibrary[mat.name] = mat
-		elseif self.imageDirectories[p] then
+		elseif self:getImagePath(p .. "/albedo") then
 			--directory is a material since it contains at least one texture
 			local mat = self:newMaterial(prefix .. s, p)
 			self:finishMaterial(mat)
@@ -93,23 +92,17 @@ function lib:finishMaterial(mat, obj)
 					custom,
 					(mat.dir and (mat.dir .. "/") or "") .. custom,
 				}) do
-					if self.images[p] then
-						texSetter(mat, typ, self.images[p])
+					if self:getImagePath(p) then
+						texSetter(mat, typ, self:getImagePath(p))
 						break
 					end
 				end
 			end
 		elseif not obj then
-			--skip matching, just look for files in same directory
-			--this is a material library entry
-			local images = self.imageDirectories[mat.dir]
-			if images then
-				for i,v in pairs(images) do
-					if string.find(i, typ) then
-						texSetter(mat, typ, v)
-						break
-					end
-				end
+			--this is a material library entry and it expects correctly named files
+			local v = self:getImagePath(mat.dir .. "/" .. typ)
+			if v then
+				texSetter(mat, typ, v)
 			end
 		else
 			--search for correctly named texture in the material directory
@@ -120,8 +113,8 @@ function lib:finishMaterial(mat, obj)
 				dir .. mat.name .. "_" .. typ,            -- e.g. "materialDirectory/materialName_albedo.png"
 				dir .. obj.name .. "_" .. typ,      	  -- e.g. "materialDirectory/objectName_albedo.png"
 			}) do
-				if self.images[p] then
-					texSetter(mat, typ, self.images[p])
+				if self:getImagePath(p) then
+					texSetter(mat, typ, self:getImagePath(p))
 					break
 				end
 			end

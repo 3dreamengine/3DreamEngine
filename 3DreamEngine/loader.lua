@@ -258,18 +258,19 @@ function lib:loadObject(path, shaderType, args)
 			
 			--new reflection object
 			local r = self:newReflection(self.textures.sky_fallback)
-			
-			--fill with dimension and id
-			r.first = min
-			r.second = max
 			r.ID = d
 			
 			if o.transform then
-				r.first = o.transform * r.first
-				r.second = o.transform * r.second
+				min = o.transform * min
+				max = o.transform * max
+				r.first = min:min(max)
+				r.second = max:max(min)
+				r.pos = vec3(o.transform[4], o.transform[8], o.transform[12])
+			else
+				r.first = min
+				r.second = max
+				r.pos = (r.first + r.second) / 2
 			end
-			
-			r.pos = (r.first + r.second) / 2
 			
 			--remove as object
 			table.insert(obj.reflections, r)

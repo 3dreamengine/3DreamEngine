@@ -144,7 +144,7 @@ function lib:bakeMaterials(list, ID)
 				for d,s in ipairs(atlas) do
 					if s[4] then
 						local mat = materialsLookup[s[4]]
-						local tex = type(mat[name]) == "string" and self:getTexture(mat[name], true)
+						local tex = type(mat[name]) == "string" and self:getImage(mat[name], true)
 						
 						local uv = uvs[s[4]]
 						local mesh = love.graphics.newMesh({
@@ -163,7 +163,7 @@ function lib:bakeMaterials(list, ID)
 							
 							if type(mat[name]) == "table" then
 								for i = 1, 3 do
-									local tex = self:getTexture(mat[name][i+2], true)
+									local tex = self:getImage(mat[name][i+2], true)
 									love.graphics.setColorMask(i == 1, i == 2, i == 3, false)
 									if tex then
 										mesh:setTexture(tex)

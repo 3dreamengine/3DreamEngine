@@ -96,26 +96,26 @@ function sh:perTask(dream, shaderObject, subObj, task)
 	assert(subObj.tex_mask, "material.tex_mask required")
 	assert(subObj.tex_blend, "material.tex_blend required")
 	
-	shader:send("tex_mask", dream:getTexture(subObj.tex_mask) or dream.textures.default)
-	shader:send("tex_blend", dream:getTexture(subObj.tex_blend) or dream.textures.default)
+	shader:send("tex_mask", dream:getImage(subObj.tex_mask) or dream.textures.default)
+	shader:send("tex_blend", dream:getImage(subObj.tex_blend) or dream.textures.default)
 	
 	shader:send("uv2Scale", subObj.multiTexture_uv2Scale or 1.0)
 	
-	shader:send("tex_albedo_2", dream:getTexture(material.tex_albedo) or dream.textures.default)
+	shader:send("tex_albedo_2", dream:getImage(material.tex_albedo) or dream.textures.default)
 	shader:send("color_albedo_2", material.color)
 	
-	shader:send("tex_material_2", dream:getTexture(material.tex_material) or dream.textures.default)
+	shader:send("tex_material_2", dream:getImage(material.tex_material) or dream.textures.default)
 	shader:send("color_material_2", {material.roughness, material.metallic, 1.0})
 	
 	if material.tex_emission then
-		shader:send("tex_emission_2", dream:getTexture(material.tex_emission) or tex.default)
+		shader:send("tex_emission_2", dream:getImage(material.tex_emission) or tex.default)
 	end
 	if shader:hasUniform("color_emission") then
 		shader:send("color_emission_2", material.emission)
 	end
 	
 	if shader:hasUniform("tex_normal_2") then
-		shader:send("tex_normal_2", dream:getTexture(material.tex_normal) or dream.textures.default_normal)
+		shader:send("tex_normal_2", dream:getImage(material.tex_normal) or dream.textures.default_normal)
 	end
 end
 

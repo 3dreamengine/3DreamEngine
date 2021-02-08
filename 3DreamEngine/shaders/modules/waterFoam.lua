@@ -129,8 +129,8 @@ function sh:perMaterial(dream, shaderObject, material)
 	checkAndSendCached(shaderObject, "surfaceDistortion", material.surfaceDistortion or 0.75)
 	
 	checkAndSendCached(shaderObject, "material_foam", {material.material_foam[1], material.material_foam[2]})
-	checkAndSendCached(shaderObject, "tex_foam", dream:getTexture(material.tex_foam) or dream.textures.default)
-	checkAndSendCached(shaderObject, "tex_caustics", dream:getTexture(material.tex_caustics) or dream.textures.default)
+	checkAndSendCached(shaderObject, "tex_foam", dream:getImage(material.tex_foam) or dream.textures.default)
+	checkAndSendCached(shaderObject, "tex_caustics", dream:getImage(material.tex_caustics) or dream.textures.default)
 	
 	checkAndSendCached(shaderObject, "foamScale", material.foamScale or 1 / 8)
 	checkAndSendCached(shaderObject, "foamWidth", 1 / (material.foamWidth or 0.5))

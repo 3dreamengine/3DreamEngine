@@ -90,7 +90,7 @@ function sh:perMaterial(dream, shaderObject, material)
 	checkAndSendCached(shaderObject, "waterHeight", 1 / (material.waterHeight or 4))
 	checkAndSendCached(shaderObject, "surfaceDistortion", material.surfaceDistortion or 0.75)
 	
-	checkAndSendCached(shaderObject, "tex_caustics", dream:getTexture(material.tex_caustics) or dream.textures.default)
+	checkAndSendCached(shaderObject, "tex_caustics", dream:getImage(material.tex_caustics) or dream.textures.default)
 	
 	checkAndSendCached(shaderObject, "causticsColor", dream.sun_color)
 	checkAndSendCached(shaderObject, "causticsScale", material.causticsScale or 1 / 32)
