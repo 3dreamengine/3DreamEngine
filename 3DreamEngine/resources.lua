@@ -249,12 +249,13 @@ function lib:getImage(path, force)
 		
 		--try to detect thumbnails
 		if path then
-			local path_thumb = self:getImagePath(path:match("(.*)[.]?.*") .. "_thumb")
-			
-			--also request thumbnail in the priority channel
-			if path_thumb then
-				self.thumbnailsLoaded[path] = love.graphics.newImage(path_thumb)
-				self.channel_jobs:push({"image", path_thumb})
+			local base = path:match("(.*)[.].*")
+			if base then
+				local path_thumb = self:getImagePath(base .. "_thumb")
+				if path_thumb then
+					self.thumbnailsLoaded[path] = love.graphics.newImage(path_thumb)
+					self.thumbnailsLoaded[path]:setWrap("repeat")
+				end
 			end
 		end
 	end

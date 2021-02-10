@@ -87,7 +87,7 @@ end
 --remove objects without vertices
 local function cleanEmpties(obj)
 	for d,o in pairs(obj.objects) do
-		if o.vertices and #o.vertices == 0 and not o.linked then
+		if o.vertices and #o.vertices == 0 and not o.linked or o.tags.remove then
 			obj.objects[d] = nil
 		end
 	end
@@ -169,10 +169,6 @@ function lib:loadObject(path, shaderType, args)
 	end
 	
 	
-	--remove empty objects
-	cleanEmpties(obj)
-	
-	
 	--parse tags
 	do
 		local tags = {
@@ -185,6 +181,7 @@ function lib:loadObject(path, shaderType, args)
 			["ID"] = true,
 			["RAYTRACE"] = true,
 			["REFLECTION"] = true,
+			["REMOVE"] = true,
 		}
 		for d,o in pairs(obj.objects) do
 			o.tags = { }
@@ -203,6 +200,10 @@ function lib:loadObject(path, shaderType, args)
 			end
 		end
 	end
+	
+	
+	--remove empty objects
+	cleanEmpties(obj)
 	
 	
 	--extract positions
