@@ -1,5 +1,5 @@
 --load the matrix and the 3D lib
-dream = require("3DreamEngine")
+local dream = require("3DreamEngine")
 love.window.setTitle("Alpha Blend Example")
 love.mouse.setRelativeMode(true)
 
@@ -15,7 +15,7 @@ dream:init()
 
 --scene
 dream:loadMaterialLibrary(projectDir .. "materials")
-scene = dream:loadObject(projectDir .. "scene", "PBR")
+local scene = dream:loadObject(projectDir .. "scene", "PBR")
 
 --light
 local p = scene.positions[1]

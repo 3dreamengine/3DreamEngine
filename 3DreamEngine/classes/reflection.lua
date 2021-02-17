@@ -14,6 +14,8 @@ function lib:newReflection(static, res, noRoughness)
 		canvas = love.graphics.newCanvas(res, res, {format = self.reflections_format, readable = true, msaa = 0, type = "cube", mipmaps = noRoughness and "none" or "manual"})
 	end
 	
+	--- TODO: priority and pos seem to be undefined
+	local priority, pos
 	return setmetatable({
 		canvas = canvas,
 		image = image,

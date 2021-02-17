@@ -104,7 +104,8 @@ function lib:update()
 						mesh = love.graphics.newMesh(o.vertexFormat, o.vertexCount, "triangles", "static")
 						mesh:setVertexMap(o.vertexMap)
 						mesh:setVertices(msg[4])
-						vertexMap = nil
+						-- TODO: vertexMap is never used globally
+						-- vertexMap = nil
 					end
 					
 					o.mesh = mesh

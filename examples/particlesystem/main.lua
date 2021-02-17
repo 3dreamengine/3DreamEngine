@@ -1,5 +1,5 @@
 --load the matrix and the 3D lib
-dream = require("3DreamEngine")
+local dream = require("3DreamEngine")
 love.window.setTitle("Particle System Example")
 
 --settings
@@ -10,7 +10,7 @@ dream.cam.fov = 45
 
 dream:init()
 
-ground = dream:loadObject(projectDir .. "ground", {splitMaterials = true})
+local ground = dream:loadObject(projectDir .. "ground", {splitMaterials = true})
 
 function love.draw()
 	dream:resetLight()

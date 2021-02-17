@@ -35,7 +35,7 @@ function lib.addParticlesystems(self, obj)
 			for particleSystemID, particleSystem in ipairs(o.material.particleSystems) do
 				--create the particle mesh
 				local pname = o.name:gsub("DISABLED_", "") .. "_particleSystem_" .. o.material.name .. "_" .. particleSystemID
-				obj.objects[pname] = dream:newSubObject(pname, obj, particleSystem.objects[1].material or obj.materials.None)
+				obj.objects[pname] = self:newSubObject(pname, obj, particleSystem.objects[1].material or obj.materials.None)
 				obj.objects[pname].particleSystem = true
 				local po = obj.objects[pname]
 				

@@ -655,7 +655,9 @@ function lib:present(cam, canvases, lite)
 	
 	--generate scene
 	self.delton:start("scene")
-	local scene = self:buildScene(cam, canvases, "render", blacklist)
+	-- TODO: blacklist is undefined
+	-- local scene = self:buildScene(cam, canvases, "render", blacklist)
+	local scene = self:buildScene(cam, canvases, "render", nil)
 	self.delton:stop()
 	
 	--process render jobs

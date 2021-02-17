@@ -7,12 +7,12 @@ return function(self, obj, path)
 	local ffi = require("ffi")
 	local file = love.filesystem.read(path)
 	
-	function parseInt(i)
+	local function parseInt(i)
 		return string.byte(file:sub(i+1, i+1)) + string.byte(file:sub(i+2, i+2)) * 256 + string.byte(file:sub(i+3, i+3)) * 256^2 + string.byte(file:sub(i+4, i+4)) * 256^3
 	end
 	
-	int32 = 2^32
-	function parseInt32(i)
+	local int32 = 2^32
+	local function parseInt32(i)
 		local v = parseInt(i)
 		if v >= int32/2 then
 			v = int32 - v - 2
@@ -20,12 +20,12 @@ return function(self, obj, path)
 		return v
 	end
 	
-	function parseString(i)
+	local function parseString(i)
 		local length = parseInt32(i)
 		return file:sub(i+5, i+5+length-1), length
 	end
 	
-	function parseDICT(i)
+	local function parseDICT(i)
 		local i2 = 0
 		local count = parseInt32(i)
 		local t = { }
@@ -144,7 +144,8 @@ return function(self, obj, path)
 				print("unsupported vox file, reserved or frameCount in use, should be -1 / 1, trying to continue.")
 			end
 			
-			nodes[id] = {id = id, childId = childId, nodeAttributes = att, parent = currNode, attributes = parseDICT(i+i2+36), children = { }}
+			-- TODO: parent is never used and currNode is undefined
+			nodes[id] = {id = id, childId = childId, nodeAttributes = att,--[[ parent = currNode, ]] attributes = parseDICT(i+i2+36), children = { }}
 			if nodes[id].attributes._t then
 				nodes[id].transform = self:split(nodes[id].attributes._t, " ")
 				for cc = 1, 3 do
@@ -196,8 +197,8 @@ return function(self, obj, path)
 	end
 	
 	--generate final object
-	function generate(m, name, t)
-		obj.objects[name] = dream:newSubObject(name, obj, self:newMaterial())
+	local function generate(m, name, t)
+		obj.objects[name] = self:newSubObject(name, obj, self:newMaterial())
 		local o = obj.objects[name]
 		
 		for x = 0, m.x-1 do
@@ -283,7 +284,7 @@ return function(self, obj, path)
 		end
 	end
 	
-	function group(g, t, name)
+	local function group(g, t, name)
 		if g.childId then
 			if groups[g.childId] then
 				for d,s in ipairs(groups[g.childId]) do

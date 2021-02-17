@@ -1,6 +1,6 @@
 --load the 3D lib
-dream = require("3DreamEngine")
-collision = require("3DreamEngine/collision")
+local dream = require("3DreamEngine")
+local collision = require("3DreamEngine/collision")
 love.window.setTitle("PBR Tavern")
 love.window.setVSync(false)
 

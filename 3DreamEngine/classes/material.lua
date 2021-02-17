@@ -94,7 +94,7 @@ return {
 		self.roughness = r
 	end,
 	setMetallic = function(self, m)
-		self.metallic = r
+		self.metallic = m
 	end,
 	setRoughnessTex = function(self, tex)
 		self.tex_roughness = tex

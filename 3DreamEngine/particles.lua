@@ -79,8 +79,9 @@ local meta = {
 		end
 		
 		--increase mesh data if required
+
 		if not instanceMesh or instanceMesh:getVertexCount() < #self.instances then
-			instanceMesh = love.graphics.newMesh(instanceFormat, math.ceil(#self.instances / minIncreaseStep) * minIncreaseStep, "triangles", "dynamic")
+			_G.instanceMesh = love.graphics.newMesh(instanceFormat, math.ceil(#self.instances / minIncreaseStep) * minIncreaseStep, "triangles", "dynamic")
 			
 			--attach instance mesh
 			for d,s in pairs({"InstanceCenter", "InstanceSize", "InstanceTexScale", "InstanceTexOffset", "InstanceEmission", "InstanceColor"}) do
@@ -110,7 +111,7 @@ local meta = {
 	--sets texture for emission
 	setEmissionTexture = function(self, tex)
 		assert(tex, "expected texture, got nil")
-		self.emissionTexture = emissionTexture
+		self.emissionTexture = tex
 	end,
 	getEmissionTexture = function(self)
 		return self.emissionTexture
