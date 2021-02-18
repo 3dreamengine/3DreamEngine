@@ -124,11 +124,11 @@ function lib:export3do(obj)
 							str = str .. "\n"
 						end
 						str = str .. "} mesh_vertex_" .. hash .. ";"
-						self.ffi.cdef(str)
+						ffi.cdef(str)
 						
 						--byte data
-						local byteData = love.data.newByteData(mesh:getVertexCount() * self.ffi.sizeof("mesh_vertex_" .. hash))
-						local meshData = self.ffi.cast("mesh_vertex_" .. hash .. "*", byteData:getPointer())
+						local byteData = love.data.newByteData(mesh:getVertexCount() * ffi.sizeof("mesh_vertex_" .. hash))
+						local meshData = ffi.cast("mesh_vertex_" .. hash .. "*", byteData:getPointer())
 						
 						--fill data
 						for i = 1, mesh:getVertexCount() do

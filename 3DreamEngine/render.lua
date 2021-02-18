@@ -25,7 +25,6 @@ function lib:buildScene(typ, dynamic, alpha, cam, blacklist, frustumCheck, noSma
 	}
 	
 	--preprocess scenes to group together shader
-	local t = love.timer.getTime()
 	local groups = { }
 	for sc, _ in pairs(self.scenes) do
 		for ID, _ in pairs(IDs) do

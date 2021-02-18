@@ -25,7 +25,7 @@ quat = require((...) .. "/libs/quat")
 cimg = require((...) .. "/libs/cimg")
 utils = require((...) .. "/libs/utils")
 packTable = require((...) .. "/libs/packTable")
-lib.ffi = require("ffi")
+ffi = require("ffi")
 
 --delton, disabled when not in debug mode
 lib.delton = require((...) .. "/libs/delton"):new(512)

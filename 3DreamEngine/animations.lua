@@ -134,11 +134,15 @@ function lib:applyJoints(object)
 end
 
 function lib:getJointMat(o, i)
-	local m = mat4()
 	local obj = o.obj
-	for jointNr = 1, #o.joints[i] do
-		local joint = o.jointIDs[ o.joints[i][jointNr] ]
-		m = m + obj.boneTransforms[ joint ] * o.weights[i][jointNr]
+	if obj.boneTransforms then
+		local m = mat4()
+		for jointNr = 1, #o.joints[i] do
+			local joint = o.jointIDs[ o.joints[i][jointNr] ]
+			m = m + obj.boneTransforms[ joint ] * o.weights[i][jointNr]
+		end
+		return m
+	else
+		return mat4:getIdentity()
 	end
-	return m
 end
