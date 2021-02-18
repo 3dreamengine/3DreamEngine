@@ -1,5 +1,5 @@
 --load the matrix and the 3D lib
-dream = require("3DreamEngine")
+local dream = require("3DreamEngine")
 love.window.setTitle("Lamborghini Example")
 love.graphics.setBackgroundColor(0.8, 0.8, 0.8)
 
@@ -13,10 +13,10 @@ dream.cam.fov = 70
 
 dream:init()
 
-car = dream:loadObject(projectDir .. "Lamborghini Aventador", "PBR")
+local car = dream:loadObject(projectDir .. "Lamborghini Aventador", "PBR")
 car.materials["Lamborghini_Aventador:GlassSG"].color = {0, 0, 0, 0.5}
 
-socket = dream:loadObject(projectDir .. "socket")
+local socket = dream:loadObject(projectDir .. "socket")
 
 function love.draw()
 	dream:update()

@@ -45,7 +45,7 @@ function soundManager:play(path, x, y, z, volume, pitch, ID)
 	
 	--register new sound
 	if not soundManager.sounds[path] then
-		assert(path:getChannelCount() == 1, s.path .. " is not a mono source!")
+		assert(path:getChannelCount() == 1, path .. " is not a mono source!")
 		soundManager.sounds[path] = newSound(false, path)
 	end
 	

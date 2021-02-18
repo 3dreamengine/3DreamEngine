@@ -55,7 +55,8 @@ function job:execute(times, delta, obj, pos, face)
 	love.graphics.reset()
 	local cam = lib:newCam(transformations[face], lib.cubeMapProjection, pos, lookNormals[face])
 	local canvas = obj.reflection.canvas
-	depth_buffer = depth_buffer or love.graphics.newCanvas(canvas:getWidth(), canvas:getHeight(), {format = "depth16", readable = false, msaa = canvas:getMSAA()})
+	-- TODO: Why is depth_buffer global?
+	_G.depth_buffer = depth_buffer or love.graphics.newCanvas(canvas:getWidth(), canvas:getHeight(), {format = "depth16", readable = false, msaa = canvas:getMSAA()})
 	love.graphics.setCanvas({{canvas, face = face}, depthstencil = depth_buffer})
 	love.graphics.clear()
 	obj.reflection.canvas = nil

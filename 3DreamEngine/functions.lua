@@ -41,9 +41,9 @@ end
 function lib:lookAt(eye, at, up)
 	up = up or vec3(0.0, 1.0, 0.0)
 	
-	zaxis = (at - eye):normalize()
-	xaxis = zaxis:cross(up):normalize()
-	yaxis = xaxis:cross(zaxis)
+	local zaxis = (at - eye):normalize()
+	local xaxis = zaxis:cross(up):normalize()
+	local yaxis = xaxis:cross(zaxis)
 
 	zaxis = -zaxis
 	
@@ -427,7 +427,8 @@ function lib:takeScreenshot()
 	else
 		love.filesystem.createDirectory("screenshots")
 		if not screenShotThread then
-			screenShotThread = love.thread.newThread([[
+			-- TODO: why is screenShotThread global?
+			_G.screenShotThread = love.thread.newThread([[
 				require("love.image")
 				channel = love.thread.getChannel("screenshots")
 				while true do

@@ -117,7 +117,7 @@ end
 
 --http://lua-users.org/wiki/CopyTable
 --supports metatables and recursions
-function table.deepCopy(orig, copies)
+local function deepcopy(orig, copies)
     copies = copies or {}
     local orig_type = type(orig)
     local copy
@@ -138,6 +138,7 @@ function table.deepCopy(orig, copies)
     return copy
 end
 
+table.deepCopy = deepcopy
 
 -- STRING --
 function utils.string.split(text, sep)
@@ -152,7 +153,7 @@ local prefix_s = {"m", "μ", "n", "p", "f", "a", "z", "y"}
 function utils.string.formatSize(size, decimals, typ, exp)
 	exp = exp or 1000
 	typ = typ or "number"
-	factor = 0
+	local factor = 0
 	
 	while size > exp do
 		size = size / exp

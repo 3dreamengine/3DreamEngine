@@ -112,7 +112,7 @@ function lib:applyJoints(object)
 			end
 			
 			--recreate mesh
-			dream:createMesh(o)
+			self:createMesh(o)
 		end
 	end
 end

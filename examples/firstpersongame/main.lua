@@ -1,5 +1,5 @@
 --load the 3D lib
-dream = require("3DreamEngine")
+local dream = require("3DreamEngine")
 love.window.setTitle("First Person Game")
 love.mouse.setRelativeMode(true)
 
@@ -16,7 +16,7 @@ local scene = dream:loadObject(projectDir .. "objects/scene", "PBR")
 --activate the global rain shader module
 dream:activateShaderModule("rain")
 
-player = {
+local player = {
 	x = 8,
 	y = 10,
 	z = 2,
@@ -70,7 +70,7 @@ function love.mousemoved(_, _, x, y)
 end
 
 --collision not implemented yet
-function collide(x, y, w, h)
+local function collide(x, y, w, h)
 	return false
 end
 

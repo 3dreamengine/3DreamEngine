@@ -1,5 +1,5 @@
 --load the 3D lib
-dream = require("3DreamEngine")
+local dream = require("3DreamEngine")
 love.window.setTitle("Monkey Example")
 local projectDir = "examples/monkey/"
 
@@ -7,7 +7,7 @@ local projectDir = "examples/monkey/"
 dream:init()
 
 --load our object
-monkey = dream:loadObject(projectDir .. "object")
+local monkey = dream:loadObject(projectDir .. "object")
 
 love.graphics.setBackgroundColor(128/255, 218/255, 235/255)
 

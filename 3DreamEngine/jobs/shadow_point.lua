@@ -37,7 +37,8 @@ function job:execute(times, delta, light, pos)
 	
 	--create new canvases if necessary
 	if not light.shadow.canvas then
-		time = love.timer.getTime()
+		-- TODO: time is not used globally
+		-- _G.time = love.timer.getTime()
 		light.shadow.canvas = lib:newShadowCanvas("point", light.shadow.res)
 	end
 	

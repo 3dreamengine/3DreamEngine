@@ -1,6 +1,6 @@
-channel_jobs_priority = love.thread.getChannel("3DreamEngine_channel_jobs_priority")
-channel_jobs = love.thread.getChannel("3DreamEngine_channel_jobs")
-channel_results = love.thread.getChannel("3DreamEngine_channel_results")
+local channel_jobs_priority = love.thread.getChannel("3DreamEngine_channel_jobs_priority")
+local channel_jobs = love.thread.getChannel("3DreamEngine_channel_jobs")
+local channel_results = love.thread.getChannel("3DreamEngine_channel_results")
 
 require("love.image")
 
