@@ -1,5 +1,5 @@
 --load the 3D lib
-dream = require("3DreamEngine")
+local dream = require("3DreamEngine")
 love.window.setTitle("Blacksmith")
 love.mouse.setRelativeMode(true)
 

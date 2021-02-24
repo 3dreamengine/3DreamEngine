@@ -252,7 +252,7 @@ function lib:addParticlesystems(obj)
 								ID = ID + 1
 								
 								local pname = oName .. "_ps_" .. psID .. "_" .. matID .. "_" .. ID
-								local po = dream:newSubObject(o.name, obj, ps.loadedObjects[1].material)
+								local po = self:newSubObject(o.name, obj, ps.loadedObjects[1].material)
 								obj.objects[pname] = po
 								po.transform = o.transform
 								po.tags.particle = true

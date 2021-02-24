@@ -130,7 +130,7 @@ function lib:executeJobs()
 	while operations[1] do
 		local o = operations[1]
 		table.remove(operations, 1)
-		dream.delton:start(o[1])
+		self.delton:start(o[1])
 		
 		--remember time stamp
 		local delta = t - (times[o[3]] or t)
@@ -148,7 +148,7 @@ function lib:executeJobs()
 		--count executions
 		executionsTemp[o[1]] = (executionsTemp[o[1]] or 0) + 1
 		
-		dream.delton:stop()
+		self.delton:stop()
 		
 		--limit processing time
 		slots = slots - (cost or type(o[1]) == "string" and self.jobs[o[1]].cost or 1)

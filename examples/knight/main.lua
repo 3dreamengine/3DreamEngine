@@ -1,5 +1,5 @@
 --load the 3D lib
-dream = require("3DreamEngine")
+local dream = require("3DreamEngine")
 love.window.setTitle("Knight Example")
 
 --settings
@@ -9,7 +9,7 @@ dream.AO_enabled = false
 
 dream:init()
 
-knight = dream:loadObject(projectDir.. "knight")
+local knight = dream:loadObject(projectDir.. "knight")
 
 love.graphics.setBackgroundColor(128/255, 218/255, 235/255)
 

@@ -160,7 +160,7 @@ function lib:render(canvases, cam, reflections)
 	--start both passes
 	for pass = 1, canvases.alphaPass and 2 or 1 do
 		--setup final scene
-		local scene = self:buildScene("render", dynamic, pass == 2, cam, blacklist, frustumCheck)
+		local scene = self:buildScene("render", dynamic, pass == 2, cam, nil, frustumCheck)
 		
 		--only first pass writes depth
 		love.graphics.setDepthMode("less", pass == 1)
@@ -540,7 +540,7 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 			lastMaterial = material
 			
 			if hasUniform(shaderObject, "tex_alpha") then
-				shaderObject.shader:send("tex_alpha", dream:getImage(material.tex_albedo) or self.textures.default)
+				shaderObject.shader:send("tex_alpha", self:getImage(material.tex_albedo) or self.textures.default)
 			end
 		end
 		
@@ -715,9 +715,6 @@ function lib:renderFull(cam, canvases, reflections)
 	end
 end
 
-local sum = 0
-local count = 0
-
 function lib:present(cam, canvases, lite)
 	self.delton:start("present")
 	
@@ -741,7 +738,7 @@ function lib:present(cam, canvases, lite)
 		local t = scale * n
 		local m = canvases.mode == "direct" and 1 or -1
 		
-		--optimized matrix multiplikation by removing constants
+		--optimized matrix multiplication by removing constants
 		--looks like a mess, but its only the opengl projection multiplied by the camera
 		local b = cam.transform
 		local a1 = n / r

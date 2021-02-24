@@ -433,8 +433,8 @@ function lib:takeScreenshot()
 		love.system.openURL(love.filesystem.getSaveDirectory() .. "/screenshots")
 	else
 		love.filesystem.createDirectory("screenshots")
-		if not screenShotThread then
-			screenShotThread = love.thread.newThread([[
+		if not self.screenShotThread then
+			self.screenShotThread = love.thread.newThread([[
 				require("love.image")
 				channel = love.thread.getChannel("screenshots")
 				while true do

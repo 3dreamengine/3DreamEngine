@@ -28,6 +28,7 @@ function soundManager:addLibrary(path, into)
 	end
 end
 
+--TODO remove sorting
 local sort = function(n1, n2)
 	return n1:tell() < n2:tell()
 end
@@ -35,9 +36,10 @@ end
 function soundManager:play(name, position, volume, pitch, echo, muffle)
 	assert(self.paths[name], "sound not in library")
 	if not self.sounds[name] then
-		self.sounds[name] = {
-			love.audio.newSource(self.paths[name], "static")
-		}
+		local path = self.paths[name]
+		local s = love.audio.newSource(path, "static")
+		self.sounds[name] = {s}
+		assert(s:getChannelCount() == 1, path .. " is not a mono source!")
 	end
 	
 	--sort sounds

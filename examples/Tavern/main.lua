@@ -1,6 +1,7 @@
 --load the 3D lib
-dream = require("3DreamEngine")
-raytrace = require("3DreamEngine/raytrace")
+local dream = require("3DreamEngine")
+local raytrace = require("3DreamEngine/raytrace")
+
 love.window.setTitle("PBR Tavern")
 love.window.setVSync(false)
 
@@ -9,8 +10,6 @@ local projectDir = "examples/Tavern/"
 dream:setNameDecoder()
 
 dream.renderSet:setRefractions(true)
-
---dream:setDeferredShaderType("PBR")
 
 dream:setSky(false)
 dream:setReflection(cimg:load(projectDir .. "sky.cimg"))
@@ -27,7 +26,7 @@ dream:loadMaterialLibrary(projectDir .. "materials")
 dream:init()
 
 --load scene
-local scene = dream:loadObject(projectDir .. "scene", "PBR")
+local scene = dream:loadObject(projectDir .. "scene", "PBR", {cleanup = false})
 
 local player = {
 	x = 4,

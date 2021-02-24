@@ -2,7 +2,7 @@
 <a href="https://discord.gg/hpmZxNQ"><img src="https://discordapp.com/api/guilds/561664262481641482/embed.png" alt="Discord server" /></a>
 
 # Features
-* easy to use yet powerful 3D extension to LÃ–VE
+* easy to use yet powerful 3D extension to LÖVE
 * fast forward rendering with alpha pass
 * Metallness workflow (albedo, normal, roughness, metallic, ao, emission)
 * Specular workflow (color, normal, glossiness, specular, ao, emission)
@@ -31,7 +31,13 @@
 ![screenshots](https://raw.githubusercontent.com/3dreamengine/3DreamEngine/master/screenshots.jpg)
 
 
+# development
+Due to rapid changes to 3Dream I am working on a seperate branch ("beta"). While this branch is faster and offers more and improved features, I am experimenting with it and may change how things work.
+
+
 # documentation
+Undocumented features are subject to change. They will receive proper documentation once finished.
+
 [Documentation hosted on GitHub](https://3dreamengine.github.io/3DreamEngine/)
 
 

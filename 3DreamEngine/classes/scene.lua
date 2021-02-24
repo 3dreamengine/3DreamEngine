@@ -11,8 +11,8 @@ function lib:getLODs(e)
 end
 
 --harcoded distance after center transformation minus the camPos
-local function getDistance( b, transform)
-	local camPos = dream.cam.pos
+local function getDistance(b, transform)
+	local camPos = lib.cam.pos
 	if camPos then
 		return transform and (
 			(transform[1] * b[1] + transform[2] * b[2] + transform[3] * b[3] + transform[4] - camPos[1])^2 +

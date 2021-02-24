@@ -86,7 +86,7 @@ void effect() {
 	
 #import mainPixel
 #import modulesPixel
-vec3 col;
+	vec3 col = vec3(0.0);
 	
 	//forward lighting
 	vec3 light = vec3(0.0);

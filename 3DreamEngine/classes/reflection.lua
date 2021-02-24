@@ -14,14 +14,15 @@ function lib:newReflection(static, res, noRoughness)
 		canvas = love.graphics.newCanvas(res, res, {format = self.reflections_format, readable = true, msaa = 0, type = "cube", mipmaps = noRoughness and "none" or "manual"})
 	end
 	
+	local priority, pos
 	return setmetatable({
 		canvas = canvas,
 		image = image,
 		static = static or false,
 		done = { },
-		priority = priority or 1.0,
+		priority = 1.0,
 		lastUpdate = 0,
-		pos = pos,
+		pos = false,
 		first = false,
 		second = false,
 		levels = false,

@@ -368,7 +368,7 @@ local function intersectTriangle(Ra, Rb, T)
 	
 	--check if segment is parallel to plane, only returns true if on it
 	if math.abs(b) < 0.000001 then
-		return a == 0
+		return false
 	end
 	
 	local d = n:dot(T[1])

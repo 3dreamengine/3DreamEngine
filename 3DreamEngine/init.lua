@@ -13,19 +13,18 @@ if love.filesystem.read("debugEnabled") == "true" then
 end
 
 --load libraries
-mat2 = require((...) .. "/libs/luaMatrices/mat2")
-mat3 = require((...) .. "/libs/luaMatrices/mat3")
-mat4 = require((...) .. "/libs/luaMatrices/mat4")
+_G.mat2 = require((...) .. "/libs/luaMatrices/mat2")
+_G.mat3 = require((...) .. "/libs/luaMatrices/mat3")
+_G.mat4 = require((...) .. "/libs/luaMatrices/mat4")
 
-vec2 = require((...) .. "/libs/luaVectors/vec2")
-vec3 = require((...) .. "/libs/luaVectors/vec3")
-vec4 = require((...) .. "/libs/luaVectors/vec4")
+_G.vec2 = require((...) .. "/libs/luaVectors/vec2")
+_G.vec3 = require((...) .. "/libs/luaVectors/vec3")
+_G.vec4 = require((...) .. "/libs/luaVectors/vec4")
 
-quat = require((...) .. "/libs/quat")
-cimg = require((...) .. "/libs/cimg")
-utils = require((...) .. "/libs/utils")
-packTable = require((...) .. "/libs/packTable")
-ffi = require("ffi")
+_G.quat = require((...) .. "/libs/quat")
+_G.cimg = require((...) .. "/libs/cimg")
+_G.utils = require((...) .. "/libs/utils")
+_G.packTable = require((...) .. "/libs/packTable")
 
 --delton, disabled when not in debug mode
 lib.delton = require((...) .. "/libs/delton"):new(512)
@@ -302,7 +301,7 @@ function lib.init(self, w, h)
 	
 	if self.autoExposure_enabled and self.renderSet.mode == "direct" then
 		print("Autoexposure does not work with direct render! Autoexposure has been disabled.")
-		dream:setAutoExposure(false)
+		self:setAutoExposure(false)
 	end
 	
 	self:resize(w or love.graphics.getWidth(), h or love.graphics.getHeight())

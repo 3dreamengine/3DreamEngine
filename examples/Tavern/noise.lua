@@ -93,9 +93,9 @@ do
 	end
 
 	---
-	-- @param x
-	-- @param y
-	-- @return Noise value in the range [-1, +1]
+	-- @param x number
+	-- @param y number
+	-- @return number Noise value in the range [-1, +1]
 	function M.Simplex2D (x, y)
 		--[[
 			2D skew factors:
@@ -166,10 +166,10 @@ do
 	end
 
 	---
-	-- @param x
-	-- @param y
-	-- @param z
-	-- @return Noise value in the range [-1, +1]
+	-- @param x number
+	-- @param y number
+	-- @param z number
+	-- @return number Noise value in the range [-1, +1]
 	function M.Simplex3D (x, y, z)
 		--[[
 			3D skew factors:
@@ -308,11 +308,11 @@ do
 	end
 
 	---
-	-- @param x
-	-- @param y
-	-- @param z
-	-- @param w
-	-- @return Noise value in the range [-1, +1]
+	-- @param x number
+	-- @param y number
+	-- @param z number
+	-- @param w number
+	-- @return number Noise value in the range [-1, +1]
 	function M.Simplex4D (x, y, z, w)
 		--[[
 			4D skew factors:

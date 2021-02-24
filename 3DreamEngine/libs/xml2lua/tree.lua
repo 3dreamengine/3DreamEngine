@@ -55,13 +55,14 @@ end
 --
 --@author Paul Chakravarti (paulc@passtheaardvark.com)
 --@author Manoel Campos da Silva Filho
+
 local tree = init()
 
 ---Instantiates a new handler object.
 --Each instance can handle a single XML.
 --By using such a constructor, you can parse
 --multiple XML files in the same application.
---@return the handler instance
+--@return table @ the handler instance
 function tree:new()
     local obj = init()
 
@@ -73,7 +74,7 @@ end
 
 --Gets the first key of a table
 --@param tb table to get its first key
---@return the table's first key, nil if the table is empty
+--@return table @ the table's first key, nil if the table is empty
 --or the given parameter if it isn't a table
 local function getFirstKey(tb)
    if type(tb) == "table" then
@@ -88,7 +89,7 @@ local function getFirstKey(tb)
 end
 
 ---Parses a start tag.
--- @param tag a {name, attrs} table
+-- @param tag table a {name, attrs} table
 -- where name is the name of the tag and attrs
 -- is a table containing the atributtes of the tag
 function tree:starttag(tag)
@@ -110,7 +111,7 @@ function tree:starttag(tag)
 end
 
 ---Parses an end tag.
--- @param tag a {name, attrs} table
+-- @param tag table a {name, attrs} table
 -- where name is the name of the tag and attrs
 -- is a table containing the atributtes of the tag
 function tree:endtag(tag, s)
@@ -127,7 +128,7 @@ function tree:endtag(tag, s)
 end
 
 ---Parses a tag content.
--- @param t text to process
+-- @param text string text to process
 function tree:text(text)
     local current = self._stack[#self._stack]
     table.insert(current, text)

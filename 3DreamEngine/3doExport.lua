@@ -4,6 +4,7 @@
 --]]
 
 local lib = _3DreamEngine
+local ffi = require("ffi")
 
 local function copy(first_table, skip)
 	local second_table = { }

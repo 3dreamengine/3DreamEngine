@@ -81,7 +81,7 @@ local meta = {
 		
 		--increase mesh data if required
 		if not instanceMesh or instanceMesh:getVertexCount() < #self.instances then
-			instanceMesh = love.graphics.newMesh(instanceFormat, math.ceil(#self.instances / minIncreaseStep) * minIncreaseStep, "triangles", "dynamic")
+			_G.instanceMesh = love.graphics.newMesh(instanceFormat, math.ceil(#self.instances / minIncreaseStep) * minIncreaseStep, "triangles", "dynamic")
 			
 			--attach instance mesh
 			for d,s in pairs({"InstanceCenter", "InstanceRotation", "InstanceSize", "InstanceTexScale", "InstanceTexOffset", "InstanceEmission", "InstanceDistortion", "InstanceColor"}) do
