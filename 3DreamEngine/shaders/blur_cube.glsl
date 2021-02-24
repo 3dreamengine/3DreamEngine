@@ -21,7 +21,7 @@ vec4 effect(vec4 color, Image lol, vec2 tc, vec2 sc) {
 	vec3 tangent = normalize(vec3(-vec.x, -vec.y, (vec.x*vec.x + vec.y*vec.y) / vec.z)) * p;
 	vec3 bitangent = normalize(cross(vec, tangent)) * p;
 	
-	vec4 sum;
+	vec4 sum = vec4(0.0);
 	sum += textureLod(tex, vec - tangent * 1.0 - bitangent * 1.0, lod);
 	sum += textureLod(tex, vec - tangent * 0.5 - bitangent * 1.0, lod);
 	sum += textureLod(tex, vec + tangent * 0.0 - bitangent * 1.0, lod);
