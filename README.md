@@ -22,12 +22,16 @@
 * threaded texture loading with automatic thumbnail generation
 * threaded object loading using 3DreamEngine specific object files (converter included)
 * included optimized vec2, vec3, vec4, mat2, mat3 and mat4 library
-* 3D transformation-tree based collision extension, supports closed mesh collisions
 
 ![screenshots](https://raw.githubusercontent.com/3dreamengine/3DreamEngine/master/screenshots.jpg)
 
+# development
+Due to rapid changes to 3Dream I am working on a seperate branch ("beta"). While this branch is faster and offers more and improved features, I am experimenting with it and may change how things work.
+
 
 # documentation
+Undocumented features are subject to change. They will receive proper documentation once finished.
+
 [Documentation hosted on GitHub](https://3dreamengine.github.io/3DreamEngine/)
 
 

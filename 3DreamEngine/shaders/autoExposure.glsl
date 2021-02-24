@@ -4,7 +4,7 @@ extern float filterPrecision;
 
 #ifdef PIXEL
 vec4 effect(vec4 color, Image texture, vec2 tc, vec2 sc) {
-	vec3 c;
+	vec3 c = vec3(0.0);
 	c += Texel(texture, vec2(0.500000, 0.611111)).rgb;
 	c += Texel(texture, vec2(0.403775, 0.555556)).rgb;
 	c += Texel(texture, vec2(0.403775, 0.444444)).rgb;
