@@ -109,10 +109,27 @@ return {
 		end
 	end,
 	
-	loadTextures = function(self, force)
+	preload = function(self, force)
+		if self.preloaded then
+			return
+		else
+			self.preloaded = true
+		end
+		
+		--preload textures
 		for d,s in pairs(self) do
 			if type(s) == "string" and love.filesystem.getInfo(s, "file") then
 				lib:getImage(s, force)
+			end
+		end
+		
+		--preload modules
+		if self.modules then
+			for d,_ in pairs(self.modules) do
+				local m = lib:getShaderModule(d)
+				if m.preload then
+					m:preload(self, force)
+				end
 			end
 		end
 	end,

@@ -41,12 +41,6 @@ return {
 		return true
 	end,
 	
-	request = function(self)
-		for d,s in pairs(self.objects) do
-			s:request()
-		end
-	end,
-	
 	wait = function(self)
 		while not self:isLoaded() do
 			local worked = lib:update()
@@ -128,9 +122,20 @@ return {
 		end
 	end,
 	
-	loadTextures = function(self, force)
+	preload = function(self, force)
+		--preload subObjects
 		for d,s in pairs(self.objects) do
-			s.material:loadTextures(force)
+			s:preload(force)
+		end
+		
+		--preload modules
+		if self.modules then
+			for d,_ in pairs(self.modules) do
+				local m = lib:getShaderModule(d)
+				if m.preload then
+					m:preload(self, force)
+				end
+			end
 		end
 	end,
 	

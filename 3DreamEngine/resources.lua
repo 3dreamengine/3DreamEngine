@@ -145,7 +145,6 @@ function lib:update()
 									mesh.vertexMap = nil
 								end
 								o[name] = finalMesh
-								o.loaded = true
 								changes[o] = true
 							end
 						end
@@ -153,8 +152,8 @@ function lib:update()
 				end
 			end
 			
-			--refresh shader modules
 			for o,_ in pairs(changes) do
+				--check if everything has been loaded
 				local complete = true
 				for name,mesh in pairs(o.meshes) do
 					if not o[name] then
@@ -164,6 +163,9 @@ function lib:update()
 				end
 				
 				if complete then
+					o.loaded = true
+					
+					--refresh shader modules
 					o:initModules()
 				end
 			end

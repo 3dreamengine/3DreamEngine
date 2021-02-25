@@ -1,8 +1,6 @@
 local job = { }
 local lib = _3DreamEngine
 
-job.cost = 1
-
 function job:init()
 	if lib.autoExposure_enabled then
 		lib.canvas_exposure = love.graphics.newCanvas(1, 1, {format = "r16f", readable = true, msaa = 0, mipmaps = "none"})
@@ -12,13 +10,13 @@ function job:init()
 	end
 end
 
-function job:queue(times)
+function job:queue()
 	if lib.autoExposure_enabled then
-		lib:addOperation("autoExposure", 0.25, false, lib.autoExposure_frameSkip)
+		lib:addOperation("autoExposure")
 	end
 end
 
-function job:execute(times, delta)
+function job:execute()
 	love.graphics.push("all")
 	love.graphics.reset()
 	
@@ -27,7 +25,7 @@ function job:execute(times, delta)
 	local shader = lib:getShader("autoExposure")
 	love.graphics.setCanvas(c)
 	love.graphics.setShader(shader)
-	shader:send("adaptionSpeed", lib.autoExposure_adaptionSpeed * delta)
+	shader:send("adaptionSpeed", lib.autoExposure_adaptionSpeed * love.timer.getDelta())
 	shader:send("targetBrightness", lib.autoExposure_targetBrightness)
 	love.graphics.draw(lib.canvases.color, 0, 0, 0, 1 / lib.canvases.width, 1 / lib.canvases.height)
 	

@@ -21,7 +21,6 @@ local function copy(first_table, skip)
 end
 
 function lib:export3do(obj)
-	local compressed = "lz4"
 	local compressedLevel = 9
 	local dataStrings = { }
 	local dataIndex = 0
@@ -140,7 +139,7 @@ function lib:export3do(obj)
 						end
 						
 						--convert to string and store
-						local c = love.data.compress("string", compressed, byteData:getString(), compressedLevel)
+						local c = love.data.compress("string", "lz4", byteData:getString(), compressedLevel)
 						dataStrings[#dataStrings+1] = c
 						m.meshDataIndex = dataIndex
 						m.meshDataSize = #c
@@ -152,8 +151,8 @@ function lib:export3do(obj)
 	end
 	
 	--export
-	local headerData = love.data.compress("string", compressed, packTable.pack(header), compressedLevel)
-	local final = "3DO3" .. compressed .. " " .. love.data.pack("string", "J", #headerData) .. headerData .. table.concat(dataStrings, "")
+	local headerData = love.data.compress("string", "lz4", packTable.pack(header), compressedLevel)
+	local final = "3DO3    " .. love.data.pack("string", "J", #headerData) .. headerData .. table.concat(dataStrings, "")
 	love.filesystem.createDirectory(obj.dir)
 	love.filesystem.write(obj.dir .. "/" .. obj.name .. ".3do", final)
 end

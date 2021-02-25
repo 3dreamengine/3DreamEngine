@@ -92,12 +92,11 @@ Sets the target average screen brightness for automatic adaption. Disabled by de
 
 ```lua
 dream:setAutoExposure(enabled)
-dream:setAutoExposure(target, speed, skip)
-enabled, target, speed, skip = dream:getAutoExposure(target, speed, skip)
+dream:setAutoExposure(target, speed)
+enabled, target, speed = dream:getAutoExposure()
 ```
 `target` 0.25 is default.  
 `speed` is the adaption speed, 1.0 is default.  
-`skip` is the amount of frames skipped for the job engine, higher values results in better performance but possible stutter. Default is 4.  
 A single bool can either disabled or enable with default values.
 
 
@@ -382,12 +381,11 @@ end
 ### sky reflection
 If the base reflection is true following settings affects how the sky dome is rendered.
 ```lua
-dream:setSkyReflectionFormat(resolution, format, skip)
-resolution, format, skip = dream:getSkyReflectionFormat()
+dream:setSkyReflectionFormat(resolution, format)
+resolution, format = dream:getSkyReflectionFormat()
 ```
 `resolution (512)` cubemap resolution 
 `format ("rgba16f")` cubemap format, HDR by default  
-`skip (4)` frame skip, see jobs chapter  
 
 
 

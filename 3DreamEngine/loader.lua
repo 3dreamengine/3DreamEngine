@@ -9,7 +9,6 @@ lib.defaultArgs = {
 	cleanup = true,
 	mesh = true,
 	export3do = false,
-	request3do = true,
 	skip3do = false,
 	particlesystems = true,
 }
@@ -44,7 +43,6 @@ function lib:loadLibrary(path, shaderType, args, prefix)
 	
 	prefix = prefix or ""
 	
-	args.request3do = false
 	args.loadAsLibrary = true
 	
 	--load

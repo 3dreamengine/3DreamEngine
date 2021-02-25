@@ -56,25 +56,6 @@ return {
 		return self.loaded
 	end,
 	
-	request = function(self)
-		if not self.loaded and self.meshes then
-			self.obj.loadRequests = self.obj.loadRequests or { }
-			
-			local requests
-			for name, mesh in pairs(self.meshes) do
-				local index = mesh.meshDataIndex
-				if not self.obj.loadRequests[index] then
-					self.obj.loadRequests[index] = true
-					requests = requests or { }
-					requests[name] = {self.obj.DO_dataOffset + index, mesh.meshDataSize}
-				end
-			end
-			if requests then
-				lib:addResourceJob("3do", self.obj, true, {path = self.obj.DO_path, compression = self.obj.DO_compressed, requests = requests})
-			end
-		end
-	end,
-	
 	wait = function(self)
 		while not self:isLoaded() do
 			local worked = lib:update()
@@ -159,6 +140,45 @@ return {
 		for i = 1, 10 do
 			self["texCoords_" .. i] = nil
 			self["colors_" .. i] = nil
+		end
+	end,
+	
+	preload = function(self, force)
+		if self.preloaded then
+			return
+		else
+			self.preloaded = true
+		end
+		
+		--preload material
+		self.material:preload(force)
+		
+		--preload modules
+		if self.modules then
+			for d,_ in pairs(self.modules) do
+				local m = lib:getShaderModule(d)
+				if m.preload then
+					m:preload(self, force)
+				end
+			end
+		end
+		
+		--load meshes
+		if self.meshes then
+			self.obj.loadRequests = self.obj.loadRequests or { }
+			
+			local requests
+			for name, mesh in pairs(self.meshes) do
+				local index = mesh.meshDataIndex
+				if not self.obj.loadRequests[index] then
+					self.obj.loadRequests[index] = true
+					requests = requests or { }
+					requests[name] = {self.obj.DO_dataOffset + index, mesh.meshDataSize}
+				end
+			end
+			if requests then
+				lib:addResourceJob("3do", self.obj, true, {path = self.obj.DO_path, requests = requests})
+			end
 		end
 	end,
 }

@@ -382,46 +382,44 @@ do
 		},
 	}
 	
-	function lib.blurCubeMap(self, cube, level)
+	local cache = { }
+	function lib:blurCubeMap(cube, levels)
 		local f = cube:getFormat()
 		local resolution = math.ceil(cube:getWidth() / 2)
+		local shader = self:getShader("blur_cube")
 		
 		--create canvases if needed
-		self.cache.blurCubeMap = self.cache.blurCubeMap or { }
-		local cache = self.cache.blurCubeMap
 		cache[f] = cache[f] or { }
 		if not cache[f][resolution] then
 			cache[f][resolution] = { }
-		end
-		if not cache[f][resolution][level] then
-			local size = math.ceil(resolution / math.max(1, 2^(level-1)))
-			cache[f][resolution][level] = love.graphics.newCanvas(size, size, {format = f, readable = true, msaa = 0, type = "2d", mipmaps = "none"})
 		end
 		
 		--blurring
 		love.graphics.push("all")
 		love.graphics.reset()
 		love.graphics.setBlendMode("replace", "premultiplied")
+		love.graphics.setShader(shader)
+		shader:send("tex", cube)
+		shader:send("strength", 0.025)
 		
-		local can = cache[f][resolution][level]
-		local res = can:getWidth()
-		local shader = self:getShader("blur_cube")
-		for side = 1, 6 do
-			love.graphics.setCanvas(can)
-			love.graphics.setShader(shader)
-			shader:send("tex", cube)
-			shader:send("strength", 0.025)
-			shader:send("scale", 1.0 / res)
-			shader:send("normal", blurVecs[side][1])
-			shader:send("dirX", blurVecs[side][2])
-			shader:send("dirY", blurVecs[side][3])
-			shader:send("lod", level - 2.0)
-			love.graphics.rectangle("fill", 0, 0, res, res)
+		for level = 2, levels do
+			if not cache[f][resolution][level] then
+				local size = math.ceil(resolution / math.max(1, 2^(level-1)))
+				cache[f][resolution][level] = love.graphics.newCanvas(size, size, {format = f, readable = true, msaa = 0, type = "2d", mipmaps = "none"})
+			end
 			
-			--paste
-			love.graphics.setCanvas(cube, side, level)
-			love.graphics.setShader()
-			love.graphics.draw(can, 0, 0, 0, 2)
+			local can = cache[f][resolution][level]
+			local res = can:getWidth() * 2.0
+			for side = 1, 6 do
+				--write and read at the same time, might be risky
+				love.graphics.setCanvas(cube, side, level)
+				shader:send("scale", 1.0 / res)
+				shader:send("normal", blurVecs[side][1])
+				shader:send("dirX", blurVecs[side][2])
+				shader:send("dirY", blurVecs[side][3])
+				shader:send("lod", level - 2.0)
+				love.graphics.rectangle("fill", 0, 0, res, res)
+			end
 		end
 		
 		love.graphics.pop()
@@ -478,9 +476,7 @@ function lib:take3DScreenshot(pos, resolution, path)
 	end
 	
 	--blur cubemap
-	for level = 2, results:getMipmapCount() do
-		self:blurCubeMap(results, level)
-	end
+	self:blurCubeMap(results, results:getMipmapCount())
 	
 	--export cimg data
 	cimg:export(results, path or "results.cimg")
@@ -500,7 +496,6 @@ lib.lookNormals = {
 
 --global shader modules
 lib.activeShaderModules = { }
-lib.allActiveShaderModules = { }
 function lib:activateShaderModule(name)
 	self.activeShaderModules[name] = true
 end

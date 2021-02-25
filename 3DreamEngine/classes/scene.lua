@@ -64,17 +64,19 @@ return {
 				--task
 				if group.hasLOD and LODsActive then
 					local dist = getDistance(group.boundingBox.center, transform)
-					for _,o in ipairs(group.objects) do
-						o:request()
+					for aaa,o in ipairs(group.objects) do
 						local LOD_min, LOD_max = o:getScaledLOD()
 						local aDist = LOD_min and o.LOD_center and getDistance(o.boundingBox.center, transform) or dist
-						if not LOD_min or aDist >= LOD_min^2 and aDist <= LOD_max^2 then
-							self:add(o, transform, col, dynamic)
+						if not LOD_max or aDist <= (LOD_max + 1)^2 then
+							o:preload()
+							if not LOD_min or aDist >= LOD_min^2 and aDist <= LOD_max^2 then
+								self:add(o, transform, col, dynamic)
+							end
 						end
 					end
 				else
 					for _,o in ipairs(group.objects) do
-						o:request()
+						o:preload()
 						self:add(o, transform, col, dynamic)
 					end
 				end

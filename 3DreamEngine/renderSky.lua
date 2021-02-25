@@ -5,7 +5,9 @@
 local lib = _3DreamEngine
 
 function lib:renderSky(transformProj, camTransform, transformScale)
-	transformProj = transformProj * mat4:getScale(transformScale or 500)
+	if transformScale then
+		transformProj = transformProj * mat4:getScale(transformScale)
+	end
 	
 	love.graphics.push("all")
 	if not self.sky_texture then

@@ -16,6 +16,8 @@ local scene = dream:loadObject(projectDir .. "objects/scene", "PBR")
 --activate the global rain shader module
 dream:activateShaderModule("rain")
 
+dream:setFogHeight(0.0, 150.0)
+
 local player = {
 	x = 8,
 	y = 10,

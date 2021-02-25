@@ -118,7 +118,9 @@ function sh:jobCreator(dream)
 	dream:addOperation(self.jobExecuter)
 end
 
-function sh.jobExecuter(times, delta)
+function sh.jobExecuter()
+	local delta = love.timer.getDelta()
+	
 	local lastRender = sh.rain > 0
 	if sh.isRaining then
 		sh.rain = math.min(1.0, sh.rain + delta * sh.adaptRain)

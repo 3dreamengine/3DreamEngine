@@ -1,8 +1,6 @@
 local job = { }
 local lib = _3DreamEngine
 
-job.cost = 1
-
 --random numbers with seed
 local randoms = { }
 local function random(i)
@@ -31,7 +29,7 @@ function job:init()
 	lib.cloudCanvas:setWrap("repeat")
 end
 
-function job:queue(times)
+function job:queue()
 	if lib.skyInUse then
 		spritebatch = spritebatch or love.graphics.newSpriteBatch(lib.textures.clouds)
 		lib:addOperation("clouds")
@@ -39,11 +37,11 @@ function job:queue(times)
 	end
 end
 
-function job:execute(times, delta)
+function job:execute()
 	local size = lib.weather_rain^2 + 0.2
 	local amount = lib.clouds_amount
 	
-	lib.clouds_pos = lib.clouds_pos + lib.clouds_wind * delta
+	lib.clouds_pos = lib.clouds_pos + lib.clouds_wind * love.timer.getDelta()
 	
 	--add clouds
 	local t = love.timer.getTime() * lib.clouds_anim_size

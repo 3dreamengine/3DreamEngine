@@ -1,22 +1,22 @@
 return {
-	activateShaderModule = function(obj, name)
-		if not obj.modules then
-			obj.modules = { }
+	activateShaderModule = function(self, name)
+		if not self.modules then
+			self.modules = { }
 		end
-		obj.modules[name] = true
+		self.modules[name] = true
 		
-		if obj.initModules then
-			obj:initModules()
+		if self.initModules then
+			self:initModules()
 		end
 	end,
 	
-	deactivateShaderModule = function(obj, name)
-		if obj.modules then
-			obj.modules[name] = nil
+	deactivateShaderModule = function(self, name)
+		if self.modules then
+			self.modules[name] = nil
 		end
 	end,
 	
-	isShaderModuleActive = function(obj, name)
-		return obj.modules and obj.modules[name]
+	isShaderModuleActive = function(self, name)
+		return self.modules and self.modules[name]
 	end
 }

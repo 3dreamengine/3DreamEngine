@@ -101,6 +101,7 @@ lib:setShadowCascade(8, 4)
 
 --loader settings
 lib:setResourceLoader(true, true)
+lib:setJobHandlerSlots(1)
 lib:setSmoothLoading(1 / 1000)
 lib:setSmoothLoadingBufferSize(128)
 lib:setMipmaps(true)
@@ -312,9 +313,6 @@ function lib.init(self, w, h)
 	--reset lighting
 	self.lighting = { }
 	
-	--reset cache
-	self.cache = { }
-	
 	--create sun shadow if requested
 	--TODO sun strength should receive setting
 	self.sunObject = lib:newLight("sun", 1, 1, 1, 1, 1, 1, 5)
@@ -336,11 +334,8 @@ function lib:prepare()
 	self.particles = {{}, {}}
 	
 	--keep track of reflections
-	self.reflections_last = self.reflections or { }
+	self.lastReflections = self.reflections or { }
 	self.reflections = { }
-	
-	--shader modules referenced this frame
-	self.allActiveShaderModules = { }
 	
 	--reset stats
 	self.stats.vertices = 0

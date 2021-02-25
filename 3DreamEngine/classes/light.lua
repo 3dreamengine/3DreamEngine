@@ -22,7 +22,6 @@ function lib:newLight(typ, pos, color, brightness, old, ...)
 		color = color and color:normalize() or vec3(1, 1, 1),
 		direction = vec3(0, -1, 0),
 		smooth = nil,
-		frameSkip = 0,
 		brightness = brightness or 1.0,
 		godray = nil,
 		godrayLength = typ == "sun" and 0.15 or 0.05,
@@ -36,7 +35,6 @@ return {
 	link = {"light", "clone"},
 	
 	setterGetter = {
-		frameSkip = "number",
 		name = "string",
 		godrayLength = "number",
 		godraySize = "number",

@@ -47,7 +47,7 @@ return function(self, obj, path)
 	local headerData = file:read(headerLength)
 	
 	--object lua data
-	local header = packTable.unpack(love.data.decompress("string", compressed, headerData))
+	local header = packTable.unpack(love.data.decompress("string", "lz4", headerData))
 	table.merge(obj, header)
 	
 	--mesh creation and 3DO exporting makes no longer sense
@@ -57,7 +57,6 @@ return function(self, obj, path)
 	
 	--store 3DO data for the loader
 	obj.DO_dataOffset = 12 + headerLength
-	obj.DO_compressed = compressed
 	obj.DO_path = path
 	
 	--recreate materials
@@ -154,10 +153,6 @@ return function(self, obj, path)
 			obj.loaded = false
 			break
 		end
-	end
-	
-	if obj.args.request3do then
-		obj:request()
 	end
 	
 	cache = { }

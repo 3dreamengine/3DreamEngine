@@ -54,7 +54,7 @@ while true do
 				file:seek(m[1])
 				results[name] = {
 					m[1],
-					love.data.newByteData(love.data.decompress("string", data.compression, file:read(m[2])))
+					love.data.newByteData(love.data.decompress("string", "lz4", file:read(m[2])))
 				}
 			end
 			

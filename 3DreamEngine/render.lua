@@ -115,7 +115,7 @@ function checkAndSendCached(shaderObject, name, value)
 end
 
 --render the scene onto a canvas set using a specific view camera
-function lib:render(canvases, cam, reflections)
+function lib:render(canvases, cam)
 	self.delton:start("prepare")
 	
 	--love shader friendly
@@ -199,15 +199,13 @@ function lib:render(canvases, cam, reflections)
 			local obj = subObj.obj
 			
 			--reflections
-			if not reflections then
-				local ref = subObj.reflection or obj.reflection
-				if ref and ref.canvas then
-					self.reflections[ref] = {
-						dist = (task:getPos(subObj) - cam.pos):length(),
-						obj = subObj.reflection and subObj or obj,
-						pos = ref.pos or task:getPos(subObj),
-					}
-				end
+			local ref = subObj.reflection or obj.reflection
+			if ref and ref.canvas then
+				self.reflections[ref] = {
+					dist = (task:getPos(subObj) - cam.pos):length(),
+					obj = subObj.reflection and subObj or obj,
+					pos = ref.pos or task:getPos(subObj),
+				}
 			end
 			
 			--set active shader
@@ -345,7 +343,8 @@ function lib:render(canvases, cam, reflections)
 			
 			--stats
 			self.stats.draws = self.stats.draws + 1
-			--self.stats.vertices = self.stats.vertices + subObj.vertexCount
+			subObj.meshVertecCount = subObj.meshVertecCount or subObj.mesh:getVertexCount()
+			self.stats.vertices = self.stats.vertices + subObj.meshVertecCount
 		end
 		self.delton:stop()
 		
@@ -565,7 +564,7 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 end
 
 --full render, including bloom, fxaa, exposure and gamma correction
-function lib:renderFull(cam, canvases, reflections)
+function lib:renderFull(cam, canvases)
 	love.graphics.push("all")
 	if canvases.mode ~= "direct" then
 		love.graphics.reset()
@@ -573,7 +572,7 @@ function lib:renderFull(cam, canvases, reflections)
 	
 	--render
 	self.delton:start("render")
-	self:render(canvases, cam, reflections)
+	self:render(canvases, cam)
 	self.delton:stop()
 	
 	if canvases.mode == "direct" then
@@ -675,9 +674,10 @@ function lib:renderFull(cam, canvases, reflections)
 	
 	--additional render instructions
 	self.delton:start("modules")
-	for d,s in pairs(self.allActiveShaderModules) do
-		if s.render then
-			s:render(self, cam, canvases)
+	for d,_ in pairs(self.activeShaderModules) do
+		local m = self:getShaderModule(d)
+		if m.render then
+			m:render(self, cam, canvases)
 		end
 	end
 	self.delton:stop()

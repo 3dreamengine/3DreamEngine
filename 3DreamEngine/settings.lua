@@ -94,7 +94,7 @@ end
 
 
 --auto exposure
-function lib:setAutoExposure(target, speed, skip)
+function lib:setAutoExposure(target, speed)
 	if target == true then
 		self:setAutoExposure(0.25, 1.0, 4)
 	elseif target then
@@ -103,13 +103,12 @@ function lib:setAutoExposure(target, speed, skip)
 		self.autoExposure_enabled = true
 		self.autoExposure_targetBrightness = target
 		self.autoExposure_adaptionSpeed = speed
-		self.autoExposure_frameSkip = skip
 	else
 		self.autoExposure_enabled = false
 	end
 end
-function lib:getAutoExposure(target, speed, skip)
-	return self.autoExposure_enabled, self.autoExposure_targetBrightness, self.autoExposure_adaptionSpeed, self.autoExposure_frameSkip
+function lib:getAutoExposure()
+	return self.autoExposure_enabled, self.autoExposure_targetBrightness, self.autoExposure_adaptionSpeed
 end
 
 
@@ -404,15 +403,14 @@ function lib:getReflection(tex)
 	return self.sky_reflection
 end
 
-function lib:setSkyReflectionFormat(resolution, format, skip)
+function lib:setSkyReflectionFormat(resolution, format)
 	check(resolution, "number", 1)
 	check(format, "string", 2)
 	self.sky_resolution = resolution
 	self.sky_format = format
-	self.sky_frameSkip = skip
 end
 function lib:getSkyReflectionFormat()
-	return self.sky_resolution, self.sky_format, self.sky_frameSkip
+	return self.sky_resolution, self.sky_format
 end
 
 
@@ -531,6 +529,14 @@ function lib:setResourceLoader(threaded)
 end
 function lib:getResourceLoader()
 	return self.textures_threaded
+end
+
+function lib:setJobHandlerSlots(s)
+	check(s, "number")
+	self.job_slots = s
+end
+function lib:getJobHandler()
+	return self.job_slots
 end
 
 

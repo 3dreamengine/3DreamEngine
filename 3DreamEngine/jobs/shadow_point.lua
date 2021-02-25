@@ -1,20 +1,16 @@
 local job = { }
 local lib = _3DreamEngine
 
-job.cost = 3
-
 function job:init()
 
 end
 
-function job:queue(times)
+function job:queue()
 	--shadows
 	for d,s in ipairs(lib.lighting) do
 		if s.shadow and s.active and s.shadow.typ == "point" then
-			local dist = (s.pos - lib.lastUsedCam.pos):length() / 10.0 + 1.0
-			if s.shadow.static ~= true or not s.shadow.done[1] then
-				local id = "shadow_point_" .. tostring(s.shadow)
-				lib:addOperation("shadow_point", s.shadow.priority / dist, id, s.frameSkip, s)
+			if s.shadow.static ~= true or not s.shadow.done then
+				lib:addOperation("shadow_point", s)
 			end
 		end
 	end
@@ -45,19 +41,19 @@ local transformations = {
 	{lookAt(lib.lookNormals[6], vec3(0, -1, 0))},
 }
 
-function job:execute(times, delta, light)
+function job:execute(light)
 	--create new canvases if necessary
 	if not light.shadow.canvas then
 		light.shadow.canvas = lib:newShadowCanvas("point", light.shadow.res, light.shadow.static == "dynamic")
 	end
 	
+	local dynamic
+	if light.shadow.static == "dynamic" then
+		dynamic = light.shadow.done or false
+	end
+	
 	--render
 	for face = 1, 6 do
-		local dynamic
-		if light.shadow.static == "dynamic" then
-			dynamic = light.shadow.done[1] or false
-		end
-		
 		local t = transformations[face]
 		t[1][4] = t[2]:dot(light.pos)
 		t[1][8] = t[3]:dot(light.pos)
@@ -67,7 +63,7 @@ function job:execute(times, delta, light)
 		lib:renderShadows(shadowCam, {{light.shadow.canvas, face = face}}, light.blacklist, dynamic)
 	end
 	
-	light.shadow.done[1] = true
+	light.shadow.done = true
 end
 
 return job

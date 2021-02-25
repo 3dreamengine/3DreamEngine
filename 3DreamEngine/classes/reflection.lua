@@ -19,14 +19,11 @@ function lib:newReflection(static, res, noRoughness)
 		canvas = canvas,
 		image = image,
 		static = static or false,
-		done = { },
-		priority = 1.0,
-		lastUpdate = 0,
+		done = false,
 		pos = false,
 		first = false,
 		second = false,
 		levels = false,
-		frameSkip = 0,
 		roughness = not noRoughness,
 		id = math.random(), --used for the job render
 	}, self.meta.reflection)
@@ -36,12 +33,11 @@ return {
 	link = {"reflection"},
 	
 	setterGetter = {
-		frameSkip = "number",
 		roughness = "boolean",
 	},
 	
 	refresh = function(self)
-		self.done = { }
+		self.done = false
 	end,
 	
 	setLocal = function(self, pos, first, second)

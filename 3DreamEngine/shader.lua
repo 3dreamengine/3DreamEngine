@@ -154,7 +154,6 @@ do
 		end
 		
 		--initilized module
-		self.allActiveShaderModules[name] = sh
 		if not sh.initilized then
 			sh.initilized = true
 			if sh.init then
@@ -192,7 +191,6 @@ local baseShadowShader = love.filesystem.read(lib.root .. "/shaders/shadow.glsl"
 function lib:getRenderShaderID(obj, pass, shadows)
 	local mat = obj.material
 	local reflection = obj.reflection or obj.obj and obj.obj.reflection or self.sky_reflection
-	local modules = obj.modules or obj.obj and obj.obj.modules or mat.modules
 	
 	--get unique IDs for the components
 	local ID_base = self.shaderLibrary.base[obj.shaderType]:getTypeID(self, mat)
@@ -200,7 +198,9 @@ function lib:getRenderShaderID(obj, pass, shadows)
 	local ID_modules = 0
 	
 	--global modules
+	local keys = { }
 	for d,s in pairs(self.activeShaderModules) do
+		keys[d] = true
 		local sm = self:getShaderModule(d)
 		if not shadows or sm.shadow then
 			ID_modules = ID_modules + sm.ID
@@ -208,9 +208,10 @@ function lib:getRenderShaderID(obj, pass, shadows)
 	end
 	
 	--local modules
-	if modules then
+	for _,modules in pairs({obj.modules, obj.obj.modules, mat.modules}) do
 		for d,s in pairs(modules) do
-			if not self.activeShaderModules[d] then
+			if not keys[d] then
+				keys[d] = true
 				local sm = self:getShaderModule(d)
 				if not shadows or sm.shadow then
 					ID_modules = ID_modules + sm.ID
@@ -261,11 +262,12 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows)
 		local shaderType = obj.shaderType
 		local reflection = obj.reflection or obj.obj and obj.obj.reflection or self.sky_reflection
 		local refractions = canvases.refractions
-		local modules = obj.modules or obj.obj and obj.obj.modules or mat.modules
 		
 		--global modules
+		local keys = { }
 		local m = { }
 		for d,s in pairs(self.activeShaderModules) do
+			keys[d] = true
 			local sm = self:getShaderModule(d)
 			if not shadows or sm.shadow then
 				m[d] = sm
@@ -273,9 +275,10 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows)
 		end
 		
 		--local modules
-		if modules then
+		for _,modules in pairs({obj.modules, obj.obj.modules, mat.modules}) do
 			for d,s in pairs(modules) do
-				if not self.activeShaderModules[d] then
+				if not keys[d] then
+					keys[d] = true
 					local sm = self:getShaderModule(d)
 					if not shadows or sm.shadow then
 						m[d] = sm

@@ -15,9 +15,7 @@ function lib:newShadow(typ, static, res)
 		typ = typ,
 		res = res,
 		static = static or false,
-		done = { },
-		priority = 1.0,
-		lastUpdate = 0,
+		done = false,
 		target = false,
 		refreshStepSize = 1.0,
 	}, self.meta.shadow)
@@ -53,7 +51,7 @@ return {
 	},
 	
 	refresh = function(self)
-		self.done = { }
+		self.done = false
 	end,
 	
 	getStatic = function(self)
