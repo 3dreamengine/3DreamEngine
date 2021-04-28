@@ -191,8 +191,8 @@ function lib.initTextures:sky()
 		lib.textures.clouds = lib.textures.clouds or love.graphics.newImage(lib.root .. "/res/clouds.png")
 		lib.textures.clouds_base = love.graphics.newImage(lib.root .. "/res/clouds_base.png")
 		lib.textures.clouds_base:setWrap("repeat")
-		lib.textures.clouds_top = love.graphics.newCubeImage("3DreamEngine/res/clouds_top.png")
-		lib.textures.stars = love.graphics.newCubeImage("3DreamEngine/res/stars.png")
+		lib.textures.clouds_top = love.graphics.newCubeImage(lib.root .. "/res/clouds_top.png")
+		lib.textures.stars = love.graphics.newCubeImage(lib.root .. "/res/stars.png")
 		
 		lib.textures.clouds:setFilter("nearest")
 	end
