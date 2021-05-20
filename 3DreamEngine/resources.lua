@@ -166,7 +166,7 @@ function lib:update()
 					o.loaded = true
 					
 					--refresh shader modules
-					o:initModules()
+					o:initShaders()
 				end
 			end
 			

@@ -38,7 +38,7 @@ extern vec3 ambient;
 extern Image MainTex;
 
 void effect() {
-	vec3 viewVec = normalize(viewPos - vertexPos);
+	vec3 viewVec = normalize(vertexPos - viewPos);
 	
 	//fetch color
 	vec4 albedo = Texel(MainTex, VaryingTexCoord.xy);
@@ -78,7 +78,7 @@ void effect() {
 	
 	//fog (TODO moving this to vertex had negative results, requires further testing)
 #ifdef FOG_ENABLED
-	vec4 fogColor = getFog(depth, -viewVec, viewPos);
+	vec4 fogColor = getFog(depth, viewVec, viewPos);
 	col = mix(col, fogColor.rgb, fogColor.a);
 #endif
 

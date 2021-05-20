@@ -63,14 +63,6 @@ function lib:executeJobs()
 		end
 	end
 	
-	--modules
-	for d,_ in pairs(self.activeShaderModules) do
-		local m = self:getShaderModule(d)
-		if m.jobCreator then
-			m:jobCreator(self)
-		end
-	end
-	
 	--execute continous operations
 	for _,o in ipairs(operationsContinous) do
 		self.delton:start(o[1])

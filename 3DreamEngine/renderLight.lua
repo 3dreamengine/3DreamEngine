@@ -45,13 +45,13 @@ function lib:sendLightUniforms(light, shader, overwriteTyp)
 	
 	--global uniforms
 	for d,s in pairs(light.types) do
-		self.shaderLibrary.light[d]:sendGlobalUniforms(self, shader, s, light.lights)
+		self.lightShaders[d]:sendGlobalUniforms(self, shader, s, light.lights)
 	end
 	
 	--uniforms
 	local IDs = { }
 	for d,s in ipairs(light.lights) do
 		IDs[s.light_typ] = (IDs[s.light_typ] or -1) + 1
-		self.shaderLibrary.light[overwriteTyp or s.light_typ]:sendUniforms(self, shader, s, IDs[s.light_typ])
+		self.lightShaders[overwriteTyp or s.light_typ]:sendUniforms(self, shader, s, IDs[s.light_typ])
 	end
 end

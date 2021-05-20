@@ -289,9 +289,7 @@ function lib:createMesh(obj)
 		end
 		
 		--calculate vertex normals and uv normals
-		local shader = self.shaderLibrary.base[obj.shaderType]
-		assert(shader, "shader '" .. tostring(obj.shaderType) .. "' for object '" .. tostring(obj.name) .. "' does not exist")
-		if shader.requireTangents then
+		if obj.meshType == "textured" or obj.meshType == "textured_array" then
 			self:calcTangents(obj)
 		end
 		

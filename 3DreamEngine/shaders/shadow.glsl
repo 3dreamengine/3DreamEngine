@@ -34,7 +34,7 @@ void effect() {
 	}
 #endif
 
-	vec3 viewVec = normalize(viewPos - vertexPos);
+	vec3 viewVec = normalize(vertexPos - viewPos);
 	
 #import modulesPixel
 #import modulesPixelPost

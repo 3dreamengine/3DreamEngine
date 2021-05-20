@@ -79,9 +79,9 @@ function sh:constructPixel(dream, ID)
 			float distance = length(lightVec);
 			float power = 1.0 / (0.1 + distance * distance);
 			vec3 lightColor = point_shadow_color_#ID# * shadow * power;
-			vec3 nLightVec = normalize(lightVec);
+			lightVec = normalize(lightVec);
 			
-			light += getLight(lightColor, viewVec, nLightVec, normal, albedo.rgb, material.x, material.y);
+			light += getLight(lightColor, viewVec, lightVec, normal, albedo, roughness, metallic, translucent);
 		}
 	]]):gsub("#ID#", ID)
 end

@@ -64,10 +64,10 @@ end
 function sh:constructPixelPost(dream)
 	return [[
 		#ifdef TEX_NORMAL
-			vec3 reflectVecRain = reflect(-viewVec, normalize(normal * 0.25 + TBN * rainNormal.xyz * rain));
+			vec3 reflectVecRain = reflect(viewVec, normalize(normal * 0.25 + TBN * rainNormal.xyz * rain));
 			col = mix(col, reflection(reflectVecRain, 0.0), rain * 0.25);
 		#else
-			vec3 reflectVecRain = reflect(-viewVec, normalize(normal + rainNormal.xzy * rain));
+			vec3 reflectVecRain = reflect(viewVec, normalize(normal + rainNormal.xzy * rain));
 			col = mix(col, reflection(reflectVecRain, 0.0), rain * 0.25);
 		#endif
 	]]

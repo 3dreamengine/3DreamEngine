@@ -40,10 +40,24 @@ if not _DEBUGMODE then
 	lib.deltonLoad.step = lib.delton.start
 end
 
---load sub modules
 _3DreamEngine = lib
 lib.root = (...)
+
+--shader node types
+lib.shaderNodes = { }
+for _,group in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/nodes")) do
+	for _,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/nodes/" .. group)) do
+		local typ = s:sub(1, #s-4)
+		local n = require(lib.root .. "/nodes/" .. group .. "/" .. typ)
+		n.typ = typ
+		n.group = group
+		lib.shaderNodes[typ] = n
+	end
+end
+
+--load sub modules
 require((...) .. "/functions")
+require((...) .. "/compiler")
 require((...) .. "/bufferFunctions")
 require((...) .. "/settings")
 require((...) .. "/classes")
@@ -62,7 +76,7 @@ require((...) .. "/3doExport")
 require((...) .. "/animations")
 require((...) .. "/bake")
 
---loader
+--file loader
 lib.loader = { }
 for d,s in pairs(love.filesystem.getDirectoryItems((...) .. "/loader")) do
 	lib.loader[s:sub(1, #s-4)] = require((...) .. "/loader/" .. s:sub(1, #s-4))

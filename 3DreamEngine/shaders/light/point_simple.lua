@@ -26,10 +26,7 @@ function sh:constructPixelGlobal(dream)
 			float power = 1.0 / (0.1 + distance * distance);
 			vec3 lightColor = point_simple_color[i] * power;
 			
-			light += getLight(lightColor, viewVec, lightVec, normal, albedo.rgb, material.x, material.y);
-			
-			//backface light
-			light += getLight(lightColor, viewVec, lightVec, normal, albedo.rgb, material.x, material.y);
+			light += getLight(lightColor, viewVec, lightVec, normal, albedo, roughness, metallic, translucent);
 		}
 	]])
 end

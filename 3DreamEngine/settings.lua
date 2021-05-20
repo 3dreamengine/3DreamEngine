@@ -10,21 +10,6 @@ local function check(value, typ, argNr)
 end
 
 
---sets the default shader
-function lib:setDefaultShaderType(typ)
-	if typ then
-		check(typ, "string")
-		assert(self.shaderLibrary.base[typ], "shader " .. typ .. " does not exist!")
-		self.defaultShaderType = typ
-	else
-		self.defaultShaderType = false
-	end
-end
-function lib:getDefaultShaderType()
-	return self.defaultShaderType
-end
-
-
 --sets the max count of lights per type
 function lib:setMaxLights(nr)
 	check(nr, "number")
@@ -345,11 +330,12 @@ function lib:setWeather(rain, temp, raining)
 		raining = self.weather_rain > 0.5
 	end
 	self.weather_rainStrength = raining and (self.weather_rain-0.5) / 0.5 or 0.0
-	self:getShaderModule("rain").isRaining = raining
-	self:getShaderModule("rain").strength = math.ceil(math.clamp(self.weather_rainStrength * 5.0, 0.001, 5.0))
+	
+--	self.isRaining = raining
+--	self.strength = math.ceil(math.clamp(self.weather_rainStrength * 5.0, 0.001, 5.0))
 end
 function lib:getWeather()
-	return self.weather_rain, self.weather_temperature, self:getShaderModule("rain").isRaining
+	return self.weather_rain, self.weather_temperature--, self:getShaderModule("rain").isRaining
 end
 
 

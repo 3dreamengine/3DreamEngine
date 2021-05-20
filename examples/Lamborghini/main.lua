@@ -6,7 +6,6 @@ love.graphics.setBackgroundColor(0.8, 0.8, 0.8)
 --settings
 local projectDir = "examples/Lamborghini/"
 
-dream:setDefaultShaderType("PBR")
 dream:setSky(love.graphics.newImage(projectDir .. "garage.hdr"))
 
 dream.cam.fov = 70

@@ -493,18 +493,3 @@ lib.lookNormals = {
 	vec3(0, 0, 1),
 	vec3(0, 0, -1),
 }
-
---global shader modules
-lib.activeShaderModules = { }
-function lib:activateShaderModule(name)
-	self.activeShaderModules[name] = true
-end
-function lib:deactivateShaderModule(name)
-	self.activeShaderModules[name] = nil
-end
-function lib:getShaderModule(name)
-	return self.shaderLibrary.module[name]
-end
-function lib:isShaderModuleActive(name)
-	return self.activeShaderModules[name]
-end

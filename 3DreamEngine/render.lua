@@ -151,7 +151,6 @@ function lib:render(canvases, cam)
 	--current state
 	local shader
 	local shaderObject
-	local shaderEntry
 	local lastShader
 	local lastMaterial
 	local lastReflection
@@ -216,7 +215,6 @@ function lib:render(canvases, cam)
 				self.delton:start("shader")
 				
 				shaderObject = self:getRenderShader(shaderID, subObj, pass, canvases, light, false)
-				shaderEntry = self.shaderLibrary.base[shaderObject.shaderType]
 				shader = shaderObject.shader
 				if shaderObject.sessionID ~= sessionID then
 					shaderObject.session = { }
@@ -236,10 +234,10 @@ function lib:render(canvases, cam)
 					end
 					
 					--shader
-					shaderEntry:perShader(self, shaderObject)
-					for d,s in pairs(shaderObject.modules) do
-						s:perShader(self, shaderObject)
-					end
+					shaderObject.materialPixelShader:perShader(self, shaderObject)
+					shaderObject.materialVertexShader:perShader(self, shaderObject)
+					shaderObject.worldVertexShader:perShader(self, shaderObject)
+					shaderObject.worldPixelShader:perShader(self, shaderObject)
 					
 					--fog
 					if hasUniform(shaderObject, "fog_density") then
@@ -288,10 +286,10 @@ function lib:render(canvases, cam)
 				checkAndSendCached(shaderObject, "translucent", material.translucent)
 				
 				--shader
-				shaderEntry:perMaterial(self, shaderObject, material)
-				for d,s in pairs(shaderObject.modules) do
-					s:perMaterial(self, shaderObject, material)
-				end
+				shaderObject.materialPixelShader:perMaterial(self, shaderObject, material)
+				shaderObject.materialVertexShader:perMaterial(self, shaderObject, material)
+				shaderObject.worldVertexShader:perMaterial(self, shaderObject, material)
+				shaderObject.worldPixelShader:perMaterial(self, shaderObject, material)
 				
 				--culling
 				love.graphics.setMeshCullMode(canvases.cullMode or material.cullMode or "back")
@@ -329,13 +327,15 @@ function lib:render(canvases, cam)
 			shader:send("transform", task:getTransform())
 			
 			--shader
-			if not subObj.modulesInitialized then
-				subObj:initModules()
+			if not subObj.shadersInitialized then
+				subObj:initShaders()
 			end
-			shaderEntry:perTask(self, shaderObject, task)
-			for d,s in pairs(shaderObject.modules) do
-				s:perTask(self, shaderObject, subObj, task)
-			end
+			
+			--per task
+			shaderObject.materialPixelShader:perTask(self, shaderObject, task)
+			shaderObject.materialVertexShader:perTask(self, shaderObject, task)
+			shaderObject.worldVertexShader:perTask(self, shaderObject, task)
+			shaderObject.worldPixelShader:perTask(self, shaderObject, task)
 			
 			--render
 			love.graphics.setColor(task:getColor())
@@ -499,7 +499,6 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 	--current state
 	local shader
 	local shaderObject
-	local shaderEntry
 	local lastShader
 	local lastMaterial
 	
@@ -518,13 +517,10 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 			lastMaterial = false
 			lastReflection = false
 			
-			shaderObject = self:getRenderShader(shaderID, subObj, pass, { }, nil, true)
-			shaderEntry = self.shaderLibrary.base[shaderObject.shaderType]
+			shaderObject = self:getRenderShader(shaderID, subObj, pass, { }, nil, true, cam.sun)
 			shader = shaderObject.shader
 			shaderObject.session = { }
 			love.graphics.setShader(shader)
-			
-			shader:send("mode", cam.sun and true or false)
 			
 			--camera
 			shader:send("transformProj", cam.transformProj)
@@ -547,10 +543,8 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 		shader:send("transform", task:getTransform())
 		
 		--shader
-		shaderEntry:perTask(self, shaderObject, task)
-		for d,s in pairs(shaderObject.modules) do
-			s:perTask(self, shaderObject, subObj, task)
-		end
+		--TODO
+		--shaderEntry:perTask(self, shaderObject, task)
 		
 		--render
 		love.graphics.setColor(task:getColor())
@@ -671,16 +665,6 @@ function lib:renderFull(cam, canvases)
 			love.graphics.draw(canvases.bloom_2)
 		end
 	end
-	
-	--additional render instructions
-	self.delton:start("modules")
-	for d,_ in pairs(self.activeShaderModules) do
-		local m = self:getShaderModule(d)
-		if m.render then
-			m:render(self, cam, canvases)
-		end
-	end
-	self.delton:stop()
 	
 	--final
 	love.graphics.pop()

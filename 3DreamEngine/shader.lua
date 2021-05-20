@@ -40,33 +40,41 @@ if _DEBUGMODE then
 	end
 end
 
---shader library
-lib.shaderLibrary = {
-	base = { },
-	light = { },
-	module = { },
-}
-
---shader register
-function lib:registerShader(path)
-	local name = (path:match("^.+/(.+)$") or path):sub(1, -5)
-	local sh = require(path:sub(1, -5))
-	self.shaderLibrary[sh.type][name] = sh
-end
-
---register inbuild shaders
-for i,v in ipairs({"base", "light", "modules"}) do
-	for d,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/" .. v)) do
-		if s:sub(-4) == ".lua" then
-			lib:registerShader(lib.root .. "/shaders/" .. v .. "/" .. s)
-		end
+function lib:newShader(path)
+	local shader = require(path)
+	local project = love.filesystem.getInfo(path .. ".3ds") and love.filesystem.load(path .. ".3ds")()
+	
+	local defines, pixel, vertex
+	if project then
+		defines, pixel, vertex = self:compileShader(project)
+	else
+		defines, pixel, vertex = "", "", ""
 	end
+	
+	shader.path = path
+	shader.compiledDefines = defines
+	shader.compiledPixel = pixel
+	shader.compiledVertex = vertex
+	
+	return shader
 end
+
+lib.defaultMaterialPixelShader = lib:newShader(lib.root .. "/shaders/material/default")
+lib.defaultMaterialVertexShader = lib:newShader(lib.root .. "/shaders/material/vertex")
+lib.defaultWorldPixelShader = lib:newShader(lib.root .. "/shaders/world/PBR")
+lib.defaultWorldVertexShader = lib:newShader(lib.root .. "/shaders/world/empty")
 
 --load code snippsets
 local codes = { }
-for d,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/functions")) do
-	codes[s:sub(1, #s-5)] = love.filesystem.read(lib.root .. "/shaders/functions/" .. s)
+for d,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/code")) do
+	codes[s:sub(1, #s-5)] = love.filesystem.read(lib.root .. "/shaders/code/" .. s)
+end
+
+--light shaders
+lib.lightShaders = { }
+for d,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/light")) do
+	local name = s:sub(1, #s-4)
+	lib.lightShaders[name] = require(lib.root .. "/shaders/light/" .. name)
 end
 
 --return and load shader if nececary
@@ -141,29 +149,6 @@ function lib.getFinalShader(self, canvases)
 	return self.shaders.final[ID]
 end
 
---returns and initializes if not already done
-do
-	local lastID = 0
-	function lib:getShaderModule(name)
-		local sh = self.shaderLibrary.module[name]
-		
-		--give unique bit ID
-		if not sh.ID then
-			sh.ID = 2 ^ lastID
-			lastID = lastID + 1
-		end
-		
-		--initilized module
-		if not sh.initilized then
-			sh.initilized = true
-			if sh.init then
-				sh:init(self)
-			end
-		end
-		return sh
-	end
-end
-
 --get a unique ID for this specific light setup
 do
 	local lastID = 0
@@ -177,226 +162,162 @@ do
 					IDs[d] = lastID
 				end
 				
-				ID[IDs[d]] = lib.shaderLibrary.light[d].batchable and 1 or s
+				ID[IDs[d]] = lib.lightShaders[d].batchable and 1 or s
 			end
 		end
 		return string.char(unpack(ID))
 	end
 end
 
---construct a shader
-local baseShader = love.filesystem.read(lib.root .. "/shaders/base.glsl")
-local baseShadowShader = love.filesystem.read(lib.root .. "/shaders/shadow.glsl")
-
 function lib:getRenderShaderID(obj, pass, shadows)
 	local mat = obj.material
-	local reflection = obj.reflection or obj.obj and obj.obj.reflection or self.sky_reflection
-	
-	--get unique IDs for the components
-	local ID_base = self.shaderLibrary.base[obj.shaderType]:getTypeID(self, mat)
-	local ID_settings = 0
-	local ID_modules = 0
-	
-	--global modules
-	local keys = { }
-	for d,s in pairs(self.activeShaderModules) do
-		keys[d] = true
-		local sm = self:getShaderModule(d)
-		if not shadows or sm.shadow then
-			ID_modules = ID_modules + sm.ID
-		end
-	end
-	
-	--local modules
-	for _,modules in pairs({obj.modules, obj.obj.modules, mat.modules}) do
-		for d,s in pairs(modules) do
-			if not keys[d] then
-				keys[d] = true
-				local sm = self:getShaderModule(d)
-				if not shadows or sm.shadow then
-					ID_modules = ID_modules + sm.ID
-				end
-			end
-		end
-	end
-	
-	--settings
-	if shadows then
-		ID_settings = mat.discard and 1 or 0
-	else
-		if pass == 2 then
-			--second pass
-			ID_settings = ID_settings + 2 ^ 0
-		elseif mat.discard or mat.dither or self.dither then
-			--requires alpha test (discard)
-			ID_settings = ID_settings + 2 ^ 1
-		end
-		
-		--simple cube map reflection and ambient light
-		if reflection then
-			ID_settings = ID_settings + 2 ^ 2
-		end
-		
-		--double sided lighting
-		if mat.translucent > 0 then
-			ID_settings = ID_settings + 2 ^ 3
-		end
-	end
+	local reflections = not shadows and (obj.reflection or obj.obj and obj.obj.reflection or self.sky_reflection)
 	
 	--construct full ID
-	return string.char(ID_base, (ID_modules / 256^3) % 256, (ID_modules / 256^2) % 256, (ID_modules / 256^1) % 256, (ID_modules / 256^0) % 256, ID_settings % 256)
+	return string.char(
+		reflections and 1 or 0, --todo reflections can now support different models
+		(mat.materialPixelShader or self.defaultMaterialPixelShader):getPixelId(self, mat, shadows),
+		(mat.materialVertexShader or self.defaultMaterialVertexShader):getVertexId(self, mat, shadows),
+		(mat.worldPixelShader or self.defaultWorldPixelShader):getPixelId(self, mat, shadows),
+		(mat.worldVertexShader or self.defaultWorldVertexShader):getVertexId(self, mat, shadows)
+	)
 end
 
-function lib:getRenderShader(ID, obj, pass, canvases, light, shadows)
-	local shaderID = (canvases and canvases.shaderID or 0) * 2
+function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, sun)
+	--combine the settings ID and the light id
+	local shaderID = (pass or 0) + (canvases and canvases.shaderID or 0)
 	if light then
 		shaderID = light.ID .. shaderID
 	end
-	
 	if not self.mainShaders[shaderID] then
 		self.mainShaders[shaderID] = { }
 	end
 	
 	if not self.mainShaders[shaderID][ID] then
 		local mat = obj.material
-		local shaderType = obj.shaderType
-		local reflection = obj.reflection or obj.obj and obj.obj.reflection or self.sky_reflection
-		local refractions = canvases.refractions
-		
-		--global modules
-		local keys = { }
-		local m = { }
-		for d,s in pairs(self.activeShaderModules) do
-			keys[d] = true
-			local sm = self:getShaderModule(d)
-			if not shadows or sm.shadow then
-				m[d] = sm
-			end
-		end
-		
-		--local modules
-		for _,modules in pairs({obj.modules, obj.obj.modules, mat.modules}) do
-			for d,s in pairs(modules) do
-				if not keys[d] then
-					keys[d] = true
-					local sm = self:getShaderModule(d)
-					if not shadows or sm.shadow then
-						m[d] = sm
-					end
-				end
-			end
-		end
-		
-		--construct shader
-		local code = shadows and baseShadowShader or baseShader
+		local reflection = not shadows and (obj.reflection or obj.obj and obj.obj.reflection or self.sky_reflection)
 		
 		--additional data
 		local info = {
 			shaderType = shaderType,
+			reflection = reflection,
 			material = mat,
 			modules = m,
-			reflection = not shadows and reflection,
 			shadows = shadows,
 			uniforms = { },
+			
+			materialPixelShader = mat.materialPixelShader or self.defaultMaterialPixelShader,
+			materialVertexShader = mat.materialVertexShader or self.defaultMaterialVertexShader,
+			worldVertexShader = mat.worldVertexShader or self.defaultWorldVertexShader,
+			worldPixelShader = mat.worldPixelShader or self.defaultWorldPixelShader,
 		}
 		self.mainShaders[shaderID][ID] = info
 		
+		--additional code
+		local defines = { }
+		local pixel = { }
+		local vertex = { }
+		
+		--collect additional defines
 		if shadows then
-			local globalDefines = { }
-			
-			table.insert(globalDefines, "#define IS_SHADOW")
-			
-			if mat.discard then
-				table.insert(globalDefines, "#define DISCARD_ENABLED")
+			table.insert(defines, "#define IS_SHADOW")
+			if sun then
+				table.insert(defines, "#define IS_SUN")
 			end
 			
-			code = code:gsub("#import globalDefines", table.concat(globalDefines, "\n"))
+			if mat.discard then
+				table.insert(defines, "#define DISCARD_ENABLED")
+			end
 		else
 			--settings
-			local globalDefines = { }
 			if pass == 1 then
 				if mat.discard or mat.dither or self.dither then
-					table.insert(globalDefines, "#define DISCARD_ENABLED")
+					table.insert(defines, "#define DISCARD_ENABLED")
 				end
+				table.insert(defines, "#define DEPTH_ENABLED")
 			elseif pass == 2 then
-				if refractions then
-					table.insert(globalDefines, "#define REFRACTIONS_ENABLED")
+				if canvases.refractions then
+					table.insert(defines, "#define REFRACTIONS_ENABLED")
 				end
 				if canvases.averageAlpha then
-					table.insert(globalDefines, "#define AVERAGE_ENABLED")
+					table.insert(defines, "#define AVERAGE_ENABLED")
 				end
-				table.insert(globalDefines, "#define ALPHA_PASS")
+				table.insert(defines, "#define ALPHA_PASS")
 			end
 			
 			if canvases.postEffects and self.exposure and earlyExposure(canvases) then
-				table.insert(globalDefines, "#define EXPOSURE_ENABLED")
+				table.insert(defines, "#define EXPOSURE_ENABLED")
 			end
 			if canvases.postEffects and self.gamma and earlyExposure(canvases) then
-				table.insert(globalDefines, "#define GAMMA_ENABLED")
+				table.insert(defines, "#define GAMMA_ENABLED")
 			end
 			if self.fog_enabled and canvases.mode ~= "normal" then
-				table.insert(globalDefines, "#define FOG_ENABLED")
+				table.insert(defines, "#define FOG_ENABLED")
 			end
 			if mat.translucent > 0 then
-				table.insert(globalDefines, "#define TRANSLUCENT_ENABLED")
+				table.insert(defines, "#define TRANSLUCENT_ENABLED")
 			end
-			
-			--setting specific defines
-			code = code:gsub("#import globalDefines", table.concat(globalDefines, "\n"))
-			
-			--the shader might need additional code
-			code = code:gsub("#import mainDefines", self.shaderLibrary.base[shaderType]:constructDefines(self, mat) or "")
-			code = code:gsub("#import mainPixelPre", self.shaderLibrary.base[shaderType]:constructPixelPre(self, mat) or "")
-			code = code:gsub("#import mainPixelPost", self.shaderLibrary.base[shaderType]:constructPixelPost(self, mat) or "")
-			code = code:gsub("#import mainPixel", self.shaderLibrary.base[shaderType]:constructPixel(self, mat) or "")
-			code = code:gsub("#import mainVertex", self.shaderLibrary.base[shaderType]:constructVertex(self, mat) or "")
-			
-			--import reflection function
-			code = code:gsub("#import reflections", info.reflection and codes.reflections or codes.ambientOnly)
 		end
 		
-		--import additional modules
-		local define = { }
-		local vertexPost = { }
-		local vertex = { }
-		local pixel = { }
-		local pixelPre = { }
-		local pixelPost = { }
-		for d,s in pairs(m) do
-			assert(s, "Shader module '" .. d .. "' does not exist!")
-			table.insert(define, s.constructDefines and s:constructDefines(self, info) or "")
-			table.insert(vertexPost, s.constructVertexPost and s:constructVertexPost(self, info) or "")
-			table.insert(vertex, s.constructVertex and s:constructVertex(self, info) or "")
-			table.insert(pixel, s.constructPixel and s:constructPixel(self, info) or "")
-			table.insert(pixelPre, s.constructPixelPre and s:constructPixelPre(self, info) or "")
-			table.insert(pixelPost, s.constructPixelPost and s:constructPixelPost(self, info) or "")
-		end
-		code = code:gsub("#import modulesDefines", table.concat(define, "\n"))
-		code = code:gsub("#import modulesVertexPost", table.concat(vertexPost, "\n"))
-		code = code:gsub("#import modulesVertex", table.concat(vertex, "\n"))
-		code = code:gsub("#import modulesPixelPre", table.concat(pixelPre, "\n"))
-		code = code:gsub("#import modulesPixelPost", table.concat(pixelPost, "\n"))
-		code = code:gsub("#import modulesPixel", table.concat(pixel, "\n"))
+		--material shader
+		table.insert(defines, info.materialPixelShader:buildDefines(self, mat, shadows))
+		table.insert(defines, info.materialPixelShader.compiledDefines)
+		table.insert(defines, info.materialVertexShader:buildDefines(self, mat, shadows))
+		table.insert(defines, info.materialVertexShader.compiledDefines)
 		
+		table.insert(pixel, info.materialPixelShader:buildPixel(self, mat, shadows))
+		table.insert(pixel, info.materialPixelShader.compiledPixel)
+		
+		table.insert(vertex, info.materialPixelShader:buildVertex(self, mat, shadows))
+		table.insert(vertex, info.materialPixelShader.compiledVertex)
+		table.insert(vertex, info.materialVertexShader:buildVertex(self, mat, shadows))
+		table.insert(vertex, info.materialVertexShader.compiledVertex)
+		
+		--additional code
 		if not shadows then
-			--fog engine
-			if self.fog_enabled and canvases.mode ~= "normal" then
-				code = code:gsub("#import fog", codes.fog)
-			end
-			
 			--construct forward lighting system
 			if #light.lights > 0 then
-				local lcInit, lc = self:getLightComponents(light)
+				local def, p = self:getLightComponents(light)
+				table.insert(defines, "#ifdef PIXEL")
+				table.insert(defines, def)
+				table.insert(defines, "#endif")
 				
-				code = code:gsub("#import lightingSystemInit", table.concat(lcInit, "\n"))
-				code = code:gsub("#import lightingSystem", table.concat(lc, "\n"))
-				code = code:gsub("#import lightFunction", self.shaderLibrary.base[shaderType]:constructLightFunction(self, info))
+				table.insert(pixel, p)
+			end
+			
+			--fog engine
+			if self.fog_enabled then
+				table.insert(defines, codes.fog)
+			end
+			
+			--reflection
+			if reflection then
+				table.insert(defines, codes.reflections)
+			else
+				table.insert(defines, codes.ambientOnly)
 			end
 		end
 		
-		--remove unused imports and remove tabs
-		code = code:gsub("#import", "//#import")
-		code = code:gsub("	", "")
+		--world
+		table.insert(defines, info.worldPixelShader:buildDefines(self, mat, shadows))
+		table.insert(defines, info.worldPixelShader.compiledDefines)
+		table.insert(defines, info.worldVertexShader:buildDefines(self, mat, shadows))
+		table.insert(defines, info.worldVertexShader.compiledDefines)
+		
+		table.insert(pixel, info.worldPixelShader:buildPixel(self, mat, shadows))
+		table.insert(pixel, info.worldPixelShader.compiledPixel)
+		
+		table.insert(vertex, info.worldPixelShader:buildVertex(self, mat, shadows))
+		table.insert(vertex, info.worldPixelShader.compiledVertex)
+		table.insert(vertex, info.worldVertexShader:buildVertex(self, mat, shadows))
+		table.insert(vertex, info.worldVertexShader.compiledVertex)
+		
+		--build code
+		local code = codes.base
+		code = code:gsub("#import defines", table.concat(defines, "\n"))
+		code = code:gsub("#import pixel", table.concat(pixel, "\n"))
+		code = code:gsub("#import vertex", table.concat(vertex, "\n"))
+		code = code:gsub("\t", "")
 		
 		--compile
 		info.code = code
@@ -409,118 +330,19 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows)
 	return self.mainShaders[shaderID][ID]
 end
 
-local baseParticleShader = love.filesystem.read(lib.root .. "/shaders/particle.glsl")
-function lib:getParticlesShader(pass, canvases, light, emissive, distortion, single)
-	--additional settings
-	local ID_settings = 0
-	if emissive then
-		ID_settings = ID_settings + 2^0
-	end
-	if distortion and pass == 2 then
-		ID_settings = ID_settings + 2^1
-	end
-	if canvases.postEffects and self.exposure and earlyExposure(canvases) then
-		ID_settings = ID_settings + 2^2
-	end
-	if canvases.postEffects and self.gamma and earlyExposure(canvases) then
-		ID_settings = ID_settings + 2^3
-	end
-	if self.fog_enabled and canvases.mode ~= "normal" then
-		ID_settings = ID_settings + 2^4
-	end
-	if canvases.refractions and pass == 2 then
-		ID_settings = ID_settings + 2^5
-	end
-	if canvases.averageAlpha and pass == 2 then
-		ID_settings = ID_settings + 2^6
-	end
-	if pass == 1 and canvases.mode ~= "direct" then
-		ID_settings = ID_settings + 2^7
-	end
-	if single then
-		ID_settings = ID_settings + 2^9
-	end
-	
-	local ID = light.ID .. string.char(ID_settings % 256, math.floor(ID_settings / 256))
-	
-	if not self.particlesShader[ID] then
-		local globalDefines = { }
-		if emissive then
-			table.insert(globalDefines, "#define TEX_EMISSION")
-		end
-		if distortion and pass == 2 then
-			table.insert(globalDefines, "#define TEX_DISORTION")
-		end
-		if canvases.postEffects and self.exposure and earlyExposure(canvases) then
-			table.insert(globalDefines, "#define EXPOSURE_ENABLED")
-		end
-		if canvases.postEffects and self.gamma and earlyExposure(canvases) then
-			table.insert(globalDefines, "#define GAMMA_ENABLED")
-		end
-		if self.fog_enabled and canvases.mode ~= "normal" then
-			table.insert(globalDefines, "#define FOG_ENABLED")
-		end
-		if canvases.refractions and pass == 2 then
-			table.insert(globalDefines, "#define REFRACTIONS_ENABLED")
-		end
-		if canvases.averageAlpha and pass == 2 then
-			table.insert(globalDefines, "#define AVERAGE_ENABLED")
-		end
-		if pass == 1 and canvases.mode ~= "direct" then
-			table.insert(globalDefines, "#define DEPTH_ENABLED")
-		end
-		if single then
-			table.insert(globalDefines, "#define SINGLE")
-		end
-		
-		local info = {
-			uniforms = { }
-		}
-		
-		--construct shader
-		local code = baseParticleShader
-		
-		--setting specific defines
-		code = code:gsub("#import globalDefines", table.concat(globalDefines, "\n"))
-		
-		--fog engine
-		if self.fog_enabled and canvases.mode ~= "normal" then
-			code = code:gsub("#import fog", codes.fog)
-		end
-		
-		--construct forward lighting system
-		if light.lights and #light.lights > 0 then
-			local lcInit, lc = self:getLightComponents(light, true)
-			
-			code = code:gsub("#import lightingSystemInit", table.concat(lcInit, "\n"))
-			code = code:gsub("#import lightingSystem", table.concat(lc, "\n"))
-		end
-		
-		--remove unused imports and remove tabs
-		code = code:gsub("#import", "//#import")
-		code = code:gsub("	", "")
-		
-		--compile
-		info.shader = love.graphics.newShader(code)
-		self.particlesShader[ID] = info
-	end
-	
-	return self.particlesShader[ID]
-end
-
 function lib:getLightComponents(light, basic)
 	local lcInit = { }
 	local lc = { }
 	
 	--global defines and code
 	for d,s in pairs(light.types) do
-		assert(self.shaderLibrary.light[d], "Light of type '" .. d .. "' does not exist!")
-		lcInit[#lcInit+1] = self.shaderLibrary.light[d]:constructDefinesGlobal(self)
+		assert(self.lightShaders[d], "Light of type '" .. d .. "' does not exist!")
+		lcInit[#lcInit+1] = self.lightShaders[d]:constructDefinesGlobal(self)
 		
 		if basic then
-			lc[#lc+1] = self.shaderLibrary.light[d]:constructPixelBasicGlobal(self)
+			lc[#lc+1] = self.lightShaders[d]:constructPixelBasicGlobal(self)
 		else
-			lc[#lc+1] = self.shaderLibrary.light[d]:constructPixelGlobal(self)
+			lc[#lc+1] = self.lightShaders[d]:constructPixelGlobal(self)
 		end
 	end
 	
@@ -528,18 +350,18 @@ function lib:getLightComponents(light, basic)
 	local IDs = { }
 	for	d,s in ipairs(light.lights) do
 		IDs[s.light_typ] = (IDs[s.light_typ] or -1) + 1
-		lcInit[#lcInit+1] = self.shaderLibrary.light[s.light_typ]:constructDefines(self, IDs[s.light_typ])
+		lcInit[#lcInit+1] = self.lightShaders[s.light_typ]:constructDefines(self, IDs[s.light_typ])
 		
 		local px
 		if basic then
-			px = self.shaderLibrary.light[s.light_typ]:constructPixelBasic(self, IDs[s.light_typ])
+			px = self.lightShaders[s.light_typ]:constructPixelBasic(self, IDs[s.light_typ])
 		else
-			px = self.shaderLibrary.light[s.light_typ]:constructPixel(self, IDs[s.light_typ])
+			px = self.lightShaders[s.light_typ]:constructPixel(self, IDs[s.light_typ])
 		end
 		if px then
 			lc[#lc+1] = "{\n" .. px .. "\n}"
 		end
 	end
 	
-	return lcInit, lc
+	return table.concat(lcInit, "\n"), table.concat(lc, "\n")
 end

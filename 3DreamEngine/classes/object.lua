@@ -110,9 +110,9 @@ return {
 		end
 	end,
 	
-	initModules = function(self)
+	initShaders = function(self)
 		for d,s in pairs(self.objects) do
-			s:initModules()
+			s:initShaders()
 		end
 	end,
 	

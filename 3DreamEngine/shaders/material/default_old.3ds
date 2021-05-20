@@ -1,0 +1,251 @@
+return {
+	path = "shaders/material.3ds",
+	pixel = {
+		[5] = {
+			active = false,
+			y = 60,
+			inputs = {
+				[2] = {
+					i = 6,
+					nid = 3
+				},
+				[5] = {
+					i = 5,
+					nid = 6
+				},
+				[3] = {
+					i = 3,
+					nid = 6
+				},
+				[7] = {
+					i = 2,
+					nid = 1
+				},
+				[1] = {
+					i = 2,
+					nid = 3
+				},
+				[10] = {
+					i = 1,
+					nid = 10
+				},
+				[4] = {
+					i = 4,
+					nid = 6
+				}
+			},
+			collapsed = false,
+			x = 1030,
+			init = true,
+			values = {
+				{0.5, 0.5, 0.5},
+				1,
+				0.5,
+				0,
+				1,
+				0,
+				{0, 0, 0},
+				{0, 0, 0},
+				0,
+				{0, 0, 0},
+				{0, 0}
+			},
+			typ = "materialOut"
+		},
+		[3] = {
+			x = 100,
+			id = 4,
+			y = 39,
+			inputs = {},
+			collapsed = false,
+			image = "albedo",
+			active = false,
+			init = true,
+			values = {
+				{0, 0},
+				0
+			},
+			typ = "texture"
+		},
+		[1] = {
+			x = 617,
+			y = 270,
+			inputs = {},
+			collapsed = false,
+			image = "emission",
+			active = false,
+			init = true,
+			values = {
+				{0, 0},
+				0
+			},
+			typ = "texture"
+		},
+		[4] = {
+			x = 234,
+			id = 5,
+			y = 459,
+			inputs = {},
+			collapsed = false,
+			image = "normal",
+			active = false,
+			init = true,
+			values = {
+				{0, 0},
+				0
+			},
+			typ = "texture"
+		},
+		[10] = {
+			genericType = "vec3",
+			active = false,
+			y = 510,
+			inputs = {
+				{
+					i = 2,
+					nid = 4
+				}
+			},
+			collapsed = false,
+			x = 506,
+			init = true,
+			values = {0, 2, -1},
+			typ = "MAD"
+		},
+		[6] = {
+			x = 98,
+			y = 242,
+			inputs = {},
+			collapsed = false,
+			image = "material",
+			active = true,
+			init = true,
+			values = {
+				{0, 0},
+				0
+			},
+			typ = "texture"
+		}
+	},
+	type = "material",
+	name = "new",
+	vertex = {
+		[14] = {
+			genericType = "vec3",
+			x = 1045,
+			y = 373,
+			inputs = {
+				{
+					i = 1,
+					nid = 12
+				}
+			},
+			collapsed = false,
+			active = false,
+			swizzle = "xyz",
+			init = true,
+			values = {0},
+			typ = "swizzle"
+		},
+		[2] = {
+			genericType = "mat4",
+			x = 591,
+			y = 251,
+			selectedTyp = 7,
+			inputs = {},
+			collapsed = false,
+			active = false,
+			name = "transform",
+			init = true,
+			values = {},
+			typ = "extern"
+		},
+		[5] = {
+			genericType = "vec4",
+			x = 196,
+			y = 456,
+			selectedTyp = 4,
+			inputs = {},
+			collapsed = false,
+			active = false,
+			name = "VertexPosition",
+			init = true,
+			values = {},
+			typ = "attribute"
+		},
+		[12] = {
+			genericType = "vec4",
+			operation = 3,
+			y = 373,
+			inputs = {
+				{
+					i = 1,
+					nid = 2
+				},
+				{
+					i = 1,
+					nid = 11
+				}
+			},
+			collapsed = false,
+			active = false,
+			x = 852,
+			init = true,
+			values = {0, 0},
+			typ = "math"
+		},
+		[11] = {
+			genericType = "vec4",
+			x = 629,
+			y = 408,
+			selectedTyp = 3,
+			inputs = {
+				{
+					i = 1,
+					nid = 8
+				}
+			},
+			collapsed = false,
+			typ = "convert",
+			active = false,
+			init = true,
+			values = {0},
+			default = 1
+		},
+		[8] = {
+			genericType = "vec3",
+			x = 448,
+			y = 425,
+			inputs = {
+				{
+					i = 1,
+					nid = 5
+				}
+			},
+			collapsed = false,
+			active = false,
+			swizzle = "xyz",
+			init = true,
+			values = {0},
+			typ = "swizzle"
+		},
+		[3] = {
+			x = 1195,
+			y = 391,
+			inputs = {
+				{
+					i = 1,
+					nid = 14
+				}
+			},
+			collapsed = false,
+			active = false,
+			init = true,
+			values = {
+				{0, 0, 0},
+				{0, 0, 0}
+			},
+			typ = "vertexOut"
+		}
+	}
+}

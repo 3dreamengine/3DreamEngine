@@ -34,19 +34,15 @@ local function prepareArgs(args)
 end
 
 --add to object library instead
-function lib:loadLibrary(path, shaderType, args, prefix)
-	if type(shaderType) == "table" then
-		return self:loadLibrary(path, shaderType and shaderType.shaderType, shaderType)
-	end
+function lib:loadLibrary(path, args, prefix)
 	args = prepareArgs(args)
-	args.shaderType = shaderType or args.shaderType
 	
 	prefix = prefix or ""
 	
 	args.loadAsLibrary = true
 	
 	--load
-	local obj = self:loadObject(path, shaderType, args)
+	local obj = self:loadObject(path, args)
 	
 	--prepare lights for library entry
 	for d,s in pairs(obj.lights) do
@@ -104,18 +100,21 @@ local supportedFiles = {
 --args is a table containing additional settings
 --path is the absolute path without extension
 --3do objects will be loaded part by part, threaded. yourObject.objects.yourMesh.mesh is nil, if its not loaded yet
-function lib:loadObject(path, shaderType, args)
-	if type(shaderType) == "table" then
-		return self:loadObject(path, shaderType and shaderType.shaderType, shaderType)
+function lib:loadObject(path, shader, args)
+	if type(shader) == "table" then
+		return self:loadObject(path, self.defaultMaterialShader, shader)
 	end
-	args = prepareArgs(args)
-	args.shaderType = shaderType or args.shaderType
 	
-	--some shaderType specific settings
-	if args.shaderType then
-		local dat = self.shaderLibrary.base[args.shaderType]
+	--set default args
+	args = prepareArgs(args)
+	
+	--some shader specific settings
+	if shader then
 		if args.splitMaterials == nil then
-			args.splitMaterials = dat.splitMaterials
+			args.splitMaterials = true--shader.splitMaterials
+		end
+		if args.requireTangents == nil then
+			args.requireTangents = true--shader.requireTangents
 		end
 	end
 	
@@ -529,7 +528,7 @@ function lib:loadObject(path, shaderType, args)
 	
 	
 	--init modules
-	obj:initModules()
+	obj:initShaders()
 	
 	
 	--cleaning up

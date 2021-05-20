@@ -11,19 +11,6 @@ end
 
 function lib:newSubObject(name, obj, mat)
 	--guess shaderType if not specified based on textures used
-	local shaderType = obj.args.shaderType
-	if not shaderType then
-		if lib.defaultShaderType then
-			shaderType = lib.defaultShaderType
-		else
-			shaderType = "simple"
-			
-			if mat and (mat.tex_albedo or mat.tex_normal) then
-				shaderType = "Phong"
-			end
-		end
-	end
-	
 	local o = {
 		name = removePostfix(name),
 		material = mat,
@@ -42,8 +29,7 @@ function lib:newSubObject(name, obj, mat)
 		loaded = true,
 		boundingBox = self:newBoundaryBox(),
 		
-		shaderType = shaderType,
-		meshType = obj.args.meshType or self.shaderLibrary.base[shaderType].meshType,
+		meshType = (mat.materialPixelShader or self.defaultMaterialVertexShader).meshType,
 	}
 	
 	return setmetatable(o, self.meta.subObject)
@@ -94,30 +80,10 @@ return {
 		self.boundingBox.size = math.max(math.sqrt(max), self.boundingBox.size)
 	end,
 	
-	initModules = function(self)
-		local modules = self.modules or self.obj and self.obj.modules or self.material.modules
+	initShaders = function(self)
+		print("todo")
 		
-		--global modules
-		local m = { }
-		for d,s in pairs(lib.activeShaderModules) do
-			m[d] = lib:getShaderModule(d)
-		end
-		
-		--local modules
-		if modules then
-			for d,s in pairs(modules) do
-				m[d] = lib:getShaderModule(d)
-			end
-		end
-		
-		--apply modules
-		for d,s in pairs(m) do
-			if s.initObject then
-				s:initObject(lib, self)
-			end
-		end
-		
-		self.modulesInitialized = true
+		self.shadersInitialized = true
 	end,
 	
 	--clean most primary buffers
@@ -152,16 +118,6 @@ return {
 		
 		--preload material
 		self.material:preload(force)
-		
-		--preload modules
-		if self.modules then
-			for d,_ in pairs(self.modules) do
-				local m = lib:getShaderModule(d)
-				if m.preload then
-					m:preload(self, force)
-				end
-			end
-		end
 		
 		--load meshes
 		if self.meshes then

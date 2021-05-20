@@ -9,7 +9,6 @@ local projectDir = "examples/AlphaBlending/"
 --settings
 dream.renderSet:setRefractions(true)
 dream.renderSet:setAverageAlpha(true)
-dream:setDefaultShaderType("PBR")
 dream:setSky(love.graphics.newImage(projectDir .. "sky.hdr"), 0.25)
 dream:init()
 

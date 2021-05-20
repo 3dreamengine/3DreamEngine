@@ -36,7 +36,7 @@ end
 
 function sh:constructPixelPost(dream, mat)
 	return [[
-	vec3 reflectVec = reflect(-viewVec, normal); 
+	vec3 reflectVec = reflect(viewVec, normal); 
 	vec3 diffuse = reflection(normal, 1.0);
 	
 	vec3 ref = reflection(reflectVec, 1.0 - material.x);
