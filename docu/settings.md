@@ -67,17 +67,6 @@ distance = dream:getLODDistance()
 
 
 
-## dither
-Depth testing and alpha gradients do not like each other. You can choose between dithering or a fixed 0.5 threshold. Heavily depends on your scene, and can be enabled per material for more control.
-
-```lua
-dream:setDither(enabled)
-enabled = dream:setDither()
-```
-`enabled (true)`  
-
-
-
 ## exposure
 Sets the exposure for HDR, making it possible to represent colors over 1. 1.0 is default. False disables it.
 ```lua

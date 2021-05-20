@@ -134,7 +134,6 @@ function lib.getFinalShader(self, canvases)
 	parts[#parts+1] = self.AO_enabled and "#define AO_ENABLED" or nil
 	
 	parts[#parts+1] = canvases.refractions and "#define REFRACTIONS_ENABLED" or nil
-	parts[#parts+1] = canvases.averageAlpha and "#define AVERAGE_ALPHA" or nil
 	
 	parts[#parts+1] = (canvases.fxaa and canvases.msaa == 0) and "#define FXAA_ENABLED" or nil
 	

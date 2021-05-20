@@ -147,7 +147,6 @@ lib:setAutoExposure(false)
 lib.renderSet = lib:newSetSettings()
 lib.renderSet:setPostEffects(true)
 lib.renderSet:setRefractions(true)
-lib.renderSet:setAverageAlpha(false)
 lib.renderSet:setMode("normal")
 
 lib.reflectionsSet = lib:newSetSettings()
@@ -225,7 +224,6 @@ function lib:newCanvasSet(settings, w, h)
 	set.mode = settings.mode
 	set.postEffects = settings.postEffects and settings.mode == "normal"
 	set.refractions = settings.alphaPass and settings.refractions and settings.mode == "normal"
-	set.averageAlpha = settings.alphaPass and settings.averageAlpha and settings.mode == "normal"
 	set.format = settings.format
 	set.alphaPass = settings.alphaPass
 	
@@ -236,14 +234,10 @@ function lib:newCanvasSet(settings, w, h)
 		--temporary HDR color
 		set.color = love.graphics.newCanvas(w, h, {format = settings.format, readable = true, msaa = set.msaa})
 		
-		--additional color if using refractions or averageAlpha
-		if set.averageAlpha or set.refractions then
+		--additional color if using refractions
+		if set.refractions then
 			set.colorAlpha = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = set.msaa})
 			set.distortion = love.graphics.newCanvas(w, h, {format = "rg16f", readable = true, msaa = set.msaa})
-			
-			if set.averageAlpha then
-				set.dataAlpha = love.graphics.newCanvas(w, h, {format = "rg16f", readable = true, msaa = set.msaa})
-			end
 		end
 		
 		--depth

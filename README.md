@@ -2,31 +2,29 @@
 <a href="https://discord.gg/hpmZxNQ"><img src="https://discordapp.com/api/guilds/561664262481641482/embed.png" alt="Discord server" /></a>
 
 # Features
-* easy to use yet powerful 3D extension to LÖVE
+* easy to use yet powerful 3D extension to LÃ–VE
 * fast forward rendering with alpha pass
 * Metallness workflow (albedo, normal, roughness, metallic, ao, emission)
-* Specular workflow (color, normal, glossiness, specular, ao, emission)
 * HDR with bloom
 * refractions
 * screen space ambient occlusion (ssao)
 * cubemap reflections
 * proper blurred reflections on rough surfaces
 * particle batches and single sprites
-* modular and extendable shaders
+* simple custom shaders
 * dynamic clouds, sun, moon, stars and rainbows
 * eye adaption effect
 * cascade shadow mapping
 * cubemap shadow mapping
 * smooth shadows
 * distance fog
-* light source based godrays
-* wind animation (leaves, grass, ...)
+* godrays
+* included shaders for wind animation, water, ...
 * supports .obj, .mtl, .dae and .vox
 * threaded texture loading
 * threaded object loading using 3DreamEngine specific object files (converter included)
 * included optimized vec2, vec3, vec4, mat2, mat3 and mat4 library
 * Box2D extension to support basic 3D collisions
-* DEPCIRATED 3D transformation-tree based collision extension, supports closed mesh collisions
 
 ![screenshots](https://raw.githubusercontent.com/3dreamengine/3DreamEngine/master/screenshots.jpg)
 

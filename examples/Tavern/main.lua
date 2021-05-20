@@ -11,6 +11,8 @@ dream:setNameDecoder()
 
 dream.renderSet:setRefractions(true)
 
+dream:setShadowSmoothing(true)
+
 dream:setSky(false)
 dream:setReflection(cimg:load(projectDir .. "sky.cimg"))
 
@@ -286,11 +288,6 @@ function love.keypressed(key)
 	end
 	
 	if key == "2" then
-		dream.renderSet:setAverageAlpha(not dream.renderSet:getAverageAlpha())
-		dream:init()
-	end
-	
-	if key == "3" then
 		local cullMode = dream:getAlphaCullMode()
 		dream:init()
 	end

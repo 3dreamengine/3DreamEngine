@@ -165,9 +165,7 @@ function lib:render(canvases, cam)
 		love.graphics.setDepthMode("less", pass == 1)
 		
 		--set correct blend mode
-		if canvases.averageAlpha and pass == 2 then
-			love.graphics.setBlendMode("add")
-		elseif canvases.refractions and pass == 2 then
+		if canvases.refractions and pass == 2 then
 			love.graphics.setBlendMode("alpha", "premultiplied")
 		else
 			love.graphics.setBlendMode("alpha", "alphamultiply")
@@ -175,15 +173,7 @@ function lib:render(canvases, cam)
 		
 		--set canvases
 		if canvases.mode ~= "direct" then
-			if canvases.averageAlpha and pass == 2 then
-				--average alpha
-				if canvases.refractions then
-					love.graphics.setCanvas({canvases.colorAlpha, canvases.distortion, canvases.dataAlpha, depthstencil = canvases.depth_buffer})
-				else
-					love.graphics.setCanvas({canvases.colorAlpha, canvases.dataAlpha, depthstencil = canvases.depth_buffer})
-				end
-				love.graphics.clear(true, false, false)
-			elseif canvases.refractions and pass == 2 then
+			if canvases.refractions and pass == 2 then
 				--refractions only
 				love.graphics.setCanvas({canvases.colorAlpha, canvases.distortion, depthstencil = canvases.depth_buffer})
 				love.graphics.clear(true, false, false)
@@ -269,11 +259,7 @@ function lib:render(canvases, cam)
 				--self.delton:start("material")
 				
 				--alpha
-				if material.dither == nil then
-					checkAndSendCached(shaderObject, "dither", self.dither and 1 or 0)
-				else
-					checkAndSendCached(shaderObject, "dither", material.dither and 1 or 0)
-				end
+				checkAndSendCached(shaderObject, "dither", material.dither and 1 or 0)
 				
 				--ior
 				checkAndSendCached(shaderObject, "ior", 1.0 / material.ior)
@@ -610,29 +596,18 @@ function lib:renderFull(cam, canvases)
 		love.graphics.setCanvas(canvases.bloom_1)
 		love.graphics.clear()
 		
-		if canvases.averageAlpha then
-			--required different fetch
-			local shader = self:getShader("bloom_average")
-			love.graphics.setShader(shader)
-			shader:send("canvas_alpha", canvases.colorAlpha)
-			shader:send("canvas_alphaData", canvases.dataAlpha)
-			shader:send("strength", self.bloom_strength)
+		--color
+		local shader = self:getShader("bloom")
+		love.graphics.setShader(shader)
+		shader:send("strength", self.bloom_strength)
+		love.graphics.setBlendMode("replace", "premultiplied")
+		love.graphics.draw(canvases.color, 0, 0, 0, self.bloom_resolution)
+		
+		--also include alpha pass
+		if canvases.colorAlpha then
+			love.graphics.setBlendMode("alpha", "premultiplied")
+			love.graphics.draw(canvases.colorAlpha, 0, 0, 0, self.bloom_resolution)
 			love.graphics.setBlendMode("replace", "premultiplied")
-			love.graphics.draw(canvases.color, 0, 0, 0, self.bloom_resolution)
-		else
-			--color
-			local shader = self:getShader("bloom")
-			love.graphics.setShader(shader)
-			shader:send("strength", self.bloom_strength)
-			love.graphics.setBlendMode("replace", "premultiplied")
-			love.graphics.draw(canvases.color, 0, 0, 0, self.bloom_resolution)
-			
-			--also include alpha pass
-			if canvases.colorAlpha then
-				love.graphics.setBlendMode("alpha", "premultiplied")
-				love.graphics.draw(canvases.colorAlpha, 0, 0, 0, self.bloom_resolution)
-				love.graphics.setBlendMode("replace", "premultiplied")
-			end
 		end
 		
 		--autochoose

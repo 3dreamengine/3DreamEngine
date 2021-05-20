@@ -375,7 +375,6 @@ set:setPostEffects(enabled)
 set:setMsaa(msaa)
 set:setFxaa(enabled)
 set:setRefractions(enabled)
-set:setAverageAlpha(enabled)
 set:setAlphaPass(enabled)
 ```
 `renderMode` String
@@ -390,7 +389,6 @@ set:setAlphaPass(enabled)
 * post effects are effects like exposure, bloom, ... which are unwanted for temporary results (e.g. reflections)
 * msaa is slower but more beatiful (consider hardware limit), fxaa is faster but blurry. Dont use both.
 * refractions simulate refractions for objects in the alpha pass and ior ~= 1.0
-* average alpha is slightly more heavy and simulates several objects in a row better. Depends on your scene if this makes sense.
 * alpha pass can be disabled entirely, increasing performance a bit. Disable if no object use the second pass anyways.
 
 

@@ -13,9 +13,6 @@ There are two render passes. The first, with depth writing, only render fully so
 * Does the material contain smooth alpha (values between 0 and 1)? -> `material:setAlpha(true)` (by default disabled, requires enabled backface culling and should be used on convex meshes only)
 * Does the material contain alpha, but no visible gradient is required? -> `material:setDiscard(true)` (by default disabled)
 
-Additionally, if your scene contains a lot of transparent materials and the rather limited sorting of the alpha pass fails, enable average alpha mode. This is an approximation of correct alpha blending and may look better.  
-`dream.renderSet:setAverageAlpha(true)`
-
 
 See their respective chapters for detailed information.
 * [transparent materials](#transparent-materials)
