@@ -26,7 +26,7 @@ dream:loadMaterialLibrary(projectDir .. "materials")
 dream:init()
 
 --load scene
-local scene = dream:loadObject(projectDir .. "scene", "PBR", {cleanup = false})
+local scene = dream:loadObject(projectDir .. "scene", {cleanup = false})
 
 local player = {
 	x = 4,
@@ -59,10 +59,10 @@ particleBatchDust:setSorting(false)
 
 local lights = { }
 for d,s in ipairs(scene.positions) do
-	if s.name == "LIGHT" then
+	if s.name == "light" then
 		lights[d] = dream:newLight("point", s.x, s.y + 0.1, s.z, 1.0, 0.75, 0.3)
 		lights[d].shadow = dream:newShadow("point", true)
-	elseif s.name == "FIRE" then
+	elseif s.name == "fire" then
 		lights[d] = dream:newLight("point", s.x, s.y + 0.1, s.z, 1.0, 0.75, 0.2)
 		lights[d].shadow = dream:newShadow("point", true)
 	end
@@ -102,16 +102,15 @@ function love.draw()
 	--make the particles black so it only emits light
 	love.graphics.setColor(0, 0, 0, 1)
 	for d,s in ipairs(scene.positions) do
-		if s.name == "LIGHT" then
-			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 200.0
+		if s.name == "light" then
+			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 500.0
 			lights[d]:setBrightness(power)
 			dream:addLight(lights[d])
-			particleBatch:addQuad(quads[math.ceil(d + love.timer.getTime() * 24) % 25 + 1], s.x, s.y + 0.02, s.z, 0, power * 0.015, nil, 3.0)
-		elseif s.name == "CANDLE" then
+		elseif s.name == "candle" then
 			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 200.0
 			particleBatch:addQuad(quads[math.ceil(d + love.timer.getTime() * 24) % 25 + 1], s.x, s.y + 0.02, s.z, 0, power * 0.015, nil, 3.0)
-		elseif s.name == "FIRE" then
-			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 200.0
+		elseif s.name == "fire" then
+			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 300.0
 			lights[d]:setBrightness(power)
 			dream:addLight(lights[d])
 		end
@@ -128,7 +127,7 @@ function love.draw()
 	if not hideTooltips then
 		love.graphics.setColor(1, 1, 1)
 		love.graphics.print(table.concat({
-			"R to toggle rain (" .. tostring(dream:isShaderModuleActive("rain")) .. ")",
+			--"R to toggle rain (" .. tostring(dream:isShaderModuleActive("rain")) .. ")",
 			"U to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")",
 			"B to toggle smooth light (" .. tostring(dream.shadow_smooth) .. ")",
 			"F to toggle fog (" .. tostring(dream.fog_enabled) .. ")",
@@ -255,12 +254,7 @@ function love.keypressed(key)
 	end
 	
 	if key == "r" then
-		if dream:isShaderModuleActive("rain") then
-			dream:deactivateShaderModule("rain")
-		else
-			dream:activateShaderModule("rain")
-			dream:setWeather(1.0)
-		end
+		
 	end
 	
 	if key == "u" then
