@@ -1,28 +1,27 @@
 local sh = { }
 
---todo
-sh.type = "material"
+sh.type = "pixel"
 
 sh.meshType = "textured"
 sh.splitMaterials = true
 sh.requireTangents = true
 
-function sh:getPixelId(dream, mat)
-	return (mat.tex_normal and 1 or 0)^1 + (mat.tex_emission and 1 or 0)^2
+function sh:getId(dream, mat, shadow)
+	if shadow then
+		return (mat.discard and 1 or 0)^1
+	else
+		return (mat.tex_normal and 1 or 0)^1 + (mat.tex_emission and 1 or 0)^2 + (mat.discard and not mat.dither and 1 or 0)^3 + (mat.dither and 1 or 0)^4
+	end
 end
 
---todo
-function sh:getVertexId(dream, mat, shadow)
-	return 0
-end
-
-function sh:buildDefines(dream, mat)
+function sh:buildDefines(dream, mat, shadow)
 	return [[
-		varying mat3 TBN;
-		
 		]] .. (mat.tex_normal and "#define TEX_NORMAL\n" or "") .. [[
 		]] .. (mat.tex_emission and "#define TEX_EMISSION\n" or "") .. [[
 		]] .. (mat.tex_material and "#define TEX_MATERIAL\n" or "") .. [[
+		
+		]] .. ((not shadow and (mat.discard and not mat.dither) or shadow and mat.discard) and "#define DISCARD\n" or "") .. [[
+		]] .. ((not shadow and mat.dither) and "#define DITHER\n" or "") .. [[
 		
 		#ifdef PIXEL
 		extern Image tex_albedo;
@@ -44,12 +43,6 @@ function sh:buildDefines(dream, mat)
 		extern vec3 color_emission;
 		
 		#endif
-		
-		//additional vertex attributes
-		#ifdef VERTEX
-		attribute vec3 VertexNormal;
-		attribute vec4 VertexTangent;
-		#endif
 	]]
 end
 
@@ -59,6 +52,18 @@ function sh:buildPixel(dream, mat)
 	vec4 c = Texel(tex_albedo, VaryingTexCoord.xy) * color_albedo;
 	albedo = c.rgb;
 	alpha = c.a;
+	
+#ifdef DISCARD
+	if (alpha < 0.5) {
+		discard;
+	}
+#endif
+
+#ifdef DITHER
+	if (@alpha < fract(love_PixelCoord.x * 0.37 + love_PixelCoord.y * 73.73 + depth * 3.73)) {
+		discard;
+	}
+#endif
 	
 	//material
 #ifdef TEX_MATERIAL
@@ -75,7 +80,7 @@ function sh:buildPixel(dream, mat)
 #ifdef TEX_EMISSION
 	emission = Texel(tex_emission, VaryingTexCoord.xy).rgb * color_emission;
 #else
-	emission = color * color_emission;
+	emission = color_albedo.rgb * color_emission;
 #endif
 
 	//normal
@@ -89,9 +94,7 @@ function sh:buildPixel(dream, mat)
 end
 
 function sh:buildVertex(dream, mat)
-	return [[
-	vertexPos = (transform * vec4(VertexPosition.xyz, 1.0)).rgb;
-	]]
+	return ""
 end
 
 function sh:perShader(dream, shaderObject)
@@ -120,7 +123,7 @@ function sh:perMaterial(dream, shaderObject, material)
 		shader:send("tex_emission", dream:getImage(material.tex_emission) or tex.default)
 	end
 	
-	--shader:send("color_emission", material.emission)
+	shader:send("color_emission", material.emission)
 end
 
 function sh:perTask(dream, shaderObject, task)

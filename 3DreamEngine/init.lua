@@ -105,7 +105,6 @@ lib:setMaxLights(16)
 lib:setNameDecoder("^(.+)_([^_]+)$")
 lib:setFrustumCheck(true, false)
 lib:setLODDistance(20)
-lib:setDither(false)
 lib:setGodrays(16, false)
 
 --shadows
@@ -169,9 +168,9 @@ lib.scene = lib:newScene()
 lib.reflections_levels = 5
 
 --default objects
-lib.object_sky = lib:loadObject(lib.root .. "/objects/sky", "Phong", {splitMaterials = false})
-lib.object_cube = lib:loadObject(lib.root .. "/objects/cube", "simple", {splitMaterials = false})
-lib.object_plane = lib:loadObject(lib.root .. "/objects/plane", "Phong", {splitMaterials = false})
+lib.object_sky = lib:loadObject(lib.root .. "/objects/sky", {splitMaterials = false})
+lib.object_cube = lib:loadObject(lib.root .. "/objects/cube", {splitMaterials = false})
+lib.object_plane = lib:loadObject(lib.root .. "/objects/plane", {splitMaterials = false})
 
 --default textures
 local pix = love.image.newImageData(2, 2)

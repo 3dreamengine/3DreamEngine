@@ -10,6 +10,10 @@ varying highp vec3 vertexPos;      //vertex position for pixel shader
 varying highp vec3 vertexNormal;   //vertex normal for pixel shader
 varying float depth;               //depth
 
+#ifdef TANGENT
+varying mat3 TBN;
+#endif
+
 //shader specific defines
 #import defines
 
@@ -63,6 +67,12 @@ void effect() {
 
 
 #ifdef VERTEX
+
+attribute vec3 VertexNormal;
+#ifdef TANGENT
+attribute vec4 VertexTangent;
+#endif
+
 vec4 position(mat4 _, vec4 vertex_position) {
 
 #import vertex
@@ -78,6 +88,8 @@ vec4 position(mat4 _, vec4 vertex_position) {
 	
 	//raw normal vector without normal map;
 	vertexNormal = normalTransform * (VertexNormal - 0.5);
+	
+#ifdef TANGENT
 	vec3 T = normalize(normalTransform * (VertexTangent.xyz - 0.5));
 	vec3 N = normalize(vertexNormal);
 	
@@ -92,6 +104,7 @@ vec4 position(mat4 _, vec4 vertex_position) {
 	//construct the tangent to world matrix
 	//in case no normal map is used, opengl will remove this
 	TBN = mat3(T, B, N);
+#endif
 	
 	//return the transformed position
 	return vPos;

@@ -55,15 +55,6 @@ function lib:getLODDistance()
 end
 
 
---sets the default dither
-function lib:setDither(d)
-	check(d, "boolean")
-	self.dither = d
-end
-function lib:getDither()
-	return self.dither
-end
-
 --exposure
 function lib:setExposure(e)
 	if e then

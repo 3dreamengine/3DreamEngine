@@ -2,26 +2,7 @@ local sh = { }
 
 sh.type = "world"
 
-function sh:getPixelId(dream, mat, shadow)
-	local ID = 0
-	
-	--settings
-	if shadow then
-		ID = mat.discard and 1 or 0
-	else
-		if pass == 2 then
-			--second pass
-			ID = ID + 2 ^ 0
-		elseif mat.discard or mat.dither or self.dither then
-			--requires alpha test (discard)
-			ID = ID + 2 ^ 1
-		end
-	end
-	
-	return ID
-end
-
-function sh:getVertexId(dream, mat, shadow)
+function sh:getId(dream, mat, shadow)
 	return 0
 end
 

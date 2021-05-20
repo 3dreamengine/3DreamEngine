@@ -100,21 +100,19 @@ local supportedFiles = {
 --args is a table containing additional settings
 --path is the absolute path without extension
 --3do objects will be loaded part by part, threaded. yourObject.objects.yourMesh.mesh is nil, if its not loaded yet
-function lib:loadObject(path, shader, args)
-	if type(shader) == "table" then
-		return self:loadObject(path, self.defaultMaterialShader, shader)
-	end
-	
+function lib:loadObject(path, args)
 	--set default args
 	args = prepareArgs(args)
 	
 	--some shader specific settings
+	local shader = self.defaultPixelShader
 	if shader then
+		assert(type(shader) == "table" and shader.getId, "passed shader is no 3Dream shader object")
 		if args.splitMaterials == nil then
-			args.splitMaterials = true--shader.splitMaterials
+			args.splitMaterials = shader.splitMaterials
 		end
 		if args.requireTangents == nil then
-			args.requireTangents = true--shader.requireTangents
+			args.requireTangents = shader.requireTangents
 		end
 	end
 	

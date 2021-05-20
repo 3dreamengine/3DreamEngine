@@ -59,10 +59,10 @@ function lib:newShader(path)
 	return shader
 end
 
-lib.defaultMaterialPixelShader = lib:newShader(lib.root .. "/shaders/material/default")
-lib.defaultMaterialVertexShader = lib:newShader(lib.root .. "/shaders/material/vertex")
-lib.defaultWorldPixelShader = lib:newShader(lib.root .. "/shaders/world/PBR")
-lib.defaultWorldVertexShader = lib:newShader(lib.root .. "/shaders/world/empty")
+--default shader
+lib.defaultPixelShader = lib:newShader(lib.root .. "/shaders/inbuilt/default")
+lib.defaultVertexShader = lib:newShader(lib.root .. "/shaders/inbuilt/vertex")
+lib.defaultWorldShader = lib:newShader(lib.root .. "/shaders/inbuilt/PBR")
 
 --load code snippsets
 local codes = { }
@@ -171,15 +171,16 @@ end
 
 function lib:getRenderShaderID(obj, pass, shadows)
 	local mat = obj.material
+	
+	--todo reflections can now support different models, for example for BB reflections
 	local reflections = not shadows and (obj.reflection or obj.obj and obj.obj.reflection or self.sky_reflection)
 	
 	--construct full ID
 	return string.char(
-		reflections and 1 or 0, --todo reflections can now support different models
-		(mat.materialPixelShader or self.defaultMaterialPixelShader):getPixelId(self, mat, shadows),
-		(mat.materialVertexShader or self.defaultMaterialVertexShader):getVertexId(self, mat, shadows),
-		(mat.worldPixelShader or self.defaultWorldPixelShader):getPixelId(self, mat, shadows),
-		(mat.worldVertexShader or self.defaultWorldVertexShader):getVertexId(self, mat, shadows)
+		reflections and 1 or 0,
+		(mat.pixelShader or self.defaultPixelShader):getId(self, mat, shadows),
+		(mat.vertexShader or self.defaultVertexShader):getId(self, mat, shadows),
+		(mat.worldShader or self.defaultWorldShader):getId(self, mat, shadows)
 	)
 end
 
@@ -206,10 +207,9 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, sun)
 			shadows = shadows,
 			uniforms = { },
 			
-			materialPixelShader = mat.materialPixelShader or self.defaultMaterialPixelShader,
-			materialVertexShader = mat.materialVertexShader or self.defaultMaterialVertexShader,
-			worldVertexShader = mat.worldVertexShader or self.defaultWorldVertexShader,
-			worldPixelShader = mat.worldPixelShader or self.defaultWorldPixelShader,
+			pixelShader = mat.pixelShader or self.defaultPixelShader,
+			vertexShader = mat.vertexShader or self.defaultVertexShader,
+			worldShader = mat.worldShader or self.defaultWorldShader,
 		}
 		self.mainShaders[shaderID][ID] = info
 		
@@ -224,27 +224,18 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, sun)
 			if sun then
 				table.insert(defines, "#define IS_SUN")
 			end
-			
-			if mat.discard then
-				table.insert(defines, "#define DISCARD_ENABLED")
-			end
 		else
 			--settings
 			if pass == 1 then
-				if mat.discard or mat.dither or self.dither then
-					table.insert(defines, "#define DISCARD_ENABLED")
-				end
 				table.insert(defines, "#define DEPTH_ENABLED")
 			elseif pass == 2 then
 				if canvases.refractions then
 					table.insert(defines, "#define REFRACTIONS_ENABLED")
 				end
-				if canvases.averageAlpha then
-					table.insert(defines, "#define AVERAGE_ENABLED")
-				end
 				table.insert(defines, "#define ALPHA_PASS")
 			end
 			
+			--canvas settings
 			if canvases.postEffects and self.exposure and earlyExposure(canvases) then
 				table.insert(defines, "#define EXPOSURE_ENABLED")
 			end
@@ -254,24 +245,21 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, sun)
 			if self.fog_enabled and canvases.mode ~= "normal" then
 				table.insert(defines, "#define FOG_ENABLED")
 			end
-			if mat.translucent > 0 then
-				table.insert(defines, "#define TRANSLUCENT_ENABLED")
-			end
 		end
 		
 		--material shader
-		table.insert(defines, info.materialPixelShader:buildDefines(self, mat, shadows))
-		table.insert(defines, info.materialPixelShader.compiledDefines)
-		table.insert(defines, info.materialVertexShader:buildDefines(self, mat, shadows))
-		table.insert(defines, info.materialVertexShader.compiledDefines)
+		table.insert(defines, info.pixelShader:buildDefines(self, mat, shadows))
+		table.insert(defines, info.pixelShader.compiledDefines)
+		table.insert(defines, info.vertexShader:buildDefines(self, mat, shadows))
+		table.insert(defines, info.vertexShader.compiledDefines)
 		
-		table.insert(pixel, info.materialPixelShader:buildPixel(self, mat, shadows))
-		table.insert(pixel, info.materialPixelShader.compiledPixel)
+		table.insert(pixel, info.pixelShader:buildPixel(self, mat, shadows))
+		table.insert(pixel, info.pixelShader.compiledPixel)
 		
-		table.insert(vertex, info.materialPixelShader:buildVertex(self, mat, shadows))
-		table.insert(vertex, info.materialPixelShader.compiledVertex)
-		table.insert(vertex, info.materialVertexShader:buildVertex(self, mat, shadows))
-		table.insert(vertex, info.materialVertexShader.compiledVertex)
+		table.insert(vertex, info.pixelShader:buildVertex(self, mat, shadows))
+		table.insert(vertex, info.pixelShader.compiledVertex)
+		table.insert(vertex, info.vertexShader:buildVertex(self, mat, shadows))
+		table.insert(vertex, info.vertexShader.compiledVertex)
 		
 		--additional code
 		if not shadows then
@@ -299,18 +287,14 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, sun)
 		end
 		
 		--world
-		table.insert(defines, info.worldPixelShader:buildDefines(self, mat, shadows))
-		table.insert(defines, info.worldPixelShader.compiledDefines)
-		table.insert(defines, info.worldVertexShader:buildDefines(self, mat, shadows))
-		table.insert(defines, info.worldVertexShader.compiledDefines)
+		table.insert(defines, info.worldShader:buildDefines(self, mat, shadows))
+		table.insert(defines, info.worldShader.compiledDefines)
 		
-		table.insert(pixel, info.worldPixelShader:buildPixel(self, mat, shadows))
-		table.insert(pixel, info.worldPixelShader.compiledPixel)
+		table.insert(pixel, info.worldShader:buildPixel(self, mat, shadows))
+		table.insert(pixel, info.worldShader.compiledPixel)
 		
-		table.insert(vertex, info.worldPixelShader:buildVertex(self, mat, shadows))
-		table.insert(vertex, info.worldPixelShader.compiledVertex)
-		table.insert(vertex, info.worldVertexShader:buildVertex(self, mat, shadows))
-		table.insert(vertex, info.worldVertexShader.compiledVertex)
+		table.insert(vertex, info.worldShader:buildVertex(self, mat, shadows))
+		table.insert(vertex, info.worldShader.compiledVertex)
 		
 		--build code
 		local code = codes.base

@@ -29,7 +29,7 @@ function lib:newSubObject(name, obj, mat)
 		loaded = true,
 		boundingBox = self:newBoundaryBox(),
 		
-		meshType = (mat.materialPixelShader or self.defaultMaterialVertexShader).meshType,
+		meshType = (mat.pixelShader or self.defaultPixelShader).meshType,
 	}
 	
 	return setmetatable(o, self.meta.subObject)

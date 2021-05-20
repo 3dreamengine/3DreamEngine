@@ -234,10 +234,9 @@ function lib:render(canvases, cam)
 					end
 					
 					--shader
-					shaderObject.materialPixelShader:perShader(self, shaderObject)
-					shaderObject.materialVertexShader:perShader(self, shaderObject)
-					shaderObject.worldVertexShader:perShader(self, shaderObject)
-					shaderObject.worldPixelShader:perShader(self, shaderObject)
+					shaderObject.pixelShader:perShader(self, shaderObject)
+					shaderObject.vertexShader:perShader(self, shaderObject)
+					shaderObject.worldShader:perShader(self, shaderObject)
 					
 					--fog
 					if hasUniform(shaderObject, "fog_density") then
@@ -286,10 +285,9 @@ function lib:render(canvases, cam)
 				checkAndSendCached(shaderObject, "translucent", material.translucent)
 				
 				--shader
-				shaderObject.materialPixelShader:perMaterial(self, shaderObject, material)
-				shaderObject.materialVertexShader:perMaterial(self, shaderObject, material)
-				shaderObject.worldVertexShader:perMaterial(self, shaderObject, material)
-				shaderObject.worldPixelShader:perMaterial(self, shaderObject, material)
+				shaderObject.pixelShader:perMaterial(self, shaderObject, material)
+				shaderObject.vertexShader:perMaterial(self, shaderObject, material)
+				shaderObject.worldShader:perMaterial(self, shaderObject, material)
 				
 				--culling
 				love.graphics.setMeshCullMode(canvases.cullMode or material.cullMode or "back")
@@ -332,10 +330,9 @@ function lib:render(canvases, cam)
 			end
 			
 			--per task
-			shaderObject.materialPixelShader:perTask(self, shaderObject, task)
-			shaderObject.materialVertexShader:perTask(self, shaderObject, task)
-			shaderObject.worldVertexShader:perTask(self, shaderObject, task)
-			shaderObject.worldPixelShader:perTask(self, shaderObject, task)
+			shaderObject.pixelShader:perTask(self, shaderObject, task)
+			shaderObject.vertexShader:perTask(self, shaderObject, task)
+			shaderObject.worldShader:perTask(self, shaderObject, task)
 			
 			--render
 			love.graphics.setColor(task:getColor())

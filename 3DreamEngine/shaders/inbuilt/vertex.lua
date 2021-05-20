@@ -1,16 +1,8 @@
 local sh = { }
 
-sh.type = "material"
+sh.type = "vertex"
 
-sh.meshType = "textured"
-sh.splitMaterials = true
-sh.requireTangents = true
-
-function sh:getPixelId(dream, mat)
-	return 0
-end
-
-function sh:getVertexId(dream, mat, shadow)
+function sh:getId(dream, mat, shadow)
 	return 0
 end
 
@@ -23,11 +15,13 @@ function sh:buildPixel(dream, mat)
 end
 
 function sh:buildVertex(dream, mat)
-	return ""
+	return [[
+	vertexPos = (transform * vec4(VertexPosition.xyz, 1.0)).rgb;
+	]]
 end
 
 function sh:perShader(dream, shaderObject)
-	
+
 end
 
 function sh:perMaterial(dream, shaderObject, material)
