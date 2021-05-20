@@ -13,8 +13,6 @@ function sh:buildDefines(dream, mat, shadow)
 		return [[
 			#ifdef PIXEL
 			extern Image brdfLUT;
-			
-			extern vec2 screenScale;
 			#endif
 			
 			//PBR lighting
@@ -76,6 +74,7 @@ function sh:buildDefines(dream, mat, shadow)
 				vec3 kD = (vec3(1.0) - fresnel) * (1.0 - metallic);
 				
 				float lightAngle = max(dot(lightVec, normal), 0.0);
+				
 				return (kD * albedo * ipi + specular) * lightColor * lightAngle;
 			}
 		]]
@@ -87,14 +86,15 @@ function sh:buildPixel(dream, mat, shadow)
 		return ""
 	else
 		return [[
-		//TODO cache dot
-		if (dot(normal, viewVec) < 0.0) {
+		float cosTheta = dot(normal, viewVec);
+		if (cosTheta < 0.0) {
 			normal = -normal;
+			cosTheta = -cosTheta;
 		}
 		
 		//PBR model data
 		vec3 reflectVec = reflect(viewVec, normal); 
-		float cosTheta = clamp(dot(normal, viewVec), 0.0, 1.0);
+		cosTheta = clamp(cosTheta, 0.0, 1.0);
 		vec3 F0 = mix(vec3(0.04), albedo.rgb, metallic);
 		
 		//fresnel
@@ -137,22 +137,20 @@ function sh:buildPixel(dream, mat, shadow)
 	#ifdef GAMMA_ENABLED
 		color = pow(color, vec3(1.0 / gamma));
 	#endif
-		
+	
 		//distortion
-	#ifdef REFRACTIONS_ENABLED
-		if (refraction != 1.0) {
-			vec2 startPixel = love_PixelCoord.xy * screenScale;
-			
-			//refract and transform back to pixel coord
-			vec3 endPoint = vertexPos + normalize(refract(viewVec, normal, refraction)) * 0.15;
-			vec4 endPixel = transformProj * vec4(endPoint, 1.0);
-			endPixel /= endPixel.w;
-			endPixel.xy = endPixel.xy * 0.5 + 0.5;
-			
-			//uv translation
-			distortion = endPixel.xy - startPixel;
-		}
-	#endif
+		#ifdef REFRACTIONS_ENABLED
+			if (refraction != 1.0) {
+				//refract and transform back to pixel coord
+				vec3 endPoint = vertexPos + refract(viewVec, normal, refraction) * distance(vertexPos, viewPos) * 0.25;
+				vec4 endPixel = transformProj * vec4(endPoint, 1.0);
+				endPixel /= endPixel.w;
+				endPixel.xy = endPixel.xy * 0.5 + 0.5;
+				
+				//uv translation
+				distortion = endPixel.xy - love_PixelCoord.xy / love_ScreenSize.xy;
+			}
+		#endif
 		]]
 	end
 end

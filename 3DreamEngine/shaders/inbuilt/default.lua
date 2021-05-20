@@ -4,7 +4,6 @@ sh.type = "pixel"
 
 sh.meshType = "textured"
 sh.splitMaterials = true
-sh.requireTangents = true
 
 function sh:getId(dream, mat, shadow)
 	if shadow then
@@ -17,6 +16,8 @@ end
 function sh:buildDefines(dream, mat, shadow)
 	return [[
 		]] .. (mat.tex_normal and "#define TEX_NORMAL\n" or "") .. [[
+		]] .. (mat.tex_normal and "#define TANGENT\n" or "") .. [[
+		
 		]] .. (mat.tex_emission and "#define TEX_EMISSION\n" or "") .. [[
 		]] .. (mat.tex_material and "#define TEX_MATERIAL\n" or "") .. [[
 		
@@ -29,9 +30,8 @@ function sh:buildDefines(dream, mat, shadow)
 		
 		#ifdef TEX_MATERIAL
 		extern Image tex_material;
-		#else
-		extern vec2 color_material;
 		#endif
+		extern vec2 color_material;
 		
 		#ifdef TEX_NORMAL
 		extern Image tex_normal;
@@ -60,7 +60,7 @@ function sh:buildPixel(dream, mat)
 #endif
 
 #ifdef DITHER
-	if (@alpha < fract(love_PixelCoord.x * 0.37 + love_PixelCoord.y * 73.73 + depth * 3.73)) {
+	if (alpha < fract(love_PixelCoord.x * 0.37 + love_PixelCoord.y * 73.73 + depth * 3.73)) {
 		discard;
 	}
 #endif
@@ -68,8 +68,8 @@ function sh:buildPixel(dream, mat)
 	//material
 #ifdef TEX_MATERIAL
 	vec3 material = Texel(tex_material, VaryingTexCoord.xy).xyz;
-	roughness = material.x;
-	metallic = material.y;
+	roughness = material.x * color_material.x;
+	metallic = material.y * color_material.y;
 	ao = material.z;
 #else
 	roughness = color_material.x;
@@ -85,7 +85,7 @@ function sh:buildPixel(dream, mat)
 
 	//normal
 #ifdef TEX_NORMAL
-	vec3 normal = Texel(tex_normal, VaryingTexCoord.xy) * vec2(2.0) - vec2(1.0);
+	normal = Texel(tex_normal, VaryingTexCoord.xy).xyz * vec3(2.0) - vec3(1.0);
 	normal = normalize(TBN * normal);
 #else
 	normal = normalize(vertexNormal);
@@ -111,9 +111,8 @@ function sh:perMaterial(dream, shaderObject, material)
 	
 	if shader:hasUniform("tex_material") then
 		shader:send("tex_material", dream:getImage(material.tex_material) or tex.default)
-	else
-		shader:send("color_material", {material.roughness, material.metallic})
 	end
+	shader:send("color_material", {material.roughness, material.metallic})
 	
 	if shader:hasUniform("tex_normal") then
 		shader:send("tex_normal", dream:getImage(material.tex_normal) or tex.default_normal)

@@ -10,12 +10,12 @@ varying highp vec3 vertexPos;      //vertex position for pixel shader
 varying highp vec3 vertexNormal;   //vertex normal for pixel shader
 varying float depth;               //depth
 
+//shader specific defines
+#import defines
+
 #ifdef TANGENT
 varying mat3 TBN;
 #endif
-
-//shader specific defines
-#import defines
 
 #ifdef PIXEL
 void effect() {

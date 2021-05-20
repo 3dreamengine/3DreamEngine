@@ -248,10 +248,6 @@ function lib:render(canvases, cam)
 						shader:send("tex_depth", canvases.depth)
 					end
 					
-					if hasUniform(shaderObject, "screenScale") then
-						shader:send("screenScale", {1 / canvases.width, 1 / canvases.height})
-					end
-					
 					checkAndSendCached(shaderObject, "gamma", self.gamma)
 					checkAndSendCached(shaderObject, "exposure", self.exposure)
 					

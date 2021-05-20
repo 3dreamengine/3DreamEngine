@@ -92,21 +92,11 @@ void effect() {
 	col = pow(col, vec3(1.0 / gamma));
 #endif
 
-#ifdef AVERAGE_ENABLED
-#ifdef REFRACTIONS_ENABLED
-	love_Canvases[1] = vec4(distortion, 0.0, 1.0);
-	love_Canvases[2] = vec4(1.0, albedo.a, 0.0, 1.0);
-#else
-	love_Canvases[1] = vec4(1.0, albedo.a, 0.0, 1.0);
-#endif
-#else
-	//no average alpha
 #ifdef REFRACTIONS_ENABLED
 	//to allow distortion blending we use premultiplied alpha blending, which required manual rgb math here
 	col *= albedo.a;
 	
 	love_Canvases[1] = vec4(distortion, 0.0, 0.0);
-#endif
 #endif
 
 	//depth

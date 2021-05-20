@@ -111,9 +111,6 @@ function lib:loadObject(path, args)
 		if args.splitMaterials == nil then
 			args.splitMaterials = shader.splitMaterials
 		end
-		if args.requireTangents == nil then
-			args.requireTangents = shader.requireTangents
-		end
 	end
 	
 	local obj = self:newObject(path)
@@ -229,7 +226,8 @@ function lib:loadObject(path, args)
 			
 			--add position
 			obj.positions[#obj.positions+1] = {
-				name = o.name,
+				objectName = o.name,
+				name = o.tags.pos,
 				size = r,
 				x = x,
 				y = y,

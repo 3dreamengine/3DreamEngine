@@ -314,6 +314,99 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, sun)
 	return self.mainShaders[shaderID][ID]
 end
 
+local baseParticleShader = love.filesystem.read(lib.root .. "/shaders/particle.glsl")
+function lib:getParticlesShader(pass, canvases, light, emissive, distortion, single)
+	--additional settings
+	local ID_settings = 0
+	if emissive then
+		ID_settings = ID_settings + 2^0
+	end
+	if distortion and pass == 2 then
+		ID_settings = ID_settings + 2^1
+	end
+	if canvases.postEffects and self.exposure and earlyExposure(canvases) then
+		ID_settings = ID_settings + 2^2
+	end
+	if canvases.postEffects and self.gamma and earlyExposure(canvases) then
+		ID_settings = ID_settings + 2^3
+	end
+	if self.fog_enabled and canvases.mode ~= "normal" then
+		ID_settings = ID_settings + 2^4
+	end
+	if canvases.refractions and pass == 2 then
+		ID_settings = ID_settings + 2^5
+	end
+	if pass == 1 and canvases.mode ~= "direct" then
+		ID_settings = ID_settings + 2^6
+	end
+	if single then
+		ID_settings = ID_settings + 2^7
+	end
+	
+	local ID = light.ID .. string.char(ID_settings)
+	
+	if not self.particlesShader[ID] then
+		local globalDefines = { }
+		if emissive then
+			table.insert(globalDefines, "#define TEX_EMISSION")
+		end
+		if distortion and pass == 2 then
+			table.insert(globalDefines, "#define TEX_DISORTION")
+		end
+		if canvases.postEffects and self.exposure and earlyExposure(canvases) then
+			table.insert(globalDefines, "#define EXPOSURE_ENABLED")
+		end
+		if canvases.postEffects and self.gamma and earlyExposure(canvases) then
+			table.insert(globalDefines, "#define GAMMA_ENABLED")
+		end
+		if self.fog_enabled and canvases.mode ~= "normal" then
+			table.insert(globalDefines, "#define FOG_ENABLED")
+		end
+		if canvases.refractions and pass == 2 then
+			table.insert(globalDefines, "#define REFRACTIONS_ENABLED")
+		end
+		if pass == 1 and canvases.mode ~= "direct" then
+			table.insert(globalDefines, "#define DEPTH_ENABLED")
+		end
+		if single then
+			table.insert(globalDefines, "#define SINGLE")
+		end
+		
+		local info = {
+			uniforms = { }
+		}
+		
+		--construct shader
+		local code = baseParticleShader
+		
+		--setting specific defines
+		code = code:gsub("#import globalDefines", table.concat(globalDefines, "\n"))
+		
+		--fog engine
+		if self.fog_enabled and canvases.mode ~= "normal" then
+			code = code:gsub("#import fog", codes.fog)
+		end
+		
+		--construct forward lighting system
+		if light.lights and #light.lights > 0 then
+			local def, p = self:getLightComponents(light, true)
+			
+			code = code:gsub("#import lightingSystemInit", def)
+			code = code:gsub("#import lightingSystem", p)
+		end
+		
+		--remove unused imports and remove tabs
+		code = code:gsub("#import", "//#import")
+		code = code:gsub("	", "")
+		
+		--compile
+		info.shader = love.graphics.newShader(code)
+		self.particlesShader[ID] = info
+	end
+	
+	return self.particlesShader[ID]
+end
+
 function lib:getLightComponents(light, basic)
 	local lcInit = { }
 	local lc = { }
