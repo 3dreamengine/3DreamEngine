@@ -11,11 +11,9 @@ return function(self, obj, path)
 			obj.materials[l:sub(8)] = self:newMaterial(l:sub(8))
 			material = obj.materials[l:sub(8)]
 		elseif v[1] == "Ks" then -- specular color
-			local r, g, b = tonumber(v[2]), tonumber(v[3]), tonumber(v[4])
-			local v = math.sqrt(r^2+g^2+b^2) / math.sqrt(3)
-			material.specular = v
+			--
 		elseif v[1] == "Ns" then -- specular exponent
-			material.glossiness = tonumber(v[2]) / 256
+			--
 		elseif v[1] == "Kd" then -- diffuse
 			material.color[1] = tonumber(v[2])
 			material.color[2] = tonumber(v[3])

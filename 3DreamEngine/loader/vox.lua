@@ -182,7 +182,8 @@ return function(self, obj, path)
 			local mat = parseDICT(i+16)
 			materials[id] = self:newMaterial()
 			materials[id].color = palette[id]
-			materials[id].specular = mat._rough
+			---
+			materials[id].roughness = mat._rough
 			materials[id].name = tostring(id)
 		else
 			print("unknown chunk " .. chunk)

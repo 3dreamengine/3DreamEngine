@@ -167,53 +167,6 @@ return function(self, obj, path)
 			local material = self:newMaterial(name)
 			obj.materials[name] = material
 			indices[mat._attr.id] = material
-			
-			--load
-			if mat.instance_effect then
-				local effect = indices[mat.instance_effect[1]._attr.url]
-				
-				--get first profile
-				local profile
-				for d,s in pairs(effect) do
-					profile = s[1]
-				end
-				
-				--parse data
-				if profile then
-					for step, dataArr in pairs(profile.technique[1]) do
-						if step ~= "_attr" then
-							local data = dataArr[1]
-							if data.emission then
-								local e = data.emission[1]
-								if e.color then
-									local color = loadFloatArray( e.color[1][1] )
-									material.emission = {color[1] * color[4], color[2] * color[4], color[3] * color[4]}
-								end
-							end
-							if data.diffuse then
-								local d = data.diffuse[1]
-								if d.color then
-									local color = loadFloatArray( d.color[1][1] )
-									material.color = color
-								end
-							end
-							if data.specular then
-								local s = data.specular[1]
-								if s.color then
-									local color = loadFloatArray( s.color[1][1] )
-									material.specular = math.sqrt(color[1]^2 + color[2]^2 + color[3]^2)
-								end
-							end
-							if data.shininess then
-								material.glossiness = tonumber( data.shininess[1].float[1][1] )
-							end
-							if data.index_of_refraction then
-								material.ior = tonumber( data.index_of_refraction[1].float[1][1] )
-							end
-						end
-					end
-				end
-			end
 		end
 	end
 	

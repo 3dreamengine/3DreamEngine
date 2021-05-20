@@ -15,10 +15,6 @@ return {
 		albedoTex = "getter",
 		emission = "getter",
 		emissionTex = "getter",
-		glossiness = "getter",
-		glossinessTex = "getter",
-		specular = "getter",
-		specularTex = "getter",
 		roughness = "getter",
 		roughnessTex = "getter",
 		metallic = "getter",
@@ -63,28 +59,6 @@ return {
 	end,
 	setNormalTex = function(self, tex)
 		self.tex_normal = tex
-	end,
-	
-	--specular-glossiness workflow
-	setGlossiness = function(self, g)
-		self.glossiness = g or 0.1
-	end,
-	setSpecular = function(self, s)
-		self.specular = s or 0.5
-	end,
-	setGlossinessTex = function(self, tex)
-		self.tex_glossiness = tex
-		
-		if not self.mat or not self.mat.glossiness then
-			self.glossiness = 1.0
-		end
-	end,
-	setSpecularTex = function(self, tex)
-		self.tex_specular = tex
-		
-		if not self.mat or not self.mat.specular then
-			self.specular = 1.0
-		end
 	end,
 	
 	--roughness-metallic workflow

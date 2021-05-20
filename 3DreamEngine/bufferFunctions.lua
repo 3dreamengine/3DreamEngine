@@ -253,7 +253,7 @@ lib.meshTypeFormats = {
 	simple = {
 		{"VertexPosition", "float", 4},     -- x, y, z, extra
 		{"VertexTexCoord", "float", 3},     -- normal
-		{"VertexMaterial", "float", 3},     -- specular, glossiness, emissive
+		{"VertexMaterial", "float", 3},     -- roughness, metallic, emissive
 		{"VertexColor", "byte", 4},         -- color
 	},
 	material = {
@@ -328,8 +328,8 @@ function lib:createMesh(obj)
 				local material = obj.materials[i] or empty
 				local color = obj.colors[i] or material.color or empty
 				
-				local specular = material.specular or material[1] or 0
-				local glossiness = material.glossiness or material[2] or 0
+				local roughness = material.roughness or material[1] or 0
+				local metallic = material.metallic or material[2] or 0
 				local emission = material.emission or material[3] or 0
 				if type(emission) == "table" then
 					emission = emission[1] / 3 + emission[2] / 3 + emission[3] / 3
@@ -338,7 +338,7 @@ function lib:createMesh(obj)
 				obj.mesh:setVertex(i,
 					vertex[1], vertex[2], vertex[3], obj.extras[i] or extra,
 					normal[1], normal[2], normal[3],
-					specular, glossiness, emission,
+					roughness, metallic, emission,
 					color[1], color[2], color[3], color[4]
 				)
 			elseif obj.meshType == "material" then

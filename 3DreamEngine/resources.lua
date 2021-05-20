@@ -266,16 +266,15 @@ function lib:getImage(path, force)
 end
 
 --combine 3 textures to use only one texture
-function lib:combineTextures(metallicSpecular, roughnessGlossines, AO)
-	local path = metallicSpecular or roughnessGlossines or (AO .. "_material")
+function lib:combineTextures(roughness, metallic, AO)
+	local path = roughness or metallic or (AO .. "_material")
 	
 	--remove extension
 	path = path:match("(.+)%..+")
 	
 	--replace typ
-	for d,s in ipairs({"roughness", "metallic", "specular", "glossiness"}) do
-		path = path:gsub(s, "material")
-	end
+	path:gsub("roughness", "material")
+	path:gsub("metallic", "material")
 	
-	return {"combine", path, metallicSpecular, roughnessGlossines, AO}
+	return {"combine", path, roughness, metallic, AO}
 end

@@ -243,8 +243,6 @@ function lib:bakeMaterials(list, ID)
 		
 		if used.tex_material then
 			o.material.tex_material = "bakedMaterials/" .. ID .. "_tex_material.tga"
-			o.material.specular = 1.0
-			o.material.glossiness = 1.0
 			o.material.roughness = 1.0
 			o.material.metallic = 1.0
 		end

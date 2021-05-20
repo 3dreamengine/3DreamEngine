@@ -290,7 +290,7 @@ function lib:addParticlesystems(obj)
 											po.vertices[index] = vp
 											po.extras[index] = extra
 											po.normals[index] = vn
-											po.materials[index] = {po.material.specular, po.material.glossiness, emission}
+											po.materials[index] = {po.material.roughness, po.material.metallic, emission}
 											po.texCoords[index] = particle.texCoords[d]
 											po.colors[index] = po.material.color
 										end

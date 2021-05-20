@@ -9,8 +9,6 @@ local lib = _3DreamEngine
 function lib:newMaterial(name, dir)
 	return setmetatable({
 		color = {0.5, 0.5, 0.5, 1.0},
-		glossiness = 0.1,
-		specular = 0.5,
 		emission = {0.0, 0.0, 0.0},
 		roughness = 0.5,
 		metallic = 0.0,
@@ -79,7 +77,7 @@ local function texSetter(mat, typ, tex)
 end
 
 function lib:finishMaterial(mat, obj)
-	for _,typ in ipairs({"albedo", "normal", "roughness", "metallic", "emission", "ao", "specular", "glossiness", "material"}) do
+	for _,typ in ipairs({"albedo", "normal", "roughness", "metallic", "emission", "ao", "material"}) do
 		local custom = mat["tex_" .. typ]
 		mat["tex_" .. typ] = nil
 		if custom then
@@ -123,15 +121,8 @@ function lib:finishMaterial(mat, obj)
 	
 	--combiner
 	if not mat["tex_material"] then
-		local metallicRoughness = mat["tex_metallic"] or mat["tex_roughness"]
-		local specularGlossiness = mat["tex_specular"] or mat["tex_glossiness"]
-		
-		if metallicRoughness or specularGlossiness or mat["tex_ao"] then
-			if metallicRoughness then
-				mat["tex_material"] = self:combineTextures(mat["tex_roughness"], mat["tex_metallic"], mat["tex_ao"])
-			elseif specularGlossiness then
-				mat["tex_material"] = self:combineTextures(mat["tex_glossiness"], mat["tex_specular"], mat["tex_ao"])
-			end
+		if mat["tex_metallic"] or mat["tex_roughness"] or mat["tex_ao"] then
+			mat["tex_material"] = self:combineTextures(mat["tex_roughness"], mat["tex_metallic"], mat["tex_ao"])
 		end
 	end
 	
