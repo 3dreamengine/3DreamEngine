@@ -48,12 +48,12 @@ function sh:buildDefines(dream, mat, shadow)
 				return ggx1 * ggx2;
 			}
 			
-			vec3 getLight(vec3 lightColor, vec3 viewVec, vec3 lightVec, vec3 normal, vec3 albedo, float roughness, float metallic, float translucent) {
+			vec3 getLight(vec3 lightColor, vec3 viewVec, vec3 lightVec, vec3 normal, vec3 fragmentNormal, vec3 albedo, float roughness, float metallic) {
 				vec3 vec = -viewVec;
 				
-				//TODO improve and cache the dot product
-				if (dot(normal, lightVec) < 0.0) {
-					lightVec = -lightVec;
+				//backface
+				if (dot(fragmentNormal, lightVec) < 0.0) {
+					lightVec = reflect(lightVec, fragmentNormal);
 					lightColor *= translucent;
 				}
 				
@@ -90,11 +90,7 @@ function sh:buildPixel(dream, mat, shadow)
 		return ""
 	else
 		return [[
-		float cosTheta = dot(normal, viewVec);
-		if (cosTheta < 0.0) {
-			normal = -normal;
-			cosTheta = -cosTheta;
-		}
+		float cosTheta = -dot(normal, viewVec);
 		
 		//PBR model data
 		vec3 reflectVec = reflect(viewVec, normal); 

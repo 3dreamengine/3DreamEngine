@@ -145,7 +145,7 @@ function sh:constructPixel(dream, ID)
 		if (shadow > 0.0) {
 			vec3 lightColor = ss_color_#ID# * shadow;
 			
-			light += getLight(lightColor, viewVec, ss_vec_#ID#, normal, albedo, roughness, metallic, translucent);
+			light += getLight(lightColor, viewVec, ss_vec_#ID#, normal, fragmentNormal, albedo, roughness, metallic);
 		}
 	]]):gsub("#ID#", ID)
 end

@@ -28,6 +28,7 @@ void effect() {
 	
 	//material
 	vec3 normal;
+	vec3 fragmentNormal = normalize(vertexNormal);
 	vec3 albedo = vec3(0.5);
 	float alpha = 1.0;
 	float roughness = 0.5;
@@ -35,6 +36,14 @@ void effect() {
 	float ao = 1.0;
 	vec3 emission = vec3(0.0);
 	vec3 caustics = vec3(0.0);
+	
+#import pixelMaterial
+	
+	//proper backfaces
+	if (dot(vertexNormal, viewVec) > 0.0) {
+		normal = normalize(reflect(normal, normalize(vertexNormal)));
+		fragmentNormal = -fragmentNormal;
+	}
 	
 #import pixel
 	

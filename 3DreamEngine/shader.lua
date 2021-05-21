@@ -261,6 +261,7 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, sun)
 		--additional code
 		local defines = { }
 		local pixel = { }
+		local pixelMaterial = { }
 		local vertex = { }
 		
 		--collect additional defines
@@ -298,8 +299,8 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, sun)
 		table.insert(defines, info.vertexShader:buildDefines(self, mat, shadows))
 		table.insert(defines, info.vertexShader.compiledDefines)
 		
-		table.insert(pixel, info.pixelShader:buildPixel(self, mat, shadows))
-		table.insert(pixel, info.pixelShader.compiledPixel)
+		table.insert(pixelMaterial, info.pixelShader:buildPixel(self, mat, shadows))
+		table.insert(pixelMaterial, info.pixelShader.compiledPixel)
 		
 		table.insert(vertex, info.pixelShader:buildVertex(self, mat, shadows))
 		table.insert(vertex, info.pixelShader.compiledVertex)
@@ -344,6 +345,7 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, sun)
 		--build code
 		local code = codes.base
 		code = code:gsub("#import defines", table.concat(defines, "\n"))
+		code = code:gsub("#import pixelMaterial", table.concat(pixelMaterial, "\n"))
 		code = code:gsub("#import pixel", table.concat(pixel, "\n"))
 		code = code:gsub("#import vertex", table.concat(vertex, "\n"))
 		code = code:gsub("\t", "")

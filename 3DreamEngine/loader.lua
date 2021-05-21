@@ -11,7 +11,7 @@ lib.defaultArgs = {
 	export3do = false,
 	skip3do = false,
 	particlesystems = true,
-	splitMaterials = true,
+	splitMaterials = false,
 	meshType = "textured"
 }
 

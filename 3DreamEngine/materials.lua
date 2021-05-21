@@ -27,7 +27,7 @@ end
 function lib:loadMaterialLibrary(path, prefix)
 	prefix = prefix or ""
 	for d,s in ipairs(love.filesystem.getDirectoryItems(path)) do
-		local p = path .. "/" .. s
+		local p = (path:sub(-1) == "/" and path or (path .. "/" )).. s
 		if s:sub(#s-4) == ".mat" then
 			--found material file
 			local dummyObj = {materials = { }, dir = path}

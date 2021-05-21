@@ -81,7 +81,7 @@ function sh:constructPixel(dream, ID)
 			vec3 lightColor = point_shadow_color_#ID# * shadow * power;
 			lightVec = normalize(lightVec);
 			
-			light += getLight(lightColor, viewVec, lightVec, normal, albedo, roughness, metallic, translucent);
+			light += getLight(lightColor, viewVec, lightVec, normal, fragmentNormal, albedo, roughness, metallic);
 		}
 	]]):gsub("#ID#", ID)
 end
