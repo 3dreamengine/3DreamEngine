@@ -56,13 +56,47 @@ function lib:newShader(path)
 	shader.compiledPixel = pixel
 	shader.compiledVertex = vertex
 	
+	if shader.init then
+		shader:init(self)
+	end
+	
 	return shader
 end
 
+lib.shaderRegister = { }
+function lib:registerShader(shader, name)
+	if type(shader) == "string" then
+		name = name or shader:match("[^%/]*$")
+		self.shaderRegister[name] = lib:newShader(shader)
+	else
+		self.shaderRegister[name] = shader
+	end
+	return self.shaderRegister[name]
+end
+
+function lib:resolveShaderName(name)
+	if type(name) == "table" then
+		return name
+	elseif name then
+		local sh = lib.shaderRegister[name]
+		assert(sh, "required shader " .. tostring(name) .. " is not registered")
+		return sh
+	end
+end
+
+--inbuilt shader
+lib:registerShader(lib.root .. "/shaders/inbuilt/textured")
+lib:registerShader(lib.root .. "/shaders/inbuilt/simple")
+
+lib:registerShader(lib.root .. "/shaders/inbuilt/vertex")
+lib:registerShader(lib.root .. "/shaders/inbuilt/wind")
+
+lib:registerShader(lib.root .. "/shaders/inbuilt/PBR")
+
 --default shader
-lib.defaultPixelShader = lib:newShader(lib.root .. "/shaders/inbuilt/textured")
-lib.defaultVertexShader = lib:newShader(lib.root .. "/shaders/inbuilt/vertex")
-lib.defaultWorldShader = lib:newShader(lib.root .. "/shaders/inbuilt/PBR")
+lib.defaultPixelShader = lib:resolveShaderName("textured")
+lib.defaultVertexShader = lib:resolveShaderName("vertex")
+lib.defaultWorldShader = lib:resolveShaderName("PBR")
 
 --load code snippsets
 local codes = { }

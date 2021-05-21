@@ -56,11 +56,7 @@ dream:getShaderModule("rain").strength = 3 -- 1 to 5
 
 
 ### wind
-Wind lets the vertices wave. It requires the extra buffer as an factor of animation, either set `material.extra` to an appropiate constant or let the particle system generator do it. See mat chapter for this. To enable the wind shader, enable it on the affected material, optional adjust the shader modules settings.
-```lua
-material:activateShaderModule("wind")
-```
-Since .mat files supports `onFinish()` callbacks you can put the above line here too.
+Wind lets the vertices wave. It requires the extra buffer as an factor of animation, either set `material.extra` to an appropiate constant or let the particle system generator do it. See mat chapter for this.
 ```lua
 --example material file for grass
 return {

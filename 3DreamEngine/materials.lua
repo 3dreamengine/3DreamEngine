@@ -126,10 +126,10 @@ function lib:finishMaterial(mat, obj)
 		end
 	end
 	
-	--last callback
-	if mat.onFinish then
-		mat:onFinish(obj)
-	end
+	--convert shader id to actual shader object
+	mat.pixelShader = lib:resolveShaderName(mat.pixelShader)
+	mat.vertexShader = lib:resolveShaderName(mat.vertexShader)
+	mat.worldShader = lib:resolveShaderName(mat.worldShader)
 	
 	--release original mat file
 	mat.mat = nil

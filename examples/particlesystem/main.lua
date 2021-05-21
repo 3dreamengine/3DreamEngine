@@ -9,8 +9,10 @@ dream.sun_shadow = false
 dream.cam.fov = 45
 
 dream:init()
+ 
+local ground = dream:loadObject(projectDir .. "ground", {splitMaterials = true, meshType = "simple"})
 
-local ground = dream:loadObject(projectDir .. "ground", {splitMaterials = true})
+ground:setPixelShader("simple")
 
 function love.draw()
 	dream:resetLight()

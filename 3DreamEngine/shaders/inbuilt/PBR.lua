@@ -140,9 +140,9 @@ function sh:buildPixel(dream, mat, shadow)
 	
 		//distortion
 	#ifdef REFRACTIONS_ENABLED
-		if (refraction != 1.0) {
+		if (ior != 1.0) {
 			//refract and transform back to pixel coord
-			vec3 endPoint = vertexPos + refract(viewVec, normal, refraction) * distance(vertexPos, viewPos) * 0.25;
+			vec3 endPoint = vertexPos + refract(viewVec, normal, ior) * distance(vertexPos, viewPos) * 0.25;
 			vec4 endPixel = transformProj * vec4(endPoint, 1.0);
 			endPixel /= endPixel.w;
 			endPixel.xy = endPixel.xy * 0.5 + 0.5;

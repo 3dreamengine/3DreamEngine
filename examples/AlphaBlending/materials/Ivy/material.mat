@@ -2,8 +2,5 @@ return {
 	shadow = false,
 	extra = 0.02,
 	cullMode = "none",
-	
-	onFinish = function(mat, obj)
-		mat:activateShaderModule("wind")
-	end,
+	vertexShader = "wind",
 }

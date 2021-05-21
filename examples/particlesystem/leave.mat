@@ -1,8 +1,5 @@
 return {
 	name = "Leave",
 	cullMode = "none",
-	
-	onFinish = function(mat, obj)
-		mat:activateShaderModule("wind")
-	end,
+	vertexShader = "wind",
 }

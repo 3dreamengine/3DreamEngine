@@ -31,7 +31,7 @@ void effect() {
 	float roughness = 0.5;
 	float metallic = 0.0;
 	float ao = 1.0;
-	float refraction = 0.0;
+	float ior = 1.0;
 	vec3 emission = vec3(0.0);
 	vec3 caustics = vec3(0.0);
 	float translucent = 0.0;
@@ -42,7 +42,6 @@ void effect() {
 #ifdef REFRACTIONS_ENABLED
 	//to allow distortion blending we use premultiplied alpha blending, which required manual rgb math here
 	color *= alpha;
-	
 	love_Canvases[1] = vec4(distortion, 0.0, 0.0);
 #endif
 	

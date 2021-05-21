@@ -565,3 +565,31 @@ end
 function lib:getGodrays()
 	return self.godrays_enabled, self.godrays_quality, self.godrays_allSources
 end
+
+
+--shaders
+function lib:setDefaultPixelShader(shader)
+	shader = lib:resolveShaderName(shader)
+	assert(shader.type == "pixel", "invalid shader type")
+	self.defaultPixelShader = shader
+end
+function lib:setDefaultVertexShader(shader)
+	shader = lib:resolveShaderName(shader)
+	assert(shader.type == "vertex", "invalid shader type")
+	self.defaultVertexShader = shader
+end
+function lib:setDefaultWorldShader(shader)
+	shader = lib:resolveShaderName(shader)
+	assert(shader.type == "world", "invalid shader type")
+	self.defaultWorldShader = shader
+end
+
+function lib:getDefaultPixelShader()
+	return self.defaultPixelShader
+end
+function lib:getDefaultVertexShader()
+	return self.defaultVertexShader
+end
+function lib:getDefaultWorldShader()
+	return self.defaultWorldShader
+end

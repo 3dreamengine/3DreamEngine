@@ -64,6 +64,10 @@ function sh:buildPixel(dream, mat)
 		discard;
 	}
 #endif
+
+#ifndef ALPHA_PASS
+	alpha = 1.0;
+#endif
 	
 	//material
 #ifdef TEX_MATERIAL

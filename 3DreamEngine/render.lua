@@ -149,15 +149,16 @@ function lib:render(canvases, cam)
 	self.delton:stop()
 	
 	--current state
-	local shader
-	local shaderObject
-	local lastShader
 	local lastMaterial
 	local lastReflection
 	local sessionID = math.random()
 	
 	--start both passes
 	for pass = 1, canvases.alphaPass and 2 or 1 do
+		local shader
+		local shaderObject
+		local lastShader
+		
 		--setup final scene
 		local scene = self:buildScene("render", dynamic, pass == 2, cam, nil, frustumCheck)
 		
