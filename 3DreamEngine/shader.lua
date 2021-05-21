@@ -40,6 +40,7 @@ if _DEBUGMODE then
 	end
 end
 
+local lastShaderID = 0
 function lib:newShader(path)
 	local shader = require(path)
 	local project = love.filesystem.getInfo(path .. ".3ds") and love.filesystem.load(path .. ".3ds")()
@@ -55,6 +56,9 @@ function lib:newShader(path)
 	shader.compiledDefines = defines
 	shader.compiledPixel = pixel
 	shader.compiledVertex = vertex
+	
+	shader.id = lastShaderID
+	lastShaderID = lastShaderID + 1
 	
 	if shader.init then
 		shader:init(self)
@@ -171,6 +175,8 @@ function lib.getFinalShader(self, canvases)
 	
 	parts[#parts+1] = (canvases.fxaa and canvases.msaa == 0) and "#define FXAA_ENABLED" or nil
 	
+	parts[#parts+1] = self.distortionMargin and string.format("#define DISTORTION_MARGIN %f", self.distortionMargin) or nil
+	
 	if self.fog_enabled then
 		parts[#parts+1] = codes.fog
 	end
@@ -208,12 +214,19 @@ function lib:getRenderShaderID(obj, pass, shadows)
 	--todo reflections can now support different models, for example for BB reflections
 	local reflections = not shadows and (obj.reflection or obj.obj and obj.obj.reflection or self.sky_reflection)
 	
+	local pixelShader = mat.pixelShader or self.defaultPixelShader
+	local vertexShader = mat.vertexShader or self.defaultVertexShader
+	local worldShader = mat.worldShader or self.defaultWorldShader
+	
 	--construct full ID
 	return string.char(
 		reflections and 1 or 0,
-		(mat.pixelShader or self.defaultPixelShader):getId(self, mat, shadows),
-		(mat.vertexShader or self.defaultVertexShader):getId(self, mat, shadows),
-		(mat.worldShader or self.defaultWorldShader):getId(self, mat, shadows)
+		pixelShader.id,
+		vertexShader.id,
+		worldShader.id,
+		pixelShader:getId(self, mat, shadows),
+		vertexShader:getId(self, mat, shadows),
+		worldShader:getId(self, mat, shadows)
 	)
 end
 
@@ -233,7 +246,6 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, sun)
 		
 		--additional data
 		local info = {
-			shaderType = shaderType,
 			reflection = reflection,
 			material = mat,
 			modules = m,

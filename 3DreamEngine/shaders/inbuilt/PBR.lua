@@ -13,6 +13,8 @@ function sh:buildDefines(dream, mat, shadow)
 		return [[
 			#ifdef PIXEL
 			extern Image brdfLUT;
+			
+			extern float ior;
 			#endif
 			
 			//PBR lighting
@@ -142,7 +144,7 @@ function sh:buildPixel(dream, mat, shadow)
 	#ifdef REFRACTIONS_ENABLED
 		if (ior != 1.0) {
 			//refract and transform back to pixel coord
-			vec3 endPoint = vertexPos + refract(viewVec, normal, ior) * distance(vertexPos, viewPos) * 0.25;
+			vec3 endPoint = vertexPos + refract(viewVec, normal, ior) * distance(vertexPos, viewPos) * 0.125;
 			vec4 endPixel = transformProj * vec4(endPoint, 1.0);
 			endPixel /= endPixel.w;
 			endPixel.xy = endPixel.xy * 0.5 + 0.5;
@@ -169,7 +171,10 @@ function sh:perShader(dream, shaderObject)
 end
 
 function sh:perMaterial(dream, shaderObject, material)
+	local shader = shaderObject.shader
 	
+	--ior
+	checkAndSendCached(shaderObject, "ior", 1.0 / material.ior)
 end
 
 function sh:perTask(dream, shaderObject, task)

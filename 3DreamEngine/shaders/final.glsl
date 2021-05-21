@@ -80,8 +80,6 @@ vec4 fxaa(Image tex, vec2 tc) {
 }
 #endif
 
-
-
 #ifdef PIXEL
 vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 	//distortion
@@ -89,6 +87,15 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 #ifdef REFRACTIONS_ENABLED
 	vec2 distortion = Texel(canvas_distortion, tc).xy;
 	tcd = tc + distortion;
+	
+	//border fade
+#ifdef DISTORTION_MARGIN
+	float marginFactor = DISTORTION_MARGIN;
+	float fadeX = min(tcd.x * marginFactor, (1.0 - tcd.x) * marginFactor);
+	float fadeY = min(tcd.y * marginFactor, (1.0 - tcd.y) * marginFactor);
+	float fade = clamp(min(fadeX, fadeY), 0.0, 1.0);
+	tcd = mix(tc, tcd, fade);
+#endif
 #endif
 	
 	//color
@@ -108,22 +115,6 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 #ifdef FOG_ENABLED
 	float depth = Texel(canvas_depth, tcd).r;
 #endif
-
-	//average alpha
-#ifdef AVERAGE_ALPHA
-	vec2 dat = Texel(canvas_alphaData, tc).xy;
-	if (dat.y > 0.0) {
-#ifdef FXAA_ENABLED
-		vec4 ca = fxaa(canvas_alpha, tc);
-#else
-		vec4 ca = Texel(canvas_alpha, tc);
-#endif
-		ca.rgb = ca.rgb / dat.y;
-		ca.a = dat.y / dat.x;
-		col.rgb = mix(col.rgb, ca.rgb, ca.a);
-		col.a = col.a * (1.0 - ca.a) + ca.a;
-	}
-#endif
 	
 	//simple alpha
 #ifdef REFRACTIONS_ENABLED
@@ -132,7 +123,8 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 #else
 	vec4 ca = Texel(canvas_alpha, tc);
 #endif
-	col.rgb = mix(col.rgb, ca.rgb, ca.a);
+	
+	col.rgb = col.rgb * (1.0 - ca.a) + ca.rgb;
 	col.a = col.a * (1.0 - ca.a) + ca.a;
 #endif
 	

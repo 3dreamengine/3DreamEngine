@@ -10,7 +10,6 @@ function lib:newLinkedObject(original)
 end
 
 function lib:newSubObject(name, obj, mat)
-	--guess shaderType if not specified based on textures used
 	local o = {
 		name = removePostfix(name),
 		material = mat,

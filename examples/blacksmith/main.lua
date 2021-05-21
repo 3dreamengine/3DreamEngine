@@ -85,7 +85,7 @@ function love.draw()
 	particleBatch:clear()
 	love.graphics.setColor(0, 0, 0, 1)
 	for d,s in pairs(particles) do
-		particleBatch:addQuad(quads[math.ceil(d + s[4]*25) % 25 + 1], s[1], s[2], s[3], s[4]*0.075, nil, 2.0)
+		particleBatch:addQuad(quads[math.ceil(d + s[4]*25) % 25 + 1], s[1], s[2], s[3], 0, s[4]*0.075, nil, 2.0)
 	end
 	love.graphics.setColor(1, 1, 1)
 	

@@ -11,7 +11,7 @@ dream:init()
 dream:loadMaterialLibrary(projectDir .. "materials")
 
 --load object
-local scene = dream:loadObject(projectDir .. "objects/scene", "PBR")
+local scene = dream:loadObject(projectDir .. "objects/scene")
 
 --activate the global rain shader module
 dream:activateShaderModule("rain")

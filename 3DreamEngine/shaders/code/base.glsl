@@ -10,6 +10,8 @@ varying highp vec3 vertexPos;      //vertex position for pixel shader
 varying highp vec3 vertexNormal;   //vertex normal for pixel shader
 varying float depth;               //depth
 
+extern float translucent;
+
 //shader specific defines
 #import defines
 
@@ -31,10 +33,8 @@ void effect() {
 	float roughness = 0.5;
 	float metallic = 0.0;
 	float ao = 1.0;
-	float ior = 1.0;
 	vec3 emission = vec3(0.0);
 	vec3 caustics = vec3(0.0);
-	float translucent = 0.0;
 	
 #import pixel
 	

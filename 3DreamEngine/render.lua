@@ -173,11 +173,14 @@ function lib:render(canvases, cam)
 		end
 		
 		--set canvases
-		if canvases.mode ~= "direct" then
-			if canvases.refractions and pass == 2 then
+		if canvases.mode ~= "direct" and pass == 2 then
+			if canvases.refractions then
 				--refractions only
 				love.graphics.setCanvas({canvases.colorAlpha, canvases.distortion, depthstencil = canvases.depth_buffer})
 				love.graphics.clear(true, false, false)
+			else
+				--disable depth
+				love.graphics.setCanvas({canvases.color, depthstencil = canvases.depth_buffer})
 			end
 		end
 		
@@ -261,9 +264,6 @@ function lib:render(canvases, cam)
 				
 				--alpha
 				checkAndSendCached(shaderObject, "dither", material.dither and 1 or 0)
-				
-				--ior
-				checkAndSendCached(shaderObject, "ior", 1.0 / material.ior)
 				
 				checkAndSendCached(shaderObject, "translucent", material.translucent)
 				

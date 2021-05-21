@@ -7,9 +7,9 @@ sh.splitMaterials = true
 
 function sh:getId(dream, mat, shadow)
 	if shadow then
-		return (mat.discard and 1 or 0)^1
+		return (mat.discard and 1 or 0)
 	else
-		return (mat.tex_normal and 1 or 0)^1 + (mat.tex_emission and 1 or 0)^2 + (mat.discard and not mat.dither and 1 or 0)^3 + (mat.dither and 1 or 0)^4
+		return (mat.discard and not mat.dither and 1 or 0) * 2^0 + (mat.dither and 1 or 0) * 2^1
 	end
 end
 

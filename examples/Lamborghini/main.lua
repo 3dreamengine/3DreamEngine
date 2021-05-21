@@ -13,7 +13,6 @@ dream.cam.fov = 70
 dream:init()
 
 local car = dream:loadObject(projectDir .. "Lamborghini Aventador")
-car.materials["Lamborghini_Aventador:GlassSG"].color = {0, 0, 0, 0.5}
 
 local socket = dream:loadObject(projectDir .. "socket")
 

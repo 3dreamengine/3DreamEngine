@@ -7,9 +7,9 @@ sh.splitMaterials = true
 
 function sh:getId(dream, mat, shadow)
 	if shadow then
-		return (mat.discard and 1 or 0)^1
+		return (mat.discard and 1 or 0)
 	else
-		return (mat.tex_normal and 1 or 0)^1 + (mat.tex_emission and 1 or 0)^2 + (mat.discard and not mat.dither and 1 or 0)^3 + (mat.dither and 1 or 0)^4
+		return (mat.tex_normal and 1 or 0) * 2^1 + (mat.tex_emission and 1 or 0) * 2^2 + (mat.discard and not mat.dither and 1 or 0) * 2^3 + (mat.dither and 1 or 0) * 2^4
 	end
 end
 
@@ -122,7 +122,7 @@ function sh:perMaterial(dream, shaderObject, material)
 		shader:send("tex_normal", dream:getImage(material.tex_normal) or tex.default_normal)
 	end
 	
-	if material.tex_emission then
+	if shader:hasUniform("tex_emission") then
 		shader:send("tex_emission", dream:getImage(material.tex_emission) or tex.default)
 	end
 	

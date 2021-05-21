@@ -72,7 +72,7 @@ end
 --auto exposure
 function lib:setAutoExposure(target, speed)
 	if target == true then
-		self:setAutoExposure(0.25, 1.0, 4)
+		self:setAutoExposure(0.3, 1.0)
 	elseif target then
 		check(target, "number", 1)
 		check(speed, "number", 2)
@@ -564,6 +564,21 @@ function lib:setGodrays(quality, allSources)
 end
 function lib:getGodrays()
 	return self.godrays_enabled, self.godrays_quality, self.godrays_allSources
+end
+
+
+--refraction margin
+function lib:setDistortionMargin(value)
+	if value == true then
+		self.distortionMargin = 2.0
+	elseif value then
+		self.distortionMargin = value
+	else
+		self.distortionMargin = false
+	end
+end
+function lib:getDistortionMargin()
+	return self.distortionMargin
 end
 
 

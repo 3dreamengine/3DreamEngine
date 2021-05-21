@@ -106,6 +106,7 @@ lib:setNameDecoder("^(.+)_([^_]+)$")
 lib:setFrustumCheck(true, false)
 lib:setLODDistance(20)
 lib:setGodrays(16, false)
+lib:setDistortionMargin(true)
 
 --shadows
 lib:setShadowResolution(1024, 512)

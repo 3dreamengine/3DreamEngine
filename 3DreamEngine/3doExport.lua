@@ -56,7 +56,6 @@ function lib:export3do(obj)
 			["renderVisibility"] = o.renderVisibility,
 			["shadowVisibility"] = o.shadowVisibility,
 			["farVisibility"] = o.farVisibility,
-			["shaderType"] = o.shaderType,
 			["meshType"] = meshType,
 			["boundingBox"] = o.boundingBox,
 			["transform"] = o.transform,
