@@ -11,6 +11,8 @@ lib.defaultArgs = {
 	export3do = false,
 	skip3do = false,
 	particlesystems = true,
+	splitMaterials = true,
+	meshType = "textured"
 }
 
 local function clone(t)
@@ -103,15 +105,6 @@ local supportedFiles = {
 function lib:loadObject(path, args)
 	--set default args
 	args = prepareArgs(args)
-	
-	--some shader specific settings
-	local shader = self.defaultPixelShader
-	if shader then
-		assert(type(shader) == "table" and shader.getId, "passed shader is no 3Dream shader object")
-		if args.splitMaterials == nil then
-			args.splitMaterials = shader.splitMaterials
-		end
-	end
 	
 	local obj = self:newObject(path)
 	obj.args = args

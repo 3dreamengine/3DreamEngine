@@ -4,5 +4,5 @@ return {
 	shadow = false,
 	extra = 0.0,
 	cullMode = "none",
-	shaderModules = {"wind"},
+	vertexShader = "wind",
 }

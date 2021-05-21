@@ -60,7 +60,7 @@ function lib:newShader(path)
 end
 
 --default shader
-lib.defaultPixelShader = lib:newShader(lib.root .. "/shaders/inbuilt/default")
+lib.defaultPixelShader = lib:newShader(lib.root .. "/shaders/inbuilt/textured")
 lib.defaultVertexShader = lib:newShader(lib.root .. "/shaders/inbuilt/vertex")
 lib.defaultWorldShader = lib:newShader(lib.root .. "/shaders/inbuilt/PBR")
 

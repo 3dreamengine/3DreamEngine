@@ -5,5 +5,5 @@ return {
 	cullMode = "none",
 	translucent = 1.0,
 	discard = true,
-	shaderModules = {"wind"},
+	vertexShader = "wind",
 }

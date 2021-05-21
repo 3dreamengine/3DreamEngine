@@ -139,18 +139,18 @@ function sh:buildPixel(dream, mat, shadow)
 	#endif
 	
 		//distortion
-		#ifdef REFRACTIONS_ENABLED
-			if (refraction != 1.0) {
-				//refract and transform back to pixel coord
-				vec3 endPoint = vertexPos + refract(viewVec, normal, refraction) * distance(vertexPos, viewPos) * 0.25;
-				vec4 endPixel = transformProj * vec4(endPoint, 1.0);
-				endPixel /= endPixel.w;
-				endPixel.xy = endPixel.xy * 0.5 + 0.5;
-				
-				//uv translation
-				distortion = endPixel.xy - love_PixelCoord.xy / love_ScreenSize.xy;
-			}
-		#endif
+	#ifdef REFRACTIONS_ENABLED
+		if (refraction != 1.0) {
+			//refract and transform back to pixel coord
+			vec3 endPoint = vertexPos + refract(viewVec, normal, refraction) * distance(vertexPos, viewPos) * 0.25;
+			vec4 endPixel = transformProj * vec4(endPoint, 1.0);
+			endPixel /= endPixel.w;
+			endPixel.xy = endPixel.xy * 0.5 + 0.5;
+			
+			//uv translation
+			distortion = endPixel.xy - love_PixelCoord.xy / love_ScreenSize.xy;
+		}
+	#endif
 		]]
 	end
 end

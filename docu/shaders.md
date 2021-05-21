@@ -66,7 +66,7 @@ Since .mat files supports `onFinish()` callbacks you can put the above line here
 return {
 	extra = 0.02,
 	cullMode = "none",
-	shaderModules = {"wind"},
+	vertexShader = "wind",
 }
 ```
 

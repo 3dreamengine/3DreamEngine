@@ -1,22 +1,16 @@
 return {
-	activateShaderModule = function(self, name)
-		if not self.modules then
-			self.modules = { }
-		end
-		self.modules[name] = true
-		
-		if self.initModules then
-			self:initModules()
-		end
+	setPixelShader = function(self, shader)
+		assert(shader.type == "pixel", "invalid shader type")
+		self.pixelShader = shader
 	end,
 	
-	deactivateShaderModule = function(self, name)
-		if self.modules then
-			self.modules[name] = nil
-		end
+	setVertexShader = function(self, shader)
+		assert(shader.type == "vertex", "invalid shader type")
+		self.vertexShader = shader
 	end,
 	
-	isShaderModuleActive = function(self, name)
-		return self.modules and self.modules[name]
-	end
+	setWorldShader = function(self, shader)
+		assert(shader.type == "world", "invalid shader type")
+		self.worldShader = shader
+	end,
 }

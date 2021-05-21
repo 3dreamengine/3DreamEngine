@@ -252,13 +252,13 @@ lib.meshTypeFormats = {
 	},
 	simple = {
 		{"VertexPosition", "float", 4},     -- x, y, z, extra
-		{"VertexTexCoord", "float", 3},     -- normal
+		{"VertexNormal", "byte", 4},        -- normal
 		{"VertexMaterial", "float", 3},     -- roughness, metallic, emissive
 		{"VertexColor", "byte", 4},         -- color
 	},
 	material = {
 		{"VertexPosition", "float", 4},     -- x, y, z, extra
-		{"VertexTexCoord", "float", 3},     -- normal
+		{"VertexNormal", "byte", 4},        -- normal
 		{"VertexMaterial", "float", 1},     -- material
 	},
 }
@@ -337,14 +337,14 @@ function lib:createMesh(obj)
 				
 				obj.mesh:setVertex(i,
 					vertex[1], vertex[2], vertex[3], obj.extras[i] or extra,
-					normal[1], normal[2], normal[3],
+					normal[1]*0.5+0.5, normal[2]*0.5+0.5, normal[3]*0.5+0.5, 0.0,
 					roughness, metallic, emission,
 					color[1], color[2], color[3], color[4]
 				)
 			elseif obj.meshType == "material" then
 				obj.mesh:setVertex(i,
 					vertex[1], vertex[2], vertex[3], obj.extras[i] or extra,
-					normal[1], normal[2], normal[3],
+					normal[1]*0.5+0.5, normal[2]*0.5+0.5, normal[3]*0.5+0.5, 0.0,
 					texCoord
 				)
 			end

@@ -6,5 +6,5 @@ return {
 	metallic = 0.0,
 	cullMode = "none",
 	translucent = 1.0,
-	shaderModules = {"wind"}
+	vertexShader = "wind"
 }

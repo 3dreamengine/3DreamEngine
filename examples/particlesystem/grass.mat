@@ -1,5 +1,5 @@
 return {
 	name = "Grass",
 	cullMode = "none",
-	shaderModules = {"wind"},
+	vertexShader = "wind",
 }

@@ -9,7 +9,13 @@ dream.AO_enabled = false
 
 dream:init()
 
-local knight = dream:loadObject(projectDir.. "knight")
+local knight = dream:loadObject(projectDir.. "knight", {splitMaterials = false, meshType = "simple"})
+
+local shader = dream:newShader(dream.root .. "/shaders/inbuilt/simple")
+
+for d,s in pairs(knight.objects) do
+	s.material:setPixelShader(shader)
+end
 
 love.graphics.setBackgroundColor(128/255, 218/255, 235/255)
 

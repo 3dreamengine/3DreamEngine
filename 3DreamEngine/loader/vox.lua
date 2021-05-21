@@ -180,10 +180,13 @@ return function(self, obj, path)
 		elseif chunk == "MATL" then
 			local id = parseInt32(i+12)
 			local mat = parseDICT(i+16)
+			local color = palette[id] or {0, 0, 0}
 			materials[id] = self:newMaterial()
-			materials[id].color = palette[id]
-			---
+			materials[id].color = color
 			materials[id].roughness = mat._rough
+			materials[id].metallic = mat._type == "_metal" and 1 or 0
+			materials[id].ior = mat._type == "_glass" and mat._ior or 1.0
+			materials[id].emission = {color[1] * mat._flux, color[2] * mat._flux, color[3] * mat._flux}
 			materials[id].name = tostring(id)
 		else
 			print("unknown chunk " .. chunk)
