@@ -19,6 +19,7 @@ function lib:newLight(typ, pos, color, brightness, old, ...)
 		typ = typ or "point",
 		name = "unnamed",
 		pos = pos or vec3(0, 0, 0),
+		size = 0.025,
 		color = color and color:normalize() or vec3(1, 1, 1),
 		direction = vec3(0, -1, 0),
 		smooth = nil,
@@ -36,6 +37,7 @@ return {
 	
 	setterGetter = {
 		name = "string",
+		size = "number",
 		godrayLength = "number",
 		godraySize = "number",
 	},

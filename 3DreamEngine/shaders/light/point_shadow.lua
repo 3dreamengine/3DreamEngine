@@ -23,7 +23,7 @@ function sh:constructDefinesGlobal(dream)
 		vec3 n = -lightVec * vec3(1.0, -1.0, 1.0);
 		
 		float shadow = 0.0;
-		float diskRadius = 0.01 * depth;
+		float diskRadius = depth * 0.0125;
 		for (int i = 0; i < 20; ++i) {
 			if (texture(tex, n + sampleOffsetDirections[i] * diskRadius).r > depth) {
 				shadow += 0.05;
@@ -76,8 +76,8 @@ function sh:constructPixel(dream, ID)
 		}
 		
 		if (shadow > 0.0) {
-			float distance = length(lightVec);
-			float power = 1.0 / (0.1 + distance * distance);
+			float distance = length(lightVec) + 1.0;
+			float power = 1.0 / (distance * distance);
 			vec3 lightColor = point_shadow_color_#ID# * shadow * power;
 			lightVec = normalize(lightVec);
 			
@@ -98,8 +98,8 @@ function sh:constructPixelBasic(dream, ID)
 		}
 		
 		if (shadow > 0.0) {
-			float distance = length(lightVec);
-			float power = 1.0 / (0.1 + distance * distance);
+			float distance = length(lightVec) + 1.0;
+			float power = 1.0 / (distance * distance);
 			light += point_shadow_color_#ID# * shadow * power;
 		}
 	]]):gsub("#ID#", ID)

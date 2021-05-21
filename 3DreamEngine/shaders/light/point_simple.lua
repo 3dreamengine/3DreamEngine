@@ -22,8 +22,8 @@ function sh:constructPixelGlobal(dream)
 		for (int i = 0; i < point_simple_count; i++) {
 			vec3 lightVecRaw = point_simple_pos[i] - vertexPos;
 			vec3 lightVec = normalize(lightVecRaw);
-			float distance = length(lightVecRaw);
-			float power = 1.0 / (0.1 + distance * distance);
+			float distance = length(lightVec) + 1.0;
+			float power = 1.0 / (distance * distance);
 			vec3 lightColor = point_simple_color[i] * power;
 			
 			light += getLight(lightColor, viewVec, lightVec, normal, fragmentNormal, albedo, roughness, metallic);
@@ -35,8 +35,8 @@ function sh:constructPixelBasicGlobal(dream)
 	return ([[
 		for (int i = 0; i < point_simple_count; i++) {
 			vec3 lightVecRaw = point_simple_pos[i] - vertexPos;
-			float distance = length(lightVecRaw);
-			float power = 1.0 / (0.1 + distance * distance);
+			float distance = length(lightVec) + 1.0;
+			float power = 1.0 / (distance * distance);
 			light += point_simple_color[i] * power;
 		}
 	]])
