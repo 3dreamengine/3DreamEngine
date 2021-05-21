@@ -127,16 +127,6 @@ return {
 		for d,s in pairs(self.objects) do
 			s:preload(force)
 		end
-		
-		--preload modules
-		if self.modules then
-			for d,_ in pairs(self.modules) do
-				local m = lib:getShaderModule(d)
-				if m.preload then
-					m:preload(self, force)
-				end
-			end
-		end
 	end,
 	
 	print = function(self)

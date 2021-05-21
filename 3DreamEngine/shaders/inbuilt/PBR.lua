@@ -49,6 +49,8 @@ function sh:buildDefines(dream, mat, shadow)
 			}
 			
 			vec3 getLight(vec3 lightColor, vec3 viewVec, vec3 lightVec, vec3 normal, vec3 albedo, float roughness, float metallic, float translucent) {
+				vec3 vec = -viewVec;
+				
 				//TODO improve and cache the dot product
 				if (dot(normal, lightVec) < 0.0) {
 					lightVec = -lightVec;
@@ -58,18 +60,18 @@ function sh:buildDefines(dream, mat, shadow)
 				//reflectance
 				vec3 F0 = mix(vec3(0.04), albedo, metallic);
 				
-				vec3 halfVec = normalize(viewVec + lightVec);
+				vec3 halfVec = normalize(vec + lightVec);
 				
 				float NDF = DistributionGGX(normal, halfVec, roughness);   
-				float G = GeometrySmith(normal, viewVec, lightVec, roughness);
+				float G = GeometrySmith(normal, vec, lightVec, roughness);
 				
 				//fresnel
-				float cosTheta = clamp(dot(halfVec, viewVec), 0.0, 1.0);
+				float cosTheta = clamp(dot(halfVec, vec), 0.0, 1.0);
 				vec3 fresnel = F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 				
 				//specular
 				vec3 nominator = NDF * G * fresnel;
-				float denominator = 4.0 * max(dot(normal, viewVec), 0.0) * max(dot(normal, lightVec), 0.0) + 0.001;
+				float denominator = 4.0 * max(dot(normal, vec), 0.0) * max(dot(normal, lightVec), 0.0) + 0.001;
 				vec3 specular = nominator / denominator;
 				
 				//energy conservation

@@ -221,9 +221,9 @@ function lib:getRenderShaderID(obj, pass, shadows)
 	--construct full ID
 	return string.char(
 		reflections and 1 or 0,
-		pixelShader.id,
-		vertexShader.id,
-		worldShader.id,
+		pixelShader.id % 256, math.floor(pixelShader.id / 256),
+		vertexShader.id % 256, math.floor(vertexShader.id / 256),
+		worldShader.id % 256, math.floor(worldShader.id / 256),
 		pixelShader:getId(self, mat, shadows),
 		vertexShader:getId(self, mat, shadows),
 		worldShader:getId(self, mat, shadows)
@@ -232,7 +232,7 @@ end
 
 function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, sun)
 	--combine the settings ID and the light id
-	local shaderID = (pass or 0) + (canvases and canvases.shaderID or 0)
+	local shaderID = (shadows and sun and 2 or 0) + (pass or 0) + (canvases and canvases.shaderID or 0)
 	if light then
 		shaderID = light.ID .. shaderID
 	end

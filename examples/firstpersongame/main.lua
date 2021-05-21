@@ -13,9 +13,6 @@ dream:loadMaterialLibrary(projectDir .. "materials")
 --load object
 local scene = dream:loadObject(projectDir .. "objects/scene")
 
---activate the global rain shader module
-dream:activateShaderModule("rain")
-
 dream:setFogHeight(0.0, 150.0)
 
 local player = {
@@ -39,6 +36,8 @@ local timeAnimate = true
 local hideTooltips = false
 local rain = 0.45
 
+local isRaining = false
+
 function love.draw()
 	--update camera
 	dream.cam:reset()
@@ -60,7 +59,7 @@ function love.draw()
 	
 	if not hideTooltips then
 		love.graphics.setColor(1, 1, 1)
-		love.graphics.print("R to toggle rain (" .. tostring(dream:getShaderModule("rain").isRaining) .. ")\nT to toggle daytime animation (" .. tostring(timeAnimate) .. ")\nU to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")", 10, 10)
+		love.graphics.print("R to toggle rain (" .. tostring(isRaining) .. ")\nT to toggle daytime animation (" .. tostring(timeAnimate) .. ")\nU to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")", 10, 10)
 	end
 end
 
