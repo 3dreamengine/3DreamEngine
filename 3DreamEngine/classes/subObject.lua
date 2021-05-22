@@ -80,7 +80,23 @@ return {
 	end,
 	
 	initShaders = function(self)
-		print("todo")
+		--pixel
+		local ps = self.material.pixelShader or self.pixelShader or lib.defaultPixelShader
+		if ps.initObject then
+			ps:initObject(lib, self)
+		end
+		
+		--vertex
+		local ps = self.material.vertexShader or self.vertexShader or lib.defaultVertexShader
+		if ps.initObject then
+			ps:initObject(lib, self)
+		end
+		
+		--world
+		local ps = self.material.worldShader or self.worldShader or lib.defaultWorldShader
+		if ps.initObject then
+			ps:initObject(lib, self)
+		end
 		
 		self.shadersInitialized = true
 	end,

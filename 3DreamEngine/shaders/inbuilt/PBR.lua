@@ -172,7 +172,7 @@ function sh:perMaterial(dream, shaderObject, material)
 	local shader = shaderObject.shader
 	
 	--ior
-	checkAndSendCached(shaderObject, "ior", 1.0 / material.ior)
+	checkAndSendCached(shaderObject, "ior", material.ior)
 end
 
 function sh:perTask(dream, shaderObject, task)

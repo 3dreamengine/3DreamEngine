@@ -40,10 +40,11 @@ return function(self, obj, path)
 		return true
 	end
 	
+	local _ = file:read(4)
+	
 	--header
-	local compressed = file:read(4):sub(1, 3)
 	local l = file:read(4)
-	local headerLength = love.data.unpack("J", l)
+	local headerLength = love.data.unpack("L", l)
 	local headerData = file:read(headerLength)
 	
 	--object lua data

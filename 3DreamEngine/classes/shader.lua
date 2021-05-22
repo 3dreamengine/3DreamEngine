@@ -4,42 +4,48 @@ return {
 	setPixelShader = function(self, shader)
 		if self.class == "object" then
 			for d,s in pairs(self.objects) do
-				s.material:setPixelShader(shader)
+				s:setPixelShader(shader)
 			end
-		elseif self.class == "subObject" then
-			self.material:setPixelShader(shader)
 		else
 			shader = lib:resolveShaderName(shader)
 			assert(shader.type == "pixel", "invalid shader type")
 			self.pixelShader = shader
+			
+			if self.initShaders then
+				self:initShaders()
+			end
 		end
 	end,
 	
 	setVertexShader = function(self, shader)
 		if self.class == "object" then
 			for d,s in pairs(self.objects) do
-				s.material:setVertexShader(shader)
+				s:setVertexShader(shader)
 			end
-		elseif self.class == "subObject" then
-			self.material:setVertexShader(shader)
 		else
 			shader = lib:resolveShaderName(shader)
 			assert(shader.type == "vertex", "invalid shader type")
 			self.vertexShader = shader
+			
+			if self.initShaders then
+				self:initShaders()
+			end
 		end
 	end,
 	
 	setWorldShader = function(self, shader)
 		if self.class == "object" then
 			for d,s in pairs(self.objects) do
-				s.material:setWorldShader(shader)
+				s:setWorldShader(shader)
 			end
-		elseif self.class == "subObject" then
-			self.material:setWorldShader(shader)
 		else
 			shader = lib:resolveShaderName(shader)
 			assert(shader.type == "world", "invalid shader type")
 			self.worldShader = shader
+			
+			if self.initShaders then
+				self:initShaders()
+			end
 		end
 	end,
 }

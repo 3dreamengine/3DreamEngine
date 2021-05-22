@@ -91,9 +91,12 @@ end
 --inbuilt shader
 lib:registerShader(lib.root .. "/shaders/inbuilt/textured")
 lib:registerShader(lib.root .. "/shaders/inbuilt/simple")
+lib:registerShader(lib.root .. "/shaders/inbuilt/water")
 
 lib:registerShader(lib.root .. "/shaders/inbuilt/vertex")
 lib:registerShader(lib.root .. "/shaders/inbuilt/wind")
+lib:registerShader(lib.root .. "/shaders/inbuilt/foliage")
+lib:registerShader(lib.root .. "/shaders/inbuilt/bones")
 
 lib:registerShader(lib.root .. "/shaders/inbuilt/PBR")
 
@@ -214,9 +217,9 @@ function lib:getRenderShaderID(obj, pass, shadows)
 	--todo reflections can now support different models, for example for BB reflections
 	local reflections = not shadows and (obj.reflection or obj.obj and obj.obj.reflection or self.sky_reflection)
 	
-	local pixelShader = mat.pixelShader or self.defaultPixelShader
-	local vertexShader = mat.vertexShader or self.defaultVertexShader
-	local worldShader = mat.worldShader or self.defaultWorldShader
+	local pixelShader = mat.pixelShader or obj.pixelShader or self.defaultPixelShader
+	local vertexShader = mat.vertexShader or obj.vertexShader or self.defaultVertexShader
+	local worldShader = mat.worldShader or obj.worldShader or self.defaultWorldShader
 	
 	--construct full ID
 	return string.char(
@@ -252,9 +255,9 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, sun)
 			shadows = shadows,
 			uniforms = { },
 			
-			pixelShader = mat.pixelShader or self.defaultPixelShader,
-			vertexShader = mat.vertexShader or self.defaultVertexShader,
-			worldShader = mat.worldShader or self.defaultWorldShader,
+			pixelShader = mat.pixelShader or obj.pixelShader or self.defaultPixelShader,
+			vertexShader = mat.vertexShader or obj.vertexShader or self.defaultVertexShader,
+			worldShader = mat.worldShader or obj.worldShader or self.defaultWorldShader,
 		}
 		self.mainShaders[shaderID][ID] = info
 		
@@ -288,6 +291,9 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, sun)
 			if canvases.postEffects and self.gamma and earlyExposure(canvases) then
 				table.insert(defines, "#define GAMMA_ENABLED")
 			end
+			if canvases.mode ~= "direct" then
+				table.insert(defines, "#define DEPTH_AVAILABLE")
+			end
 			if self.fog_enabled and canvases.mode ~= "normal" then
 				table.insert(defines, "#define FOG_ENABLED")
 			end
@@ -301,6 +307,8 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, sun)
 		
 		table.insert(pixelMaterial, info.pixelShader:buildPixel(self, mat, shadows))
 		table.insert(pixelMaterial, info.pixelShader.compiledPixel)
+		table.insert(pixelMaterial, info.vertexShader:buildPixel(self, mat, shadows))
+		table.insert(pixelMaterial, info.vertexShader.compiledPixel)
 		
 		table.insert(vertex, info.pixelShader:buildVertex(self, mat, shadows))
 		table.insert(vertex, info.pixelShader.compiledVertex)

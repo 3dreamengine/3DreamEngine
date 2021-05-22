@@ -2,7 +2,7 @@
 
 //camera uniforms
 extern highp mat4 transformProj;   //projective transformation
-extern highp mat4 transform;       //model transformation
+extern highp mat4 objectTransform; //model transformation
 extern highp vec3 viewPos;         //camera position
 
 //varyings
@@ -17,6 +17,10 @@ extern float translucent;
 
 #ifdef TANGENT
 varying mat3 TBN;
+#endif
+
+#ifdef DEPTH_AVAILABLE
+extern Image tex_depth;
 #endif
 
 #ifdef PIXEL
@@ -82,7 +86,7 @@ attribute vec4 VertexTangent;
 #endif
 
 vec4 position(mat4 _, vec4 vertex_position) {
-
+	mat4 transform = objectTransform;
 #import vertex
 	
 	//apply projection matrix

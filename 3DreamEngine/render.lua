@@ -305,7 +305,7 @@ function lib:render(canvases, cam)
 			end
 			
 			--object transformation
-			shader:send("transform", task:getTransform())
+			shader:send("objectTransform", task:getTransform())
 			
 			--shader
 			if not subObj.shadersInitialized then
@@ -520,7 +520,7 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 		end
 		
 		--object transformation
-		shader:send("transform", task:getTransform())
+		shader:send("objectTransform", task:getTransform())
 		
 		--shader
 		--TODO
