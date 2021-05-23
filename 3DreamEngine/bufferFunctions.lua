@@ -97,7 +97,6 @@ function lib:mergeSubObjects(obj)
 		"texCoords",
 		"colors",
 		"materials",
-		"extras",
 		"weights",
 		"joints",
 	}
@@ -239,25 +238,25 @@ end
 
 lib.meshTypeFormats = {
 	textured = {
-		{"VertexPosition", "float", 4},     -- x, y, z, extra
+		{"VertexPosition", "float", 4},     -- x, y, z
 		{"VertexTexCoord", "float", 2},     -- UV
 		{"VertexNormal", "byte", 4},        -- normal
 		{"VertexTangent", "byte", 4},       -- normal tangent
 	},
 	textured_array = {
-		{"VertexPosition", "float", 4},     -- x, y, z, extra
+		{"VertexPosition", "float", 4},     -- x, y, z
 		{"VertexTexCoord", "float", 3},     -- UV
 		{"VertexNormal", "byte", 4},        -- normal
 		{"VertexTangent", "byte", 4},       -- normal tangent
 	},
 	simple = {
-		{"VertexPosition", "float", 4},     -- x, y, z, extra
+		{"VertexPosition", "float", 4},     -- x, y, z
 		{"VertexNormal", "byte", 4},        -- normal
 		{"VertexMaterial", "float", 3},     -- roughness, metallic, emissive
 		{"VertexColor", "byte", 4},         -- color
 	},
 	material = {
-		{"VertexPosition", "float", 4},     -- x, y, z, extra
+		{"VertexPosition", "float", 4},     -- x, y, z
 		{"VertexNormal", "byte", 4},        -- normal
 		{"VertexMaterial", "float", 1},     -- material
 	},
@@ -301,7 +300,6 @@ function lib:createMesh(obj)
 		obj.mesh:setVertexMap(vertexMap)
 		
 		--set vertices
-		local extra = obj.material.extra or 1
 		local empty = {1, 0, 1, 1}
 		for i = 1, #obj.vertices do
 			local vertex = obj.vertices[i] or empty
@@ -311,7 +309,7 @@ function lib:createMesh(obj)
 			if obj.meshType == "textured" then
 				local tangent = obj.tangents[i] or empty
 				obj.mesh:setVertex(i,
-					vertex[1], vertex[2], vertex[3], obj.extras[i] or extra,
+					vertex[1], vertex[2], vertex[3], 1,
 					texCoord[1], texCoord[2],
 					normal[1]*0.5+0.5, normal[2]*0.5+0.5, normal[3]*0.5+0.5, 0.0,
 					tangent[1]*0.5+0.5, tangent[2]*0.5+0.5, tangent[3]*0.5+0.5, tangent[4] or 0.0
@@ -319,7 +317,7 @@ function lib:createMesh(obj)
 			elseif obj.meshType == "textured_array" then
 				local tangent = obj.tangents[i] or empty
 				obj.mesh:setVertex(i,
-					vertex[1], vertex[2], vertex[3], obj.extras[i] or extra,
+					vertex[1], vertex[2], vertex[3], 1,
 					texCoord[1], texCoord[2], texCoord[3], 
 					normal[1]*0.5+0.5, normal[2]*0.5+0.5, normal[3]*0.5+0.5, 0.0,
 					tangent[1]*0.5+0.5, tangent[2]*0.5+0.5, tangent[3]*0.5+0.5, tangent[4] or 0.0
@@ -336,14 +334,14 @@ function lib:createMesh(obj)
 				end
 				
 				obj.mesh:setVertex(i,
-					vertex[1], vertex[2], vertex[3], obj.extras[i] or extra,
+					vertex[1], vertex[2], vertex[3], 1,
 					normal[1]*0.5+0.5, normal[2]*0.5+0.5, normal[3]*0.5+0.5, 0.0,
 					roughness, metallic, emission,
 					color[1], color[2], color[3], color[4]
 				)
 			elseif obj.meshType == "material" then
 				obj.mesh:setVertex(i,
-					vertex[1], vertex[2], vertex[3], obj.extras[i] or extra,
+					vertex[1], vertex[2], vertex[3], 1,
 					normal[1]*0.5+0.5, normal[2]*0.5+0.5, normal[3]*0.5+0.5, 0.0,
 					texCoord
 				)

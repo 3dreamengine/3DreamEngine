@@ -22,7 +22,6 @@ function lib:newSubObject(name, obj, mat)
 		texCoords = { },
 		colors = { },
 		materials = { },
-		extras = { },
 		faces = { },
 		
 		loaded = true,

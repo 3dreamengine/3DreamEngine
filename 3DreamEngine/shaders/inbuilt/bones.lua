@@ -57,7 +57,7 @@ function sh:buildVertex(dream, mat)
 		jointTransforms[int(VertexJoint[3]*255.0)] * VertexWeight[3]
 	);
 	
-	vertexPos = (boneTransform * vec4(VertexPosition.xyz, 1.0)).xyz;
+	vertexPos = (boneTransform * VertexPosition).xyz;
 	vertexPos = (transform * vec4(vertexPos.xyz, 1.0)).xyz;
 	
 	normalTransform = mat3(boneTransform) * normalTransform;

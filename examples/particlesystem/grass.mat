@@ -2,4 +2,5 @@ return {
 	name = "Grass",
 	cullMode = "none",
 	vertexShader = "wind",
+	shaderWindGrass = true,
 }

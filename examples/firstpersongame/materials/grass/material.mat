@@ -14,5 +14,6 @@ return {
 			size = {1.0, 1.25},
 			rotation = 1,
 		},
-	}
+	},
+	shaderWindGrass = true,
 }
