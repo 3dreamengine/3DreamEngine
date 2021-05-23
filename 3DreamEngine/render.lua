@@ -318,8 +318,6 @@ function lib:render(canvases, cam)
 			shaderObject.worldShader:perTask(self, shaderObject, task)
 			
 			--render
-			love.graphics.setColor(task:getColor())
-			
 			if subObj.instanceMesh then
 				subObj.mesh:attachAttribute("InstanceRotation0", subObj.instanceMesh, "perinstance")
 				subObj.mesh:attachAttribute("InstanceRotation1", subObj.instanceMesh, "perinstance")
@@ -541,8 +539,6 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 		shaderObject.worldShader:perTask(self, shaderObject, task)
 		
 		--render
-		love.graphics.setColor(task:getColor())
-		
 		if subObj.instanceMesh then
 			subObj.mesh:attachAttribute("InstanceRotation0", subObj.instanceMesh, "perinstance")
 			subObj.mesh:attachAttribute("InstanceRotation1", subObj.instanceMesh, "perinstance")

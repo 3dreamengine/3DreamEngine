@@ -45,7 +45,7 @@ return {
 		}
 	end,
 	
-	addObject = function(self, object, parentTransform, col, dynamic)
+	addObject = function(self, object, parentTransform, dynamic)
 		if object.groups then
 			--object
 			for name,group in pairs(object.groups) do
@@ -70,26 +70,25 @@ return {
 						if not LOD_max or aDist <= (LOD_max + 1)^2 then
 							o:preload()
 							if not LOD_min or aDist >= LOD_min^2 and aDist <= LOD_max^2 then
-								self:add(o, transform, col, dynamic)
+								self:add(o, transform, dynamic)
 							end
 						end
 					end
 				else
 					for _,o in ipairs(group.objects) do
 						o:preload()
-						self:add(o, transform, col, dynamic)
+						self:add(o, transform, dynamic)
 					end
 				end
 			end
 		else
 			--direct subobject
-			self:add(object, parentTransform, col, dynamic)
+			self:add(object, parentTransform, dynamic)
 		end
 	end,
 	
-	add = function(self, s, transform, col, dynamic)
+	add = function(self, s, transform, dynamic)
 		local task = setmetatable({
-			col or white,
 			transform,
 			false,
 			false,

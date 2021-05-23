@@ -390,12 +390,9 @@ function lib:draw(object, x, y, z, sx, sy, sz)
 		end
 	end
 	
-	--fetch current color
-	local col = vec4(love.graphics.getColor())
-	
 	--add to scene
 	self.delton:start("add")
-	self.scene:addObject(object, transform, col, dynamic)
+	self.scene:addObject(object, transform, dynamic)
 	self.delton:stop()
 	
 	self.delton:stop()
