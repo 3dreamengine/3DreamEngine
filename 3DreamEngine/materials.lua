@@ -22,6 +22,16 @@ function lib:newMaterial(name, dir)
 	}, self.meta.material)
 end
 
+function lib:registerMaterial(material, name)
+	name = name or material.name
+	if material.registeredAs then
+		error("This material already have been registered with the name '" .. material.registeredAs .. "', clone it first.")
+	end
+	material.name = name
+	material.registeredAs = name
+	self.materialLibrary[name] = material
+end
+
 --recognise mat files and directories with an albedo texture or "material.mat" as materials
 --if the material is a directory it will skip the structured texture linking and uses the string.find to support extern material libraries
 function lib:loadMaterialLibrary(path, prefix)

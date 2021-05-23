@@ -305,7 +305,7 @@ function lib:render(canvases, cam)
 			end
 			
 			--object transformation
-			shader:send("objectTransform", task:getTransform())
+			shader:send("transform", task:getTransform())
 			
 			--shader
 			if not subObj.shadersInitialized then
@@ -507,6 +507,10 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 			if hasUniform(shaderObject, "viewPos") then
 				shader:send("viewPos", viewPos)
 			end
+			
+			shaderObject.pixelShader:perShader(self, shaderObject)
+			shaderObject.vertexShader:perShader(self, shaderObject)
+			shaderObject.worldShader:perShader(self, shaderObject)
 		end
 		
 		--set active material
@@ -520,11 +524,12 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 		end
 		
 		--object transformation
-		shader:send("objectTransform", task:getTransform())
+		shader:send("transform", task:getTransform())
 		
 		--shader
-		--TODO
-		--shaderEntry:perTask(self, shaderObject, task)
+		shaderObject.pixelShader:perTask(self, shaderObject, task)
+		shaderObject.vertexShader:perTask(self, shaderObject, task)
+		shaderObject.worldShader:perTask(self, shaderObject, task)
 		
 		--render
 		love.graphics.setColor(task:getColor())

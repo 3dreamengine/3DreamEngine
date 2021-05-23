@@ -89,16 +89,11 @@ function lib:resolveShaderName(name)
 end
 
 --inbuilt shader
-lib:registerShader(lib.root .. "/shaders/inbuilt/textured")
-lib:registerShader(lib.root .. "/shaders/inbuilt/simple")
-lib:registerShader(lib.root .. "/shaders/inbuilt/water")
-
-lib:registerShader(lib.root .. "/shaders/inbuilt/vertex")
-lib:registerShader(lib.root .. "/shaders/inbuilt/wind")
-lib:registerShader(lib.root .. "/shaders/inbuilt/foliage")
-lib:registerShader(lib.root .. "/shaders/inbuilt/bones")
-
-lib:registerShader(lib.root .. "/shaders/inbuilt/PBR")
+for d,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/inbuilt")) do
+	if s:sub(-4) == ".lua" then
+		lib:registerShader(lib.root .. "/shaders/inbuilt/" .. s:sub(1, #s-4))
+	end
+end
 
 --default shader
 lib.defaultPixelShader = lib:resolveShaderName("textured")

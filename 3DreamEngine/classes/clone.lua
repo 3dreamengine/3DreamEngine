@@ -17,6 +17,9 @@ return {
 			end
 		end
 		
+		--allow this material to be added somewhere else
+		n.registeredAs = nil
+		
 		return setmetatable(n, getmetatable(self))
 	end,
 }

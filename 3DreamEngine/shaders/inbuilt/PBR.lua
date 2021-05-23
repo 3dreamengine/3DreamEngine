@@ -122,22 +122,6 @@ function sh:buildPixel(dream, mat, shadow)
 		//apply caustics
 		color += caustics / alpha;
 		
-		//fog
-	#ifdef FOG_ENABLED
-		vec4 fogColor = getFog(depth, viewVec, viewPos);
-		color = mix(color, fogcolor, fogColor.a);
-	#endif
-		
-		//exposure
-	#ifdef EXPOSURE_ENABLED
-		color = vec3(1.0) - exp(-color * exposure);
-	#endif
-		
-		//gamma correction
-	#ifdef GAMMA_ENABLED
-		color = pow(color, vec3(1.0 / gamma));
-	#endif
-	
 		//distortion
 	#ifdef REFRACTIONS_ENABLED
 		if (ior != 1.0) {

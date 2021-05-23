@@ -2,7 +2,7 @@
 
 //camera uniforms
 extern highp mat4 transformProj;   //projective transformation
-extern highp mat4 objectTransform; //model transformation
+extern highp mat4 transform;       //model transformation
 extern highp vec3 viewPos;         //camera position
 
 //varyings
@@ -51,6 +51,22 @@ void effect() {
 	
 #import pixel
 	
+	//fog
+#ifdef FOG_ENABLED
+	vec4 fogColor = getFog(depth, viewVec, viewPos);
+	color = mix(color, fogcolor, fogColor.a);
+#endif
+	
+	//exposure
+#ifdef EXPOSURE_ENABLED
+	color = vec3(1.0) - exp(-color * exposure);
+#endif
+	
+	//gamma correction
+#ifdef GAMMA_ENABLED
+	color = pow(color, vec3(1.0 / gamma));
+#endif
+	
 	//distortion
 #ifdef REFRACTIONS_ENABLED
 	//to allow distortion blending we use premultiplied alpha blending, which required manual rgb math here
@@ -86,7 +102,8 @@ attribute vec4 VertexTangent;
 #endif
 
 vec4 position(mat4 _, vec4 vertex_position) {
-	mat4 transform = objectTransform;
+	//normal vec transformation
+	mat3 normalTransform = mat3(transform);
 #import vertex
 	
 	//apply projection matrix
@@ -94,9 +111,6 @@ vec4 position(mat4 _, vec4 vertex_position) {
 	
 	//extract and pass depth
 	depth = vPos.z;
-	
-	//we can safely assume that the transform always exists
-	mat3 normalTransform = mat3(transform);
 	
 	//raw normal vector without normal map;
 	vertexNormal = normalTransform * (VertexNormal - 0.5);
