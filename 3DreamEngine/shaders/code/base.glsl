@@ -96,14 +96,37 @@ void effect() {
 
 #ifdef VERTEX
 
+
+#ifdef INSTANCING
+attribute vec3 InstanceRotation0;
+attribute vec3 InstanceRotation1;
+attribute vec3 InstanceRotation2;
+attribute vec3 InstancePosition;
+#endif
+
 attribute vec3 VertexNormal;
 #ifdef TANGENT
 attribute vec4 VertexTangent;
 #endif
 
-vec4 position(mat4 _, vec4 vertex_position) {
+vec4 position(mat4 _t, vec4 _v) {
 	//normal vec transformation
 	mat3 normalTransform = mat3(transform);
+	
+#ifdef INSTANCING
+	mat3 instanceRotation = mat3(
+		InstanceRotation0.xyz,
+		InstanceRotation1.xyz,
+		InstanceRotation2.xyz
+	);
+	
+	vertexPos = instanceRotation * VertexPosition.xyz + InstancePosition;
+	
+	normalTransform = instanceRotation * normalTransform;
+#else
+	vertexPos = VertexPosition.xyz;
+#endif
+	
 #import vertex
 	
 	//apply projection matrix

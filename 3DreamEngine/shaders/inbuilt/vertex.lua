@@ -16,7 +16,7 @@ end
 
 function sh:buildVertex(dream, mat)
 	return [[
-	vertexPos = (transform * vec4(VertexPosition.xyz, 1.0)).xyz;
+	vertexPos = (transform * vec4(vertexPos.xyz, 1.0)).xyz;
 	]]
 end
 

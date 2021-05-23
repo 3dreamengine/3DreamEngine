@@ -319,7 +319,16 @@ function lib:render(canvases, cam)
 			
 			--render
 			love.graphics.setColor(task:getColor())
-			love.graphics.draw(subObj.mesh)
+			
+			if subObj.instanceMesh then
+				subObj.mesh:attachAttribute("InstanceRotation0", subObj.instanceMesh, "perinstance")
+				subObj.mesh:attachAttribute("InstanceRotation1", subObj.instanceMesh, "perinstance")
+				subObj.mesh:attachAttribute("InstanceRotation2", subObj.instanceMesh, "perinstance")
+				subObj.mesh:attachAttribute("InstancePosition", subObj.instanceMesh, "perinstance")
+				love.graphics.drawInstanced(subObj.mesh, subObj.instanceMesh:getVertexCount())
+			else
+				love.graphics.draw(subObj.mesh)
+			end
 			
 			--stats
 			self.stats.draws = self.stats.draws + 1
@@ -533,7 +542,16 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 		
 		--render
 		love.graphics.setColor(task:getColor())
-		love.graphics.draw(subObj.mesh)
+		
+		if subObj.instanceMesh then
+			subObj.mesh:attachAttribute("InstanceRotation0", subObj.instanceMesh, "perinstance")
+			subObj.mesh:attachAttribute("InstanceRotation1", subObj.instanceMesh, "perinstance")
+			subObj.mesh:attachAttribute("InstanceRotation2", subObj.instanceMesh, "perinstance")
+			subObj.mesh:attachAttribute("InstancePosition", subObj.instanceMesh, "perinstance")
+			love.graphics.drawInstanced(subObj.mesh, subObj.instanceMesh:getVertexCount())
+		else
+			love.graphics.draw(subObj.mesh)
+		end
 	end
 	
 	love.graphics.pop()

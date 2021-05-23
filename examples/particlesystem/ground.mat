@@ -9,9 +9,6 @@ return {
 				},
 				size = {0.5, 1.0},
 				rotation = 0.0,
-				tilt = 0.0,
-				shader = "wind",
-				shaderValue = "grass",
 			},
 			{
 				objects = {
@@ -31,8 +28,6 @@ return {
 				},
 				size = {0.25, 0.35},
 				rotation = 0.25,
-				shader = "wind",
-				shaderValue = 0.05,
 			},
 			{
 				objects = {
@@ -40,8 +35,6 @@ return {
 				},
 				size = {0.25, 0.35},
 				rotation = 0.25,
-				shader = "wind",
-				shaderValue = -0.03,
 			},
 		}
 	},

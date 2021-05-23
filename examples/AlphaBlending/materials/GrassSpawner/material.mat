@@ -8,8 +8,6 @@ return {
 			size = {0.15, 0.2},
 			rotation = 0.2,
 			shader = "wind",
-			shaderValue = "grass",
-			shaderValueGrass = 0.025,
 			removeEmitter = true,
 		},
 	}

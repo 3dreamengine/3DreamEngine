@@ -59,6 +59,10 @@ return {
 	end,
 	
 	updateBoundingBox = function(self)
+		if self.instanceMesh then
+			return
+		end
+		
 		self.boundingBox = lib:newBoundaryBox(true)
 		
 		--get aabb

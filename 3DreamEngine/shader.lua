@@ -219,6 +219,7 @@ function lib:getRenderShaderID(obj, pass, shadows)
 	--construct full ID
 	return string.char(
 		reflections and 1 or 0,
+		obj.instanceMesh and 1 or 0,
 		pixelShader.id % 256, math.floor(pixelShader.id / 256),
 		vertexShader.id % 256, math.floor(vertexShader.id / 256),
 		worldShader.id % 256, math.floor(worldShader.id / 256),
@@ -261,6 +262,11 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, sun)
 		local pixel = { }
 		local pixelMaterial = { }
 		local vertex = { }
+		
+		--if instancing is used
+		if obj.instanceMesh then
+			table.insert(defines, "#define INSTANCING")
+		end
 		
 		--collect additional defines
 		if shadows then
