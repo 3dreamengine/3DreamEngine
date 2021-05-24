@@ -5,7 +5,7 @@ sh.type = "vertex"
 function sh:init(dream)
 	self.speed = 0.05      -- the time multiplier
 	self.strength = 1.0    -- the multiplier of animation
-	self.scale = 0.1       -- the scale of wind waves
+	self.scale = 0.25      -- the scale of wind waves
 end
 
 function sh:getId(dream, mat, shadow)
@@ -42,15 +42,15 @@ end
 
 function sh:perShader(dream, shaderObject)
 	local shader = shaderObject.shader
-	shader:send("shader_wind_strength", self.strength or 1.0)
-	shader:send("shader_wind_scale", self.scale or 1.0)
-	shader:send("shader_wind", love.timer.getTime() * (self.speed or 1.0))
+	shader:send("shader_wind_scale", self.scale)
+	shader:send("shader_wind", love.timer.getTime() * self.speed)
 	
 	shader:send("tex_noise", dream.textures.noise)
 end
 
 function sh:perMaterial(dream, shaderObject, material)
 	local shader = shaderObject.shader
+	shader:send("shader_wind_strength", self.strength * (material.shaderWindStrength or 1.0))
 	shader:send("shader_wind_height", material.shaderWindHeight or 1.0)
 	shader:send("shader_wind_grass", material.shaderWindGrass and 1 or 0)
 end

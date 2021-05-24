@@ -1,6 +1,6 @@
 return {
 	shadow = false,
-	shaderWindStrength = 0.5,
+	shaderWindStrength = 0.1,
 	cullMode = "none",
 	vertexShader = "wind",
 }

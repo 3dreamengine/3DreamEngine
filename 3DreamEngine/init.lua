@@ -182,6 +182,9 @@ lib.textures = {
 }
 lib.textures.godray:setWrap("repeat", "repeat")
 
+lib.textures.noise = love.graphics.newImage(lib.root .. "/res/noise.png")
+lib.textures.noise:setWrap("repeat")
+
 --load textures once actually needed
 lib.initTextures = { }
 function lib.initTextures:PBR()
@@ -200,8 +203,6 @@ function lib.initTextures:sky()
 		lib.textures.moon_normal = love.graphics.newImage(lib.root .. "/res/moon_normal.png")
 		lib.textures.sun = love.graphics.newImage(lib.root .. "/res/sun.png")
 		lib.textures.rainbow = love.graphics.newImage(lib.root .. "/res/rainbow.png")
-		lib.textures.noise = love.graphics.newImage(lib.root .. "/res/noise.png")
-		lib.textures.noise:setWrap("repeat")
 		
 		lib.textures.clouds = lib.textures.clouds or love.graphics.newImage(lib.root .. "/res/clouds.png")
 		lib.textures.clouds_base = love.graphics.newImage(lib.root .. "/res/clouds_base.png")

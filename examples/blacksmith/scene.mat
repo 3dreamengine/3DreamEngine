@@ -7,7 +7,7 @@ return {
 		tex_ao = "textures/ivy_ao",
 		tex_normal = "textures/ivy_normal",
 		tex_roughness = "textures/ivy_roughness",
-		shaderWindStrength = 0.5,
+		shaderWindStrength = 0.05,
 		shadow = false,
 		cullMode = "none",
 		vertexShader = "wind",

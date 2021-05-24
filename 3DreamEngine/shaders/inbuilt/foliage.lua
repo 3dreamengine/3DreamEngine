@@ -5,7 +5,7 @@ sh.type = "vertex"
 function sh:init(dream)
 	self.speed = 0.05      -- the time multiplier
 	self.strength = 1.0    -- the multiplier of animation
-	self.scale = 0.1       -- the scale of wind waves
+	self.scale = 0.25      -- the scale of wind waves
 	
 	self.fadeWidth = 1
 end

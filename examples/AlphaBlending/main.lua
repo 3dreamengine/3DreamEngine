@@ -13,7 +13,7 @@ dream:init()
 
 --scene
 dream:loadMaterialLibrary(projectDir .. "materials")
-local scene = dream:loadObject(projectDir .. "scene")
+local scene = dream:loadObject(projectDir .. "scene", {splitMaterials = true})
 
 --light
 local p = scene.positions[1]

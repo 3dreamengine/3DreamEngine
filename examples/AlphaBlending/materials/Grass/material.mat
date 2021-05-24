@@ -2,8 +2,8 @@ return {
 	alpha = false,
 	translucent = 1.0,
 	cullMode = "none",
-	translucent = 1.0,
 	discard = true,
 	vertexShader = "wind",
 	shaderWindGrass = true,
+	shaderWindStrength = 0.25,
 }
