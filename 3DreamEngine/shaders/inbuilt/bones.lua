@@ -23,8 +23,8 @@ function sh:initObject(dream, obj)
 		end
 		
 		if obj.boneMesh then
-			obj.mesh:attachAttribute("VertexJoint", obj.boneMesh)
-			obj.mesh:attachAttribute("VertexWeight", obj.boneMesh)
+			obj:getMesh("mesh"):attachAttribute("VertexJoint", obj:getMesh("boneMesh"))
+			obj:getMesh("mesh"):attachAttribute("VertexWeight", obj:getMesh("boneMesh"))
 		end
 	end
 end

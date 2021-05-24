@@ -15,7 +15,7 @@ end
 
 function sh:initObject(dream, obj)
 	if obj.mesh then
-		if not obj.blendMesh and not obj.meshes then
+		if not obj.uv2Mesh and not obj.meshes then
 			assert(obj.colors, "To use the multiTetxure module at least a second UV map for the mask texture is required.")
 			obj.uv2Mesh = love.graphics.newMesh({
 				{"VertexBlend", "float", 1},
@@ -31,8 +31,8 @@ function sh:initObject(dream, obj)
 		end
 		
 		if obj.uv2Mesh then
-			obj.mesh:attachAttribute("VertexBlend", obj.uv2Mesh)
-			obj.mesh:attachAttribute("VertexTexCoord_2", obj.uv2Mesh)
+			obj:getMesh("mesh"):attachAttribute("VertexBlend", obj:getMesh("uv2Mesh"))
+			obj:getMesh("mesh"):attachAttribute("VertexTexCoord_2", obj:getMesh("uv2Mesh"))
 		end
 	end
 end

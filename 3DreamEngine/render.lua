@@ -52,7 +52,7 @@ function lib:buildScene(typ, dynamic, alpha, cam, blacklist, frustumCheck, noSma
 					local subObj = task:getSubObj()
 					local obj = subObj.obj
 					if (not blacklist or not (blacklist[obj] or blacklist[subObj])) and (not noSmallObjects or subObj.farVisibility ~= false and obj.farVisibility ~= false) then
-						if subObj.loaded and subObj.mesh then
+						if subObj.mesh then
 							if not frustumCheck or not subObj.boundingBox.initialized or self:planeInFrustum(cam, task:getPos(), task:getSize(), subObj.rID) then
 								task:setShaderID(shaderID)
 								scene[#scene+1] = task
@@ -318,14 +318,16 @@ function lib:render(canvases, cam)
 			shaderObject.worldShader:perTask(self, shaderObject, task)
 			
 			--render
-			if subObj.instanceMesh then
-				subObj.mesh:attachAttribute("InstanceRotation0", subObj.instanceMesh, "perinstance")
-				subObj.mesh:attachAttribute("InstanceRotation1", subObj.instanceMesh, "perinstance")
-				subObj.mesh:attachAttribute("InstanceRotation2", subObj.instanceMesh, "perinstance")
-				subObj.mesh:attachAttribute("InstancePosition", subObj.instanceMesh, "perinstance")
-				love.graphics.drawInstanced(subObj.mesh, subObj.instanceMesh:getVertexCount())
+			local mesh = subObj:getMesh("mesh")
+			local instanceMesh = subObj:getMesh("instanceMesh")
+			if instanceMesh then
+				mesh:attachAttribute("InstanceRotation0", instanceMesh, "perinstance")
+				mesh:attachAttribute("InstanceRotation1", instanceMesh, "perinstance")
+				mesh:attachAttribute("InstanceRotation2", instanceMesh, "perinstance")
+				mesh:attachAttribute("InstancePosition", instanceMesh, "perinstance")
+				love.graphics.drawInstanced(mesh, instanceMesh:getVertexCount())
 			else
-				love.graphics.draw(subObj.mesh)
+				love.graphics.draw(mesh)
 			end
 			
 			--stats
@@ -539,14 +541,16 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 		shaderObject.worldShader:perTask(self, shaderObject, task)
 		
 		--render
-		if subObj.instanceMesh then
-			subObj.mesh:attachAttribute("InstanceRotation0", subObj.instanceMesh, "perinstance")
-			subObj.mesh:attachAttribute("InstanceRotation1", subObj.instanceMesh, "perinstance")
-			subObj.mesh:attachAttribute("InstanceRotation2", subObj.instanceMesh, "perinstance")
-			subObj.mesh:attachAttribute("InstancePosition", subObj.instanceMesh, "perinstance")
-			love.graphics.drawInstanced(subObj.mesh, subObj.instanceMesh:getVertexCount())
+		local mesh = subObj:getMesh("mesh")
+		local instanceMesh = subObj:getMesh("instanceMesh")
+		if instanceMesh then
+			mesh:attachAttribute("InstanceRotation0", instanceMesh, "perinstance")
+			mesh:attachAttribute("InstanceRotation1", instanceMesh, "perinstance")
+			mesh:attachAttribute("InstanceRotation2", instanceMesh, "perinstance")
+			mesh:attachAttribute("InstancePosition", instanceMesh, "perinstance")
+			love.graphics.drawInstanced(mesh, instanceMesh:getVertexCount())
 		else
-			love.graphics.draw(subObj.mesh)
+			love.graphics.draw(mesh)
 		end
 	end
 	

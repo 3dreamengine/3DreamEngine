@@ -23,7 +23,6 @@ end
 function lib:export3do(obj)
 	local compressedLevel = 9
 	local dataStrings = { }
-	local dataIndex = 0
 	local meshCache = { }
 	
 	local header = {
@@ -44,6 +43,7 @@ function lib:export3do(obj)
 		["objects"] = { },
 		["physics"] = obj.physics,
 		["reflections"] = obj.reflections,
+		["meshData"] = { }
 	}
 	
 	for d,o in pairs(obj.objects) do
@@ -62,41 +62,55 @@ function lib:export3do(obj)
 			["joints"] = o.joints,
 			["linked"] = o.linked,
 			["tags"] = o.tags,
-			["meshes"] = { },
 		}
 		
+		--save the material id if its registered or the entire material
 		if o.material.library then
 			h["material"] = o.material.name
 		else
 			h["material"] = o.material
 		end
 		
-		--export data
+		header.objects[d] = h
+		
 		if not o.linked then
+			--export buffer data
 			h["weights"] = o.weights
 			h["jointIDs"] = o.jointIDs
 			h["vertices"] = o.vertices
 			h["normals"] = o.normals
 			h["faces"] = o.faces
-		end
-		
-		header.objects[d] = h
-		
-		if not o.linked then
+			
 			--look for meshes
 			for name, mesh in pairs(o) do
 				if type(mesh) == "userdata" and mesh:typeOf("Mesh") then
 					if meshCache[mesh] then
-						h.meshes[name] = meshCache[mesh]
+						h[name] = meshCache[mesh]
 					else
 						local m = { }
 						meshCache[mesh] = m
-						h.meshes[name] = m
+						h[name] = m
 						
+						--store general data
 						local f = mesh:getVertexFormat()
 						m.vertexCount = mesh:getVertexCount()
-						m.vertexMap = mesh:getVertexMap()
 						m.vertexFormat = f
+						
+						--store vertexMap
+						local map = mesh:getVertexMap()
+						if map then
+							local vertexMapData = love.data.newByteData(m.vertexCount * 4)
+							local vertexMap = ffi.cast("uint32_t*", vertexMapData:getPointer())
+							for d,s in ipairs(map) do
+								vertexMap[d-1] = s
+							end
+							
+							--compress and store vertex map
+							local c = love.data.compress("string", "lz4", vertexMapData:getString(), compressedLevel)
+							dataStrings[#dataStrings+1] = c
+							table.insert(header["meshData"], #c)
+							m.vertexMap = #header["meshData"]
+						end
 						
 						--give a unique hash for the vertex format
 						local md5 = love.data.hash("md5", packTable.pack(f))
@@ -140,9 +154,8 @@ function lib:export3do(obj)
 						--convert to string and store
 						local c = love.data.compress("string", "lz4", byteData:getString(), compressedLevel)
 						dataStrings[#dataStrings+1] = c
-						m.meshDataIndex = dataIndex
-						m.meshDataSize = #c
-						dataIndex = dataIndex + m.meshDataSize
+						table.insert(header["meshData"], #c)
+						m.vertices = #header["meshData"]
 					end
 				end
 			end
@@ -151,8 +164,7 @@ function lib:export3do(obj)
 	
 	--export
 	local headerData = love.data.compress("string", "lz4", packTable.pack(header), compressedLevel)
-	print(obj.name, #headerData)
-	local final = "3DO3    " .. love.data.pack("string", "L", #headerData) .. headerData .. table.concat(dataStrings, "")
+	local final = "3DO4    " .. love.data.pack("string", "L", #headerData) .. headerData .. table.concat(dataStrings, "")
 	love.filesystem.createDirectory(obj.dir)
 	love.filesystem.write(obj.dir .. "/" .. obj.name .. ".3do", final)
 end

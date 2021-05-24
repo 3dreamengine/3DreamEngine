@@ -6,8 +6,6 @@ resources.lua - resource loader
 local lib = _3DreamEngine
 
 --master resource loader
-lib.resourceJobs = { }
-lib.lastResourceJob = 0
 lib.threads = { }
 
 lib.texturesLoaded = { }
@@ -17,13 +15,6 @@ lib.thumbnailsLoaded = { }
 for i = 1, math.max(1, require("love.system").getProcessorCount()-2) do
 	lib.threads[i] = love.thread.newThread(lib.root .. "/thread.lua")
 	lib.threads[i]:start()
-end
-
---add a new job to be handled by a loader thread
-function lib:addResourceJob(typ, obj, priority, data)
-	self.lastResourceJob = self.lastResourceJob + 1
-	self.resourceJobs[self.lastResourceJob] = obj
-	self[priority and "channel_jobs" or "channel_jobs"]:push({"3do", self.lastResourceJob, data})
 end
 
 --input channels and result
@@ -124,85 +115,38 @@ function lib:update()
 	--fetch new job
 	local msg = self.channel_results:pop()
 	if msg then
-		if msg[1] == "3do" then
-			--3do mesh data
-			local obj = self.resourceJobs[msg[2]]
+		--image
+		local width, height = msg[3]:getDimensions()
+		if self.textures_smoothLoading and math.max(width, height) > bufferSize and not msg[4] then
+			local canvas = love.graphics.newCanvas(width, height, {mipmaps = self.textures_mipmaps and "manual" or "none"})
 			
-			--assign new meshes
-			local changes = { }
-			for name, meshData in pairs(msg[3]) do
-				local finalMesh
-				for d,o in pairs(obj.objects) do
-					if o.meshes and obj.DO_path == o.obj.DO_path then
-						local mesh = o.meshes[name]
-						if mesh then
-							local index = obj.DO_dataOffset + mesh.meshDataIndex
-							if index == meshData[1] then
-								if not finalMesh then
-									finalMesh = love.graphics.newMesh(mesh.vertexFormat, mesh.vertexCount, "triangles", "static")
-									finalMesh:setVertexMap(mesh.vertexMap)
-									finalMesh:setVertices(meshData[2])
-									mesh.vertexMap = nil
-								end
-								o[name] = finalMesh
-								changes[o] = true
-							end
-						end
-					end
-				end
-			end
+			--settings
+			canvas:setWrap("repeat", "repeat")
 			
-			for o,_ in pairs(changes) do
-				--check if everything has been loaded
-				local complete = true
-				for name,mesh in pairs(o.meshes) do
-					if not o[name] then
-						complete = false
-						break
-					end
-				end
-				
-				if complete then
-					o.loaded = true
-					
-					--refresh shader modules
-					o:initShaders()
-				end
-			end
-			
-			self.resourceJobs[msg[2]] = nil
+			--prepare loading job
+			fastLoadingJob = {
+				path = msg[2],
+				canvas = canvas,
+				data = msg[3],
+				x = 0,
+				y = 0,
+				width = width,
+				height = height,
+			}
 		else
-			--image
-			local width, height = msg[3]:getDimensions()
-			if self.textures_smoothLoading and math.max(width, height) > bufferSize and not msg[4] then
-				local canvas = love.graphics.newCanvas(width, height, {mipmaps = self.textures_mipmaps and "manual" or "none"})
-				
-				--settings
-				canvas:setWrap("repeat", "repeat")
-				
-				--prepare loading job
-				fastLoadingJob = {
-					path = msg[2],
-					canvas = canvas,
-					data = msg[3],
-					x = 0,
-					y = 0,
-					width = width,
-					height = height,
-				}
-			else
-				local tex = love.graphics.newImage(msg[3], {mipmaps = self.textures_mipmaps})
-				
-				--settings
-				tex:setWrap("repeat", "repeat")
-				
-				--store
-				self.texturesLoaded[msg[2]] = tex
-			end
+			local tex = love.graphics.newImage(msg[3], {mipmaps = self.textures_mipmaps})
+			
+			--settings
+			tex:setWrap("repeat", "repeat")
+			
+			--store
+			self.texturesLoaded[msg[2]] = tex
 		end
+		
 		return true
+	else
+		return false
 	end
-	return false
 end
 
 --get image path if present

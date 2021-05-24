@@ -32,24 +32,6 @@ end
 return {
 	link = {"clone", "transform", "shader", "visibility", "object"},
 	
-	isLoaded = function(self)
-		for d,s in pairs(self.objects) do
-			if not s:isLoaded() then
-				return false
-			end
-		end
-		return true
-	end,
-	
-	wait = function(self)
-		while not self:isLoaded() do
-			local worked = lib:update()
-			if not worked then
-				love.timer.sleep(10/1000)
-			end
-		end
-	end,
-	
 	tostring = function(self)
 		local function count(t)
 			local c = 0

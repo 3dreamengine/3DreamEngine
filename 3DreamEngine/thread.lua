@@ -44,23 +44,7 @@ while true do
 	local msg = channel_jobs:demand()
 	if msg then
 		channel_busy:push(true)
-		if msg[1] == "3do" then
-			--load 3do mesh
-			local data = msg[3]
-			local file = love.filesystem.newFile(data.path, "r")
-			
-			local results = { }
-			for name,m in pairs(data.requests) do
-				file:seek(m[1])
-				results[name] = {
-					m[1],
-					love.data.newByteData(love.data.decompress("string", "lz4", file:read(m[2])))
-				}
-			end
-			
-			file:close()
-			channel_results:push({"3do", msg[2], results})
-		elseif msg[1] == "image" then
+		if msg[1] == "image" then
 			local info = love.filesystem.getInfo(msg[2])
 			assert(info, "Image " .. msg[2] .. " does not exist!")
 			

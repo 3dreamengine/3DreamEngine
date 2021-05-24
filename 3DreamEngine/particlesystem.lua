@@ -223,7 +223,7 @@ function lib:addParticlesystems(obj)
 										s.transform[1], s.transform[2], s.transform[3],
 										s.transform[4], s.transform[5], s.transform[6],
 										s.transform[7], s.transform[8], s.transform[9],
-										s.pos[1], s.pos[2], s.pos[3]
+										p[1], p[2], p[3]
 									})
 								end
 							end
@@ -249,7 +249,7 @@ function lib:addParticlesystems(obj)
 								po.boundingBox.first = vec3(x, y, z) - margin
 								po.boundingBox.second = po.boundingBox.first + delta + margin * 2
 								po.boundingBox.center = (po.boundingBox.second + po.boundingBox.first) / 2
-								po.boundingBox.size = (po.boundingBox.center - po.boundingBox.first):length() / math.sqrt(3)
+								po.boundingBox.size = (po.boundingBox.center - po.boundingBox.first):length() * math.sqrt(3)
 								
 								po.instanceMesh = love.graphics.newMesh({
 									{"InstanceRotation0", "float", 3},

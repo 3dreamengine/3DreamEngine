@@ -34,12 +34,13 @@ return function(self, obj, path)
 	local typ = file:read(4)
 	
 	--check if up to date
-	if typ ~= "3DO3" then
+	if typ ~= "3DO4" then
 		print("3DO file " .. path .. " seems to be outdated and will be skipped")
 		file:close()
 		return true
 	end
 	
+	--unused 4 bytes
 	local _ = file:read(4)
 	
 	--header
@@ -51,14 +52,19 @@ return function(self, obj, path)
 	local header = packTable.unpack(love.data.decompress("string", "lz4", headerData))
 	table.merge(obj, header)
 	
+	--additional mesh data
+	local meshData = { }
+	if obj.meshData then
+		for d,s in ipairs(obj.meshData) do
+			meshData[d] = love.data.newByteData(love.data.decompress("string", "lz4", file:read(s)))
+		end
+	end
+	obj.meshData = nil
+	
 	--mesh creation and 3DO exporting makes no longer sense
 	obj.args.particleSystems = false
 	obj.args.mesh = false
 	obj.args.export3do = false
-	
-	--store 3DO data for the loader
-	obj.DO_dataOffset = 12 + headerLength
-	obj.DO_path = path
 	
 	--recreate materials
 	for d,s in pairs(obj.materials) do
@@ -82,6 +88,16 @@ return function(self, obj, path)
 	--recreate objects
 	for d,s in pairs(obj.objects) do
 		obj.objects[d] = table.merge(self:newSubObject(s.name, obj, s.material), s)
+	end
+	
+	--recreate meshes
+	for _,o in pairs(obj.objects) do
+		for d,s in pairs(o) do
+			if type(s) == "table" and type(s.vertices) == "number" then
+				s.vertexMap = s.vertexMap and meshData[s.vertexMap]
+				s.vertices = meshData[s.vertices]
+			end
+		end
 	end
 	
 	--relink materials
@@ -113,7 +129,7 @@ return function(self, obj, path)
 		end
 	end
 	
-	--recreate collision data
+	--recreate skeleton data
 	convert(obj.skeleton)
 	
 	--recreate animation data
@@ -141,18 +157,6 @@ return function(self, obj, path)
 	if obj.linked then
 		for d,s in ipairs(obj.linked) do
 			s.transform = mat4(s.transform)
-		end
-	end
-	
-	--cleanup
-	for d,o in pairs(obj.objects) do
-		for _,_ in pairs(o.meshes) do
-			if #o.vertices == 0 then
-				o.vertices = nil
-			end
-			o.loaded = false
-			obj.loaded = false
-			break
 		end
 	end
 	

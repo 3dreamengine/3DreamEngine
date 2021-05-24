@@ -43,11 +43,11 @@ local meta = {
 			offset = offset - 1
 			if b then
 				for d,s in ipairs({a, b, ...}) do
-					array[offset + d] = s
+					self.array[offset + d] = s
 				end
 			else
 				for d,s in ipairs(a) do
-					array[offset + d] = s
+					self.array[offset + d] = s
 				end
 			end
 		end,

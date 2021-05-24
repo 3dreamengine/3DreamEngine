@@ -24,7 +24,6 @@ function lib:newSubObject(name, obj, mat)
 		materials = { },
 		faces = { },
 		
-		loaded = true,
 		boundingBox = self:newBoundaryBox(),
 		
 		meshType = obj.args.meshType,
@@ -35,19 +34,6 @@ end
 
 return {
 	link = {"clone", "shader", "visibility", "subObject"},
-	
-	isLoaded = function(self)
-		return self.loaded
-	end,
-	
-	wait = function(self)
-		while not self:isLoaded() do
-			local worked = lib:update()
-			if not worked then
-				love.timer.sleep(10/1000)
-			end
-		end
-	end,
 	
 	setName = function(self, name)
 		assert(type(name) == "string", "name has to be a string")
@@ -139,19 +125,40 @@ return {
 		
 		--load meshes
 		if self.meshes then
-			self.obj.loadRequests = self.obj.loadRequests or { }
-			
-			local requests
-			for name, mesh in pairs(self.meshes) do
-				local index = mesh.meshDataIndex
-				if not self.obj.loadRequests[index] then
-					self.obj.loadRequests[index] = true
-					requests = requests or { }
-					requests[name] = {self.obj.DO_dataOffset + index, mesh.meshDataSize}
+			if self.meshes then
+				for _, name in ipairs(self.meshes) do
+					self:getMesh(name)
 				end
 			end
-			if requests then
-				lib:addResourceJob("3do", self.obj, true, {path = self.obj.DO_path, requests = requests})
+		end
+	end,
+	
+	getMesh = function(self, name)
+		local mesh = self[name]
+		if type(mesh) == "userdata" then
+			return mesh
+		elseif mesh then
+			if mesh.mesh then
+				--cached
+				self[name] = mesh.mesh
+				return mesh.mesh
+			else
+				--load
+				local newMesh = love.graphics.newMesh(mesh.vertexFormat, mesh.vertexCount, "triangles", "static")
+				
+				if mesh.vertexMap then
+					--newMesh:setVertexMap(mesh.vertexMap, "uint32")
+				end
+				newMesh:setVertices(mesh.vertices)
+				
+				--cache it for later, in case it is a shared mesh
+				for d,s in pairs(mesh) do
+					mesh[d] = nil
+				end
+				mesh.mesh = newMesh
+				
+				self[name] = newMesh
+				return newMesh
 			end
 		end
 	end,
