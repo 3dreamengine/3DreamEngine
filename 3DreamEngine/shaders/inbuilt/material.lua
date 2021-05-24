@@ -2,7 +2,7 @@ local sh = { }
 
 sh.type = "pixel"
 
-sh.meshType = "simple"
+sh.meshType = "material"
 
 function sh:getId(dream, mat, shadow)
 	if shadow then
@@ -18,7 +18,8 @@ function sh:buildDefines(dream, mat, shadow)
 		
 		//additional vertex attributes
 		#ifdef VERTEX
-		attribute vec3 VertexMaterial;
+		attribute float VertexMaterial;
+		extern Image tex_lookup;
 		#endif
 	]]
 end
@@ -53,7 +54,11 @@ end
 
 function sh:buildVertex(dream, mat)
 	return [[
-	VaryingMaterial = VertexMaterial;
+	//get color
+	VaryingColor = Texel(tex_lookup, vec2(VertexMaterial, 0.0));
+	
+	//extract material
+	VaryingMaterial = Texel(tex_lookup, vec2(VertexMaterial, 1.0)).rgb;
 	]]
 end
 
@@ -62,7 +67,8 @@ function sh:perShader(dream, shaderObject)
 end
 
 function sh:perMaterial(dream, shaderObject, material)
-	
+	local shader = shaderObject.shader
+	shader:send("tex_lookup", dream:getImage(material.tex_lookup) or dream.textures.default)
 end
 
 function sh:perTask(dream, shaderObject, task)
