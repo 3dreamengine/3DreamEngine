@@ -91,7 +91,7 @@ function sh:buildPixel(dream, mat)
 	normal = Texel(tex_normal, VaryingTexCoord.xy).xyz * vec3(2.0) - vec3(1.0);
 	normal = normalize(TBN * normal);
 #else
-	normal = normalize(vertexNormal);
+	normal = normalize(VaryingNormal);
 #endif
 	]]
 end

@@ -5,7 +5,7 @@
 extern highp mat4 transformProj;          //projective transformation
 extern highp mat4 transform;              //model transformation
 
-varying highp vec3 vertexPos;             //vertex position for pixel shader
+varying highp vec3 VertexPos;             //vertex position for pixel shader
 varying highp float distance;             //distance from center
 
 #ifdef PIXEL
@@ -23,7 +23,7 @@ vec4 effect(vec4 color, Image tex, vec2 tc, vec2 sc) {
 vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	highp vec4 pos = transform * vertex_position;
 	
-	vertexPos = pos.xyz;
+	VertexPos = pos.xyz;
 	
 	distance = 1.0 + 0.05 * length(vertex_position);
 	

@@ -38,8 +38,8 @@ function sh:constructDefinesGlobal(dream)
 			return shadow;
 		}
 		
-		float sampleShadowSunSmooth(vec3 vertexPos, vec3 ss_pos, mat4 ss_proj_1, mat4 ss_proj_2, mat4 ss_proj_3, Image ss_tex_1, Image ss_tex_2, Image ss_tex_3, vec3 bias) {
-			float dist = distance(vertexPos, ss_pos) * ss_shadowDistance;
+		float sampleShadowSunSmooth(vec3 VertexPos, vec3 ss_pos, mat4 ss_proj_1, mat4 ss_proj_2, mat4 ss_proj_3, Image ss_tex_1, Image ss_tex_2, Image ss_tex_3, vec3 bias) {
+			float dist = distance(VertexPos, ss_pos) * ss_shadowDistance;
 			
 			float f2 = ss_factor * ss_factor;
 			float v1 = clamp((1.0 - dist) * ss_fade * f2, 0.0, 1.0);
@@ -48,15 +48,15 @@ function sh:constructDefinesGlobal(dream)
 			
 			float v = 1.0 - v1 - v2 - v3;
 			if (v1 > 0.0) {
-				vec3 uvs = (ss_proj_1 * vec4(vertexPos + bias, 1.0)).xyz;
+				vec3 uvs = (ss_proj_1 * vec4(VertexPos + bias, 1.0)).xyz;
 				v += v1 * sampleShadowSun2Smooth(ss_tex_1, uvs.xy * 0.5 + 0.5, uvs.z);
 			}
 			if (v2 > 0.0) {
-				vec3 uvs = (ss_proj_2 * vec4(vertexPos + bias * ss_factor, 1.0)).xyz;
+				vec3 uvs = (ss_proj_2 * vec4(VertexPos + bias * ss_factor, 1.0)).xyz;
 				v += v2 * sampleShadowSun2Smooth(ss_tex_2, uvs.xy * 0.5 + 0.5, uvs.z);
 			}
 			if (v3 > 0.0) {
-				vec3 uvs = (ss_proj_3 * vec4(vertexPos + bias * f2, 1.0)).xyz;
+				vec3 uvs = (ss_proj_3 * vec4(VertexPos + bias * f2, 1.0)).xyz;
 				v += v3 * sampleShadowSun2Smooth(ss_tex_3, uvs.xy * 0.5 + 0.5, uvs.z);
 			}
 			return v;
@@ -79,8 +79,8 @@ function sh:constructDefinesGlobal(dream)
 				(min(r4.x, r4.y) > depth ? 0.25 : 0.0);
 		}
 		
-		float sampleShadowSun(vec3 vertexPos, vec3 ss_pos, mat4 ss_proj_1, mat4 ss_proj_2, mat4 ss_proj_3, Image ss_tex_1, Image ss_tex_2, Image ss_tex_3, vec3 bias) {
-			float dist = distance(vertexPos, ss_pos) * ss_shadowDistance;
+		float sampleShadowSun(vec3 VertexPos, vec3 ss_pos, mat4 ss_proj_1, mat4 ss_proj_2, mat4 ss_proj_3, Image ss_tex_1, Image ss_tex_2, Image ss_tex_3, vec3 bias) {
+			float dist = distance(VertexPos, ss_pos) * ss_shadowDistance;
 			
 			float f2 = ss_factor * ss_factor;
 			float v1 = clamp((1.0 - dist) * ss_fade * f2, 0.0, 1.0);
@@ -89,15 +89,15 @@ function sh:constructDefinesGlobal(dream)
 			
 			float v = 1.0 - v1 - v2 - v3;
 			if (v1 > 0.0) {
-				vec3 uvs = (ss_proj_1 * vec4(vertexPos + bias, 1.0)).xyz;
+				vec3 uvs = (ss_proj_1 * vec4(VertexPos + bias, 1.0)).xyz;
 				v += v1 * sampleShadowSun2(ss_tex_1, uvs.xy * 0.5 + 0.5, uvs.z);
 			}
 			if (v2 > 0.0) {
-				vec3 uvs = (ss_proj_2 * vec4(vertexPos + bias * ss_factor, 1.0)).xyz;
+				vec3 uvs = (ss_proj_2 * vec4(VertexPos + bias * ss_factor, 1.0)).xyz;
 				v += v2 * sampleShadowSun2(ss_tex_2, uvs.xy * 0.5 + 0.5, uvs.z);
 			}
 			if (v3 > 0.0) {
-				vec3 uvs = (ss_proj_3 * vec4(vertexPos + bias * f2, 1.0)).xyz;
+				vec3 uvs = (ss_proj_3 * vec4(VertexPos + bias * f2, 1.0)).xyz;
 				v += v3 * sampleShadowSun2(ss_tex_3, uvs.xy * 0.5 + 0.5, uvs.z);
 			}
 			return v;
@@ -137,9 +137,9 @@ function sh:constructPixel(dream, ID)
 		vec3 bias = normal * mix(32.0, 8.0, dot(normal, ss_vec_#ID#)) * ss_texelSize;
 		
 		if (ss_smooth_#ID#) {
-			shadow = sampleShadowSunSmooth(vertexPos, ss_pos_#ID#, ss_proj_1_#ID#, ss_proj_2_#ID#, ss_proj_3_#ID#, ss_tex_1_#ID#, ss_tex_2_#ID#, ss_tex_3_#ID#, bias);
+			shadow = sampleShadowSunSmooth(VertexPos, ss_pos_#ID#, ss_proj_1_#ID#, ss_proj_2_#ID#, ss_proj_3_#ID#, ss_tex_1_#ID#, ss_tex_2_#ID#, ss_tex_3_#ID#, bias);
 		} else {
-			shadow = sampleShadowSun(vertexPos, ss_pos_#ID#, ss_proj_1_#ID#, ss_proj_2_#ID#, ss_proj_3_#ID#, ss_tex_1_#ID#, ss_tex_2_#ID#, ss_tex_3_#ID#, bias);
+			shadow = sampleShadowSun(VertexPos, ss_pos_#ID#, ss_proj_1_#ID#, ss_proj_2_#ID#, ss_proj_3_#ID#, ss_tex_1_#ID#, ss_tex_2_#ID#, ss_tex_3_#ID#, bias);
 		}
 		
 		if (shadow > 0.0) {
@@ -153,12 +153,12 @@ end
 function sh:constructPixelBasic(dream, ID)
 	return ([[
 		float shadow;
-		vec3 bias = normalize(vertexPos - viewPos) * 8.0 * ss_texelSize;
+		vec3 bias = normalize(VertexPos - viewPos) * 8.0 * ss_texelSize;
 		
 		if (ss_smooth_#ID#) {
-			shadow = sampleShadowSunSmooth(vertexPos, ss_pos_#ID#, ss_proj_1_#ID#, ss_proj_2_#ID#, ss_proj_3_#ID#, ss_tex_1_#ID#, ss_tex_2_#ID#, ss_tex_3_#ID#, bias);
+			shadow = sampleShadowSunSmooth(VertexPos, ss_pos_#ID#, ss_proj_1_#ID#, ss_proj_2_#ID#, ss_proj_3_#ID#, ss_tex_1_#ID#, ss_tex_2_#ID#, ss_tex_3_#ID#, bias);
 		} else {
-			shadow = sampleShadowSun(vertexPos, ss_pos_#ID#, ss_proj_1_#ID#, ss_proj_2_#ID#, ss_proj_3_#ID#, ss_tex_1_#ID#, ss_tex_2_#ID#, ss_tex_3_#ID#, bias);
+			shadow = sampleShadowSun(VertexPos, ss_pos_#ID#, ss_proj_1_#ID#, ss_proj_2_#ID#, ss_proj_3_#ID#, ss_tex_1_#ID#, ss_tex_2_#ID#, ss_tex_3_#ID#, bias);
 		}
 		
 		light += ss_color_#ID# * shadow;

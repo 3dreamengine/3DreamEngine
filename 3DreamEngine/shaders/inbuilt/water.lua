@@ -75,8 +75,8 @@ function sh:buildPixel(dream, mat)
 	
 	//wave normal
 	vec3 waterNormal = (
-		Texel(tex_normal, (vertexPos.xz + waterUV1) * waterScale).rgb - vec3(0.5) +
-		Texel(tex_normal, (vertexPos.xz + waterUV2) * waterScale * 0.66).rgb - vec3(0.5)
+		Texel(tex_normal, (VertexPos.xz + waterUV1) * waterScale).rgb - vec3(0.5) +
+		Texel(tex_normal, (VertexPos.xz + waterUV2) * waterScale * 0.66).rgb - vec3(0.5)
 	) * vec3(1.0, 1.0, waterHeight);
 	normal = normalize(TBN * (waterNormal));
 	

@@ -2,7 +2,7 @@
 
 varying float VaryingEmission;
 varying float VaryingDistortion;
-varying vec3 vertexPos;
+varying vec3 VertexPos;
 varying float depth;
 
 //setting specific defines
@@ -38,7 +38,7 @@ extern vec3 ambient;
 extern Image MainTex;
 
 void effect() {
-	vec3 viewVec = normalize(vertexPos - viewPos);
+	vec3 viewVec = normalize(VertexPos - viewPos);
 	
 	//fetch color
 	vec4 albedo = Texel(MainTex, VaryingTexCoord.xy);
@@ -134,7 +134,7 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 #ifdef SINGLE
 	VaryingTexCoord = vec4(VertexTexCoord.x, 1.0 - VertexTexCoord.y, 0.0, 0.0);
 	
-	vertexPos = InstanceCenter + (right * vertex_position.x + up * vertex_position.y);
+	VertexPos = InstanceCenter + (right * vertex_position.x + up * vertex_position.y);
 #else
 	VaryingTexCoord = vec4(VertexTexCoord.xy * InstanceTexScale + InstanceTexOffset, 0.0, 0.0);
 	VaryingColor = InstanceColor;
@@ -147,13 +147,13 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 		vertex_position.x * s + vertex_position.y * c
 	);
 	
-	vertexPos = InstanceCenter + (right * p.x * InstanceSize.x + up * p.y * InstanceSize.y);
+	VertexPos = InstanceCenter + (right * p.x * InstanceSize.x + up * p.y * InstanceSize.y);
 #endif
 
 	VaryingEmission = InstanceEmission;
 	VaryingDistortion = InstanceDistortion;
 	
-	vec4 vPos = transformProj * vec4(vertexPos, 1.0);
+	vec4 vPos = transformProj * vec4(VertexPos, 1.0);
 	
 	//extract and pass depth
 	depth = vPos.z;

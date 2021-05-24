@@ -1,4 +1,4 @@
-varying highp vec3 vertexPos;
+varying highp vec3 VertexPos;
 
 #ifdef PIXEL
 extern vec3 sunColor;
@@ -18,8 +18,8 @@ extern Image tex_base;
 extern Image MainTex;
 
 void effect() {
-	vec3 dir = normalize(vertexPos);
-	vec3 pos = normalize(vertexPos * vec3(1.0, 8.0, 1.0));
+	vec3 dir = normalize(VertexPos);
+	vec3 pos = normalize(VertexPos * vec3(1.0, 8.0, 1.0));
 	if (pos.y < 0.0) {
 		discard;
 	}
@@ -49,7 +49,7 @@ void effect() {
 extern highp mat4 transformProj;
 
 vec4 position(mat4 transform_projection, vec4 vertex_position) {
-	vertexPos = vertex_position.xyz;
+	VertexPos = vertex_position.xyz;
 	return transformProj * vertex_position;
 }
 #endif

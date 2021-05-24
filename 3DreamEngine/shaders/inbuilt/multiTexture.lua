@@ -158,7 +158,7 @@ function sh:buildPixel(dream, mat)
 	) * 2.0 - 1.0;
 	normal = normalize(TBN * normal);
 #else
-	normal = normalize(vertexNormal);
+	normal = normalize(VaryingNormal);
 #endif
 	]]
 end

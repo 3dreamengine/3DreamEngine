@@ -54,9 +54,9 @@ end
 
 function sh:constructPixel(dream, mat)
 	return [[
-		vec3 rainNormal = normalize(Texel(splashes, vertexPos.xz).xyz);
+		vec3 rainNormal = normalize(Texel(splashes, VertexPos.xz).xyz);
 		
-		float rainNoise = Texel(tex_wetness, vertexPos.xz * 0.17).r;
+		float rainNoise = Texel(tex_wetness, VertexPos.xz * 0.17).r;
 		float rain = clamp((normal.y * 1.1 - 0.1) * clamp(wetness * 1.5 - rainNoise + (1.0 - rainNormal.z) * 2.0, 0.0, 1.0), 0.0, 1.0);
 	]]
 end

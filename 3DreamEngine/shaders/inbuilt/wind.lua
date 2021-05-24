@@ -32,11 +32,11 @@ end
 
 function sh:buildVertex(dream, mat)
 	return [[
-		vec3 noise = Texel(tex_noise, vertexPos.xz * shader_wind_scale * 0.3 + vec2(shader_wind, shader_wind * 0.7)).xyz - vec3(0.5);
+		vec3 noise = Texel(tex_noise, VertexPos.xz * shader_wind_scale * 0.3 + vec2(shader_wind, shader_wind * 0.7)).xyz - vec3(0.5);
 		
 		float windStrength = mix(1.0, (normalTransform * VertexPosition.xyz).y * shader_wind_height, shader_wind_grass) * shader_wind_strength;
 		
-		vertexPos = (transform * vec4(vertexPos, 1.0)).xyz + noise * vec3(windStrength, windStrength * 0.25, windStrength);
+		VertexPos = (transform * vec4(VertexPos, 1.0)).xyz + noise * vec3(windStrength, windStrength * 0.25, windStrength);
 	]]
 end
 

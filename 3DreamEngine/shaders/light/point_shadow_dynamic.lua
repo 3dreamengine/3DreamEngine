@@ -68,7 +68,7 @@ end
 
 function sh:constructPixel(dream, ID)
 	return ([[
-		vec3 lightVec = point_shadow_pos_#ID# - vertexPos;
+		vec3 lightVec = point_shadow_pos_#ID# - VertexPos;
 		
 		float shadow;
 		if (point_shadow_smooth_#ID#) {
@@ -90,7 +90,7 @@ end
 
 function sh:constructPixelBasic(dream, ID)
 	return ([[
-		vec3 lightVec = point_shadow_pos_#ID# - vertexPos;
+		vec3 lightVec = point_shadow_pos_#ID# - VertexPos;
 		
 		float shadow;
 		if (point_shadow_smooth_#ID#) {

@@ -6,8 +6,8 @@ extern highp mat4 transform;       //model transformation
 extern highp vec3 viewPos;         //camera position
 
 //varyings
-varying highp vec3 vertexPos;      //vertex position for pixel shader
-varying highp vec3 vertexNormal;   //vertex normal for pixel shader
+varying highp vec3 VertexPos;      //vertex position for pixel shader
+varying highp vec3 VaryingNormal;   //vertex normal for pixel shader
 varying float depth;               //depth
 
 extern float translucent;
@@ -25,14 +25,14 @@ extern Image tex_depth;
 
 #ifdef PIXEL
 void effect() {
-	vec3 viewVec = normalize(vertexPos - viewPos);
+	vec3 viewVec = normalize(VertexPos - viewPos);
 	vec2 distortion = vec2(0.0);
 	vec3 color = vec3(0.0);
 	vec3 light = vec3(0.0);
 	
 	//material
 	vec3 normal;
-	vec3 fragmentNormal = normalize(vertexNormal);
+	vec3 fragmentNormal = normalize(VaryingNormal);
 	vec3 albedo = vec3(0.5);
 	float alpha = 1.0;
 	float roughness = 0.5;
@@ -44,8 +44,8 @@ void effect() {
 #import pixelMaterial
 	
 	//proper backfaces
-	if (dot(vertexNormal, viewVec) > 0.0) {
-		normal = normalize(reflect(normal, normalize(vertexNormal)));
+	if (dot(VaryingNormal, viewVec) > 0.0) {
+		normal = normalize(reflect(normal, normalize(VaryingNormal)));
 		fragmentNormal = -fragmentNormal;
 	}
 	
@@ -84,7 +84,7 @@ void effect() {
 #ifdef IS_SUN
 	love_Canvases[0] = vec4(depth, depth, 0.0, 1.0);
 #else
-	float dd = length(viewPos - vertexPos.xyz);
+	float dd = length(viewPos - VertexPos.xyz);
 	love_Canvases[0] = vec4(dd, dd, 0.0, 1.0);
 #endif
 #else
@@ -120,27 +120,27 @@ vec4 position(mat4 _t, vec4 _v) {
 		InstanceRotation2.xyz
 	);
 	
-	vertexPos = instanceRotation * VertexPosition.xyz + InstancePosition;
+	VertexPos = instanceRotation * VertexPosition.xyz + InstancePosition;
 	
 	normalTransform = instanceRotation * normalTransform;
 #else
-	vertexPos = VertexPosition.xyz;
+	VertexPos = VertexPosition.xyz;
 #endif
 	
 #import vertex
 	
 	//apply projection matrix
-	vec4 vPos = transformProj * vec4(vertexPos, 1.0);
+	vec4 vPos = transformProj * vec4(VertexPos, 1.0);
 	
 	//extract and pass depth
 	depth = vPos.z;
 	
 	//raw normal vector without normal map;
-	vertexNormal = normalTransform * (VertexNormal - 0.5);
+	VaryingNormal = normalTransform * (VertexNormal - 0.5);
 	
 #ifdef TANGENT
 	vec3 T = normalize(normalTransform * (VertexTangent.xyz - 0.5));
-	vec3 N = normalize(vertexNormal);
+	vec3 N = normalize(VaryingNormal);
 	
 	//in case the UV is mirrored
 	vec3 B;

@@ -9,11 +9,11 @@ extern vec3 reflections_second;
 vec3 reflection(vec3 ref, float roughness) {
 	vec3 r;
 	if (reflections_enabled) {
-		vec3 maxIntersect = (reflections_second - vertexPos) / ref;
-		vec3 minIntersect = (reflections_first - vertexPos) / ref;
+		vec3 maxIntersect = (reflections_second - VertexPos) / ref;
+		vec3 minIntersect = (reflections_first - VertexPos) / ref;
 		vec3 largestRayParams = max(maxIntersect, minIntersect);
 		float dist = min(min(largestRayParams.x, largestRayParams.y), largestRayParams.z);
-		r = vertexPos + ref * dist - reflections_pos;
+		r = VertexPos + ref * dist - reflections_pos;
 	} else {
 		r = ref;
 	}
