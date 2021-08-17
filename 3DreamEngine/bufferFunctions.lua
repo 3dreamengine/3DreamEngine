@@ -68,7 +68,7 @@ end
 --it returns a cloned object with only one mesh
 function lib:mergeMeshes(obj)
 	local final = obj:clone()
-	local o = self:newMesh("merged", final)
+	local o = self:newMesh("merged", false, final.args.meshType)
 	final.meshes = {merged = o}
 	
 	for d,s in pairs(obj.meshes) do

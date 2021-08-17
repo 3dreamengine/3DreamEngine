@@ -38,7 +38,7 @@ return {
 		return self[3]
 	end,
 	
-	getSubObj = function(self)
+	getObj = function(self)
 		return self[4]
 	end,
 	

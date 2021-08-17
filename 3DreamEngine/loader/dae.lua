@@ -212,7 +212,7 @@ return function(self, obj, path)
 					local mat = indices[l._attr.material] or obj.materials.None
 					local material = self.materialLibrary[mat.name] or mat
 					if not o then
-						o = self:newMesh(geo._attr.id, obj, material)
+						o = self:newMesh(geo._attr.id, material, obj.args.meshType)
 						meshData[id][#meshData[id]+1] = o
 					end
 					

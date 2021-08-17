@@ -5,11 +5,11 @@ local function removePostfix(t)
 	return v or t
 end
 
-function lib:newMesh(name, obj, mat)
+function lib:newMesh(name, mat, meshType)
+	assert(meshType, "mesh type required")
 	local o = {
 		name = removePostfix(name),
 		material = mat,
-		obj = obj,
 		tags = { },
 		
 		--common data arrays
@@ -22,7 +22,7 @@ function lib:newMesh(name, obj, mat)
 		
 		boundingBox = self:newBoundaryBox(),
 		
-		meshType = obj.args.meshType,
+		meshType = meshType,
 	}
 	
 	return setmetatable(o, self.meta.mesh)

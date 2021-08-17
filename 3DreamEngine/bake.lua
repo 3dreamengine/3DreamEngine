@@ -6,7 +6,7 @@ bake.lua - merges several materials into one
 local lib = _3DreamEngine
 
 function lib:bakeMaterial(o, ID)
-	return lib:bakeMaterials({o}, o.obj.path .. "_" .. (ID or o.name))
+	return lib:bakeMaterials({o}, "todo_" .. (ID or o.name))
 end
 
 function lib:bakeMaterials(list, ID)

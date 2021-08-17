@@ -97,8 +97,7 @@ return {
 			false,
 			false,
 			s,
-			false,
-			s.obj.boneTransforms,
+			false
 		}, lib.meta.task)
 		
 		s.rID = s.rID or math.random()
@@ -109,12 +108,12 @@ return {
 		local id = (dyn and 2 or 0) + (alpha and 2 or 1)
 		
 		--render pass
-		if s.renderVisibility ~= false and s.obj.renderVisibility ~= false then
+		if s.renderVisibility ~= false then
 			self:addTo(task, self.tasks.render[id], s, pass, false)
 		end
 		
 		--shadow pass
-		if not alpha and (s.shadowVisibility ~= false and s.obj.shadowVisibility ~= false) and s.material.shadow ~= false then
+		if not alpha and s.shadowVisibility ~= false and s.material.shadow ~= false then
 			self:addTo(task, self.tasks.shadows[id], s, pass, true)
 		end
 	end,

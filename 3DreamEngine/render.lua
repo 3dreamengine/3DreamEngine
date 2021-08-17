@@ -49,11 +49,10 @@ function lib:buildScene(typ, dynamic, alpha, cam, blacklist, frustumCheck, noSma
 		for materialID, materialGroups in pairs(shaderGroup) do
 			for _, materialGroup in ipairs(materialGroups) do
 				for _, task in pairs(materialGroup) do
-					local subObj = task:getSubObj()
-					local obj = subObj.obj
-					if (not blacklist or not (blacklist[obj] or blacklist[subObj])) and (not noSmallObjects or subObj.farVisibility ~= false and obj.farVisibility ~= false) then
-						if subObj.mesh then
-							if not frustumCheck or not subObj.boundingBox.initialized or self:planeInFrustum(cam, task:getPos(), task:getSize(), subObj.rID) then
+					local obj = task:getObj()
+					if (not blacklist or not blacklist[obj]) and (not noSmallObjects or obj.farVisibility ~= false) then
+						if obj.mesh then
+							if not frustumCheck or not obj.boundingBox.initialized or self:planeInFrustum(cam, task:getPos(), task:getSize(), obj.rID) then
 								task:setShaderID(shaderID)
 								scene[#scene+1] = task
 							end
@@ -187,17 +186,16 @@ function lib:render(canvases, cam)
 		--start rendering
 		self.delton:start("render")
 		for d,task in ipairs(scene) do
-			local subObj = task:getSubObj()
+			local obj = task:getObj()
 			local shaderID = task:getShaderID()
-			local obj = subObj.obj
 			
 			--reflections
-			local ref = subObj.reflection or obj.reflection
+			local ref = obj.reflection
 			if ref and ref.canvas then
 				self.reflections[ref] = {
-					dist = (task:getPos(subObj) - cam.pos):length(),
-					obj = subObj.reflection and subObj or obj,
-					pos = ref.pos or task:getPos(subObj),
+					dist = (task:getPos(obj) - cam.pos):length(),
+					obj = obj,
+					pos = ref.pos or task:getPos(obj),
 				}
 			end
 			
@@ -208,7 +206,7 @@ function lib:render(canvases, cam)
 				lastReflection = false
 				self.delton:start("shader")
 				
-				shaderObject = self:getRenderShader(shaderID, subObj, pass, canvases, light, false)
+				shaderObject = self:getRenderShader(shaderID, obj, pass, canvases, light, false)
 				shader = shaderObject.shader
 				if shaderObject.sessionID ~= sessionID then
 					shaderObject.session = { }
@@ -257,7 +255,7 @@ function lib:render(canvases, cam)
 			end
 			
 			--set active material
-			local material = subObj.material
+			local material = obj.material
 			if lastMaterial ~= material then
 				lastMaterial = material
 				--self.delton:start("material")
@@ -281,7 +279,7 @@ function lib:render(canvases, cam)
 			
 			--reflection
 			if shaderObject.reflection then
-				local ref = subObj.reflection or obj.reflection or (type(self.sky_reflection) == "table" and self.sky_reflection)
+				local ref = obj.reflection or (type(self.sky_reflection) == "table" and self.sky_reflection)
 				local tex = ref and (ref.image or ref.canvas) or self.sky_reflection and self.sky_reflectionCanvas or self.textures.sky_fallback
 				if lastReflection ~= tex then
 					lastReflection = tex
@@ -308,8 +306,8 @@ function lib:render(canvases, cam)
 			shader:send("transform", task:getTransform())
 			
 			--shader
-			if not subObj.shadersInitialized then
-				subObj:initShaders()
+			if not obj.shadersInitialized then
+				obj:initShaders()
 			end
 			
 			--per task
@@ -318,8 +316,8 @@ function lib:render(canvases, cam)
 			shaderObject.worldShader:perTask(self, shaderObject, task)
 			
 			--render
-			local mesh = subObj:getMesh("mesh")
-			local instanceMesh = subObj:getMesh("instanceMesh")
+			local mesh = obj:getMesh("mesh")
+			local instanceMesh = obj:getMesh("instanceMesh")
 			if instanceMesh then
 				mesh:attachAttribute("InstanceRotation0", instanceMesh, "perinstance")
 				mesh:attachAttribute("InstanceRotation1", instanceMesh, "perinstance")
@@ -332,8 +330,8 @@ function lib:render(canvases, cam)
 			
 			--stats
 			self.stats.draws = self.stats.draws + 1
-			subObj.meshVertecCount = subObj.meshVertecCount or subObj.mesh:getVertexCount()
-			self.stats.vertices = self.stats.vertices + subObj.meshVertecCount
+			obj.meshVertecCount = obj.meshVertecCount or obj.mesh:getVertexCount()
+			self.stats.vertices = self.stats.vertices + obj.meshVertecCount
 		end
 		self.delton:stop()
 		
@@ -496,9 +494,8 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 	
 	--start rendering
 	for d,task in ipairs(scene) do
-		local subObj = task:getSubObj()
+		local obj = task:getObj()
 		local shaderID = task:getShaderID()
-		local obj = subObj.obj
 		
 		--set active shader
 		if lastShader ~= shaderID then
@@ -506,7 +503,7 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 			lastMaterial = false
 			lastReflection = false
 			
-			shaderObject = self:getRenderShader(shaderID, subObj, pass, { }, nil, true, cam.sun)
+			shaderObject = self:getRenderShader(shaderID, obj, pass, { }, nil, true, cam.sun)
 			shader = shaderObject.shader
 			shaderObject.session = { }
 			love.graphics.setShader(shader)
@@ -523,7 +520,7 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 		end
 		
 		--set active material
-		local material = subObj.material
+		local material = obj.material
 		if lastMaterial ~= material then
 			lastMaterial = material
 			
@@ -541,8 +538,8 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 		shaderObject.worldShader:perTask(self, shaderObject, task)
 		
 		--render
-		local mesh = subObj:getMesh("mesh")
-		local instanceMesh = subObj:getMesh("instanceMesh")
+		local mesh = obj:getMesh("mesh")
+		local instanceMesh = obj:getMesh("instanceMesh")
 		if instanceMesh then
 			mesh:attachAttribute("InstanceRotation0", instanceMesh, "perinstance")
 			mesh:attachAttribute("InstanceRotation1", instanceMesh, "perinstance")

@@ -211,7 +211,7 @@ function lib:getRenderShaderID(obj, pass, shadows)
 	local mat = obj.material
 	
 	--todo reflections can now support different models, for example for BB reflections
-	local reflections = not shadows and (obj.reflection or obj.obj and obj.obj.reflection or self.sky_reflection)
+	local reflections = not shadows and (obj.reflection or self.sky_reflection)
 	
 	local pixelShader = mat.pixelShader or obj.pixelShader or self.defaultPixelShader
 	local vertexShader = mat.vertexShader or obj.vertexShader or self.defaultVertexShader
@@ -242,7 +242,7 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, sun)
 	
 	if not self.mainShaders[shaderID][ID] then
 		local mat = obj.material
-		local reflection = not shadows and (obj.reflection or obj.obj and obj.obj.reflection or self.sky_reflection)
+		local reflection = not shadows and (obj.reflection or self.sky_reflection)
 		
 		--additional data
 		local info = {
