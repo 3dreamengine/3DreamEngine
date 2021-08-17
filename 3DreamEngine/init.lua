@@ -109,7 +109,7 @@ lib:setGodrays(16, false)
 lib:setDistortionMargin(true)
 
 --shadows
-lib:setShadowResolution(1024, 512)
+lib:setShadowResolution(1024 * 4, 512)
 lib:setShadowSmoothing(false)
 lib:setShadowCascade(8, 4)
 

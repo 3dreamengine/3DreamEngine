@@ -58,8 +58,12 @@ return {
 		for d,o in pairs(self.objects) do
 			if not self.groups[o.name] then
 				self.groups[o.name] = lib:newGroup()
-				self.groups[o.name].transform = o.transform
 				self.groups[o.name].linked = o.linked
+				self.groups[o.name].minLOD = o.LOD_min or 0
+			end
+			if (o.LOD_min or 0) <= self.groups[o.name].minLOD then
+				self.groups[o.name].minLOD = o.LOD_min or 0
+				self.groups[o.name].transform = o.transform
 			end
 			self.groups[o.name]:add(o)
 		end
@@ -111,6 +115,17 @@ return {
 		end
 	end,
 	
+	copySkeleton = function(self, o)
+		assert(o.skeleton, "skeleton does not exist")
+		self.sekelton = o.skeleton
+	end,
+	
+	copyAnimations = function(self, o)
+		assert(o.animations, "animation does not exist")
+		self.animations = o.animations
+		self.animationLengths = o.animationLengths
+	end,
+	
 	print = function(self)
 		--general innformation
 		print(self)
@@ -160,7 +175,7 @@ return {
 			print("", s, d)
 		end
 		
-		--physics
+		--lights
 		print("lights")
 		for d,s in pairs(self.lights) do
 			print("", s.name, s.brightness)

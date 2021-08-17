@@ -12,6 +12,7 @@ function lib:renderSky(transformProj, camTransform, transformScale)
 	love.graphics.push("all")
 	if not self.sky_texture then
 		love.graphics.clear()
+		--TODO optionally disable
 	elseif type(self.sky_texture) == "userdata" and self.sky_texture:getTextureType() == "cube" then
 		--cubemap
 		local shader = self:getShader("sky_cube")

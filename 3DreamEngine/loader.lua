@@ -24,6 +24,10 @@ local function clone(t)
 end
 
 local function prepareArgs(args)
+	if type(args) == "string" then
+		error("loadObjects signature has changed, please check docu")
+	end
+	
 	args = table.copy(args or { })
 	
 	for d,s in pairs(lib.defaultArgs) do
@@ -49,9 +53,9 @@ function lib:loadLibrary(path, args, prefix)
 	--prepare lights for library entry
 	for d,s in pairs(obj.lights) do
 		local best = math.huge
-		local master
 		local g = obj.groups[s.name]
 		if g and g.transform then
+			--make the origin the center
 			s.pos = g.transform:invert() * s.pos
 		end
 	end

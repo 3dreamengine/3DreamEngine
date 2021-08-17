@@ -457,11 +457,17 @@ return function(self, obj, path)
 				end
 			end
 		else
+			local time = 0
+			for d,s in pairs(animations) do
+				time = math.max(time, s[#s].time)
+			end
+			
 			obj.animations = {
 				default = animations,
 			}
+			
 			obj.animationLengths = {
-				default = animations[#animations].time,
+				default = time,
 			}
 		end
 	end

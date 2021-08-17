@@ -43,7 +43,7 @@ function lib:getPose(object, animation, time)
 		local length = object.animationLengths[animation[1]]
 		local time = animation[2] or 0
 		local blend = animation[3] or i > 1 and 1 / i
-		assert(anim and length, "animation is nil")
+		assert(anim and length, "animation is nil, is the name correct?")
 		
 		for joint,frames in pairs(anim) do
 			if not animation[4] or animation[4][joint] then
@@ -82,6 +82,7 @@ end
 local identity = mat4:getIdentity()
 function lib:applyPose(object, pose, skeleton, parentTransform)
 	if not skeleton then
+		assert(object.skeleton, "object requires a skeleton")
 		object.boneTransforms = { }
 		for name,_ in pairs(object.joints) do
 			object.boneTransforms[name] = identity
