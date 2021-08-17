@@ -183,7 +183,7 @@ function lib:loadObject(path, args)
 	--restructure into tree, the root node contains no data
 	if not obj.args.flatten then
 		for id,m in pairs(obj.meshes) do
-			if m.name ~= "root" then
+			if m.name ~= "root" and not m.tags.link then
 				local o = obj.objects[m.name]
 				if not o then
 					o = self:newObject(obj.path)
@@ -529,6 +529,6 @@ function lib:finishObject(obj)
 	
 	--3do exporter
 	if obj.args.export3do then
-		--self:export3do(obj)
+		self:export3do(obj)
 	end
 end

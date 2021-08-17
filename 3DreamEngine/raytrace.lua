@@ -187,6 +187,7 @@ local function triangeCheck_position(o, d, m)
 	local oy = m[5] * o[1] + m[6] * o[2] + m[7] * o[3] + m[8]
 	local dy = m[5] * d[1] + m[6] * d[2] + m[7] * d[3]
 	local v = oy + t * dy
+	
 	if v >= 0 and u+v <= 1 then
 		maxT = t
 		maxU = u
@@ -273,34 +274,29 @@ function raytrace:raytrace(object, o_origin, o_direction, mode, inner)
 	--clear
 	local origin, direction = o_origin, o_direction
 	if not inner then
-		maxT, maxU, maxV, maxF = 1, false, false, false
-		
-		--object transform
-		origin, direction = transform(o_origin, o_direction, object)
+		maxT, maxU, maxV, maxF, nearestObject = 1, false, false, false, false
 	end
+	
+	--object transform
+	origin, direction = transform(o_origin, o_direction, object)
 	
 	if object.class == "object" then
 		--for all meshes
-		for _,m in pairs(object.meshes) do
-			--group transform
-			local n_origin, n_direction = transform(origin, direction, m)
-			
-			for _,s in ipairs(m.objects) do
-				if s.vertices then
-					local old = maxT
-					local result = self:raytrace(s, n_origin, n_direction, mode, true)
-					if mode == "bool" and result then
-						return true
-					end
-					if old ~= maxT then
-						nearestObject = s
-					end
+		for _,s in pairs(object.meshes) do
+			if s.vertices then
+				local result = self:raytrace(s, origin, direction, mode, true)
+				if result and mode == "bool" then
+					return true
 				end
 			end
 		end
 		
-		for _,o in pairs(object.objects) do
-			--todo
+		--for all objects
+		for _,s in pairs(object.objects) do
+			local result = self:raytrace(s, origin, direction, mode, true)
+			if result and mode == "bool" then
+				return true
+			end
 		end
 		
 		if mode == "bool" then
@@ -323,10 +319,18 @@ function raytrace:raytrace(object, o_origin, o_direction, mode, inner)
 		
 		--raytrace
 		if mode == "bool" then
-			return raytrace_bool(origin, direction, object.raytraceTree)
+			local found = raytrace_bool(origin, direction, object.raytraceTree)
+			if found then
+				nearestObject = object
+			end
+			return found
 		else
 			--just fill as the super object will handle further math
+			local old = maxT
 			raytrace_position(origin, direction, object.raytraceTree)
+			if old ~= maxT then
+				nearestObject = object
+			end
 		end
 	else
 		error("object or mesh expected")

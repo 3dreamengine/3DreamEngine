@@ -28,47 +28,15 @@ local function convert(t)
 	end
 end
 
-return function(self, obj, path)
-	--load header
-	local file = love.filesystem.newFile(path, "r")
-	local typ = file:read(4)
-	
-	--check if up to date
-	if typ ~= "3DO4" then
-		print("3DO file " .. path .. " seems to be outdated and will be skipped")
-		file:close()
-		return true
-	end
-	
-	--unused 4 bytes
-	local _ = file:read(4)
-	
-	--header
-	local l = file:read(4)
-	local headerLength = love.data.unpack("L", l)
-	local headerData = file:read(headerLength)
-	
-	--object lua data
-	local header = packTable.unpack(love.data.decompress("string", "lz4", headerData))
-	table.merge(obj, header)
-	
-	--additional mesh data
-	local meshData = { }
-	if obj.meshData then
-		for d,s in ipairs(obj.meshData) do
-			meshData[d] = love.data.newByteData(love.data.decompress("string", "lz4", file:read(s)))
-		end
-	end
-	obj.meshData = nil
-	
-	--mesh creation and 3DO exporting makes no longer sense
-	obj.args.particleSystems = false
-	obj.args.mesh = false
-	obj.args.export3do = false
-	
+local function recreateObject(self, obj, meshData)
 	--recreate materials
 	for d,s in pairs(obj.materials) do
 		obj.materials[d] = table.merge(self:newMaterial(), s)
+	end
+	
+	--recreate transform
+	if obj.transform then
+		obj.transform = mat4(obj.transform)
 	end
 	
 	--recreate lights
@@ -87,13 +55,26 @@ return function(self, obj, path)
 	
 	--recreate objects
 	for d,s in pairs(obj.objects) do
-		obj.objects[d] = table.merge(self:newObject(s.name, obj, s.material), s)
+		local o = table.merge(self:newObject(s.name, obj, s.material), s)
+		recreateObject(self, o, meshData)
+		obj.objects[d] = o
+	end
+	
+	--relink materials
+	for _,s in pairs(obj.meshes) do
+		local mat = type(s.material) == "table" and s.material or self.materialLibrary[s.material] or obj.materials[s.material]
+		if mat then
+			s.material = setmetatable(mat, self.meta.material)
+		else
+			error("material " .. tostring(s.material) .. " required by object " .. tostring(obj.name) .. " does not exist!")
+		end
 	end
 	
 	--recreate meshes
-	print("todo, requires recursive 3do fix")
-	for _,o in pairs(obj.meshes) do
-		for d,s in pairs(o) do
+	for d,m in pairs(obj.meshes) do
+		local m = table.merge(self:newMesh(m.name, m.material, m.meshType), m)
+		obj.meshes[d] = m
+		for _,s in pairs(m) do
 			if type(s) == "table" and type(s.vertices) == "number" then
 				s.vertexMap = s.vertexMap and meshData[s.vertexMap]
 				s.vertices = meshData[s.vertices]
@@ -101,20 +82,9 @@ return function(self, obj, path)
 		end
 	end
 	
-	--relink materials
-	for d,s in pairs(obj.objects) do
-		local mat = type(s.material) == "table" and s.material or self.materialLibrary[s.material] or obj.materials[s.material]
-		if mat then
-			s.material = setmetatable(mat, self.meta.material)
-		else
-			file:close()
-			error("material " .. tostring(s.material) .. " required by object " .. tostring(obj.name) .. " does not exist!")
-		end
-	end
-	
 	--recreate vecs and mats
 	convert(obj.boundingBox)
-	for d,o in pairs(obj.objects) do
+	for _,o in pairs(obj.meshes) do
 		convert(o.boundingBox)
 		if o.transform then
 			o.transform = mat4(o.transform)
@@ -156,11 +126,54 @@ return function(self, obj, path)
 	
 	--recreate linked data
 	if obj.linkedObjects then
-		for d,s in ipairs(obj.linkedObjects) do
-			s.transform = mat4(s.transform)
+		for _,s in ipairs(obj.linkedObjects) do
+			if s.transform then
+				s.transform = mat4(s.transform)
+			end
 		end
 	end
+end
+
+return function(self, obj, path)
+	--load header
+	local file = love.filesystem.newFile(path, "r")
+	local typ = file:read(4)
 	
-	cache = { }
+	--check if up to date
+	if typ ~= "3DO5" then
+		print("3DO file " .. path .. " seems to be outdated and will be skipped")
+		file:close()
+		return true
+	end
+	
+	--unused 4 bytes
+	local _ = file:read(4)
+	
+	--header
+	local l = file:read(4)
+	local headerLength = love.data.unpack("L", l)
+	local headerData = file:read(headerLength)
+	
+	--object lua data
+	local header = packTable.unpack(love.data.decompress("string", "lz4", headerData))
+	table.merge(obj, header)
+	
+	--additional mesh data
+	local meshData = { }
+	if obj.dataStringsLengths then
+		for d,s in ipairs(obj.dataStringsLengths) do
+			local dat = love.data.decompress("string", "lz4", file:read(s))
+			meshData[d] = love.data.newByteData(dat)
+		end
+	end
+	obj.dataStringsLengths = nil
+	
+	--mesh creation and 3DO exporting makes no longer sense
+	obj.args.particleSystems = false
+	obj.args.mesh = false
+	obj.args.export3do = false
+	
+	recreateObject(self, obj, meshData)
+	
 	file:close()
 end

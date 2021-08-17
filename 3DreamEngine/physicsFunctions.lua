@@ -104,7 +104,7 @@ local function smallest(x, y, x1, y1, x2, y2, x3, y3)
 	return d1 == min and 1 or d2 == min and 2 or 3
 end
 
-function lib:getPhysicsObject(phy)
+function lib:getMeshPhysicsObject(phy, transform)
 	local n = { }
 	
 	n.typ = "mesh"
@@ -118,9 +118,10 @@ function lib:getPhysicsObject(phy)
 	lib.deltonLoad:start("transform")
 	local transformed = { }
 	local vertices = { }
+	local t = (transform or mat4:getIdentity()) * phy.transform
 	for d,s in ipairs(phy.vertices) do
 		if not transformed[s] then
-			transformed[s] = phy.transform * vec3(s)
+			transformed[s] = t * vec3(s)
 		end
 		vertices[d] = transformed[s]
 	end

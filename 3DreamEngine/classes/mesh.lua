@@ -143,7 +143,7 @@ return {
 				local newMesh = love.graphics.newMesh(mesh.vertexFormat, mesh.vertexCount, "triangles", "static")
 				
 				if mesh.vertexMap then
-					--newMesh:setVertexMap(mesh.vertexMap, "uint32")
+					newMesh:setVertexMap(mesh.vertexMap, "uint32")
 				end
 				newMesh:setVertices(mesh.vertices)
 				

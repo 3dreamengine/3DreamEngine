@@ -223,26 +223,30 @@ function p.newWorld()
 	return setmetatable(w, {__index = worldMeta})
 end
 
+function p:newGroup()
+	return {
+		typ = "group",
+		objects = { }
+	}
+end
+
 --creates a new mesh object used to control a set of triangle collider
-function p:newMesh(obj)
-	local n = { }
+function p:newMesh(obj, transform)
+	assert(obj.class == "object", "object expected")
+	local n = self:newGroup()
 	
 	if obj.physics then
-		n.typ = "group"
-		n.objects = { }
 		for d,phy in pairs(obj.physics) do
-			lib.deltonLoad:start("load physics")
-			table.insert(n.objects, lib:getPhysicsObject(phy))
-			lib.deltonLoad:stop()
+			table.insert(n.objects, lib:getMeshPhysicsObject(phy, transform))
 		end
-	elseif obj.objects then
-		obj.physics = { }
-		for d,s in pairs(obj.objects) do
-			lib.deltonLoad:start("prepare physics")
-			obj.physics[d] = lib:getPhysicsData(s)
-			lib.deltonLoad:stop()
+	end
+	
+	for d,s in pairs(obj.objects) do
+		local t = (s.transform or transform) and (s.transform or mat4:getIdentity()) * (transform or mat4:getIdentity())
+		local g = self:newMesh(s, t)
+		if #g.objects > 0 then
+			table.insert(n.objects, g)
 		end
-		return self:newMesh(obj)
 	end
 	
 	return setmetatable(n, {__index = objectMeta})

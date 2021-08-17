@@ -60,6 +60,12 @@ return {
 	end,
 	
 	updateBoundingBox = function(self)
+		for d,s in pairs(self.meshes) do
+			if not s.boundingBox.initialized then
+				s:updateBoundingBox()
+			end
+		end
+		
 		for d,s in pairs(self.objects) do
 			if not s.boundingBox.initialized then
 				s:updateBoundingBox()
@@ -112,6 +118,13 @@ return {
 		self.animationLengths = o.animationLengths
 	end,
 	
+	generatePhysics = function(self)
+		self.physics = { }
+		for d,s in pairs(self.objects) do
+			self.physics[d] = lib:getPhysicsData(s)
+		end
+	end,
+	
 	print = function(self, tabs)
 		tabs = tabs or 0
 		local indent = string.rep("  ", tabs + 1)
@@ -143,7 +156,8 @@ return {
 			local visibility = (m.renderVisibility ~= false and "X" or " ") .. " " .. (m.shadowVisibility ~= false and "X" or " ")
 			
 			--final string
-			local str = m.name .. string.rep(" ", width - #tags - #m.name) .. tags .. lod .. string.rep(" ", 8 - #lod) .. visibility .. "  " .. (m.mesh and m.mesh:getVertexCount() or "")
+			local vertexCount = (m.mesh and m.mesh.getVertexCount and m.mesh:getVertexCount() or "")
+			local str = m.name .. string.rep(" ", width - #tags - #m.name) .. tags .. lod .. string.rep(" ", 8 - #lod) .. visibility .. "  " .. vertexCount
 			
 			--merge meshes
 			print(indent2 .. str)
@@ -154,7 +168,7 @@ return {
 			print(indent .. "physics")
 			local count = { }
 			for d,s in pairs(self.physics or { }) do
-				print(indent2, d)
+				print(indent .. d)
 			end
 		end
 		
