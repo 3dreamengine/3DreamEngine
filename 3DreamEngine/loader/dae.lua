@@ -335,9 +335,9 @@ return function(self, obj, path)
 	local function addObject(name, mesh, transform)
 		for _,mesh in ipairs(meshData[mesh]) do
 			local id = name
-			obj.objects[id] = mesh:clone()
-			obj.objects[id]:setName(name)
-			obj.objects[id].transform = correction * transform
+			obj.meshes[id] = mesh:clone()
+			obj.meshes[id]:setName(name)
+			obj.meshes[id].transform = correction * transform
 		end
 	end
 	

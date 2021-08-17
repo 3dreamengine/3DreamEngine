@@ -12,7 +12,7 @@ function lib:newObject(path)
 			None = self:newMaterial()
 		},
 		objects = { },
-		groups = { },
+		meshes = { },
 		positions = { },
 		lights = { },
 		physics = { },
@@ -51,26 +51,6 @@ return {
 			end
 		end
 		return o
-	end,
-	
-	updateGroups = function(self)
-		self.groups = { }
-		for d,o in pairs(self.objects) do
-			if not self.groups[o.name] then
-				self.groups[o.name] = lib:newGroup()
-				self.groups[o.name].linked = o.linked
-				self.groups[o.name].minLOD = o.LOD_min or 0
-			end
-			if (o.LOD_min or 0) <= self.groups[o.name].minLOD then
-				self.groups[o.name].minLOD = o.LOD_min or 0
-				self.groups[o.name].transform = o.transform
-			end
-			self.groups[o.name]:add(o)
-		end
-		
-		for d,s in ipairs(self.groups) do
-			s:updateBoundingBox()
-		end
 	end,
 	
 	updateBoundingBox = function(self)
@@ -126,59 +106,74 @@ return {
 		self.animationLengths = o.animationLengths
 	end,
 	
-	print = function(self)
+	print = function(self, tabs)
+		tabs = tabs or 0
+		local indent = string.rep("  ", tabs + 1)
+		local indent2 = string.rep("  ", tabs + 2)
+		
 		--general innformation
-		print(self)
+		print(string.rep("  ", tabs) .. self.name)
 		
 		--print objects
-		for name,group in pairs(self.groups) do
-			--header
-			print("  " .. name)
-			local width = 32
-			print("       # tags" .. string.rep(" ", width-4) .. "LOD     D S  Vertexcount")
-			
-			--group together similar objects
-			local found = { }
-			for _,s in ipairs(group.objects) do
-				local tags = { }
-				for d,s in pairs(s.tags) do
-					tags[#tags+1] = d
-				end
-				
-				if s.linked then
-					table.insert(tags, 1, "L")
-				end
-				
-				local tags = table.concat(tags, ", "):sub(1, width)
-				local min, max = s:getLOD()
-				local lod = max and (min .. " - " .. max) or ""
-				local visibility = (s.renderVisibility ~= false and "X" or " ") .. " " .. (s.shadowVisibility ~= false and "X" or " ")
-				
-				local str = string.format("%s%s%s%s%s", tags, string.rep(" ", width - #tags), lod, string.rep(" ", 8 - #lod), visibility)
-				found[str] = found[str] or {0, 0}
-				found[str][1] = found[str][1] + 1
-				found[str][2] = found[str][2] + (s.mesh and s.mesh:getVertexCount() or 0)
+		local width = 32
+		if next(self.meshes) then
+			print(indent .. "meshes")
+			print(indent2 .. "name " .. string.rep(" ", width-9) .. "tags LOD     R S  vertexcount")
+		end
+		
+		--group together similar meshes
+		local found = { }
+		for _,m in pairs(self.meshes) do
+			--to array
+			local tags = { }
+			for d,s in pairs(m.tags) do
+				table.insert(tags, tostring(d))
 			end
 			
-			for str, count in pairs(found) do
-				print(string.format("     % 3d %s  %d", count[1], str, count[2]))
-			end
+			--data to display
+			local tags = table.concat(tags, ", "):sub(1, width)
+			local min, max = m:getLOD()
+			local lod = max and (min .. " - " .. max) or ""
+			local visibility = (m.renderVisibility ~= false and "X" or " ") .. " " .. (m.shadowVisibility ~= false and "X" or " ")
+			
+			--final string
+			local str = m.name .. string.rep(" ", width - #tags - #m.name) .. tags .. lod .. string.rep(" ", 8 - #lod) .. visibility .. "  " .. (m.mesh and m.mesh:getVertexCount() or "")
+			
+			--merge meshes
+			print(indent2 .. str)
 		end
 		
 		--physics
-		print("physics")
-		local count = { }
-		for d,s in pairs(self.physics or { }) do
-			count[s.name] = (count[s.name] or 0) + 1
-		end
-		for d,s in pairs(count) do
-			print("", s, d)
+		if next(self.physics) then
+			print(indent .. "physics")
+			local count = { }
+			for d,s in pairs(self.physics or { }) do
+				print(indent2, d)
+			end
 		end
 		
 		--lights
-		print("lights")
-		for d,s in pairs(self.lights) do
-			print("", s.name, s.brightness)
+		if next(self.lights) then
+			print(indent .. "lights")
+			for d,s in pairs(self.lights) do
+				print(indent2 .. tostring(s.name) .. "  " .. s.brightness)
+			end
+		end
+		
+		--positions
+		if next(self.positions) then
+			print(indent .. "positions")
+			for d,s in pairs(self.positions) do
+				print(indent2 .. tostring(s.name) .. string.format("%f, %f, %f", s.x, s.y, s.z))
+			end
+		end
+		
+		--print objects
+		if next(self.objects) then
+			print(indent .. "objects")
+			for _,o in pairs(self.objects) do
+				o:print(tabs + 2)
+			end
 		end
 	end
 }

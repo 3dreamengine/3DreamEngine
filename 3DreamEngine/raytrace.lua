@@ -279,30 +279,34 @@ function raytrace:raytrace(object, o_origin, o_direction, mode, inner)
 		origin, direction = transform(o_origin, o_direction, object)
 	end
 	
-	if object.groups then
+	if object.class == "object" then
 		--for all meshes
-		local best = -1
-		for _,group in pairs(object.groups) do
+		for _,m in pairs(object.meshes) do
 			--group transform
-			local n_origin, n_direction = transform(origin, direction, group)
+			local n_origin, n_direction = transform(origin, direction, m)
 			
-			for _,s in ipairs(group.objects) do
+			for _,s in ipairs(m.objects) do
 				if s.vertices then
+					local old = maxT
 					local result = self:raytrace(s, n_origin, n_direction, mode, true)
 					if mode == "bool" and result then
 						return true
 					end
-					if best ~= maxT then
-						best = maxT
+					if old ~= maxT then
 						nearestObject = s
 					end
 				end
 			end
 		end
+		
+		for _,o in pairs(object.objects) do
+			--todo
+		end
+		
 		if mode == "bool" then
 			return false
 		end
-	else
+	elseif object.class == "mesh" then
 		--boundingbox check
 		local center = object.boundingBox.center
 		local nearest = nearestPointToLine(origin, origin + direction, center)
@@ -324,6 +328,8 @@ function raytrace:raytrace(object, o_origin, o_direction, mode, inner)
 			--just fill as the super object will handle further math
 			raytrace_position(origin, direction, object.raytraceTree)
 		end
+	else
+		error("object or mesh expected")
 	end
 	
 	--return final position and normal

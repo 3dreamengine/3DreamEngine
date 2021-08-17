@@ -26,8 +26,9 @@ function lib:renderSky(transformProj, camTransform, transformScale)
 		love.graphics.setShader(shader)
 		shader:send("exposure", self.sky_hdri_exposure)
 		shader:send("transformProj", transformProj)
-		self.object_sky.objects.Sphere.mesh:setTexture(self.sky_texture)
-		love.graphics.draw(self.object_sky.objects.Sphere.mesh)
+		local mesh = self.object_sky.meshes.Sphere.mesh
+		mesh:setTexture(self.sky_texture)
+		love.graphics.draw(mesh)
 	else
 		--sky dome
 		lib.skyInUse = true
@@ -55,8 +56,9 @@ function lib:renderSky(transformProj, camTransform, transformScale)
 		shader:send("rainbowDir", {self.rainbow_dir:unpack()})
 		
 		love.graphics.setColor(self.sky_color:unpack())
-		self.object_cube.objects.Cube.mesh:setTexture(self.textures.sky)
-		love.graphics.draw(self.object_cube.objects.Cube.mesh)
+		local mesh = self.object_cube.meshes.Cube.mesh
+		mesh:setTexture(self.textures.sky)
+		love.graphics.draw(mesh)
 		
 		--moon
 		for sunMoon = 1, 2 do
@@ -82,7 +84,7 @@ function lib:renderSky(transformProj, camTransform, transformScale)
 					shader:send("sun", {math.cos(self.sky_day / 30 * math.pi * 2), math.sin(self.sky_day / 30 * math.pi * 2), 0})
 					shader:send("normalTex", moon_normal)
 					
-					self.object_plane.objects.Plane.mesh:setTexture(moon)
+					self.object_plane.meshes.Plane.mesh:setTexture(moon)
 				end
 			else
 				local sun = self:getImage(self.textures.sun)
@@ -99,10 +101,10 @@ function lib:renderSky(transformProj, camTransform, transformScale)
 					shader:send("right", {right:unpack()})
 					shader:send("InstanceCenter", {(self.sun):unpack()})
 					
-					self.object_plane.objects.Plane.mesh:setTexture(sun)
+					self.object_plane.meshes.Plane.mesh:setTexture(sun)
 				end
 			end
-			love.graphics.draw(self.object_plane.objects.Plane.mesh)
+			love.graphics.draw(self.object_plane.meshes.Plane.mesh)
 		end
 		
 		--clouds
@@ -139,11 +141,11 @@ function lib:renderSky(transformProj, camTransform, transformScale)
 			self.textures.clouds_base:setWrap("repeat")
 			shader:send("tex_base", self.textures.clouds_base)
 			
-			self.object_cube.objects.Cube.mesh:setTexture(self.cloudCanvas)
+			self.object_cube.meshes.Cube.mesh:setTexture(self.cloudCanvas)
 			self.cloudCanvas:setWrap("repeat")
 			
 			shader:send("transformProj", transformProj)
-			love.graphics.draw(self.object_cube.objects.Cube.mesh)
+			love.graphics.draw(self.object_cube.meshes.Cube.mesh)
 		end
 	end
 	love.graphics.pop()

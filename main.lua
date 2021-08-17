@@ -15,6 +15,8 @@ local font_small = love.graphics.newFont(16)
 
 --descriptions to show on hover
 local descriptions = {
+	["AlphaBlending"] = "Refraction showcase",
+	["camera"] = "PBR showcase",
 	["Lamborghini"] = "PBR rendered Lamborghini with emission texture.",
 	["Tavern"] = "PBR rendered Tavern with 9 fully soft shadowed static light sources. Toggle different features to see real time differences.",
 	["monkey"] = "Good old Suzanne. Simpliest usage example.",
@@ -65,6 +67,8 @@ function love.load()
 	if default and default ~= "" then
 		if default == "ShaderEditor" then
 			require("ShaderEditor/main")
+		elseif default == "TextureTool" then
+			require("TextureTool/main")
 		else
 			require("examples/" .. love.filesystem.read("default") .. "/main")
 		end
@@ -95,9 +99,15 @@ function love.draw()
 	end
 	
 	--launch shader editor
-	local hover = button("ShaderEditor", 300, 50, 200, 30)
+	local hover = button("Shader Editor", 300, 50, 200, 30)
 	if hover and mousereleased then
 		require("ShaderEditor/main")
+	end
+	
+	--launch texture tool
+	local hover = button("Texture Tool", 300, 50 + 35, 200, 30)
+	if hover and mousereleased then
+		require("TextureTool/main")
 	end
 	
 	mousereleased = false

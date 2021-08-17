@@ -216,7 +216,7 @@ function lib:bakeMaterials(list, ID)
 	for d,o in pairs(list) do
 		for i,s in ipairs(o.texCoords) do
 			local m = o.materials[i]
-			local a = atlas[m.name]
+			local a = atlas[m.name] or {0, 0, 0, 0}
 			local uv_origin = uvo[d][i] or {0, 0}
 			local uv = uvs[m.name] or {0, 0, 1, 1}
 			

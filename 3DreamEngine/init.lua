@@ -168,9 +168,9 @@ lib.scene = lib:newScene()
 lib.reflections_levels = 5
 
 --default objects
-lib.object_sky = lib:loadObject(lib.root .. "/objects/sky", {splitMaterials = false})
-lib.object_cube = lib:loadObject(lib.root .. "/objects/cube", {splitMaterials = false})
-lib.object_plane = lib:loadObject(lib.root .. "/objects/plane", {splitMaterials = false})
+lib.object_sky = lib:loadObject(lib.root .. "/objects/sky", {splitMaterials = false, flatten = true})
+lib.object_cube = lib:loadObject(lib.root .. "/objects/cube", {splitMaterials = false, flatten = true})
+lib.object_plane = lib:loadObject(lib.root .. "/objects/plane", {splitMaterials = false, flatten = true})
 
 --default textures
 local pix = love.image.newImageData(2, 2)
@@ -370,27 +370,7 @@ function lib:draw(object, x, y, z, sx, sy, sz)
 			0, 0, sz or sx or 1, z,
 			0, 0, 0, 1
 		)
-		
-		--also applies objects own transformation if present
-		if object.transform then
-			transform = transform * object.transform
-		end
 		dynamic = true
-	else
-		--pre defined transform
-		transform = object.transform
-	end
-	
-	--object container transform
-	if object.obj then
-		dynamic = dynamic or object.obj.dynamic
-		if object.obj.transform then
-			if transform then
-				transform = object.obj.transform * transform
-			else
-				transform = object.obj.transform
-			end
-		end
 	end
 	
 	--add to scene

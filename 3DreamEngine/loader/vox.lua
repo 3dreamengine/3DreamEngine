@@ -203,8 +203,8 @@ return function(self, obj, path)
 	
 	--generate final object
 	local function generate(m, name, t)
-		obj.objects[name] = self:newMesh(name, obj, self:newMaterial())
-		local o = obj.objects[name]
+		local o = self:newMesh(name, obj, self:newMaterial())
+		obj.meshes[name] = o
 		
 		for x = 0, m.x-1 do
 			for y = 0, m.y-1 do

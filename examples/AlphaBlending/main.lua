@@ -16,11 +16,11 @@ dream:loadMaterialLibrary(projectDir .. "materials")
 local scene = dream:loadObject(projectDir .. "scene", {splitMaterials = true})
 
 --light
-local p = scene.positions[1]
+local p = scene.objects.light.positions[1]
 local light = dream:newLight("point", p.x, p.y, p.z, 1.4, 1.2, 1.0, 20.0)
 light:addShadow(true)
 light:setSmoothing(true)
-light.blacklist = {[scene.objects.chandelier_glass_None] = true, [scene.objects.chandelier_WhiteGlass] = true}
+light.blacklist = {[scene.objects.chandelier_glass] = true, [scene.objects.chandelier] = true}
 
 --custom position and rotation
 dream.cam.rx = 0.9

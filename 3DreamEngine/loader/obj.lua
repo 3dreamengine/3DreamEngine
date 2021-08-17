@@ -8,12 +8,11 @@ return function(self, obj, path)
 	local normals = { }
 	local texture = { }
 	
-	--load object
+	--initial mesh
 	local material = obj.materials.None
-	
 	local o = self:newMesh("object", obj, material)
-	obj.objects.object = o
-	objectID = "object"
+	local meshID = "object"
+	obj.meshes[meshID] = o
 	
 	for l in love.filesystem.lines(path) do
 		local v = string.split(l, " ")
@@ -52,9 +51,9 @@ return function(self, obj, path)
 				end
 			end
 		elseif v[1] == "o" then
-			objectID = self:decodeObjectName(l:sub(3))
-			obj.objects[objectID] = obj.objects[objectID] or self:newMesh(objectID, obj, material)
-			o = obj.objects[objectID]
+			meshID = self:decodeObjectName(l:sub(3))
+			obj.meshes[meshID] = obj.meshes[meshID] or self:newMesh(meshID, obj, material)
+			o = obj.meshes[meshID]
 		end
 	end
 end

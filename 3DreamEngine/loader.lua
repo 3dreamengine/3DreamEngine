@@ -5,6 +5,31 @@ loader.lua - loads objects
 
 local lib = _3DreamEngine
 
+local tags = {
+	["PHYSICS"] = true,
+	["LOD"] = true,
+	["POS"] = true,
+	["LINK"] = true,
+	["BAKE"] = true,
+	["SHADOW"] = true,
+	["ID"] = true,
+	["RAYTRACE"] = true,
+	["REFLECTION"] = true,
+	["REMOVE"] = true,
+}
+
+--buffers
+local buffers = {
+	"vertices",
+	"normals",
+	"texCoords",
+	"colors",
+	"materials",
+	"extras",
+	"weights",
+	"joints",
+}
+
 lib.defaultArgs = {
 	cleanup = true,
 	mesh = true,
@@ -12,7 +37,8 @@ lib.defaultArgs = {
 	skip3do = false,
 	particlesystems = true,
 	splitMaterials = false,
-	meshType = "textured"
+	meshType = "textured",
+	flatten = false,
 }
 
 local function clone(t)
@@ -53,7 +79,7 @@ function lib:loadLibrary(path, args, prefix)
 	--prepare lights for library entry
 	for d,s in pairs(obj.lights) do
 		local best = math.huge
-		local g = obj.groups[s.name]
+		local g = obj.objects[s.name]
 		if g and g.transform then
 			--make the origin the center
 			s.pos = g.transform:invert() * s.pos
@@ -77,18 +103,13 @@ function lib:loadLibrary(path, args, prefix)
 			o.transform = nil
 		end
 	end
-	
-	--update library objects
-	for d,s in pairs(changed) do
-		d:updateGroups()
-	end
 end
 
 --remove objects without vertices
 local function cleanEmpties(obj)
-	for d,o in pairs(obj.objects) do
-		if o.vertices and #o.vertices == 0 and not o.linked or o.tags.remove then
-			obj.objects[d] = nil
+	for d,m in pairs(obj.meshes) do
+		if m.vertices and #m.vertices == 0 and not m.linked or m.tags.remove then
+			obj.meshes[d] = nil
 		end
 	end
 end
@@ -103,9 +124,8 @@ local supportedFiles = {
 }
 
 --loads an object
---args is a table containing additional settings
 --path is the absolute path without extension
---3do objects will be loaded part by part, threaded. yourObject.objects.yourMesh.mesh is nil, if its not loaded yet
+--args is a table containing additional settings
 function lib:loadObject(path, args)
 	--set default args
 	args = prepareArgs(args)
@@ -116,7 +136,6 @@ function lib:loadObject(path, args)
 	self.deltonLoad:start("load " .. obj.name)
 	
 	--load files
-	--if two object files are available (.obj and .vox) it might crash, since it loads all)
 	local found = false
 	for _,typ in ipairs(supportedFiles) do
 		local info = love.filesystem.getInfo(obj.path .. "." .. typ)
@@ -159,84 +178,119 @@ function lib:loadObject(path, args)
 	
 	
 	--parse tags
-	do
-		local tags = {
-			["PHYSICS"] = true,
-			["LOD"] = true,
-			["POS"] = true,
-			["LINK"] = true,
-			["BAKE"] = true,
-			["SHADOW"] = true,
-			["ID"] = true,
-			["RAYTRACE"] = true,
-			["REFLECTION"] = true,
-			["REMOVE"] = true,
-		}
-		for d,o in pairs(obj.objects) do
-			o.tags = { }
-			local possibles = string.split(o.name, "_")
-			for index,tag in ipairs(possibles) do
-				local key, value = unpack(string.split(tag, ":"))
-				if tags[key] then
-					o.tags[key:lower()] = value or true
-				else
-					if key:upper() == key and key:lower() ~= key then
-						print("unknown tag '" .. key .. "' of object '" .. o.name .. "' in '" .. path .. "'")
-					end
-					o.name = table.concat(possibles, "_", index)
-					break
+	for _,m in pairs(obj.meshes) do
+		m.tags = { }
+		local possibles = string.split(m.name, "_")
+		
+		--in case the object consists of tags only, it is considered as a root object
+		m.name = "root"
+		
+		for index,tag in ipairs(possibles) do
+			local key, value = unpack(string.split(tag, ":"))
+			if tags[key] then
+				--tag found
+				m.tags[key:lower()] = value or true
+			else
+				--cancel, the rest is the name
+				if key:upper() == key and key:lower() ~= key then
+					print(string.format("unknown tag '%s' of object '%s' in '%s'", key, m.name, path))
 				end
+				m.name = table.concat(possibles, "_", index)
+				break
 			end
 		end
 	end
 	
 	
-	--remove empty objects
+	--remove empty meshes
 	cleanEmpties(obj)
 	
 	
+	--restructure into tree, the root node contains no data
+	if not obj.args.flatten then
+		for id,m in pairs(obj.meshes) do
+			if m.name ~= "root" then
+				local o = obj.objects[m.name]
+				if not o then
+					o = self:newObject(obj.path)
+					o.name = m.name
+					o.args = obj.args
+					o.transform = m.transform
+					m.transform = nil
+					obj.objects[m.name] = o
+				end
+				
+				obj.meshes[id] = nil
+				o.meshes[id] = m
+			end
+		end
+	end
+	
+	
+	--extract positions, physics, ...
+	for _,o in pairs(obj.objects) do
+		self:processObject(o)
+	end
+	self:processObject(obj)
+	
+	
+	::skipWhen3do::
+	
+	
+	--create meshes, link library entries, ...
+	for _,o in pairs(obj.objects) do
+		self:finishObject(o)
+	end
+	self:finishObject(obj)
+	
+	
+	self.deltonLoad:stop()
+	return obj
+end
+
+function lib:processObject(obj)
 	--extract positions
-	for d,o in pairs(obj.objects) do
-		if o.tags.pos then
+	for d,m in pairs(obj.meshes) do
+		if m.tags.pos then
 			--average position
 			local x, y, z = 0, 0, 0
-			for i,v in ipairs(o.vertices) do
+			for i,v in ipairs(m.vertices) do
 				x = x + v[1]
 				y = y + v[2]
 				z = z + v[3]
 			end
-			local c = #o.vertices
+			local c = #m.vertices
 			x = x / c
 			y = y / c
 			z = z / c
 			
 			--average size
 			local r = 0
-			for i,v in ipairs(o.vertices) do
+			for i,v in ipairs(m.vertices) do
 				r = r + math.sqrt((v[1] - x)^2 + (v[2] - y)^2 + (v[3] - z)^2)
 			end
 			r = r / c
 			
-			if o.transform then
-				x, y, z = (o.transform * vec3(x, y, z)):unpack()
+			if m.transform then
+				x, y, z = (m.transform * vec3(x, y, z)):unpack()
 			end
 			
 			--add position
-			obj.positions[#obj.positions+1] = {
-				objectName = o.name,
-				name = o.tags.pos,
+			table.insert(obj.positions, {
+				objectName = m.name,
+				name = type(m.tags.pos) == "string" and m.tags.pos or d,
 				size = r,
 				x = x,
 				y = y,
 				z = z,
-			}
-			obj.objects[d] = nil
+			})
+			obj.meshes[d] = nil
 		end
 	end
 	
 	
 	--extract reflections
-	for d,o in pairs(obj.objects) do
+	for d,o in pairs(obj.meshes) do
 		if o.tags.reflection then
 			--average position
 			local h = math.huge
@@ -265,7 +319,7 @@ function lib:loadObject(path, args)
 			
 			--remove as object
 			table.insert(obj.reflections, r)
-			obj.objects[d] = nil
+			obj.meshes[d] = nil
 		end
 	end
 	
@@ -274,10 +328,10 @@ function lib:loadObject(path, args)
 	--detect links
 	do
 		local linkedNames = { }
-		for d,o in pairs(obj.objects) do
+		for d,o in pairs(obj.meshes) do
 			if o.tags.link then
 				--remove original
-				obj.objects[d] = nil
+				obj.meshes[d] = nil
 				
 				--store link
 				obj.linked = obj.linked or { }
@@ -295,26 +349,15 @@ function lib:loadObject(path, args)
 		local changes = true
 		while changes do
 			changes = false
-			for d,o in pairs(obj.objects) do
-				--buffers
-				local buffers = {
-					"vertices",
-					"normals",
-					"texCoords",
-					"colors",
-					"materials",
-					"extras",
-					"weights",
-					"joints",
-				}
-				
+			for d,o in pairs(obj.meshes) do
 				if obj.args.splitMaterials and not o.tags.bake and not o.tags.split then
 					changes = true
-					obj.objects[d] = nil
+					obj.meshes[d] = nil
 					for i,m in ipairs(o.materials) do
 						local d2 = d .. "_" .. m.name
-						if not obj.objects[d2] then
+						if not obj.meshes[d2] then
 							local o2 = o:clone()
+							o2.name = o.name .. "_" .. m.name
 							o2.tags = table.copy(o.tags)
 							o2.tags.split = true
 							
@@ -329,10 +372,10 @@ function lib:loadObject(path, args)
 								end
 							end
 							
-							obj.objects[d2] = o2
+							obj.meshes[d2] = o2
 						end
 						
-						local o2 = obj.objects[d2]
+						local o2 = obj.meshes[d2]
 						local i2 = #o2.vertices+1
 						
 						--copy buffers
@@ -345,10 +388,9 @@ function lib:loadObject(path, args)
 					end
 					
 					for i,f in ipairs(o.faces) do
-						--TODO: if a face shares more than one material it will cause errors
 						local m = o.materials[f[1]]
 						local d2 = d .. "_" .. m.name
-						local o2 = obj.objects[d2]
+						local o2 = obj.meshes[d2]
 						o2.faces[#o2.faces+1] = {
 							o2.translation[f[1]],
 							o2.translation[f[2]],
@@ -357,7 +399,7 @@ function lib:loadObject(path, args)
 					end
 				end
 			end
-			for d,o in pairs(obj.objects) do
+			for d,o in pairs(obj.meshes) do
 				o.translation = nil
 			end
 		end
@@ -365,7 +407,7 @@ function lib:loadObject(path, args)
 	
 	
 	--shadow only detection
-	for d,o in pairs(obj.objects) do
+	for d,o in pairs(obj.meshes) do
 		if o.tags.shadow then
 			if o.tags.shadow == "false" then
 				o:setShadowVisibility(false)
@@ -373,7 +415,7 @@ function lib:loadObject(path, args)
 				o:setRenderVisibility(false)
 				
 				--hide rest of group in shadow pass
-				for d2,o2 in pairs(obj.objects) do
+				for d2,o2 in pairs(obj.meshes) do
 					if o2.name == o.name and not o.tags.shadow then
 						o:setShadowVisibility(false)
 					end
@@ -386,7 +428,7 @@ function lib:loadObject(path, args)
 	--LOD detection
 	for _,typ in ipairs({"renderVisibility", "shadowVisibility"}) do
 		local max = { }
-		for d,o in pairs(obj.objects) do
+		for d,o in pairs(obj.meshes) do
 			if o[typ] ~= false and o.tags.lod then
 				local nr = tonumber(o.tags.lod)
 				assert(nr, "LOD nr malformed: " .. o.name .. " (use 'LOD:integer')")
@@ -395,10 +437,34 @@ function lib:loadObject(path, args)
 		end
 		
 		--apply LOD level
-		for d,o in pairs(obj.objects) do
+		for d,o in pairs(obj.meshes) do
 			if o[typ] ~= false and max[o.name] then
 				local nr = tonumber(o.tags.lod) or 0
 				o:setLOD(nr, max[o.name] == nr and math.huge or nr+1)
+			end
+		end
+	end
+	
+	
+	--extract physics
+	for d,o in pairs(obj.meshes) do
+		if o.tags.physics then
+			if o.vertices then
+				--leave at origin for library entries
+				if obj.args.loadAsLibrary then
+					o.transform = nil
+				end
+				
+				--2.5D physics
+				if o.tags.physics then
+					obj.physics = obj.physics or { }
+					obj.physics[d] = self:getPhysicsData(o)
+				end
+			end
+			
+			--remove if no longer used
+			if not o.tags.lod and not o.tags.bake then
+				obj.meshes[d] = nil
 			end
 		end
 	end
@@ -420,30 +486,6 @@ function lib:loadObject(path, args)
 	end
 	
 	
-	--extract physics
-	for d,o in pairs(obj.objects) do
-		if o.tags.physics or o.tags.collphy then
-			if o.vertices then
-				--leave at origin for library entries
-				if obj.args.loadAsLibrary then
-					o.transform = nil
-				end
-				
-				--2.5D physics
-				if o.tags.physics or o.tags.collphy then
-					obj.physics = obj.physics or { }
-					obj.physics[d] = self:getPhysicsData(o)
-				end
-			end
-			
-			--remove if no longer used
-			if not o.tags.lod and not o.tags.bake then
-				obj.objects[d] = nil
-			end
-		end
-	end
-	
-	
 	--post load materials
 	do
 		local done = { }
@@ -452,7 +494,7 @@ function lib:loadObject(path, args)
 			self:finishMaterial(s, obj)
 			done[s] = true
 		end
-		for d,s in pairs(obj.objects) do
+		for d,s in pairs(obj.meshes) do
 			if not done[s] then
 				done[s]  = true
 				self:finishMaterial(s.material, obj)
@@ -464,7 +506,7 @@ function lib:loadObject(path, args)
 	--bake
 	do
 		local groups = { }
-		for d,o in pairs(obj.objects) do
+		for d,o in pairs(obj.meshes) do
 			if o.tags.bake then
 				if not groups[o.tags.bake] then
 					groups[o.tags.bake] = {o}
@@ -477,10 +519,9 @@ function lib:loadObject(path, args)
 			self:bakeMaterials(s, obj.path .. "_" .. tostring(d))
 		end
 	end
-	
-	::skipWhen3do::
-	
-	
+end
+
+function lib:finishObject(obj)	
 	--link objects
 	if obj.linked then
 		for id, link in ipairs(obj.linked) do
@@ -532,13 +573,6 @@ function lib:loadObject(path, args)
 	
 	--3do exporter
 	if obj.args.export3do then
-		self:export3do(obj)
+		--self:export3do(obj)
 	end
-	
-	
-	obj:updateGroups()
-	
-	
-	self.deltonLoad:stop()
-	return obj
 end

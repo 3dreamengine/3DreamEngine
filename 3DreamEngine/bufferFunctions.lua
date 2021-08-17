@@ -63,15 +63,15 @@ function lib:applyTransform(s, transform)
 	end
 end
 
---merge all meshs of an object and concat all buffer together
+--merge all meshes of an object and concat all buffer together
 --it uses a random material and therfore either requires baking afterwards or only identical materials in the first place
 --it returns a cloned object with only one mesh
-function lib:mergemeshs(obj)
+function lib:mergeMeshes(obj)
 	local final = obj:clone()
 	local o = self:newMesh("merged", final)
-	final.objects = {merged = o}
+	final.meshes = {merged = o}
 	
-	for d,s in pairs(obj.objects) do
+	for d,s in pairs(obj.meshes) do
 		o.material = s.material
 		o.jointIDs = s.jointIDs
 		if o.jointIDs then
@@ -81,11 +81,11 @@ function lib:mergemeshs(obj)
 	end
 	
 	--get valid objects
-	local objects = { }
-	for d,s in pairs(obj.objects) do
+	local meshes = { }
+	for d,s in pairs(obj.meshes) do
 		if not s.LOD_max or s.LOD_max >= math.huge then
 			if s.tags.merge ~= false then
-				objects[d] = s
+				meshes[d] = s
 			end
 		end
 	end
@@ -101,7 +101,7 @@ function lib:mergemeshs(obj)
 		"joints",
 	}
 	local found = { }
-	for d,s in pairs(objects) do
+	for d,s in pairs(meshes) do
 		for _,buffer in pairs(buffers) do
 			if s[buffer] then
 				found[buffer] = true
@@ -119,7 +119,7 @@ function lib:mergemeshs(obj)
 	
 	--merge buffers
 	local startIndices = { }
-	for d,s in pairs(objects) do
+	for d,s in pairs(meshes) do
 		local index = #o.vertices
 		startIndices[d] = index
 		
@@ -152,7 +152,7 @@ function lib:mergemeshs(obj)
 	end
 	
 	--merge faces
-	for d,s in pairs(objects) do
+	for d,s in pairs(meshes) do
 		for _,face in ipairs(s.faces) do
 			local i = startIndices[d]
 			table.insert(o.faces, {face[1] + i, face[2] + i, face[3] + i})
@@ -160,7 +160,6 @@ function lib:mergemeshs(obj)
 	end
 	
 	final:updateBoundingBox()
-	final:updateGroups()
 	
 	return final
 end
@@ -266,19 +265,20 @@ lib.meshTypeFormats = {
 --note that .3do files has it's own mesh loader
 function lib:createMesh(obj)
 	if obj.class == "object" then
-		local cache = { }
-		for d,o in pairs(obj.objects) do
-			if not o.linked and not o.tags.raytrace then
-				if cache[o.vertices] then
-					o.mesh = cache[o.vertices].mesh
-					o.tangents = cache[o.vertices].tangents
-				else
-					self:createMesh(o)
-					cache[o.vertices] = o
-				end
+		if not obj.linked then
+			for d,o in pairs(obj.meshes) do
+				lib:createMesh(o)
+			end
+			
+			for d,o in pairs(obj.objects) do
+				lib:createMesh(o)
 			end
 		end
 	elseif obj.class == "mesh" then
+		if not obj.faces then
+			return
+		end
+		
 		--set up vertex map
 		local vertexMap = { }
 		for d,f in ipairs(obj.faces) do

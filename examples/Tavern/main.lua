@@ -30,6 +30,8 @@ dream:init()
 --load scene
 local scene = dream:loadObject(projectDir .. "scene", {cleanup = false})
 
+scene:print()
+
 local player = {
 	x = 4,
 	y = 1.5,

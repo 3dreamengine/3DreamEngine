@@ -8,6 +8,7 @@ return {
 		end
 		
 		--clone meshes too such that their parent reference works again
+		print("object:clone() not done yet, parent reference obj is weird, consider removal")
 		if n.objects then
 			local o = n.objects
 			n.objects = { }

@@ -109,6 +109,11 @@ end
 --apply joints to mesh data directly
 function lib:applyJoints(object)
 	if object.class == "object" then
+		for _,m in pairs(object.meshes) do
+			self:applyJoints(m)
+		end
+		
+		--also apply to children
 		for _,o in pairs(object.objects) do
 			self:applyJoints(o)
 		end

@@ -21,10 +21,10 @@ local function loadParticles(self, particleSystems)
 		
 		ps.loadedObjects = { }
 		for i,v in pairs(ps.objects) do
-			local o = self:loadObject(i, {cleanup = false, mesh = false, particleSystems = false})
+			local o = self:loadObject(i, {cleanup = false, mesh = false, particleSystems = false, flatten = true})
 			
 			--extract meshes
-			for d,s in pairs(o.objects) do
+			for d,s in pairs(o.meshes) do
 				s.particleDensity = v
 				table.insert(ps.loadedObjects, s)
 			end
@@ -71,18 +71,18 @@ local function getInput(input, o, f)
 end
 
 --add particle system objects
---for every sub object (which is not a particle mesh itself) with a material with an attached particle systems create a new object (the particles)
+--for every mesh (which is not a particle mesh itself) with a material with an attached particle systems create a new mesh (the particles)
 --assigning several materials to one object without the split arg therefore wont work properly
 function lib:addParticlesystems(obj)
-	local objects = { }
-	for oName, o in pairs(obj.objects) do
+	local meshes = { }
+	for oName, o in pairs(obj.meshes) do
 		local particleSystems = o.material.particleSystems
 		if particleSystems and not o.tags.particle then
-			objects[oName] = o
+			meshes[oName] = o
 		end
 	end
 	
-	for oName, o in pairs(objects) do
+	for oName, o in pairs(meshes) do
 		local particleSystems = o.material.particleSystems
 		
 		--load objects of particle system into respective material
@@ -93,7 +93,7 @@ function lib:addParticlesystems(obj)
 		
 		--remove emitter
 		if particleSystems.removeEmitter then
-			obj.objects[oName] = nil
+			obj.meshes[oName] = nil
 		end
 		
 		--place them
@@ -235,7 +235,7 @@ function lib:addParticlesystems(obj)
 								--prepare new mesh
 								local pname = oName .. "_ps_" .. psID .. "_" .. pID .. "_" .. ID
 								local po = particle:clone()
-								obj.objects[pname] = po
+								obj.meshes[pname] = po
 								po.name = o.name
 								po.obj = o.obj
 								po.transform = o.transform

@@ -87,11 +87,12 @@ return function(self, obj, path)
 	
 	--recreate objects
 	for d,s in pairs(obj.objects) do
-		obj.objects[d] = table.merge(self:newMesh(s.name, obj, s.material), s)
+		obj.objects[d] = table.merge(self:newObject(s.name, obj, s.material), s)
 	end
 	
 	--recreate meshes
-	for _,o in pairs(obj.objects) do
+	print("todo, requires recursive 3do fix")
+	for _,o in pairs(obj.meshes) do
 		for d,s in pairs(o) do
 			if type(s) == "table" and type(s.vertices) == "number" then
 				s.vertexMap = s.vertexMap and meshData[s.vertexMap]

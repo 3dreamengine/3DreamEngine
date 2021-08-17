@@ -46,44 +46,48 @@ return {
 	end,
 	
 	addObject = function(self, object, parentTransform, dynamic)
-		if object.groups then
-			--object
-			for name,group in pairs(object.groups) do
-				--apply transformation
-				local transform
-				if parentTransform then
-					if group.transform then
-						transform = parentTransform * group.transform
-					else
-						transform = parentTransform
-					end
-				elseif group.transform then
-					transform = group.transform
+		if object.class == "object" then
+			--apply transformation
+			local transform
+			if parentTransform then
+				if object.transform then
+					transform = parentTransform * object.transform
+				else
+					transform = parentTransform
 				end
-				
-				--task
-				if group.hasLOD and LODsActive then
-					local dist = getDistance(group.boundingBox.center, transform)
-					for aaa,o in ipairs(group.objects) do
-						local LOD_min, LOD_max = o:getScaledLOD()
-						local aDist = LOD_min and o.LOD_center and getDistance(o.boundingBox.center, transform) or dist
-						if not LOD_max or aDist <= (LOD_max + 1)^2 then
-							o:preload()
-							if not LOD_min or aDist >= LOD_min^2 and aDist <= LOD_max^2 then
-								self:add(o, transform, dynamic)
-							end
+			elseif object.transform then
+				transform = object.transform
+			end
+			
+			--children
+			for _,o in pairs(object.objects) do
+				self:addObject(o, transform, dynamic)
+			end
+			
+			--task
+			if object.hasLOD and LODsActive then
+				local dist = getDistance(object.boundingBox.center, transform)
+				for _,m in pairs(object.meshes) do
+					local LOD_min, LOD_max = m:getScaledLOD()
+					local aDist = LOD_min and m.LOD_center and getDistance(m.boundingBox.center, transform) or dist
+					if not LOD_max or aDist <= (LOD_max + 1)^2 then
+						m:preload()
+						if not LOD_min or aDist >= LOD_min^2 and aDist <= LOD_max^2 then
+							self:add(m, transform, dynamic)
 						end
 					end
-				else
-					for _,o in ipairs(group.objects) do
-						o:preload()
-						self:add(o, transform, dynamic)
-					end
+				end
+			else
+				for _,m in pairs(object.meshes) do
+					m:preload()
+					self:add(m, transform, dynamic)
 				end
 			end
-		else
+		elseif object.class == "mesh" then
 			--direct mesh
 			self:add(object, parentTransform, dynamic)
+		else
+			error("object or mesh expected")
 		end
 	end,
 	
