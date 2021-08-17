@@ -155,8 +155,8 @@ return function(self, obj, path)
 	end
 	
 	--recreate linked data
-	if obj.linked then
-		for d,s in ipairs(obj.linked) do
+	if obj.linkedObjects then
+		for d,s in ipairs(obj.linkedObjects) do
 			s.transform = mat4(s.transform)
 		end
 	end

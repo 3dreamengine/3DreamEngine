@@ -5,10 +5,6 @@ local function removePostfix(t)
 	return v or t
 end
 
-function lib:newLinkedObject(original)
-	return setmetatable({ }, {__index = original})
-end
-
 function lib:newMesh(name, obj, mat)
 	local o = {
 		name = removePostfix(name),

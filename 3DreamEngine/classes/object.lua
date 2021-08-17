@@ -1,5 +1,11 @@
 local lib = _3DreamEngine
 
+function lib:newLinkedObject(original, source)
+	return setmetatable({
+		linked = source
+	}, {__index = original})
+end
+
 function lib:newObject(path)
 	--get name and dir
 	path = path or "unknown"

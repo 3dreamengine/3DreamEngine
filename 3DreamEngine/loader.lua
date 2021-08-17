@@ -5,7 +5,8 @@ loader.lua - loads objects
 
 local lib = _3DreamEngine
 
-local tags = {
+--tags that will get recognized
+lib.meshTags = {
 	["PHYSICS"] = true,
 	["LOD"] = true,
 	["POS"] = true,
@@ -30,6 +31,7 @@ local buffers = {
 	"joints",
 }
 
+--the default args used by the object loader
 lib.defaultArgs = {
 	cleanup = true,
 	mesh = true,
@@ -41,6 +43,7 @@ lib.defaultArgs = {
 	flatten = false,
 }
 
+--a simple table flat copy
 local function clone(t)
 	local n = { }
 	for d,s in pairs(t) do
@@ -49,6 +52,7 @@ local function clone(t)
 	return n
 end
 
+--extends given arg table with default args
 local function prepareArgs(args)
 	if type(args) == "string" then
 		error("loadObjects signature has changed, please check docu")
@@ -68,53 +72,29 @@ end
 --add to object library instead
 function lib:loadLibrary(path, args, prefix)
 	args = prepareArgs(args)
-	
-	prefix = prefix or ""
-	
 	args.loadAsLibrary = true
 	
 	--load
 	local obj = self:loadObject(path, args)
 	
-	--prepare lights for library entry
-	for d,s in pairs(obj.lights) do
-		local best = math.huge
-		local g = obj.objects[s.name]
-		if g and g.transform then
-			--make the origin the center
-			s.pos = g.transform:invert() * s.pos
-		end
-	end
-	
 	--insert into library
 	local changed = { }
-	for _,list in ipairs({"objects", "physics", "positions", "lights"}) do
-		for _,o in pairs(obj[list] or { }) do
-			local id = prefix .. o.name
-			if not self.objectLibrary[id] then
-				self.objectLibrary[id] = self:newObject()
-			end
-			if list == "physics" and not self.objectLibrary[id].physics then
-				self.objectLibrary[id].physics = { }
-			end
-			changed[self.objectLibrary[id]] = true
-			table.insert(self.objectLibrary[id][list], o)
-			
-			o.transform = nil
-		end
+	for d,o in pairs(obj.objects) do
+		local id = (prefix or "") .. d
+		self.objectLibrary[id] = o
 	end
 end
 
 --remove objects without vertices
 local function cleanEmpties(obj)
 	for d,m in pairs(obj.meshes) do
-		if m.vertices and #m.vertices == 0 and not m.linked or m.tags.remove then
+		if m.vertices and #m.vertices == 0 or m.tags.remove then
 			obj.meshes[d] = nil
 		end
 	end
 end
 
-local supportedFiles = {
+lib.supportedFiles = {
 	"mtl", --obj material file
 	"mat", --3DreamEngine material file
 	"3do", --3DreamEngine object file - way faster than obj but does not keep vertex information
@@ -135,30 +115,25 @@ function lib:loadObject(path, args)
 	
 	self.deltonLoad:start("load " .. obj.name)
 	
-	--load files
-	local found = false
-	for _,typ in ipairs(supportedFiles) do
+	--test for existing files
+	local found = { }
+	local newest = 0
+	for _,typ in ipairs(lib.supportedFiles) do
 		local info = love.filesystem.getInfo(obj.path .. "." .. typ)
 		if info then
-			--check if 3do is up to date
-			if typ == "3do" then
-				if args.skip3do then
-					goto skip
-				end
-				
-				local info2 = love.filesystem.getInfo(obj.path .. ".obj")
-				if info2 and info2.modtime > info.modtime then
-					goto skip
-				end
-				
-				local info2 = love.filesystem.getInfo(obj.path .. ".dae")
-				if info2 and info2.modtime > info.modtime then
-					goto skip
-				end
-			end
-			
-			found = true
-			
+			found[typ] = info.modtime or 0
+			newest = math.max(info.modtime or 0, newest)
+		end
+	end
+	
+	--skip old 3do files
+	if args.skip3do or found["3do"] and found["3do"] < newest then
+		found["3do"] = nil
+	end
+	
+	--load files
+	for _,typ in ipairs(lib.supportedFiles) do
+		if found[typ] then
 			--load object
 			local failed = self.loader[typ](self, obj, obj.path .. "." .. typ)
 			
@@ -169,7 +144,6 @@ function lib:loadObject(path, args)
 				break
 			end
 		end
-		::skip::
 	end
 	
 	if not found then
@@ -187,7 +161,7 @@ function lib:loadObject(path, args)
 		
 		for index,tag in ipairs(possibles) do
 			local key, value = unpack(string.split(tag, ":"))
-			if tags[key] then
+			if lib.meshTags[key] then
 				--tag found
 				m.tags[key:lower()] = value or true
 			else
@@ -326,20 +300,17 @@ function lib:processObject(obj)
 	
 	
 	--detect links
-	do
-		local linkedNames = { }
-		for d,o in pairs(obj.meshes) do
-			if o.tags.link then
-				--remove original
-				obj.meshes[d] = nil
-				
-				--store link
-				obj.linked = obj.linked or { }
-				obj.linked[#obj.linked+1] = {
-					source = o.linked or o.name,
-					transform = o.transform
-				}
-			end
+	for d,o in pairs(obj.meshes) do
+		if o.tags.link then
+			--remove original
+			obj.meshes[d] = nil
+			
+			--store link
+			obj.linkedObjects = obj.linkedObjects or { }
+			table.insert(obj.linkedObjects, {
+				source = o.name,
+				transform = o.transform
+			})
 		end
 	end
 	
@@ -523,28 +494,13 @@ end
 
 function lib:finishObject(obj)	
 	--link objects
-	if obj.linked then
-		for id, link in ipairs(obj.linked) do
+	if obj.linkedObjects then
+		for id, link in ipairs(obj.linkedObjects) do
 			local lo = self.objectLibrary[link.source]
 			assert(lo, "linked object " .. link.source .. " is not in the object library!")
-			
-			--link
-			for _,list in ipairs({"objects", "physics", "positions", "lights"}) do
-				for d,no in ipairs(lo[list] or { }) do
-					local co = list == "objects" and self:newLinkedObject(no) or no.clone and no:clone() or clone(no)
-					
-					if list == "lights" or list == "positions" then
-						co.pos = link.transform * co.pos
-					else
-						co.transform = link.transform
-					end
-					
-					co.linked = link.source
-					co.name = "link_" .. id .. "_" .. co.name
-					obj[list] = obj[list] or { }
-					obj[list]["link_" .. id .. "_" .. d .. "_" .. no.name] = co
-				end
-			end
+			local o = self:newLinkedObject(lo, link.source)
+			o.transform = link.transform
+			obj.objects["link_" .. id] = o
 		end
 	end
 	

@@ -39,7 +39,7 @@ function lib:export3do(obj)
 		["animationLengths"] = obj.animationLengths,
 		["joints"] = obj.joints,
 		["skeleton"] = obj.skeleton,
-		["linked"] = obj.linked,
+		["linkedObjects"] = obj.linkedObjects,
 		["objects"] = { },
 		["physics"] = obj.physics,
 		["reflections"] = obj.reflections,
