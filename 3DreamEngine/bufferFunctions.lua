@@ -36,7 +36,7 @@ function lib:applyTransform(s, transform)
 			
 			s:setVertex(i, unpack(data))
 		end
-	elseif s.class == "subObject" then
+	elseif s.class == "mesh" then
 		if s then
 			self:applyTransform(s.mesh, s.transform)
 		else
@@ -59,16 +59,16 @@ function lib:applyTransform(s, transform)
 			self:applyTransform(s)
 		end
 	else
-		error("mesh, object or subObject expected")
+		error("mesh, object or mesh expected")
 	end
 end
 
---merge all subObjects of an object and concat all buffer together
+--merge all meshs of an object and concat all buffer together
 --it uses a random material and therfore either requires baking afterwards or only identical materials in the first place
---it returns a cloned object with only one subObject
-function lib:mergeSubObjects(obj)
+--it returns a cloned object with only one mesh
+function lib:mergemeshs(obj)
 	local final = obj:clone()
-	local o = self:newSubObject("merged", final)
+	local o = self:newMesh("merged", final)
 	final.objects = {merged = o}
 	
 	for d,s in pairs(obj.objects) do
@@ -278,7 +278,7 @@ function lib:createMesh(obj)
 				end
 			end
 		end
-	elseif obj.class == "subObject" then
+	elseif obj.class == "mesh" then
 		--set up vertex map
 		local vertexMap = { }
 		for d,f in ipairs(obj.faces) do
@@ -348,6 +348,6 @@ function lib:createMesh(obj)
 			end
 		end
 	else
-		error("object or subObject expected")
+		error("object or mesh expected")
 	end
 end

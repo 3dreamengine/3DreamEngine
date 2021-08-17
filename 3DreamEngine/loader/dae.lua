@@ -212,7 +212,7 @@ return function(self, obj, path)
 					local mat = indices[l._attr.material] or obj.materials.None
 					local material = self.materialLibrary[mat.name] or mat
 					if not o then
-						o = self:newSubObject(geo._attr.id, obj, material)
+						o = self:newMesh(geo._attr.id, obj, material)
 						meshData[id][#meshData[id]+1] = o
 					end
 					
@@ -333,9 +333,9 @@ return function(self, obj, path)
 	
 	--connect meshdata and instance and add it as object
 	local function addObject(name, mesh, transform)
-		for _,subObject in ipairs(meshData[mesh]) do
+		for _,mesh in ipairs(meshData[mesh]) do
 			local id = name
-			obj.objects[id] = subObject:clone()
+			obj.objects[id] = mesh:clone()
 			obj.objects[id]:setName(name)
 			obj.objects[id].transform = correction * transform
 		end

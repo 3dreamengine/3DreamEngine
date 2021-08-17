@@ -11,7 +11,7 @@ return function(self, obj, path)
 	--load object
 	local material = obj.materials.None
 	
-	local o = self:newSubObject("object", obj, material)
+	local o = self:newMesh("object", obj, material)
 	obj.objects.object = o
 	objectID = "object"
 	
@@ -53,7 +53,7 @@ return function(self, obj, path)
 			end
 		elseif v[1] == "o" then
 			objectID = self:decodeObjectName(l:sub(3))
-			obj.objects[objectID] = obj.objects[objectID] or self:newSubObject(objectID, obj, material)
+			obj.objects[objectID] = obj.objects[objectID] or self:newMesh(objectID, obj, material)
 			o = obj.objects[objectID]
 		end
 	end

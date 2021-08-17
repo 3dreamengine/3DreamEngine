@@ -7,7 +7,7 @@ return {
 			n[d] = s
 		end
 		
-		--clone subobjects too such that their parent reference works again
+		--clone meshes too such that their parent reference works again
 		if n.objects then
 			local o = n.objects
 			n.objects = { }

@@ -87,7 +87,7 @@ return function(self, obj, path)
 	
 	--recreate objects
 	for d,s in pairs(obj.objects) do
-		obj.objects[d] = table.merge(self:newSubObject(s.name, obj, s.material), s)
+		obj.objects[d] = table.merge(self:newMesh(s.name, obj, s.material), s)
 	end
 	
 	--recreate meshes

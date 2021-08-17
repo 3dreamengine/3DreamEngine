@@ -112,7 +112,7 @@ function lib:applyJoints(object)
 		for _,o in pairs(object.objects) do
 			self:applyJoints(o)
 		end
-	elseif object.class == "subObject" then
+	elseif object.class == "mesh" then
 		if object.joints then
 			--make a copy of vertices
 			if not object.verticesOld then
@@ -130,7 +130,7 @@ function lib:applyJoints(object)
 			end
 		end
 	else
-		error("object or subObject expected")
+		error("object or mesh expected")
 	end
 end
 

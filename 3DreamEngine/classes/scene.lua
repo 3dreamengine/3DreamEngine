@@ -82,7 +82,7 @@ return {
 				end
 			end
 		else
-			--direct subobject
+			--direct mesh
 			self:add(object, parentTransform, dynamic)
 		end
 	end,

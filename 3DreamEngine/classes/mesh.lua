@@ -9,7 +9,7 @@ function lib:newLinkedObject(original)
 	return setmetatable({ }, {__index = original})
 end
 
-function lib:newSubObject(name, obj, mat)
+function lib:newMesh(name, obj, mat)
 	local o = {
 		name = removePostfix(name),
 		material = mat,
@@ -29,11 +29,11 @@ function lib:newSubObject(name, obj, mat)
 		meshType = obj.args.meshType,
 	}
 	
-	return setmetatable(o, self.meta.subObject)
+	return setmetatable(o, self.meta.mesh)
 end
 
 return {
-	link = {"clone", "shader", "visibility", "subObject"},
+	link = {"clone", "shader", "visibility", "mesh"},
 	
 	setName = function(self, name)
 		assert(type(name) == "string", "name has to be a string")

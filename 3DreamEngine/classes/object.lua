@@ -109,7 +109,7 @@ return {
 	end,
 	
 	preload = function(self, force)
-		--preload subObjects
+		--preload meshes
 		for d,s in pairs(self.objects) do
 			s:preload(force)
 		end

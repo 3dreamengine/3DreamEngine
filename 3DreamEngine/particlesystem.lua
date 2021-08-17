@@ -23,7 +23,7 @@ local function loadParticles(self, particleSystems)
 		for i,v in pairs(ps.objects) do
 			local o = self:loadObject(i, {cleanup = false, mesh = false, particleSystems = false})
 			
-			--extract subObjects
+			--extract meshes
 			for d,s in pairs(o.objects) do
 				s.particleDensity = v
 				table.insert(ps.loadedObjects, s)
@@ -232,7 +232,7 @@ function lib:addParticlesystems(obj)
 							if #transforms > 0 then
 								ID = ID + 1
 								
-								--prepare new subObject
+								--prepare new mesh
 								local pname = oName .. "_ps_" .. psID .. "_" .. pID .. "_" .. ID
 								local po = particle:clone()
 								obj.objects[pname] = po

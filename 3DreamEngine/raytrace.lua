@@ -1,6 +1,6 @@
 --[[
 #raytrace extension
-Takes a non-cleaned (face map still present) subObject, creates a BSP-tree,
+Takes a non-cleaned (face map still present) mesh, creates a BSP-tree,
 uses the objects bounding box as a pre-test, transforms accordingly to the objects transformations
 and returns either a boolean or, slightly slower, a position of intersection.
 While rather fast, it is recommended to use a lower poly approximation mesh whenever possible.
@@ -280,7 +280,7 @@ function raytrace:raytrace(object, o_origin, o_direction, mode, inner)
 	end
 	
 	if object.groups then
-		--for all subobjects
+		--for all meshes
 		local best = -1
 		for _,group in pairs(object.groups) do
 			--group transform

@@ -70,7 +70,7 @@ function lib:groupVertices(faces, vertices)
 	return groups
 end
 
---preprocess subObject and link required data
+--preprocess mesh and link required data
 function lib:getPhysicsData(obj)
 	local p = { }
 	p.groups = self:groupVertices(obj.faces, obj.vertices)
