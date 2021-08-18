@@ -57,7 +57,6 @@ end
 
 --load sub modules
 require((...) .. "/functions")
-require((...) .. "/compiler")
 require((...) .. "/bufferFunctions")
 require((...) .. "/settings")
 require((...) .. "/classes")

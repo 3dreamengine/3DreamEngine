@@ -43,19 +43,8 @@ end
 local lastShaderID = 0
 function lib:newShader(path)
 	local shader = require(path)
-	local project = love.filesystem.getInfo(path .. ".3ds") and love.filesystem.load(path .. ".3ds")()
-	
-	local defines, pixel, vertex
-	if project then
-		defines, pixel, vertex = self:compileShader(project)
-	else
-		defines, pixel, vertex = "", "", ""
-	end
 	
 	shader.path = path
-	shader.compiledDefines = defines
-	shader.compiledPixel = pixel
-	shader.compiledVertex = vertex
 	
 	shader.id = lastShaderID
 	lastShaderID = lastShaderID + 1
