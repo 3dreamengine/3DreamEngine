@@ -19,16 +19,12 @@ end
 
 function lib:buildScene(typ, dynamic, alpha, cam, blacklist, frustumCheck, noSmallObjects)
 	self.delton:start("scene")
-	local IDs = {
-		[(dynamic ~= true and 0 or 2) + (alpha and 2 or 1)] = true,
-		[(dynamic ~= false and 2 or 0) + (alpha and 2 or 1)] = true,
-	}
 	
 	--preprocess scenes to group together shader
 	local groups = { }
 	for sc, _ in pairs(self.scenes) do
-		for ID, _ in pairs(IDs) do
-			for shaderID, shaderGroup in pairs(sc.tasks[typ][ID]) do
+		for dyn = dynamic == false and 2 or 1, dynamic == true and 1 or 2 do
+			for shaderID, shaderGroup in pairs(sc.tasks[typ][dyn][alpha and 1 or 2]) do
 				for materialID, materialGroup in pairs(shaderGroup) do
 					if not groups[shaderID] then
 						groups[shaderID] = { }
@@ -49,12 +45,12 @@ function lib:buildScene(typ, dynamic, alpha, cam, blacklist, frustumCheck, noSma
 		for materialID, materialGroups in pairs(shaderGroup) do
 			for _, materialGroup in ipairs(materialGroups) do
 				for _, task in pairs(materialGroup) do
-					local obj = task:getObj()
-					if (not blacklist or not blacklist[obj]) and (not noSmallObjects or obj.farVisibility ~= false) then
-						if obj.mesh then
-							if not frustumCheck or not obj.boundingBox.initialized or self:planeInFrustum(cam, task:getPos(), task:getSize(), obj.rID) then
+					local mesh = task:getMesh()
+					if (not blacklist or not blacklist[mesh]) and (not noSmallObjects or mesh.farVisibility ~= false) then
+						if mesh.mesh then
+							if not frustumCheck or not mesh.boundingBox.initialized or self:planeInFrustum(cam, task:getPos(), task:getSize(), mesh.rID) then
 								task:setShaderID(shaderID)
-								scene[#scene+1] = task
+								table.insert(scene, task)
 							end
 						end
 					end
@@ -186,16 +182,16 @@ function lib:render(canvases, cam)
 		--start rendering
 		self.delton:start("render")
 		for d,task in ipairs(scene) do
-			local obj = task:getObj()
+			local mesh = task:getMesh()
 			local shaderID = task:getShaderID()
 			
 			--reflections
-			local ref = obj.reflection
+			local ref = mesh.reflection
 			if ref and ref.canvas then
 				self.reflections[ref] = {
-					dist = (task:getPos(obj) - cam.pos):length(),
-					obj = obj,
-					pos = ref.pos or task:getPos(obj),
+					dist = (task:getPos(mesh) - cam.pos):length(),
+					obj = mesh,
+					pos = ref.pos or task:getPos(mesh),
 				}
 			end
 			
@@ -206,7 +202,7 @@ function lib:render(canvases, cam)
 				lastReflection = false
 				self.delton:start("shader")
 				
-				shaderObject = self:getRenderShader(shaderID, obj, pass, canvases, light, false)
+				shaderObject = self:getRenderShader(shaderID, mesh, pass, canvases, light, false)
 				shader = shaderObject.shader
 				if shaderObject.sessionID ~= sessionID then
 					shaderObject.session = { }
@@ -255,7 +251,7 @@ function lib:render(canvases, cam)
 			end
 			
 			--set active material
-			local material = obj.material
+			local material = mesh.material
 			if lastMaterial ~= material then
 				lastMaterial = material
 				--self.delton:start("material")
@@ -279,7 +275,7 @@ function lib:render(canvases, cam)
 			
 			--reflection
 			if shaderObject.reflection then
-				local ref = obj.reflection or (type(self.sky_reflection) == "table" and self.sky_reflection)
+				local ref = mesh.reflection or (type(self.sky_reflection) == "table" and self.sky_reflection)
 				local tex = ref and (ref.image or ref.canvas) or self.sky_reflection and self.sky_reflectionCanvas or self.textures.sky_fallback
 				if lastReflection ~= tex then
 					lastReflection = tex
@@ -306,8 +302,8 @@ function lib:render(canvases, cam)
 			shader:send("transform", task:getTransform())
 			
 			--shader
-			if not obj.shadersInitialized then
-				obj:initShaders()
+			if not mesh.shadersInitialized then
+				mesh:initShaders()
 			end
 			
 			--per task
@@ -316,22 +312,22 @@ function lib:render(canvases, cam)
 			shaderObject.worldShader:perTask(self, shaderObject, task)
 			
 			--render
-			local mesh = obj:getMesh("mesh")
-			local instanceMesh = obj:getMesh("instanceMesh")
+			local objectMesh = mesh:getMesh("mesh")
+			local instanceMesh = mesh:getMesh("instanceMesh")
 			if instanceMesh then
-				mesh:attachAttribute("InstanceRotation0", instanceMesh, "perinstance")
-				mesh:attachAttribute("InstanceRotation1", instanceMesh, "perinstance")
-				mesh:attachAttribute("InstanceRotation2", instanceMesh, "perinstance")
-				mesh:attachAttribute("InstancePosition", instanceMesh, "perinstance")
-				love.graphics.drawInstanced(mesh, instanceMesh:getVertexCount())
+				objectMesh:attachAttribute("InstanceRotation0", instanceMesh, "perinstance")
+				objectMesh:attachAttribute("InstanceRotation1", instanceMesh, "perinstance")
+				objectMesh:attachAttribute("InstanceRotation2", instanceMesh, "perinstance")
+				objectMesh:attachAttribute("InstancePosition", instanceMesh, "perinstance")
+				love.graphics.drawInstanced(objectMesh, instanceMesh:getVertexCount())
 			else
-				love.graphics.draw(mesh)
+				love.graphics.draw(objectMesh)
 			end
 			
 			--stats
 			self.stats.draws = self.stats.draws + 1
-			obj.meshVertecCount = obj.meshVertecCount or obj.mesh:getVertexCount()
-			self.stats.vertices = self.stats.vertices + obj.meshVertecCount
+			mesh.meshVertexCount = mesh.meshVertexCount or objectMesh:getVertexCount()
+			self.stats.vertices = self.stats.vertices + mesh.meshVertexCount
 		end
 		self.delton:stop()
 		
@@ -494,7 +490,7 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 	
 	--start rendering
 	for d,task in ipairs(scene) do
-		local obj = task:getObj()
+		local mesh = task:getMesh()
 		local shaderID = task:getShaderID()
 		
 		--set active shader
@@ -503,7 +499,7 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 			lastMaterial = false
 			lastReflection = false
 			
-			shaderObject = self:getRenderShader(shaderID, obj, pass, { }, nil, true, cam.sun)
+			shaderObject = self:getRenderShader(shaderID, mesh, pass, { }, nil, true, cam.sun)
 			shader = shaderObject.shader
 			shaderObject.session = { }
 			love.graphics.setShader(shader)
@@ -520,7 +516,7 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 		end
 		
 		--set active material
-		local material = obj.material
+		local material = mesh.material
 		if lastMaterial ~= material then
 			lastMaterial = material
 			
@@ -538,8 +534,8 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 		shaderObject.worldShader:perTask(self, shaderObject, task)
 		
 		--render
-		local mesh = obj:getMesh("mesh")
-		local instanceMesh = obj:getMesh("instanceMesh")
+		local mesh = mesh:getMesh("mesh")
+		local instanceMesh = mesh:getMesh("instanceMesh")
 		if instanceMesh then
 			mesh:attachAttribute("InstanceRotation0", instanceMesh, "perinstance")
 			mesh:attachAttribute("InstanceRotation1", instanceMesh, "perinstance")

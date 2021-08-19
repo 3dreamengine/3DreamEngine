@@ -1,22 +1,15 @@
 local lib = _3DreamEngine
 
 return {
-	setLOD = function(self, min, max, adaptSize)
+	setLOD = function(self, min, max)
 		self.LOD_min = min
 		self.LOD_max = max
-		self.LOD_adaptSize = adaptSize
 	end,
 	getLOD = function(self)
 		return self.LOD_min, self.LOD_max
 	end,
-	getScaledLOD = function(self)
-		if self.LOD_min then
-			return self.LOD_min * lib.LODDistance, self.LOD_adaptSize and (self.LOD_max * lib.LODDistance + self.boundingBox.size) or self.LOD_max * lib.LODDistance
-		end
-	end,
 	
 	setRenderVisibility = function(self, b)
-		assert(type(b) == "boolean", "arg has to be a boolean")
 		self.renderVisibility = b
 	end,
 	getRenderVisibility = function(self)
@@ -24,7 +17,6 @@ return {
 	end,
 	
 	setShadowVisibility = function(self, b)
-		assert(type(b) == "boolean", "arg has to be a boolean")
 		self.shadowVisibility = b
 	end,
 	getShadowVisibility = function(self)

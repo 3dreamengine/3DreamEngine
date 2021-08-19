@@ -241,7 +241,7 @@ function lib:addParticlesystems(obj)
 								po.transform = o.transform
 								po.tags.particle = true
 								po.LOD_center = true
-								po:setLOD(0, 1, true)
+								po:setLOD(0, 1)
 								
 								local sz = particle.boundingBox.size * t.maxScale
 								local margin = vec3(sz, sz, sz)

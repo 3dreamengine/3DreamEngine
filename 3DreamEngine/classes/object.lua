@@ -49,16 +49,6 @@ return {
 		return string.format("%s: %d objects, %d physics, %d lights", self.name, count(self.objects), count(self.physics or { }), count(self.lights))
 	end,
 	
-	withName = function(self, name)
-		local o = { }
-		for d,s in pairs(self.objects) do
-			if s.name == name then
-				o[d] = s
-			end
-		end
-		return o
-	end,
-	
 	updateBoundingBox = function(self)
 		for d,s in pairs(self.meshes) do
 			if not s.boundingBox.initialized then
@@ -184,7 +174,7 @@ return {
 		if next(self.positions) then
 			print(indent .. "positions")
 			for d,s in pairs(self.positions) do
-				print(indent2 .. tostring(s.name) .. string.format("%f, %f, %f", s.x, s.y, s.z))
+				print(indent2 .. tostring(s.name) .. string.format("  %f, %f, %f", s.x, s.y, s.z))
 			end
 		end
 		
