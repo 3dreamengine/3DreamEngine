@@ -240,7 +240,6 @@ function lib:addParticlesystems(obj)
 								po.obj = o.obj
 								po.transform = o.transform
 								po.tags.particle = true
-								po.LOD_center = true
 								po:setLOD(0, 1)
 								
 								local sz = particle.boundingBox.size * t.maxScale

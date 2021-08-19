@@ -110,7 +110,7 @@ function sh:buildPixel(dream, mat)
 #else
 		vec3 causticsPos = viewVec;
 #endif
-		caustics = (
+		vec3 caustics = (
 			Texel(tex_caustics, (causticsPos.xz + waterUV1) * causticsScale).rgb +
 			Texel(tex_caustics, (causticsPos.xz + waterUV2) * causticsScale).rgb
 		) * causticsColor * (1.0 - alpha);

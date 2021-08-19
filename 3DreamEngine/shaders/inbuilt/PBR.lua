@@ -119,9 +119,6 @@ function sh:buildPixel(dream, mat, shadow)
 		//lighting
 		color += light;
 		
-		//apply caustics
-		color += caustics / alpha;
-		
 		//distortion
 	#ifdef REFRACTIONS_ENABLED
 		if (ior != 1.0) {

@@ -47,7 +47,6 @@ local function saveObject(obj, meshCache, dataStrings)
 		
 		["LOD_min"] = obj.LOD_min,
 		["LOD_max"] = obj.LOD_max,
-		["LOD_center"] = obj.LOD_center,
 		
 		["renderVisibility"] = obj.renderVisibility,
 		["shadowVisibility"] = obj.shadowVisibility,
