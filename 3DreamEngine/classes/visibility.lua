@@ -24,7 +24,6 @@ return {
 	end,
 	
 	setFarVisibility = function(self, b)
-		assert(type(b) == "boolean", "arg has to be a boolean")
 		self.farVisibility = b
 	end,
 	getFarVisibility = function(self)

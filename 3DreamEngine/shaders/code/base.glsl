@@ -44,7 +44,7 @@ void effect() {
 #import pixelMaterial
 	
 	//proper backfaces
-	if (dot(VaryingNormal, viewVec) > 0.0) {
+	if (dot(normal, viewVec) > 0.0) {
 		normal = normalize(reflect(normal, normalize(VaryingNormal)));
 		fragmentNormal = -fragmentNormal;
 	}

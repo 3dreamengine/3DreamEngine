@@ -28,7 +28,9 @@ dream:loadMaterialLibrary(projectDir .. "materials")
 dream:init()
 
 --load scene
-local scene = dream:loadObject(projectDir .. "scene", {cleanup = false})
+local tavern = dream:loadObject(projectDir .. "scene", {cleanup = false})
+local scene = dream:newScene()
+scene:addObject(tavern)
 
 local player = {
 	x = 4,
@@ -60,7 +62,7 @@ local particleBatchDust = dream:newParticleBatch(love.graphics.newImage(projectD
 particleBatchDust:setSorting(false)
 
 local lights = { }
-for d,s in ipairs(scene.positions) do
+for d,s in ipairs(tavern.positions) do
 	if s.name == "light" then
 		lights[d] = dream:newLight("point", s.x, s.y + 0.1, s.z, 1.0, 0.75, 0.3)
 		lights[d].shadow = dream:newShadow("point", true)
@@ -103,7 +105,7 @@ function love.draw()
 	
 	--make the particles black so it only emits light
 	love.graphics.setColor(0, 0, 0, 1)
-	for d,s in ipairs(scene.positions) do
+	for d,s in ipairs(tavern.positions) do
 		if s.name == "light" then
 			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 500.0
 			lights[d]:setBrightness(power)
@@ -119,8 +121,8 @@ function love.draw()
 	end
 	love.graphics.setColor(1, 1, 1, 1)
 	
-	scene:reset()
-	dream:draw(scene)
+	tavern:reset()
+	dream:drawScene(scene)
 	
 	dream:drawParticleBatch(particleBatch)
 	dream:drawParticleBatch(particleBatchDust)
@@ -157,7 +159,7 @@ function love.draw()
 		end
 		
 		--check
-		if raytrace:raytrace(scene, origin, direction) then
+		if raytrace:raytrace(tavern, origin, direction) then
 			coll = raytrace:getObject().name
 		end
 		

@@ -534,16 +534,16 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 		shaderObject.worldShader:perTask(self, shaderObject, task)
 		
 		--render
-		local mesh = mesh:getMesh("mesh")
+		local objectMesh = mesh:getMesh("mesh")
 		local instanceMesh = mesh:getMesh("instanceMesh")
 		if instanceMesh then
-			mesh:attachAttribute("InstanceRotation0", instanceMesh, "perinstance")
-			mesh:attachAttribute("InstanceRotation1", instanceMesh, "perinstance")
-			mesh:attachAttribute("InstanceRotation2", instanceMesh, "perinstance")
-			mesh:attachAttribute("InstancePosition", instanceMesh, "perinstance")
-			love.graphics.drawInstanced(mesh, instanceMesh:getVertexCount())
+			objectMesh:attachAttribute("InstanceRotation0", instanceMesh, "perinstance")
+			objectMesh:attachAttribute("InstanceRotation1", instanceMesh, "perinstance")
+			objectMesh:attachAttribute("InstanceRotation2", instanceMesh, "perinstance")
+			objectMesh:attachAttribute("InstancePosition", instanceMesh, "perinstance")
+			love.graphics.drawInstanced(objectMesh, instanceMesh:getVertexCount())
 		else
-			love.graphics.draw(mesh)
+			love.graphics.draw(objectMesh)
 		end
 	end
 	

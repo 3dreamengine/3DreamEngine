@@ -121,6 +121,7 @@ return {
 			end
 		end
 		
+		--create task object
 		local task = setmetatable({
 			mesh,
 			transform,
@@ -141,7 +142,7 @@ return {
 		end
 		
 		--shadow pass
-		if not alpha and mesh.shadowVisibility ~= false and mesh.material.shadow ~= false then
+		if alpha == 2 and mesh.shadowVisibility ~= false and mesh.material.shadow ~= false then
 			local shaderID = lib:getRenderShaderID(mesh, pass, true)
 			self:addTo(task, self.tasks.shadows[dyn][alpha], shaderID, mesh.material)
 		end

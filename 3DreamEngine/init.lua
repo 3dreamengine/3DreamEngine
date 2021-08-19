@@ -356,11 +356,9 @@ end
 
 --add an object to the default scene
 function lib:draw(object, x, y, z, sx, sy, sz)
-	self.delton:start("draw")
-	
 	--prepare transform matrix
 	local transform
-	local dynamic = object.dynamic
+	local dynamic = false
 	if x then
 		--simple transform with arguments, ignores object transformation matrix
 		transform = mat4(
@@ -373,10 +371,8 @@ function lib:draw(object, x, y, z, sx, sy, sz)
 	end
 	
 	--add to scene
-	self.delton:start("add")
+	self.delton:start("draw")
 	self.scene:addObject(object, transform, dynamic)
-	self.delton:stop()
-	
 	self.delton:stop()
 end
 
