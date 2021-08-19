@@ -4,7 +4,6 @@ extern vec3 dirX;
 extern vec3 dirY;
 extern vec3 normal;
 
-extern float margin;
 extern float scale;
 extern float lod;
 
@@ -22,35 +21,35 @@ vec4 effect(vec4 color, Image lol, vec2 tc, vec2 sc) {
 	vec3 bitangent = normalize(cross(vec, tangent)) * p;
 	
 	vec4 sum = vec4(0.0);
-	sum += textureLod(tex, vec - tangent * 1.0 - bitangent * 1.0, lod);
-	sum += textureLod(tex, vec - tangent * 0.5 - bitangent * 1.0, lod);
-	sum += textureLod(tex, vec + tangent * 0.0 - bitangent * 1.0, lod);
-	sum += textureLod(tex, vec + tangent * 0.5 - bitangent * 1.0, lod);
-	sum += textureLod(tex, vec + tangent * 1.0 - bitangent * 1.0, lod);
+	sum += textureLod(tex, vec - tangent - bitangent, lod);
+	sum += textureLod(tex, vec - tangent * 0.5 - bitangent, lod);
+	sum += textureLod(tex, vec - bitangent, lod);
+	sum += textureLod(tex, vec + tangent * 0.5 - bitangent, lod);
+	sum += textureLod(tex, vec + tangent - bitangent, lod);
 	
-	sum += textureLod(tex, vec - tangent * 1.0 - bitangent * 0.5, lod);
+	sum += textureLod(tex, vec - tangent - bitangent * 0.5, lod);
 	sum += textureLod(tex, vec - tangent * 0.5 - bitangent * 0.5, lod);
-	sum += textureLod(tex, vec + tangent * 0.0 - bitangent * 0.5, lod);
+	sum += textureLod(tex, vec - bitangent * 0.5, lod);
 	sum += textureLod(tex, vec + tangent * 0.5 - bitangent * 0.5, lod);
-	sum += textureLod(tex, vec + tangent * 1.0 - bitangent * 0.5, lod);
+	sum += textureLod(tex, vec + tangent - bitangent * 0.5, lod);
 	
-	sum += textureLod(tex, vec - tangent * 1.0 + bitangent * 0.0, lod);
-	sum += textureLod(tex, vec - tangent * 0.5 + bitangent * 0.0, lod);
-	sum += textureLod(tex, vec + tangent * 0.0 + bitangent * 0.0, lod);
-	sum += textureLod(tex, vec + tangent * 0.5 + bitangent * 0.0, lod);
-	sum += textureLod(tex, vec + tangent * 1.0 + bitangent * 0.0, lod);
+	sum += textureLod(tex, vec - tangent, lod);
+	sum += textureLod(tex, vec - tangent * 0.5, lod);
+	sum += textureLod(tex, vec, lod);
+	sum += textureLod(tex, vec + tangent * 0.5, lod);
+	sum += textureLod(tex, vec + tangent, lod);
 	
-	sum += textureLod(tex, vec - tangent * 1.0 + bitangent * 0.5, lod);
+	sum += textureLod(tex, vec - tangent + bitangent * 0.5, lod);
 	sum += textureLod(tex, vec - tangent * 0.5 + bitangent * 0.5, lod);
-	sum += textureLod(tex, vec + tangent * 0.0 + bitangent * 0.5, lod);
+	sum += textureLod(tex, vec + bitangent * 0.5, lod);
 	sum += textureLod(tex, vec + tangent * 0.5 + bitangent * 0.5, lod);
-	sum += textureLod(tex, vec + tangent * 1.0 + bitangent * 0.5, lod);
+	sum += textureLod(tex, vec + tangent + bitangent * 0.5, lod);
 	
-	sum += textureLod(tex, vec - tangent * 1.0 + bitangent * 1.0, lod);
-	sum += textureLod(tex, vec - tangent * 0.5 + bitangent * 1.0, lod);
-	sum += textureLod(tex, vec + tangent * 0.0 + bitangent * 1.0, lod);
-	sum += textureLod(tex, vec + tangent * 0.5 + bitangent * 1.0, lod);
-	sum += textureLod(tex, vec + tangent * 1.0 + bitangent * 1.0, lod);
+	sum += textureLod(tex, vec - tangent + bitangent, lod);
+	sum += textureLod(tex, vec - tangent * 0.5 + bitangent, lod);
+	sum += textureLod(tex, vec + bitangent, lod);
+	sum += textureLod(tex, vec + tangent * 0.5 + bitangent, lod);
+	sum += textureLod(tex, vec + tangent + bitangent, lod);
 	
 	return sum / 25.0;
 }

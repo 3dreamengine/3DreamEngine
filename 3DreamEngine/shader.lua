@@ -196,20 +196,21 @@ do
 	end
 end
 
-function lib:getRenderShaderID(obj, pass, shadows)
-	local mat = obj.material
+function lib:getRenderShaderID(task, pass, shadows)
+	local mesh = task:getMesh()
+	local mat = mesh.material
 	
 	--todo reflections can now support different models, for example for BB reflections
-	local reflections = not shadows and (obj.reflection or self.sky_reflection)
+	local reflections = not shadows and (task:getReflection() or self.sky_reflection)
 	
-	local pixelShader = mat.pixelShader or obj.pixelShader or self.defaultPixelShader
-	local vertexShader = mat.vertexShader or obj.vertexShader or self.defaultVertexShader
-	local worldShader = mat.worldShader or obj.worldShader or self.defaultWorldShader
+	local pixelShader = mat.pixelShader or mesh.pixelShader or self.defaultPixelShader
+	local vertexShader = mat.vertexShader or mesh.vertexShader or self.defaultVertexShader
+	local worldShader = mat.worldShader or mesh.worldShader or self.defaultWorldShader
 	
 	--construct full ID
 	return string.char(
 		reflections and 1 or 0,
-		obj.instanceMesh and 1 or 0,
+		mesh.instanceMesh and 1 or 0,
 		pixelShader.id % 256, math.floor(pixelShader.id / 256),
 		vertexShader.id % 256, math.floor(vertexShader.id / 256),
 		worldShader.id % 256, math.floor(worldShader.id / 256),

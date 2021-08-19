@@ -342,82 +342,96 @@ function lib:newBoundaryBox(initialized)
 	}
 end
 
-do
-	local blurVecs = {
-		{
-			{1.0, 0.0, 0.0},
-			{0.0, 0.0, -1.0},
-			{0.0, -1.0, 0.0},
-			{0.0, 0.0, 1.0},
-		},
-		{
-			{-1.0, 0.0, 0.0},
-			{0.0, 0.0, 1.0},
-			{0.0, -1.0, 0.0},
-			{0.0, 0.0, 1.0},
-		},
-		{
-			{0.0, 1.0, 0.0},
-			{1.0, 0.0, 0.0},
-			{0.0, 0.0, 1.0},
-			{1.0, 0.0, 0.0},
-		},
-		{
-			{0.0, -1.0, 0.0},
-			{1.0, 0.0, 0.0},
-			{0.0, 0.0, -1.0},
-			{1.0, 0.0, 0.0},
-		},
-		{
-			{0.0, 0.0, 1.0},
-			{1.0, 0.0, 0.0},
-			{0.0, -1.0, 0.0},
-			{1.0, 0.0, 0.0},
-		},
-		{
-			{0.0, 0.0, -1.0},
-			{-1.0, 0.0, 0.0},
-			{0.0, -1.0, 0.0},
-			{1.0, 0.0, 0.0},
-		},
-	}
-	
-	local cache = { }
+local blurVecs = {
+	{
+		{1.0, 0.0, 0.0},
+		{0.0, 0.0, -1.0},
+		{0.0, -1.0, 0.0},
+		{0.0, 0.0, 1.0},
+	},
+	{
+		{-1.0, 0.0, 0.0},
+		{0.0, 0.0, 1.0},
+		{0.0, -1.0, 0.0},
+		{0.0, 0.0, 1.0},
+	},
+	{
+		{0.0, 1.0, 0.0},
+		{1.0, 0.0, 0.0},
+		{0.0, 0.0, 1.0},
+		{1.0, 0.0, 0.0},
+	},
+	{
+		{0.0, -1.0, 0.0},
+		{1.0, 0.0, 0.0},
+		{0.0, 0.0, -1.0},
+		{1.0, 0.0, 0.0},
+	},
+	{
+		{0.0, 0.0, 1.0},
+		{1.0, 0.0, 0.0},
+		{0.0, -1.0, 0.0},
+		{1.0, 0.0, 0.0},
+	},
+	{
+		{0.0, 0.0, -1.0},
+		{-1.0, 0.0, 0.0},
+		{0.0, -1.0, 0.0},
+		{1.0, 0.0, 0.0},
+	},
+}
+
+--if the system supports 6+ multicanvas (which most modern systems do) we can use the faster variant
+if love.graphics.getSystemLimits().multicanvas >= 6 then
 	function lib:blurCubeMap(cube, levels)
-		local f = cube:getFormat()
-		local resolution = math.ceil(cube:getWidth() / 2)
-		local shader = self:getShader("blur_cube")
+		local shader = self:getShader("blur_cube_multi")
 		
-		--create canvases if needed
-		cache[f] = cache[f] or { }
-		if not cache[f][resolution] then
-			cache[f][resolution] = { }
-		end
-		
-		--blurring
 		love.graphics.push("all")
 		love.graphics.reset()
 		love.graphics.setBlendMode("replace", "premultiplied")
+		
 		love.graphics.setShader(shader)
 		shader:send("tex", cube)
-		shader:send("strength", 0.025)
+		shader:send("strength", 0.01)
 		
 		for level = 2, levels do
-			if not cache[f][resolution][level] then
-				local size = math.ceil(resolution / math.max(1, 2^(level-1)))
-				cache[f][resolution][level] = love.graphics.newCanvas(size, size, {format = f, readable = true, msaa = 0, type = "2d", mipmaps = "none"})
-			end
-			
-			local can = cache[f][resolution][level]
-			local res = can:getWidth() * 2.0
+			local res = cube:getWidth() / 2 ^ level * 2
+			shader:send("scale", 1.0 / res)
+			shader:send("lod", level - 2.0)
+			love.graphics.setCanvas({
+				{cube, face = 1, mipmap = level},
+				{cube, face = 2, mipmap = level},
+				{cube, face = 3, mipmap = level},
+				{cube, face = 4, mipmap = level},
+				{cube, face = 5, mipmap = level},
+				{cube, face = 6, mipmap = level},
+			})
+			love.graphics.rectangle("fill", 0, 0, res, res)
+		end
+		
+		love.graphics.pop()
+	end
+else
+	function lib:blurCubeMap(cube, levels)
+		local shader = self:getShader("blur_cube")
+		
+		love.graphics.push("all")
+		love.graphics.reset()
+		love.graphics.setBlendMode("replace", "premultiplied")
+		
+		love.graphics.setShader(shader)
+		shader:send("tex", cube)
+		shader:send("strength", 0.01)
+		
+		for level = 2, levels do
+			local res = cube:getWidth() / 2 ^ level * 2
+			shader:send("scale", 1.0 / res)
+			shader:send("lod", level - 2.0)
 			for side = 1, 6 do
-				--write and read at the same time, might be risky
 				love.graphics.setCanvas(cube, side, level)
-				shader:send("scale", 1.0 / res)
 				shader:send("normal", blurVecs[side][1])
 				shader:send("dirX", blurVecs[side][2])
 				shader:send("dirY", blurVecs[side][3])
-				shader:send("lod", level - 2.0)
 				love.graphics.rectangle("fill", 0, 0, res, res)
 			end
 		end

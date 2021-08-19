@@ -6,10 +6,10 @@ function job:init()
 end
 
 function job:queue()
-	for reflection, task in pairs(lib.lastReflections) do
+	for reflection, pos in pairs(lib.lastReflections) do
 		if not reflection.static or not reflection.done then
 			--render reflections
-			lib:addOperation("reflections", task.obj, task.pos)
+			lib:addOperation("reflections", reflection, pos)
 			
 			--blur mipmaps
 			if reflection.roughness then
@@ -19,7 +19,7 @@ function job:queue()
 	end
 end
 
-function job:execute(obj, pos)
+function job:execute(reflection, pos)
 	local lookNormals = lib.lookNormals
 	local transformations = {
 		lib:lookAt(pos, pos + lookNormals[1], vec3(0, -1, 0)),
@@ -34,8 +34,8 @@ function job:execute(obj, pos)
 	love.graphics.push("all")
 	love.graphics.reset()
 	
-	local canvas = obj.reflection.canvas
-	obj.reflection.canvas = nil
+	local canvas = reflection.canvas
+	reflection.canvas = nil
 	
 	--render
 	for face = 1, 6 do
@@ -45,8 +45,8 @@ function job:execute(obj, pos)
 		lib:renderFull(cam, lib.canvases_reflections)
 	end
 	
-	obj.reflection.done = true
-	obj.reflection.canvas = canvas
+	reflection.done = true
+	reflection.canvas = canvas
 	love.graphics.pop()
 end
 

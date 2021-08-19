@@ -164,7 +164,7 @@ lib.cam = lib:newCam()
 lib.scene = lib:newScene()
 
 --hardcoded mipmap count, do not change
-lib.reflections_levels = 5
+lib.reflections_levels = 6
 
 --default objects
 lib.object_sky = lib:loadObject(lib.root .. "/objects/sky", {splitMaterials = false, flatten = true})

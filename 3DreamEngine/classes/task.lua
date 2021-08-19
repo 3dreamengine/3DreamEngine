@@ -31,11 +31,15 @@ return {
 		return self[6]
 	end,
 	
-	getDistance = function(self)
+	getReflection = function(self)
 		return self[7]
 	end,
 	
+	getDistance = function(self)
+		return self[8]
+	end,
+	
 	setDistance = function(self, d)
-		self[7] = d
+		self[8] = d
 	end,
 }

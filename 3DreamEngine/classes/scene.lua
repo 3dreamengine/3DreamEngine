@@ -26,7 +26,7 @@ local function getSize(object, transform)
 		(transform[3]^2 + transform[7]^2 + transform[11]^2)
 	) or 1
 	
-	return math.sqrt(3 * (object.boundingBox.size * scale)^2)
+	return math.sqrt(3 * (object.boundingBox.size)^2 * scale)
 end
 
 local function isWithingLOD(LOD_max, LOD_min, pos, size)
@@ -68,11 +68,14 @@ return {
 		--todo
 	end,
 	
-	addObject = function(self, object, parentTransform, dynamic)
-		
+	addObject = function(self, object, parentTransform, dynamic, boneTransform, reflection)
 		if object.dynamic ~= nil then
 			dynamic = object.dynamic
 		end
+		
+		--pass down some additional data
+		boneTransform = object.boneTransform or boneTransform
+		reflection = object.reflection or reflection
 		
 		--apply transformation
 		local transform
@@ -99,16 +102,16 @@ return {
 		
 		--children
 		for _,o in pairs(object.objects) do
-			self:addObject(o, transform, dynamic)
+			self:addObject(o, transform, dynamic, boneTransform, reflection)
 		end
 		
 		--meshes
 		for _,m in pairs(object.meshes) do
-			self:addMesh(m, transform, dynamic)
+			self:addMesh(m, transform, dynamic, boneTransform, reflection)
 		end
 	end,
 	
-	addMesh = function(self, mesh, transform, dynamic)
+	addMesh = function(self, mesh, transform, dynamic, boneTransform, reflection)
 		local pos = getPos(mesh, transform)
 		local size = getSize(mesh, transform)
 		
@@ -127,6 +130,9 @@ return {
 			transform,
 			pos,
 			size,
+			false,
+			boneTransform,
+			reflection,
 		}, lib.meta.task)
 		
 		mesh.rID = mesh.rID or math.random()
@@ -137,13 +143,13 @@ return {
 		
 		--render pass
 		if mesh.renderVisibility ~= false then
-			local shaderID = lib:getRenderShaderID(mesh, pass, false)
+			local shaderID = lib:getRenderShaderID(task, pass, false)
 			self:addTo(task, self.tasks.render[dyn][alpha], shaderID, mesh.material)
 		end
 		
 		--shadow pass
 		if alpha == 2 and mesh.shadowVisibility ~= false and mesh.material.shadow ~= false then
-			local shaderID = lib:getRenderShaderID(mesh, pass, true)
+			local shaderID = lib:getRenderShaderID(task, pass, true)
 			self:addTo(task, self.tasks.shadows[dyn][alpha], shaderID, mesh.material)
 		end
 	end,

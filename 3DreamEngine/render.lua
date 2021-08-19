@@ -186,13 +186,9 @@ function lib:render(canvases, cam)
 			local shaderID = task:getShaderID()
 			
 			--reflections
-			local ref = mesh.reflection
+			local ref = task:getReflection()
 			if ref and ref.canvas then
-				self.reflections[ref] = {
-					dist = (task:getPos(mesh) - cam.pos):length(),
-					obj = mesh,
-					pos = ref.pos or task:getPos(mesh),
-				}
+				self.reflections[ref] = ref.pos or task:getPos(mesh)
 			end
 			
 			--set active shader
@@ -275,7 +271,7 @@ function lib:render(canvases, cam)
 			
 			--reflection
 			if shaderObject.reflection then
-				local ref = mesh.reflection or (type(self.sky_reflection) == "table" and self.sky_reflection)
+				local ref = task:getReflection() or (type(self.sky_reflection) == "table" and self.sky_reflection)
 				local tex = ref and (ref.image or ref.canvas) or self.sky_reflection and self.sky_reflectionCanvas or self.textures.sky_fallback
 				if lastReflection ~= tex then
 					lastReflection = tex
