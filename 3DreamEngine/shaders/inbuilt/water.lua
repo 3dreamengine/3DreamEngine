@@ -153,10 +153,10 @@ function sh:perMaterial(dream, shaderObject, material)
 	shader:send("waterHeight", 1 / (material.waterHeight or 4))
 	shader:send("surfaceDistortion", material.surfaceDistortion or 0.75)
 	
-	shader:send("tex_caustics", dream:getImage(material.tex_caustics) or dream.textures.default)
+	--shader:send("tex_caustics", dream:getImage(material.tex_caustics) or dream.textures.default)
 	
-	shader:send("causticsColor", dream.sun_color)
-	shader:send("causticsScale", material.causticsScale or 1 / 32)
+	--shader:send("causticsColor", dream.sun_color)
+	--shader:send("causticsScale", material.causticsScale or 1 / 32)
 end
 
 function sh:perTask(dream, shaderObject, task)

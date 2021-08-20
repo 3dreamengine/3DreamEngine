@@ -4,7 +4,7 @@ local lib = _3DreamEngine
 
 require(lib.root .. "/physicsFunctions")
 
---wraper for the physics object
+--physics object
 local colliderMeta = {
 	getPosition = function(self)
 		local x, y = self.body:getWorldCenter()

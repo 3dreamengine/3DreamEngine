@@ -12,11 +12,11 @@ lib.meshTags = {
 	["POS"] = true,
 	["LINK"] = true,
 	["BAKE"] = true,
-	["SHADOW"] = true,
 	["ID"] = true,
 	["RAYTRACE"] = true,
 	["REFLECTION"] = true,
 	["REMOVE"] = true,
+	["SHADOW"] = true,
 }
 
 --buffers
@@ -183,7 +183,7 @@ function lib:loadObject(path, args)
 	--restructure into tree, the root node contains no data
 	if not obj.args.flatten then
 		for id,m in pairs(obj.meshes) do
-			if m.name ~= "root" and not m.tags.link then
+			if m.name ~= "root" and not m.tags.link and not m.tags.reflection then
 				local o = obj.objects[m.name]
 				if not o then
 					o = self:newObject(obj.path)
@@ -192,10 +192,31 @@ function lib:loadObject(path, args)
 					o.transform = m.transform
 					m.transform = nil
 					obj.objects[m.name] = o
+				else
+					--make sure to transform accordingly
+					if m.transform == o.transform then
+						m.transform = nil
+					else
+						m.transform = o.transform:invert() * m.transform
+					end
 				end
 				
 				obj.meshes[id] = nil
 				o.meshes[id] = m
+			end
+		end
+		
+		for id,m in pairs(obj.lights) do
+			if m.name ~= "root" then
+				local o = obj.objects[m.name]
+				if o then
+					--make sure to transform accordingly
+					m.pos = o.transform:invert() * m.pos
+					
+					obj.lights[id] = nil
+					o.lights[id] = m
+				end
+				
 			end
 		end
 	end
@@ -216,6 +237,12 @@ function lib:loadObject(path, args)
 		self:finishObject(o)
 	end
 	self:finishObject(obj)
+	
+	
+	--3do exporter
+	if obj.args.export3do then
+		self:export3do(obj)
+	end
 	
 	
 	self.deltonLoad:stop()
@@ -251,8 +278,7 @@ function lib:processObject(obj)
 			
 			--add position
 			table.insert(obj.positions, {
-				objectName = m.name,
-				name = type(m.tags.pos) == "string" and m.tags.pos or d,
+				name = type(m.tags.pos) == "string" and m.tags.pos or m.name,
 				size = r,
 				x = x,
 				y = y,
@@ -377,25 +403,6 @@ function lib:processObject(obj)
 	end
 	
 	
-	--shadow only detection
-	for d,o in pairs(obj.meshes) do
-		if o.tags.shadow then
-			if o.tags.shadow == "false" then
-				o:setShadowVisibility(false)
-			else
-				o:setRenderVisibility(false)
-				
-				--hide rest of group in shadow pass
-				for d2,o2 in pairs(obj.meshes) do
-					if o2.name == o.name and not o.tags.shadow then
-						o:setShadowVisibility(false)
-					end
-				end
-			end
-		end
-	end
-	
-	
 	--LOD detection
 	for _,typ in ipairs({"renderVisibility", "shadowVisibility"}) do
 		local max = { }
@@ -413,6 +420,24 @@ function lib:processObject(obj)
 				local nr = tonumber(o.tags.lod) or 0
 				o:setLOD(nr, max[o.name] == nr and math.huge or nr+1)
 			end
+		end
+	end
+	
+	
+	--raytrace objects are usually not meant to be rendered
+	for d,o in pairs(obj.meshes) do
+		if o.tags.raytrace then
+			o:setVisible(false)
+		end
+	end
+	
+	
+	--raytrace objects are usually not meant to be rendered
+	for d,o in pairs(obj.meshes) do
+		if o.tags.shadow == "false" then
+			o:setShadowVisibility(false)
+		elseif o.tags.shadow then
+			o:setRenderVisibility(false)
 		end
 	end
 	
@@ -524,11 +549,5 @@ function lib:finishObject(obj)
 	--cleaning up
 	if obj.args.cleanup then
 		obj:cleanup()
-	end
-	
-	
-	--3do exporter
-	if obj.args.export3do then
-		self:export3do(obj)
 	end
 end

@@ -9,6 +9,7 @@ return {
 		dither = "boolean",
 		translucent = "number",
 		cullMode = "string",
+		shadow = true,
 		
 		IOR = "getter",
 		color = "getter",
@@ -29,9 +30,13 @@ return {
 		end
 	end,
 	
-	--general settings
 	setIOR = function(self, ior)
 		self.ior = ior or 1.0
+	end,
+	
+	throwsShadow = function(self, shadow)
+		assert(type(shadow) == "boolean", "boolean expected")
+		self.shadow = shadow
 	end,
 	
 	--general material properties

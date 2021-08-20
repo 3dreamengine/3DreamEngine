@@ -158,7 +158,7 @@ return {
 			print(indent .. "physics")
 			local count = { }
 			for d,s in pairs(self.physics or { }) do
-				print(indent .. d)
+				print(indent2 .. tostring(s.name))
 			end
 		end
 		

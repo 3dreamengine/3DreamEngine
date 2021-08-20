@@ -79,8 +79,8 @@ function sh:perTask(dream, shaderObject, task)
 	if shaderObject.session.bones ~= bt then
 		shaderObject.session.bones = bt
 		local matrices = {mat4:getIdentity()}
-		if task:getObj().jointIDs then
-			for i,j in ipairs(task:getObj().jointIDs) do
+		if task:getMesh().jointIDs then
+			for i,j in ipairs(task:getMesh().jointIDs) do
 				matrices[i+1] = bt[j]
 			end
 		end

@@ -30,12 +30,16 @@ local function getSize(object, transform)
 end
 
 local function isWithingLOD(LOD_max, LOD_min, pos, size)
-	local dist = (pos - camPos):lengthSquared() / lib.LODDistance - size^2
-	if dist <= (LOD_max + 1)^2 then
-		m:preload()
-		return (not LOD_min or dist >= LOD_min^2) and dist <= LOD_max^2
+	local camPos = dream.cam.pos
+	if camPos then
+		local dist = (pos - camPos):lengthSquared() / lib.LODDistance - size^2
+		if dist <= (LOD_max + 1)^2 then
+			return (not LOD_min or dist >= LOD_min^2) and dist <= LOD_max^2, true
+		else
+			return false, false
+		end
 	else
-		return false
+		return true, true
 	end
 end
 
@@ -68,13 +72,17 @@ return {
 		--todo
 	end,
 	
-	addObject = function(self, object, parentTransform, dynamic, boneTransform, reflection)
+	addObject = function(self, object, parentTransform, dynamic, boneTransforms, reflection)
+		if object.visible == false then
+			return
+		end
+		
 		if object.dynamic ~= nil then
 			dynamic = object.dynamic
 		end
 		
 		--pass down some additional data
-		boneTransform = object.boneTransform or boneTransform
+		boneTransforms = object.boneTransforms or boneTransforms
 		reflection = object.reflection or reflection
 		
 		--apply transformation
@@ -102,16 +110,20 @@ return {
 		
 		--children
 		for _,o in pairs(object.objects) do
-			self:addObject(o, transform, dynamic, boneTransform, reflection)
+			self:addObject(o, transform, dynamic, boneTransforms, reflection)
 		end
 		
 		--meshes
 		for _,m in pairs(object.meshes) do
-			self:addMesh(m, transform, dynamic, boneTransform, reflection)
+			self:addMesh(m, transform, dynamic, boneTransforms, reflection)
 		end
 	end,
 	
-	addMesh = function(self, mesh, transform, dynamic, boneTransform, reflection)
+	addMesh = function(self, mesh, transform, dynamic, boneTransforms, reflection)
+		if mesh.visible == false then
+			return
+		end
+		
 		local pos = getPos(mesh, transform)
 		local size = getSize(mesh, transform)
 		
@@ -119,7 +131,11 @@ return {
 		if mesh.LOD_min or mesh.LOD_max then
 			local LOD_min = mesh.LOD_min or -math.huge
 			local LOD_max = mesh.LOD_max or math.huge
-			if not isWithingLOD(LOD_min, LOD_max, pos, size) then
+			local found, preload = isWithingLOD(LOD_min, LOD_max, pos, size)
+			if preload then
+				mesh:preload()
+			end
+			if not found then
 				return
 			end
 		end
@@ -131,7 +147,7 @@ return {
 			pos,
 			size,
 			false,
-			boneTransform,
+			boneTransforms,
 			reflection,
 		}, lib.meta.task)
 		

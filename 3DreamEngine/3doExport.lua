@@ -48,8 +48,7 @@ local function saveObject(obj, meshCache, dataStrings)
 		["LOD_min"] = obj.LOD_min,
 		["LOD_max"] = obj.LOD_max,
 		
-		["renderVisibility"] = obj.renderVisibility,
-		["shadowVisibility"] = obj.shadowVisibility,
+		["visible"] = obj.visible,
 	}
 	
 	--save objects
@@ -65,6 +64,14 @@ local function saveObject(obj, meshCache, dataStrings)
 			["name"] = o.name,
 			["meshType"] = o.meshType,
 			["tags"] = o.tags,
+			
+			["LOD_min"] = obj.LOD_min,
+			["LOD_max"] = obj.LOD_max,
+			
+			["visible"] = o.visible,
+			["renderVisibility"] = o.renderVisibility,
+			["shadowVisibility"] = o.shadowVisibility,
+			["farVisibility"] = o.farVisibility,
 		}
 		
 		--save the material id if its registered or the entire material
@@ -105,7 +112,7 @@ local function saveObject(obj, meshCache, dataStrings)
 						local vertexMapData = love.data.newByteData(m.vertexCount * 4)
 						local vertexMap = ffi.cast("uint32_t*", vertexMapData:getPointer())
 						for d,s in ipairs(map) do
-							vertexMap[d-1] = s
+							vertexMap[d-1] = s-1
 						end
 						
 						--compress and store vertex map
