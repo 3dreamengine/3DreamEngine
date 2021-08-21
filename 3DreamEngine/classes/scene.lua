@@ -29,12 +29,12 @@ local function getSize(object, transform)
 	return math.sqrt(3 * (object.boundingBox.size)^2 * scale)
 end
 
-local function isWithingLOD(LOD_max, LOD_min, pos, size)
+local function isWithingLOD(LOD_min, LOD_max, pos, size)
 	local camPos = dream.cam.pos
 	if camPos then
-		local dist = (pos - camPos):lengthSquared() / lib.LODDistance - size^2
+		local dist = ((pos - camPos):lengthSquared() - size^2) * lib.LODFactor
 		if dist <= (LOD_max + 1)^2 then
-			return (not LOD_min or dist >= LOD_min^2) and dist <= LOD_max^2, true
+			return (dist <= 0 or dist >= LOD_min^2) and dist <= LOD_max^2, true
 		else
 			return false, false
 		end

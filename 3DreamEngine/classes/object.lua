@@ -124,10 +124,10 @@ return {
 		print(string.rep("  ", tabs) .. self.name)
 		
 		--print objects
-		local width = 32
+		local width = 48
 		if next(self.meshes) then
 			print(indent .. "meshes")
-			print(indent2 .. "name " .. string.rep(" ", width-9) .. "tags LOD     R S  vertexcount")
+			print(indent2 .. "name " .. string.rep(" ", width-9) .. "tags LOD     V R S  vertexcount")
 		end
 		
 		--group together similar meshes
@@ -143,11 +143,11 @@ return {
 			local tags = table.concat(tags, ", "):sub(1, width)
 			local min, max = m:getLOD()
 			local lod = max and (min .. " - " .. max) or ""
-			local visibility = (m.renderVisibility ~= false and "X" or " ") .. " " .. (m.shadowVisibility ~= false and "X" or " ")
+			local visibility = (m.visible ~= false and "X" or " ") .. " " .. (m.renderVisibility ~= false and "X" or " ") .. " " .. (m.shadowVisibility ~= false and "X" or " ")
 			
 			--final string
 			local vertexCount = (m.mesh and m.mesh.getVertexCount and m.mesh:getVertexCount() or "")
-			local str = m.name .. string.rep(" ", width - #tags - #m.name) .. tags .. lod .. string.rep(" ", 8 - #lod) .. visibility .. "  " .. vertexCount
+			local str = m.name .. string.rep(" ", width - #tags - #m.name) .. tags .. " " .. lod .. string.rep(" ", 8 - #lod) .. visibility .. "  " .. vertexCount
 			
 			--merge meshes
 			print(indent2 .. str)

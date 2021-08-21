@@ -65,8 +65,10 @@ local function saveObject(obj, meshCache, dataStrings)
 			["meshType"] = o.meshType,
 			["tags"] = o.tags,
 			
-			["LOD_min"] = obj.LOD_min,
-			["LOD_max"] = obj.LOD_max,
+			["boundingBox"] = o.boundingBox,
+			
+			["LOD_min"] = o.LOD_min,
+			["LOD_max"] = o.LOD_max,
 			
 			["visible"] = o.visible,
 			["renderVisibility"] = o.renderVisibility,

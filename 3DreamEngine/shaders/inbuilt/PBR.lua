@@ -53,8 +53,8 @@ function sh:buildDefines(dream, mat, shadow)
 				
 				//backface
 				if (dot(normal, lightVec) < 0.0) {
-					lightVec = reflect(lightVec, fragmentNormal);
-					lightColor *= translucent;
+					//lightVec = reflect(lightVec, fragmentNormal);
+					//lightColor *= translucent;
 				}
 				
 				//reflectance

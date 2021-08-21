@@ -73,7 +73,7 @@ end
 
 function sh:perTask(dream, shaderObject, task)
 	local shader = shaderObject.shader
-	local LOD_max = (task:getObj().LOD_max or 1) * dream.LODDistance
+	local LOD_max = (task:getMesh().LOD_max or 1) * dream.LODDistance
 	shader:send("shader_fade_distance", LOD_max)
 end
 

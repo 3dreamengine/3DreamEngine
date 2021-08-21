@@ -45,8 +45,8 @@ void effect() {
 	
 	//proper backfaces
 	if (dot(normal, viewVec) > 0.0) {
-		normal = normalize(reflect(normal, normalize(VaryingNormal)));
-		fragmentNormal = -fragmentNormal;
+		//normal = normalize(reflect(normal, normalize(VaryingNormal)));
+		//fragmentNormal = -fragmentNormal;
 	}
 	
 #import pixel

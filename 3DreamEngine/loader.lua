@@ -152,7 +152,7 @@ function lib:loadObject(path, args)
 	
 	
 	--parse tags
-	for _,m in pairs(obj.meshes) do
+	for nnn,m in pairs(obj.meshes) do
 		m.tags = { }
 		local possibles = string.split(m.name, "_")
 		
@@ -183,7 +183,7 @@ function lib:loadObject(path, args)
 	--restructure into tree, the root node contains no data
 	if not obj.args.flatten then
 		for id,m in pairs(obj.meshes) do
-			if m.name ~= "root" and not m.tags.link and not m.tags.reflection then
+			if not m.tags.link and not m.tags.reflection then
 				local o = obj.objects[m.name]
 				if not o then
 					o = self:newObject(obj.path)
@@ -194,11 +194,12 @@ function lib:loadObject(path, args)
 					obj.objects[m.name] = o
 				else
 					--make sure to transform accordingly
-					if m.transform == o.transform then
-						m.transform = nil
-					else
-						m.transform = o.transform:invert() * m.transform
+					if m.transform ~= o.transform then
+						local transform = o.transform:invert() * m.transform
+						print("todo: two objects with the same name have different transform matrices, that is illegal!")
 					end
+					
+					m.transform = nil
 				end
 				
 				obj.meshes[id] = nil
@@ -206,6 +207,7 @@ function lib:loadObject(path, args)
 			end
 		end
 		
+		--same for light
 		for id,m in pairs(obj.lights) do
 			if m.name ~= "root" then
 				local o = obj.objects[m.name]
@@ -237,6 +239,39 @@ function lib:loadObject(path, args)
 		self:finishObject(o)
 	end
 	self:finishObject(obj)
+
+
+	--group LODs so they are forced to share the same BB center
+	for _,o in pairs(obj.objects) do
+		local LOD_min, LOD_max = math.huge, -math.huge
+		for _,m in pairs(o.meshes) do
+			if m.LOD_min then
+				LOD_min = math.min(LOD_min, m.LOD_min)
+			end
+			if m.LOD_max then
+				LOD_max = math.max(LOD_max, m.LOD_max)
+			end
+		end
+		if LOD_min ~= LOD_max and LOD_min >= 0 then
+			for id,m in pairs(o.meshes) do
+				if m.LOD_min or m.LOD_max then
+					local newID = "lod_" .. (m.LOD_min or "inf") .. "_" .. (m.LOD_max or "inf")
+					if not o.objects[newID] then
+						local on = self:newObject(obj.path)
+						on.name = newID
+						on.args = o.args
+						on.LOD_min = m.LOD_min
+						on.LOD_max = m.LOD_max
+						m.LOD_min = nil
+						m.LOD_max = nil
+						o.objects[newID] = on
+						o.meshes[id] = nil
+						on.meshes[id] = m
+					end
+				end
+			end
+		end
+	end
 	
 	
 	--3do exporter
