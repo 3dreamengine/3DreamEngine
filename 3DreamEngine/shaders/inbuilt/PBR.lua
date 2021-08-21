@@ -123,13 +123,13 @@ function sh:buildPixel(dream, mat, shadow)
 	#ifdef REFRACTIONS_ENABLED
 		if (ior != 1.0) {
 			//refract and transform back to pixel coord
-			vec3 endPoint = VertexPos + refract(viewVec, normal, ior) * distance(VertexPos, viewPos) * 0.125;
+			vec3 endPoint = VertexPos + refract(viewVec, normal, ior);
 			vec4 endPixel = transformProj * vec4(endPoint, 1.0);
 			endPixel /= endPixel.w;
 			endPixel.xy = endPixel.xy * 0.5 + 0.5;
 			
 			//uv translation
-			distortion = endPixel.xy - love_PixelCoord.xy / love_ScreenSize.xy;
+			distortion = love_PixelCoord.xy / love_ScreenSize.xy - endPixel.xy;
 		}
 	#endif
 		]]
@@ -153,7 +153,7 @@ function sh:perMaterial(dream, shaderObject, material)
 	local shader = shaderObject.shader
 	
 	--ior
-	checkAndSendCached(shaderObject, "ior", material.ior)
+	checkAndSendCached(shaderObject, "ior", 1 / material.ior)
 end
 
 function sh:perTask(dream, shaderObject, task)

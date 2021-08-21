@@ -184,6 +184,9 @@ lib.textures.godray:setWrap("repeat", "repeat")
 lib.textures.noise = love.graphics.newImage(lib.root .. "/res/noise.png")
 lib.textures.noise:setWrap("repeat")
 
+lib.textures.foam = love.graphics.newImage(lib.root .. "/res/foam.png")
+lib.textures.foam:setWrap("repeat")
+
 --load textures once actually needed
 lib.initTextures = { }
 function lib.initTextures:PBR()

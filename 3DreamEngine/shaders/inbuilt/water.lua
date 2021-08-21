@@ -16,7 +16,6 @@ end
 function sh:buildDefines(dream, mat, shadow)
 	assert(mat.alpha, "water shader requires alpha pass set to true")
 	assert(mat.tex_normal, "water shader requires a normal texture for wave movement")
-	assert(mat.tex_caustics, "water shader requires a caustics texture")
 	
 	return [[
 		]] .. (mat.tex_normal and "#define TEX_NORMAL\n" or "") .. [[
@@ -27,7 +26,7 @@ function sh:buildDefines(dream, mat, shadow)
 		
 		#define TANGENT
 		
-		#ifdef PIXEL
+		//#ifdef PIXEL
 		extern Image tex_albedo;
 		extern vec4 color_albedo;
 		
@@ -43,6 +42,8 @@ function sh:buildDefines(dream, mat, shadow)
 		#endif
 		extern vec3 color_emission;
 		
+		extern Image tex_noise;
+		
 		extern float time;
 		
 		//water
@@ -51,70 +52,72 @@ function sh:buildDefines(dream, mat, shadow)
 		extern float waterHeight;
 		extern float surfaceDistortion;
 		
-		//caustics
-		extern Image tex_caustics;
-		extern float causticsScale;
-		extern vec3 causticsColor;
+		extern float foamScale;
+		extern float foamSpeed;
 		
-		#endif
+		extern vec3 liquid_albedo;
+		extern float liquid_alpha;
+		extern vec3 liquid_emission;
+		extern float liquid_roughness;
+		extern float liquid_metallic;
+		
+		//#endif
 	]]
 end
 
 function sh:buildPixel(dream, mat)
-	return [[	
-	//emission
-#ifdef TEX_EMISSION
-	emission = Texel(tex_emission, VaryingTexCoord.xy).rgb * color_emission;
-#else
-	emission = color_albedo.rgb * color_emission;
-#endif
-
+	return [[
 	//two moving UV coords for the wave normal
-	vec2 waterUV1 = VaryingTexCoord.xy + vec2(0.0, time * waterSpeed);
-	vec2 waterUV2 = VaryingTexCoord.xy + vec2(time * waterSpeed, 0.0);
+	vec2 waterUV = VaryingTexCoord.xy + VertexPos.xz;
+	vec2 waterUV1 = waterUV + vec2(0.0, time * waterSpeed);
+	vec2 waterUV2 = waterUV + vec2(time * waterSpeed, 0.0);
 	
 	//wave normal
 	vec3 waterNormal = (
-		Texel(tex_normal, (VertexPos.xz + waterUV1) * waterScale).rgb - vec3(0.5) +
-		Texel(tex_normal, (VertexPos.xz + waterUV2) * waterScale * 0.66).rgb - vec3(0.5)
-	) * vec3(1.0, 1.0, waterHeight);
-	normal = normalize(TBN * (waterNormal));
+		Texel(tex_normal, waterUV1 * waterScale).rgb - vec3(0.5) +
+		(Texel(tex_normal, waterUV2 * waterScale * 2.7).rgb - vec3(0.5)) * 0.5
+	);
+	normal = normalize(TBN * waterNormal * vec3(1.0, waterHeight, 1.0));
 	
 	//disorted final uvs
-	vec2 uvw = (VaryingTexCoord.xy + waterNormal.xy * surfaceDistortion) * waterScale;
+	vec2 uvd = VertexPos.xz + waterNormal.xz * surfaceDistortion;
+	vec2 uvw = uvd * foamScale;
 	
+	//foam
+	float waterDepth = Texel(tex_depth, love_PixelCoord.xy / love_ScreenSize.xy).r - depth;
+	
+	//two moving UV coords for the wave normal
+	vec2 foamUV = VaryingTexCoord.xy + uvd;
+	vec2 foamUV0 = foamUV + vec2(0.0, time * foamSpeed);
+	vec2 foamUV1 = foamUV + vec2(time * foamSpeed, 0.0);
+	
+	float d0 = Texel(tex_noise, foamUV0).r;
+	float d1 = Texel(tex_noise, foamUV1).b;
+	float foamDensity = d0 + d1;
+	float density = clamp(foamDensity - waterDepth * 4.0, 0.0, 1.0);
 	
 	//color
 	vec4 c = Texel(tex_albedo, uvw) * color_albedo;
-	albedo = c.rgb;
-	alpha = c.a;
-	
+	albedo = mix(liquid_albedo, c.rgb, density);
+	alpha = mix(clamp(liquid_alpha, 0.0, 1.0), c.a, density);
 	
 	//material
 #ifdef TEX_MATERIAL
 	vec3 material = Texel(tex_material, uvw).xyz;
-	roughness = material.x * color_material.x;
-	metallic = material.y * color_material.y;
+	roughness = mix(liquid_roughness, material.x * color_material.x, density);
+	metallic = mix(liquid_metallic, material.y * color_material.y, density);
 	ao = material.z;
 #else
-	roughness = color_material.x;
-	metallic = color_material.y;
+	roughness = mix(liquid_roughness, color_material.x, density);
+	metallic = mix(liquid_metallic, color_material.y, density);
 #endif
 	
-	
-	//caustics
-	if (dot(fragmentNormal, viewVec) > 0.0) {
-#ifdef DEPTH_AVAILABLE
-		float waterDepth = depth - Texel(tex_depth, love_PixelCoord.xy / love_ScreenSize.xy).r;
-		vec3 causticsPos = viewVec * waterDepth;
-#else
-		vec3 causticsPos = viewVec;
-#endif
-		vec3 caustics = (
-			Texel(tex_caustics, (causticsPos.xz + waterUV1) * causticsScale).rgb +
-			Texel(tex_caustics, (causticsPos.xz + waterUV2) * causticsScale).rgb
-		) * causticsColor * (1.0 - alpha);
-	}
+	//emission
+	#ifdef TEX_EMISSION
+		emission = mix(liquid_emission, Texel(tex_emission, uvw).rgb * color_emission, density);
+	#else
+		emission = mix(liquid_emission, color_albedo.rgb * color_emission, density);
+	#endif
 	]]
 end
 
@@ -146,17 +149,23 @@ function sh:perMaterial(dream, shaderObject, material)
 		shader:send("tex_emission", dream:getImage(material.tex_emission) or tex.default)
 	end
 	
+	shader:send("tex_noise", dream.textures.foam)
+	
 	shader:send("color_emission", material.emission)
 	
-	shader:send("waterScale", material.waterScale or 1 / 64)
+	shader:send("waterScale", material.waterScale or 1 / 16)
 	shader:send("waterSpeed", material.waterSpeed or 1)
-	shader:send("waterHeight", 1 / (material.waterHeight or 4))
-	shader:send("surfaceDistortion", material.surfaceDistortion or 0.75)
+	shader:send("waterHeight", 1 / (material.waterHeight or 2))
+	shader:send("surfaceDistortion", material.surfaceDistortion or 1.0)
 	
-	--shader:send("tex_caustics", dream:getImage(material.tex_caustics) or dream.textures.default)
+	shader:send("foamScale", material.foamScale or 1 / 8)
+	shader:send("foamSpeed", material.foamSpeed or 0.1)
 	
-	--shader:send("causticsColor", dream.sun_color)
-	--shader:send("causticsScale", material.causticsScale or 1 / 32)
+	shader:send("liquid_albedo", material.liquid_albedo or {0.5, 0.75, 1.0})
+	shader:send("liquid_alpha", material.liquid_alpha or 0.2)
+	shader:send("liquid_emission", material.liquid_emission or {0.0, 0.0, 0.0})
+	shader:send("liquid_roughness", material.liquid_roughness or 0.0)
+	shader:send("liquid_metallic", material.liquid_metallic or 1.0)
 end
 
 function sh:perTask(dream, shaderObject, task)
