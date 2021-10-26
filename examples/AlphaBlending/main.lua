@@ -14,7 +14,6 @@ dream:init()
 --scene
 dream:loadMaterialLibrary(projectDir .. "materials")
 local scene = dream:loadScene(projectDir .. "scene")
-scene:print()
 
 --light
 local p = scene.objects.light.positions[1]

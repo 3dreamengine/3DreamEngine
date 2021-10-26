@@ -312,5 +312,5 @@ return function(self, obj, path)
 	end
 	
 	--hard coded offset
-	group(nodes[0], {-16, -24, -32})
+	group(nodes[0], {0, 0, 0})
 end

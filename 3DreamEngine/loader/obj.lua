@@ -51,7 +51,6 @@ return function(self, obj, path)
 			end
 		elseif v[1] == "o" then
 			meshID = self:decodeObjectName(l:sub(3))
-			print(meshID, l:sub(3))
 			obj.meshes[meshID] = obj.meshes[meshID] or self:newMesh(meshID, material, obj.args.meshType)
 			o = obj.meshes[meshID]
 		end
