@@ -5,11 +5,11 @@ local function removePostfix(t)
 	return v or t
 end
 
-function lib:newMesh(name, mat, meshType)
+function lib:newMesh(name, material, meshType)
 	assert(meshType, "mesh type required")
 	local o = {
 		name = removePostfix(name),
-		material = mat,
+		material = material,
 		tags = { },
 		
 		--common data arrays

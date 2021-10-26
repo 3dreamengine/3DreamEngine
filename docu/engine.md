@@ -23,9 +23,6 @@ See their respective chapters for detailed information.
 ## level of detail
 Will change, dont use yet.
 
-I'm working on automatic LOD generation, material merge, LOD billboard generation and similar.
-
-
 
 
 ## textures
@@ -51,10 +48,10 @@ Name a (very small) file "yourImage_thumb.ext" to let the texture loader automat
 
 
 ## 3DO - 3Dream object file
-It is recommended to export your objects as 3do files, these files can be loaded on multiple cores, have only ~10-20% loading time compared to .obj, are better compressed and do not need additional files like mtl. They (should) support all features other files have.
+It is recommended to export your objects as 3do files, these files have only ~10-20% loading time compared to .obj, are better compressed and do not need any additional files. They (should) support all features other files have.
 To export, just set the argument 'export3do' to true when loading the object. This saves it with the same relative path into the LÖVE save directory. Next time loading the game will use the new file instead. The original files are no longer required.
 
 But note that...
 * The exported file needs to be packed into the final game at some point.
 * You can not modify 3do files, they contain binary mesh data. Therefore keep the original files!
-* The exported 3do is shader dependend, you can not change the used based shader later.
+* The exported 3do is shader dependend, you can not change the used mesh types later.

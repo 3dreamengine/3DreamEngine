@@ -30,6 +30,3 @@ Y-axis extension to box2d. Quite fast, works perfectly on prims, works mostly on
 
 - [Sounds](https://3dreamengine.github.io/3DreamEngine/docu/sounds)
 3D sound + sound resource manager. WIP. Will support object materials to 
-
-- [Collision](https://3dreamengine.github.io/3DreamEngine/docu/collision)
-Depricated mesh, ray, sphere and box collisions. Don't use. It's slow. And may no longer work.

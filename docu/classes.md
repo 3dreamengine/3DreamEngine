@@ -88,14 +88,12 @@ c = self:clone()
 
 
 ## shader class
-The shader class allows managing additional shader modules assigned to certain objects/materials.
-
 ```lua
-self:activateShaderModule(name)
-self:deactivateShaderModule(name)
-enabled = self:isShaderModuleActive(name)
+self:setPixelShader(name)
+self:setVertexShader(name)
+self:setWorldShader(name)
 ```
-`name` name of shadermodule
+`name` name of shader, or a shader object itself
 `enabled` 
 
 
@@ -423,12 +421,6 @@ material:setAlbedoTex(tex)
 material:setEmission(r, g, b)
 material:setEmissionTex(tex)
 
-material:setGlossiness(value)
-material:setGlossinessTex(tex)
-
-material:setSpecular(value)
-material:setSpecularTex(tex)
-
 material:setRoughness(value)
 material:setRoughnessTex(tex)
 
@@ -444,8 +436,6 @@ material:setMetallicTex(tex)
 ```lua
 {
 	color = {0.5, 0.5, 0.5, 1.0},
-	glossiness = 0.1,
-	specular = 0.5,
 	emission = {0.0, 0.0, 0.0},
 	roughness = 0.5,
 	metallic = 0.0,
@@ -454,10 +444,8 @@ material:setMetallicTex(tex)
 	name = "None",         --name, used for texture linking
 	dir = dir,             --directory, used for texture linking
 	ior = 1.0,
+	value = 0.0,           --the strength the back face is lit too
 	translucent = 0.0,
-	onFinsh = function(mat, obj)
-		//calls itself once after loading the object, or after adding to the material library, in which case obj is nil
-	end
 }
 ```
 

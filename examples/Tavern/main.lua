@@ -121,7 +121,6 @@ function love.draw()
 	end
 	love.graphics.setColor(1, 1, 1, 1)
 	
-	tavern:reset()
 	dream:drawScene(scene)
 	
 	dream:drawParticleBatch(particleBatch)

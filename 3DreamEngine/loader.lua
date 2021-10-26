@@ -40,7 +40,7 @@ lib.defaultArgs = {
 	particlesystems = true,
 	splitMaterials = false,
 	meshType = "textured",
-	flatten = false,
+	scene = false,
 }
 
 --a simple table flat copy
@@ -69,22 +69,6 @@ local function prepareArgs(args)
 	return args
 end
 
---add to object library instead
-function lib:loadLibrary(path, args, prefix)
-	args = prepareArgs(args)
-	args.loadAsLibrary = true
-	
-	--load
-	local obj = self:loadObject(path, args)
-	
-	--insert into library
-	local changed = { }
-	for d,o in pairs(obj.objects) do
-		local id = (prefix or "") .. d
-		self.objectLibrary[id] = o
-	end
-end
-
 --remove objects without vertices
 local function cleanEmpties(obj)
 	for d,m in pairs(obj.meshes) do
@@ -102,6 +86,30 @@ lib.supportedFiles = {
 	"obj", --obj file
 	"dae", --dae file
 }
+
+--add to object library instead
+function lib:loadLibrary(path, args, prefix)
+	args = prepareArgs(args)
+	args.loadAsLibrary = true
+	
+	--load
+	local obj = self:loadObject(path, args)
+	
+	--insert into library
+	local changed = { }
+	for d,o in pairs(obj.objects) do
+		local id = (prefix or "") .. d
+		self.objectLibrary[id] = o
+	end
+end
+
+--loads an scene
+--this is just a wrapper for loadObject with the scene flag enabled
+function lib:loadScene(path, args)
+	args = table.copy(args)
+	args.scene = true
+	return self:loadObject(path, args)
+end
 
 --loads an object
 --path is the absolute path without extension
@@ -181,7 +189,7 @@ function lib:loadObject(path, args)
 	
 	
 	--restructure into tree, the root node contains no data
-	if not obj.args.flatten then
+	if obj.args.scene then
 		for id,m in pairs(obj.meshes) do
 			if not m.tags.link and not m.tags.reflection then
 				local o = obj.objects[m.name]

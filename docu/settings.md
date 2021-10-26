@@ -1,12 +1,10 @@
 # settings
 Most settings require `dream:init()` to be called afterwards.
 
-- [Default shader](#default-shader)
 - [max Lights](#max-lights)
 - [name Decoder](#name-decoder)
 - [frustum](#frustum)
 - [LOD Distance](#lod-distance)
-- [dither](#dither)
 - [exposure](#exposure)
 - [auto Exposure](#auto-exposure)
 - [gamma](#gamma)
@@ -22,15 +20,8 @@ Most settings require `dream:init()` to be called afterwards.
 - [clouds](#clouds)
 - [base reflection](#base-reflection)
 - [resource loader](#resource-loader)
-
-## default shader
-Sets the default shader, false to choose between textured Phong and simple Phong.
-
-```lua
-dream:setDefaultShaderType(typ)
-typ = dream:getDefaultShaderType()
-```
-`typ (false)` valid shader type or false  
+- [godrays](#godrays)
+- [disortion margin](#disortion-margin)
 
 
 
@@ -243,7 +234,7 @@ time = dream:getDaytime()
 
 
 ## weather
-The weather controlls sky color, clouds and if enabled the rain module.
+The weather controlls sky color, clouds and if enabled the rain module (currently disabled, WIP).
 Those functions has to be called after `setDaytime()`.
 
 ```lua
@@ -417,6 +408,7 @@ enabled = dream:getMipmaps()
 
 <br />
 
+## godrays
 Godrays simulate shadow shafts in (dusty) air. Other than volumetric rendering, this is a very fast, multi light source implementation.
 Max source count is currently hardcoded to 8. Settings are hardcoded and will receive appropiate setters soon.
 
@@ -428,3 +420,15 @@ enabled, quality, allSources = dream:getGodrays()
 `enabled (true)` if the godray pass is active 
 `quality (16)` the samples used to determine occlusion 
 `allSources (false)` if not manually set per source, only sun objects receive godrays 
+
+<br />
+
+## disortion margin
+Alpha pass distortion is a post effect and relys on what is on screen.
+A distortion margin smoothly fades out on the borders.
+
+```lua
+dream:setDistortionMargin(fade)
+fade = dream:getDistortionMargin()
+```
+`fade (2.0)` 1.0 is over the full screen, 4.0 a quarter, ... 

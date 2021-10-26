@@ -11,6 +11,7 @@
 * cubemap reflections
 * proper blurred reflections on rough surfaces
 * particle batches and single sprites
+* particle/foliage systems
 * simple custom shaders
 * dynamic clouds, sun, moon, stars and rainbows
 * eye adaption effect
@@ -22,7 +23,7 @@
 * included shaders for wind animation, water, ...
 * supports .obj, .mtl, .dae and .vox
 * threaded texture loading
-* threaded object loading using 3DreamEngine specific object files (converter included)
+* optional high performance file format to accelerate loading times
 * included optimized vec2, vec3, vec4, mat2, mat3 and mat4 library
 * Box2D extension to support basic 3D collisions
 
@@ -56,7 +57,7 @@ yourObject = dream:loadObject("examples/monkey/object")
 --creates a light
 light = dream:newLight("point", 1, 2, 3, 1.0, 0.75, 0.2)
 
---add shadow
+--add shadow to light source
 light:addShadow()
 
 function love.draw()
@@ -69,9 +70,11 @@ function love.draw()
   --prepare for rendering
   dream:prepare()  
 
-  --rotate, draw and offset
-  yourObject:rotateY(love.timer.getDelta())
-  dream:draw(yourObject, 0, 0, -5)
+  --rotate, offset and draw
+  yourObject:reset()  
+  yourObject:rotateY(love.timer.getTime())
+  yourObject:translate(0, 0, -3)
+  dream:draw(yourObject)
 
   --render
   dream:present()
@@ -84,7 +87,7 @@ end
 ```
 
 # Examples
-We have examples in the examples folder. The provided main.lua contains a demo selection.
+We have examples in the examples folder. The provided main.lua contains a demo selection screen.
 
 # Credits
 - [Lamborghini model](https://www.turbosquid.com/FullPreview/Index.cfm/ID/1117798)

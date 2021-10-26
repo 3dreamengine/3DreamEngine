@@ -46,7 +46,7 @@ return {
 			end
 			return c
 		end
-		return string.format("%s: %d objects, %d physics, %d lights", self.name, count(self.objects), count(self.physics or { }), count(self.lights))
+		return string.format("%s: %d objects, %d meshes, %d physics, %d lights", self.name, count(self.objects), count(self.meshes), count(self.physics or { }), count(self.lights))
 	end,
 	
 	updateBoundingBox = function(self)
@@ -91,8 +91,10 @@ return {
 	end,
 	
 	preload = function(self, force)
-		--preload meshes
 		for d,s in pairs(self.objects) do
+			s:preload(force)
+		end
+		for d,s in pairs(self.meshes) do
 			s:preload(force)
 		end
 	end,
