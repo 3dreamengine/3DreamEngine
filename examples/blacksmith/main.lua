@@ -13,8 +13,8 @@ dream:setReflection(r)
 
 dream:init()
 
-local scene = dream:loadObject(projectDir .. "scene", {splitMaterials = true})
-local torch = dream:loadObject(projectDir .. "torch", {splitMaterials = true})
+local scene = dream:loadObject(projectDir .. "scene")
+local torch = dream:loadObject(projectDir .. "torch")
 
 --particle texture
 local texture_candle = love.graphics.newImage(projectDir .. "textures/candle.png")

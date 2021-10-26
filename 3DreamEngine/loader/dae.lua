@@ -283,7 +283,6 @@ return function(self, obj, path)
 										o.weights[index+i] = armatures[o.name].weights[id]
 										o.joints[index+i] = armatures[o.name].joints[id]
 									end
-									o.materials[index+i] = material
 								end
 							end
 						end

@@ -11,7 +11,7 @@ dream:init()
 dream:loadMaterialLibrary(projectDir .. "materials")
 
 --load object
-local scene = dream:loadObject(projectDir .. "objects/scene", {splitMaterials = true})
+local scene = dream:loadObject(projectDir .. "objects/scene")
 
 dream:setFogHeight(0.0, 150.0)
 

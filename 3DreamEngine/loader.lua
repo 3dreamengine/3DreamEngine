@@ -25,7 +25,6 @@ local buffers = {
 	"normals",
 	"texCoords",
 	"colors",
-	"materials",
 	"extras",
 	"weights",
 	"joints",
@@ -38,7 +37,6 @@ lib.defaultArgs = {
 	export3do = false,
 	skip3do = false,
 	particlesystems = true,
-	splitMaterials = false,
 	meshType = "textured",
 	scene = false,
 }
@@ -106,7 +104,7 @@ end
 --loads an scene
 --this is just a wrapper for loadObject with the scene flag enabled
 function lib:loadScene(path, args)
-	args = table.copy(args)
+	args = args and table.copy(args) or { }
 	args.scene = true
 	return self:loadObject(path, args)
 end
@@ -380,68 +378,6 @@ function lib:processObject(obj)
 				source = o.name,
 				transform = o.transform
 			})
-		end
-	end
-	
-	
-	--split materials
-	do
-		local changes = true
-		while changes do
-			changes = false
-			for d,o in pairs(obj.meshes) do
-				if obj.args.splitMaterials and not o.tags.bake and not o.tags.split then
-					changes = true
-					obj.meshes[d] = nil
-					for i,m in ipairs(o.materials) do
-						local d2 = d .. "_" .. m.name
-						if not obj.meshes[d2] then
-							local o2 = o:clone()
-							o2.name = o.name .. "_" .. m.name
-							o2.tags = table.copy(o.tags)
-							o2.tags.split = true
-							
-							o2.material = m
-							o2.translation = { }
-							o2.faces = { }
-							
-							--clear buffers
-							for _,buffer in ipairs(buffers) do
-								if o2[buffer] then
-									o2[buffer] = { }
-								end
-							end
-							
-							obj.meshes[d2] = o2
-						end
-						
-						local o2 = obj.meshes[d2]
-						local i2 = #o2.vertices+1
-						
-						--copy buffers
-						o2.translation[i] = i2
-						for _,buffer in ipairs(buffers) do
-							if o2[buffer] then
-								o2[buffer][i2] = o[buffer][i]
-							end
-						end
-					end
-					
-					for i,f in ipairs(o.faces) do
-						local m = o.materials[f[1]]
-						local d2 = d .. "_" .. m.name
-						local o2 = obj.meshes[d2]
-						o2.faces[#o2.faces+1] = {
-							o2.translation[f[1]],
-							o2.translation[f[2]],
-							o2.translation[f[3]],
-						}
-					end
-				end
-			end
-			for d,o in pairs(obj.meshes) do
-				o.translation = nil
-			end
 		end
 	end
 	

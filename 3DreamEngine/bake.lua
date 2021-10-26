@@ -9,7 +9,7 @@ function lib:bakeMaterial(o, ID)
 	return lib:bakeMaterials({o}, "todo_" .. (ID or o.name))
 end
 
-function lib:bakeMaterials(list, ID)
+function lib:bakeMaterials(objects, ID)
 	local atlas = {{0, 0, 1, 0}}
 	local uvs = { }
 	local uvo = { }
@@ -19,64 +19,54 @@ function lib:bakeMaterials(list, ID)
 		local file = love.filesystem.read("bakedMaterials/" .. ID .. ".atlas")
 		atlas, uvs, uvo, used = unpack(packTable.unpack(file))
 	else
-		local found = false
 		local materials = { }
 		local materialsLookup = { }
-		for d,o in pairs(list) do
-			if o.materials then
-				found = true
+		for d,o in pairs(objects) do
+			local m = o.material.name
+			materials[m] = materials[m] or 0
+			materialsLookup[m] = o.material
+			
+			--approximate material area
+			for _,f in ipairs(o.faces) do
+				local a = vec3(o.vertices[f[1]])
+				local b = vec3(o.vertices[f[2]])
+				local c = vec3(o.vertices[f[3]])
 				
-				--fetch all materials
-				for _,m in ipairs(o.materials) do
-					materials[m.name] = 0
-					materialsLookup[m.name] = m
-				end
+				local ab = b-a
+				local ac = c-a
+				local s = ab:cross(ac):length() / 2
 				
-				--approximate per material area
-				for _,f in ipairs(o.faces) do
-					local m = o.materials[f[1]]
-					
-					local a = vec3(o.vertices[f[1]])
-					local b = vec3(o.vertices[f[2]])
-					local c = vec3(o.vertices[f[3]])
-					
-					local ab = b-a
-					local ac = c-a
-					local s = ab:cross(ac):length() / 2
-					
-					materials[m.name] = materials[m.name] + s
-				end
+				materials[m] = materials[m] + s
+			end
+			
+			--get UVs bounds
+			uvo[d] = { }
+			for _,f in ipairs(o.faces) do
+				uvs[m] = uvs[m] or {math.huge, math.huge, -math.huge, -math.huge}
 				
-				--get UVs bounds
-				uvo[d] = { }
-				for _,f in ipairs(o.faces) do
-					local m = o.materials[f[1]]
-					uvs[m.name] = uvs[m.name] or {math.huge, math.huge, -math.huge, -math.huge}
-					
-					local uv = {
-						o.texCoords[f[1]],
-						o.texCoords[f[2]],
-						o.texCoords[f[3]],
-					}
-					
-					local cx = math.floor((uv[1][1] + uv[2][1] + uv[3][1]) / 3)
-					local cy = math.floor((uv[1][2] + uv[2][2] + uv[3][2]) / 3)
-					uvo[d][f[1]] = {cx, cy}
-					uvo[d][f[2]] = {cx, cy}
-					uvo[d][f[3]] = {cx, cy}
-					
-					for v = 1, 3 do
-						local a = uv[v]
-						uvs[m.name][1] = math.min(uvs[m.name][1], a[1] - cx)
-						uvs[m.name][2] = math.min(uvs[m.name][2], a[2] - cy)
-						uvs[m.name][3] = math.max(uvs[m.name][3], a[1] - cx)
-						uvs[m.name][4] = math.max(uvs[m.name][4], a[2] - cy)
-					end
+				local uv = {
+					o.texCoords[f[1]],
+					o.texCoords[f[2]],
+					o.texCoords[f[3]],
+				}
+				
+				local cx = math.floor((uv[1][1] + uv[2][1] + uv[3][1]) / 3)
+				local cy = math.floor((uv[1][2] + uv[2][2] + uv[3][2]) / 3)
+				uvo[d][f[1]] = {cx, cy}
+				uvo[d][f[2]] = {cx, cy}
+				uvo[d][f[3]] = {cx, cy}
+				
+				for v = 1, 3 do
+					local a = uv[v]
+					uvs[m][1] = math.min(uvs[m][1], a[1] - cx)
+					uvs[m][2] = math.min(uvs[m][2], a[2] - cy)
+					uvs[m][3] = math.max(uvs[m][3], a[1] - cx)
+					uvs[m][4] = math.max(uvs[m][4], a[2] - cy)
 				end
 			end
 		end
 		
-		assert(found, "no material buffers found")
+		assert(next(objects), "no material buffers found")
 		
 		--get priority
 		local totalPriority = 0
@@ -94,7 +84,7 @@ function lib:bakeMaterials(list, ID)
 		local priorities = { }
 		for m,p in pairs(materials) do
 			priority[m] = priority[m] / totalPriority
-			priorities[#priorities+1] = m
+			table.insert(priorities, m)
 		end
 		
 		--aprox required subdivision counts based on priority
@@ -213,12 +203,12 @@ function lib:bakeMaterials(list, ID)
 	end
 	
 	--adapt UV
-	for d,o in pairs(list) do
+	for d,o in pairs(objects) do
 		for i,s in ipairs(o.texCoords) do
-			local m = o.materials[i]
-			local a = atlas[m.name] or {0, 0, 0, 0}
+			local m = o.material.name
+			local a = atlas[m] or {0, 0, 0, 0}
 			local uv_origin = uvo[d][i] or {0, 0}
-			local uv = uvs[m.name] or {0, 0, 1, 1}
+			local uv = uvs[m] or {0, 0, 1, 1}
 			
 			local x = (s[1] - uv_origin[1] - uv[1]) / (uv[3] - uv[1])
 			local y = (s[2] - uv_origin[2] - uv[2]) / (uv[4] - uv[2])

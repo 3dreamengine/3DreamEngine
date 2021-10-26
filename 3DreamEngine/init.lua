@@ -101,7 +101,7 @@ lib:setDaytime(0.3)
 lib:setGamma(false)
 lib:setExposure(1.0)
 lib:setMaxLights(16)
-lib:setNameDecoder("^(.+)_([^_]+)$")
+lib:setNameDecoder("(.*)_.*")
 lib:setFrustumCheck(true, false)
 lib:setLODDistance(20)
 lib:setGodrays(16, false)
@@ -167,9 +167,9 @@ lib.scene = lib:newScene()
 lib.reflections_levels = 6
 
 --default objects
-lib.object_sky = lib:loadObject(lib.root .. "/objects/sky", {splitMaterials = false})
-lib.object_cube = lib:loadObject(lib.root .. "/objects/cube", {splitMaterials = false})
-lib.object_plane = lib:loadObject(lib.root .. "/objects/plane", {splitMaterials = false})
+lib.object_sky = lib:loadObject(lib.root .. "/objects/sky")
+lib.object_cube = lib:loadObject(lib.root .. "/objects/cube")
+lib.object_plane = lib:loadObject(lib.root .. "/objects/plane")
 
 --default textures
 local pix = love.image.newImageData(2, 2)

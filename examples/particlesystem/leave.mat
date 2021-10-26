@@ -1,5 +1,0 @@
-return {
-	name = "Leave",
-	cullMode = "none",
-	vertexShader = "wind",
-}

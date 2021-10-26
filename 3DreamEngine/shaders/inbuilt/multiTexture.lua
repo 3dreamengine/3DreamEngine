@@ -3,7 +3,6 @@ local sh = { }
 sh.type = "pixel"
 
 sh.meshType = "textured"
-sh.splitMaterials = true
 
 function sh:getId(dream, mat, shadow)
 	if shadow then

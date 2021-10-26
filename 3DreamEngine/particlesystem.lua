@@ -72,7 +72,6 @@ end
 
 --add particle system objects
 --for every mesh (which is not a particle mesh itself) with a material with an attached particle systems create a new mesh (the particles)
---assigning several materials to one object without the split arg therefore wont work properly
 function lib:addParticlesystems(obj)
 	local meshes = { }
 	for oName, o in pairs(obj.meshes) do

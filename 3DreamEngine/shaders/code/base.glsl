@@ -7,7 +7,7 @@ extern highp vec3 viewPos;         //camera position
 
 //varyings
 varying highp vec3 VertexPos;      //vertex position for pixel shader
-varying highp vec3 VaryingNormal;   //vertex normal for pixel shader
+varying highp vec3 VaryingNormal;  //vertex normal for pixel shader
 varying float depth;               //depth
 
 extern float translucent;
@@ -39,7 +39,6 @@ void effect() {
 	float metallic = 0.0;
 	float ao = 1.0;
 	vec3 emission = vec3(0.0);
-	vec3 caustics = vec3(0.0);
 	
 #import pixelMaterial
 	
@@ -136,10 +135,10 @@ vec4 position(mat4 _t, vec4 _v) {
 	depth = vPos.z;
 	
 	//raw normal vector without normal map;
-	VaryingNormal = normalTransform * (VertexNormal - 0.5);
+	VaryingNormal = normalTransform * (VertexNormal - vec3(0.5));
 	
 #ifdef TANGENT
-	vec3 T = normalize(normalTransform * (VertexTangent.xyz - 0.5));
+	vec3 T = normalize(normalTransform * (VertexTangent.xyz - vec3(0.5)));
 	vec3 N = normalize(VaryingNormal);
 	
 	//in case the UV is mirrored

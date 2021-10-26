@@ -18,11 +18,11 @@ return function(self, obj, path)
 		local v = string.split(l, " ")
 		
 		if v[1] == "v" then
-			vertices[#vertices+1] = {tonumber(v[2]), tonumber(v[3]), tonumber(v[4])}
+			table.insert(vertices, {tonumber(v[2]), tonumber(v[3]), tonumber(v[4])})
 		elseif v[1] == "vn" then
-			normals[#normals+1] = {tonumber(v[2]), tonumber(v[3]), tonumber(v[4])}
+			table.insert(normals, {tonumber(v[2]), tonumber(v[3]), tonumber(v[4])})
 		elseif v[1] == "vt" then
-			texture[#texture+1] = {tonumber(v[2]), 1.0 - tonumber(v[3])}
+			table.insert(texture, {tonumber(v[2]), 1.0 - tonumber(v[3])})
 		elseif v[1] == "usemtl" then
 			material = self.materialLibrary[l:sub(8)] or obj.materials[l:sub(8)] or obj.materials.None
 			o.material = material
@@ -37,21 +37,21 @@ return function(self, obj, path)
 				o.vertices[index] = vertices[tonumber(v2[1])]
 				o.texCoords[index] = texture[tonumber(v2[2])]
 				o.normals[index] = normals[tonumber(v2[3])]
-				o.materials[index] = material
 			end
 			
 			local index = #o.vertices
 			if verts == 3 then
 				--tris
-				o.faces[#o.faces+1] = {index-2, index-1, index}
+				table.insert(o.faces, {index-2, index-1, index})
 			else
 				--triangulates, fan style
 				for i = 1, verts-2 do
-					o.faces[#o.faces+1] = {index-verts+1, index-verts+1+i, index-verts+2+i}
+					table.insert(o.faces, {index-verts+1, index-verts+1+i, index-verts+2+i})
 				end
 			end
 		elseif v[1] == "o" then
 			meshID = self:decodeObjectName(l:sub(3))
+			print(meshID, l:sub(3))
 			obj.meshes[meshID] = obj.meshes[meshID] or self:newMesh(meshID, material, obj.args.meshType)
 			o = obj.meshes[meshID]
 		end

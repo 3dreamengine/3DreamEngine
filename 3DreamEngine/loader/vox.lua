@@ -104,8 +104,8 @@ return function(self, obj, path)
 			local z = parseInt(i+20)
 			
 			--create new model
-			models[#models+1] = {x = x, y = y, z = z, blocks = ffi.new("uint8_t[" .. x .. "][" .. y .. "][" .. z .. "]")}
-			currModel = models[#models]
+			currModel = {x = x, y = y, z = z, blocks = ffi.new("uint8_t[" .. x .. "][" .. y .. "][" .. z .. "]")}
+			table.insert(models, currModel)
 			for xx = 0, x-1 do
 				for yy = 0, y-1 do
 					for zz = 0, z-1 do
@@ -116,7 +116,7 @@ return function(self, obj, path)
 		elseif chunk == "XYZI" then
 			local count = parseInt(i+12)
 			for c = 1, count do
-				local x = string.byte(file:sub(i+16+(c-1)*4+1, i+16+(c-1)*4+1))
+				local x = string.byte(file:sub(i+16+(c-1)*4+1, i+16+(c-1)*4+1)) --todo
 				local y = string.byte(file:sub(i+16+(c-1)*4+2, i+16+(c-1)*4+2))
 				local z = string.byte(file:sub(i+16+(c-1)*4+3, i+16+(c-1)*4+3))
 				local i = string.byte(file:sub(i+16+(c-1)*4+4, i+16+(c-1)*4+4))
@@ -186,7 +186,7 @@ return function(self, obj, path)
 			materials[id].roughness = mat._rough
 			materials[id].metallic = mat._type == "_metal" and 1 or 0
 			materials[id].ior = mat._type == "_glass" and mat._ior or 1.0
-			materials[id].emission = {color[1] * mat._flux, color[2] * mat._flux, color[3] * mat._flux}
+			materials[id].emission = {mat._flux, mat._flux, mat._flux}
 			materials[id].name = tostring(id)
 		else
 			print("unknown chunk " .. chunk)
@@ -196,9 +196,12 @@ return function(self, obj, path)
 	end
 	
 	local function add(o, x, y, z, nx, ny, nz, mat)
-		o.vertices[#o.vertices+1] = {x, y, z}
-		o.normals[#o.normals+1] = {nx, ny, nz}
-		o.materials[#o.materials+1] = mat
+		table.insert(o.vertices, {x, y, z})
+		table.insert(o.normals, {nx, ny, nz})
+		table.insert(o.colors, mat.color)
+		table.insert(o.roughnesses, mat.roughness)
+		table.insert(o.metallics, mat.metallic)
+		table.insert(o.emissions, mat.emission)
 	end
 	
 	--generate final object
@@ -216,7 +219,6 @@ return function(self, obj, path)
 						local oz = t[2] + y
 						
 						local mat = materials[b]
-						o.material = mat
 						
 						--top
 						if z == 0 or m.blocks[x][y][z-1] == 0 then
@@ -225,8 +227,8 @@ return function(self, obj, path)
 							add(o, ox+1, oy+0, oz+0, 0, -1, 0, mat)
 							add(o, ox+0, oy+0, oz+0, 0, -1, 0, mat)
 							local c = #o.vertices
-							o.faces[#o.faces+1] = {c-0, c-1, c-2}
-							o.faces[#o.faces+1] = {c-0, c-2, c-3}
+							table.insert(o.faces, {c-0, c-1, c-2})
+							table.insert(o.faces, {c-0, c-2, c-3})
 						end
 						
 						--bottom
@@ -236,52 +238,52 @@ return function(self, obj, path)
 							add(o, ox+1, oy+1, oz+1, 0, 1, 0, mat)
 							add(o, ox+0, oy+1, oz+1, 0, 1, 0, mat)
 							local c = #o.vertices
-							o.faces[#o.faces+1] = {c-0, c-1, c-2}
-							o.faces[#o.faces+1] = {c-0, c-2, c-3}
+							table.insert(o.faces, {c-0, c-1, c-2})
+							table.insert(o.faces, {c-0, c-2, c-3})
 						end
 						
 						--right
 						if x == 0 or m.blocks[x-1][y][z] == 0 then
-							add(o, ox+0, oy+1, oz+0, 1, 0, 0, mat)
-							add(o, ox+0, oy+1, oz+1, 1, 0, 0, mat)
-							add(o, ox+0, oy+0, oz+1, 1, 0, 0, mat)
-							add(o, ox+0, oy+0, oz+0, 1, 0, 0, mat)
+							add(o, ox+0, oy+1, oz+0, -1, 0, 0, mat)
+							add(o, ox+0, oy+1, oz+1, -1, 0, 0, mat)
+							add(o, ox+0, oy+0, oz+1, -1, 0, 0, mat)
+							add(o, ox+0, oy+0, oz+0, -1, 0, 0, mat)
 							local c = #o.vertices
-							o.faces[#o.faces+1] = {c-0, c-1, c-2}
-							o.faces[#o.faces+1] = {c-0, c-2, c-3}
+							table.insert(o.faces, {c-0, c-1, c-2})
+							table.insert(o.faces, {c-0, c-2, c-3})
 						end
 						
 						--left
 						if x == m.x-1 or m.blocks[x+1][y][z] == 0 then
-							add(o, ox+1, oy+0, oz+0, -1, 0, 0, mat)
-							add(o, ox+1, oy+0, oz+1, -1, 0, 0, mat)
-							add(o, ox+1, oy+1, oz+1, -1, 0, 0, mat)
-							add(o, ox+1, oy+1, oz+0, -1, 0, 0, mat)
+							add(o, ox+1, oy+0, oz+0, 1, 0, 0, mat)
+							add(o, ox+1, oy+0, oz+1, 1, 0, 0, mat)
+							add(o, ox+1, oy+1, oz+1, 1, 0, 0, mat)
+							add(o, ox+1, oy+1, oz+0, 1, 0, 0, mat)
 							local c = #o.vertices
-							o.faces[#o.faces+1] = {c-0, c-1, c-2}
-							o.faces[#o.faces+1] = {c-0, c-2, c-3}
+							table.insert(o.faces, {c-0, c-1, c-2})
+							table.insert(o.faces, {c-0, c-2, c-3})
 						end
 						
 						--front
 						if y == 0 or m.blocks[x][y-1][z] == 0 then
-							add(o, ox+0, oy+0, oz+0, 0, 0, 1, mat)
-							add(o, ox+1, oy+0, oz+0, 0, 0, 1, mat)
-							add(o, ox+1, oy+1, oz+0, 0, 0, 1, mat)
-							add(o, ox+0, oy+1, oz+0, 0, 0, 1, mat)
+							add(o, ox+0, oy+0, oz+0, 0, 0, -1, mat)
+							add(o, ox+1, oy+0, oz+0, 0, 0, -1, mat)
+							add(o, ox+1, oy+1, oz+0, 0, 0, -1, mat)
+							add(o, ox+0, oy+1, oz+0, 0, 0, -1, mat)
 							local c = #o.vertices
-							o.faces[#o.faces+1] = {c-0, c-1, c-2}
-							o.faces[#o.faces+1] = {c-0, c-2, c-3}
+							table.insert(o.faces, {c-0, c-1, c-2})
+							table.insert(o.faces, {c-0, c-2, c-3})
 						end
 						
-						--front
+						--back
 						if y == m.y-1 or m.blocks[x][y+1][z] == 0 then
 							add(o, ox+0, oy+1, oz+1, 0, 0, 1, mat)
 							add(o, ox+1, oy+1, oz+1, 0, 0, 1, mat)
 							add(o, ox+1, oy+0, oz+1, 0, 0, 1, mat)
 							add(o, ox+0, oy+0, oz+1, 0, 0, 1, mat)
 							local c = #o.vertices
-							o.faces[#o.faces+1] = {c-0, c-1, c-2}
-							o.faces[#o.faces+1] = {c-0, c-2, c-3}
+							table.insert(o.faces, {c-0, c-1, c-2})
+							table.insert(o.faces, {c-0, c-2, c-3})
 						end
 					end
 				end

@@ -15,7 +15,7 @@ sh.wetness_decrease = 0.01
 local root = (string.match((...), "(.*[/\\])") or "") .. "rain/"
 
 function sh:init(dream)
-	sh.object_rain = dream:loadObject(root .. "rain", "Phong", {splitMaterials = false})
+	sh.object_rain = dream:loadObject(root .. "rain", "Phong")
 	
 	--rain textures
 	self.tex_rain = { }

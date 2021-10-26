@@ -242,12 +242,6 @@ lib.meshTypeFormats = {
 		{"VertexNormal", "byte", 4},        -- normal
 		{"VertexTangent", "byte", 4},       -- normal tangent
 	},
-	textured_array = {
-		{"VertexPosition", "float", 4},     -- x, y, z
-		{"VertexTexCoord", "float", 3},     -- UV
-		{"VertexNormal", "byte", 4},        -- normal
-		{"VertexTangent", "byte", 4},       -- normal tangent
-	},
 	simple = {
 		{"VertexPosition", "float", 4},     -- x, y, z
 		{"VertexNormal", "byte", 4},        -- normal
@@ -288,7 +282,7 @@ function lib:createMesh(obj)
 		end
 		
 		--calculate vertex normals and uv normals
-		if obj.meshType == "textured" or obj.meshType == "textured_array" then
+		if obj.meshType == "textured" then
 			self:calcTangents(obj)
 		end
 		
@@ -314,24 +308,14 @@ function lib:createMesh(obj)
 					normal[1]*0.5+0.5, normal[2]*0.5+0.5, normal[3]*0.5+0.5, 0.0,
 					tangent[1]*0.5+0.5, tangent[2]*0.5+0.5, tangent[3]*0.5+0.5, tangent[4] or 0.0
 				)
-			elseif obj.meshType == "textured_array" then
-				local tangent = obj.tangents[i] or empty
-				obj.mesh:setVertex(i,
-					vertex[1], vertex[2], vertex[3], 1,
-					texCoord[1], texCoord[2], texCoord[3], 
-					normal[1]*0.5+0.5, normal[2]*0.5+0.5, normal[3]*0.5+0.5, 0.0,
-					tangent[1]*0.5+0.5, tangent[2]*0.5+0.5, tangent[3]*0.5+0.5, tangent[4] or 0.0
-				)
 			elseif obj.meshType == "simple" then
-				local material = obj.materials[i] or empty
-				local color = obj.colors[i] or material.color or empty
+				local color = obj.colors[i] or empty
+				local roughness = obj.roughnesses[i] or 0
+				local metallic = obj.metallics[i] or 0
+				local emission = obj.emissions[i] or empty
 				
-				local roughness = material.roughness or material[1] or 0
-				local metallic = material.metallic or material[2] or 0
-				local emission = material.emission or material[3] or 0
-				if type(emission) == "table" then
-					emission = emission[1] / 3 + emission[2] / 3 + emission[3] / 3
-				end
+				--we use a simpler model
+				emission = math.sqrt(emission[1]^2 + emission[2]^2 + emission[3]^2)
 				
 				obj.mesh:setVertex(i,
 					vertex[1], vertex[2], vertex[3], 1,

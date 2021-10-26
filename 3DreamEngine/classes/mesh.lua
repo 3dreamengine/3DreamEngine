@@ -17,7 +17,9 @@ function lib:newMesh(name, material, meshType)
 		normals = { },
 		texCoords = { },
 		colors = { },
-		materials = { },
+		roughnesses = { },
+		metallics = { },
+		emissions = { },
 		faces = { },
 		
 		boundingBox = self:newBoundaryBox(),
@@ -99,7 +101,6 @@ return {
 		
 		self.texCoords = nil
 		self.colors = nil
-		self.materials = nil
 		self.extras = nil
 		self.tangents = nil
 		

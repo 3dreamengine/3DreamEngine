@@ -9,9 +9,9 @@ dream.AO_enabled = false
 
 dream:init()
 
-local knight = dream:loadObject(projectDir.. "knight", {splitMaterials = false, meshType = "simple"})
+local knight = dream:loadObject(projectDir.. "knight", {meshType = "simple"})
 
-ground:setPixelShader("simple")
+knight:setPixelShader("simple")
 
 love.graphics.setBackgroundColor(128/255, 218/255, 235/255)
 

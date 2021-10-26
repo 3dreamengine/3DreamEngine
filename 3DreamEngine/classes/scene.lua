@@ -30,7 +30,7 @@ local function getSize(object, transform)
 end
 
 local function isWithingLOD(LOD_min, LOD_max, pos, size)
-	local camPos = dream.cam.pos
+	local camPos = lib.cam.pos
 	if camPos then
 		local dist = ((pos - camPos):lengthSquared() - size^2) * lib.LODFactor
 		if dist <= (LOD_max + 1)^2 then
