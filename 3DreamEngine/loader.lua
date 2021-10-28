@@ -19,17 +19,6 @@ lib.meshTags = {
 	["SHADOW"] = true,
 }
 
---buffers
-local buffers = {
-	"vertices",
-	"normals",
-	"texCoords",
-	"colors",
-	"extras",
-	"weights",
-	"joints",
-}
-
 --the default args used by the object loader
 lib.defaultArgs = {
 	cleanup = true,
@@ -40,15 +29,6 @@ lib.defaultArgs = {
 	meshType = "textured",
 	scene = false,
 }
-
---a simple table flat copy
-local function clone(t)
-	local n = { }
-	for d,s in pairs(t) do
-		n[d] = s
-	end
-	return n
-end
 
 --extends given arg table with default args
 local function prepareArgs(args)
@@ -245,39 +225,6 @@ function lib:loadObject(path, args)
 		self:finishObject(o)
 	end
 	self:finishObject(obj)
-
-
-	--group LODs so they are forced to share the same BB center
-	for _,o in pairs(obj.objects) do
-		local LOD_min, LOD_max = math.huge, -math.huge
-		for _,m in pairs(o.meshes) do
-			if m.LOD_min then
-				LOD_min = math.min(LOD_min, m.LOD_min)
-			end
-			if m.LOD_max then
-				LOD_max = math.max(LOD_max, m.LOD_max)
-			end
-		end
-		if LOD_min ~= LOD_max and LOD_min >= 0 then
-			for id,m in pairs(o.meshes) do
-				if m.LOD_min or m.LOD_max then
-					local newID = "lod_" .. (m.LOD_min or "inf") .. "_" .. (m.LOD_max or "inf")
-					if not o.objects[newID] then
-						local on = self:newObject(obj.path)
-						on.name = newID
-						on.args = o.args
-						on.LOD_min = m.LOD_min
-						on.LOD_max = m.LOD_max
-						m.LOD_min = nil
-						m.LOD_max = nil
-						o.objects[newID] = on
-						o.meshes[id] = nil
-						on.meshes[id] = m
-					end
-				end
-			end
-		end
-	end
 	
 	
 	--3do exporter
@@ -363,7 +310,6 @@ function lib:processObject(obj)
 			obj.meshes[d] = nil
 		end
 	end
-	
 	
 	
 	--detect links
