@@ -44,9 +44,6 @@ return {
 	
 	setterGetter = {
 		refreshStepSize = "number",
-	},
-	
-	setterGetter = {
 		refreshStepSize = "number",
 	},
 	

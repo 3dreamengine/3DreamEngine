@@ -23,6 +23,7 @@ function lib:newObject(path)
 		lights = { },
 		physics = { },
 		reflections = { },
+		animations = { },
 		args = { },
 		
 		path = path, --absolute path to object
@@ -100,14 +101,8 @@ return {
 	end,
 	
 	copySkeleton = function(self, o)
-		assert(o.skeleton, "skeleton does not exist")
+		assert(o.skeleton, "object has no skeletons")
 		self.sekelton = o.skeleton
-	end,
-	
-	copyAnimations = function(self, o)
-		assert(o.animations, "animation does not exist")
-		self.animations = o.animations
-		self.animationLengths = o.animationLengths
 	end,
 	
 	generatePhysics = function(self)
@@ -131,9 +126,6 @@ return {
 			print(indent .. "meshes")
 			print(indent2 .. "name " .. string.rep(" ", width-9) .. "tags LOD     V R S  vertexcount")
 		end
-		
-		--group together similar meshes
-		local found = { }
 		for _,m in pairs(self.meshes) do
 			--to array
 			local tags = { }
@@ -177,6 +169,31 @@ return {
 			print(indent .. "positions")
 			for d,s in pairs(self.positions) do
 				print(indent2 .. tostring(s.name) .. string.format("  %f, %f, %f", s.x, s.y, s.z))
+			end
+		end
+		
+		--skeleton
+		if self.skeleton then
+			print(indent .. "skeleton")
+			local function p(s, indent)
+				print(indent .. s.name)
+				if s.children then
+					for i,v in pairs(s.children) do
+						p(v, "  " .. indent)
+					end
+				end
+			end
+			--todo, pfusch
+			for i,v in pairs(self.skeleton) do
+				p(v, indent2)
+			end
+		end
+		
+		--animations
+		if next(self.animations) then
+			print(indent .. "animations")
+			for d,s in pairs(self.animations) do
+				print(indent2 .. string.format("%s: %d, %.1f sec", d, #s.frames, s.length))
 			end
 		end
 		

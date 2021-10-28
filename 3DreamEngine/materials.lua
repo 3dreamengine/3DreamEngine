@@ -115,6 +115,9 @@ function lib:finishMaterial(mat, obj)
 		else
 			--search for correctly named texture in the material directory
 			local dir = mat.dir and (mat.dir .. "/") or ""
+			if not mat.name then
+				require("mobdebug").start()
+				end
 			for _,p in pairs({
 				dir .. typ,                               -- e.g. "materialDirectory/albedo.png"
 				dir .. mat.name .. "/" .. typ,            -- e.g. "materialDirectory/materialName/albedo.png"
