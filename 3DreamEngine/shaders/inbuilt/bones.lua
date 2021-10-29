@@ -2,7 +2,7 @@ local sh = { }
 
 sh.type = "vertex"
 
-sh.maxJoints = 16
+sh.maxJoints = 64
 
 function sh:getId(dream, mat, shadow)
 	return 0
@@ -16,9 +16,10 @@ function sh:initObject(dream, obj)
 			obj.boneMesh = love.graphics.newMesh({{"VertexJoint", "byte", 4}, {"VertexWeight", "byte", 4}}, #obj.joints, "triangles", "static")
 			
 			--create mesh
-			for d,s in ipairs(obj.joints) do
-				local w = obj.weights[d]
-				obj.boneMesh:setVertex(d, (s[1] or 0) / 255, (s[2] or 0) / 255, (s[3] or 0) / 255, (s[4] or 0) / 255, w[1] or 0, w[2] or 0, w[3] or 0, w[4] or 0)
+			for index = 1, #obj.joints do
+				local w = obj.weights[index]
+				local j = obj.joints[index]
+				obj.boneMesh:setVertex(index, (j[1] or 0) / 255, (j[2] or 0) / 255, (j[3] or 0) / 255, (j[4] or 0) / 255, w[1] or 0, w[2] or 0, w[3] or 0, w[4] or 0)
 			end
 		end
 		
@@ -77,12 +78,14 @@ function sh:perTask(dream, shaderObject, task)
 	assert(bt, "missing bone transforms")
 	
 	if shaderObject.session.bones ~= bt then
-		shaderObject.session.bones = bt
-		local matrices = {mat4:getIdentity()}
-		if task:getMesh().jointIDs then
-			for i,j in ipairs(task:getMesh().jointIDs) do
-				matrices[i+1] = bt[j]
-			end
+		local mesh = task:getMesh()
+		local matrices = { }
+		for i = 1, self.maxJoints do
+			matrices[i] = bt[i - 1] or mat4:getIdentity()
+		end
+		if #matrices > self.maxJoints and not mesh._jointExceededWarning then
+			mesh._jointExceededWarning = true
+			print(string.format("mesh %s has %d joints, but the shader is limited to %d", mesh.name, #matrices, self.maxJoints))
 		end
 		shaderObject.shader:send("jointTransforms", unpack(matrices))
 	end

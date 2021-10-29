@@ -13,12 +13,12 @@ end
 
 local function loadVecArray(arr, stride)
 	local t = { }
-	local i = 0
+	local i = stride
 	for w in arr:gmatch("%S+") do
 		i = i + 1
 		if i > stride then
 			table.insert(t, { })
-			i = 0
+			i = 1
 		end
 		table.insert(t[#t], tonumber(w))
 	end
@@ -50,23 +50,62 @@ local function indexTree(node)
 end
 
 --returns the data for a given source
-local function getInput(id)
+local function getInput(id, stride)
 	local s = indices[id]
 	if s.Name_array then
 		return loadArray(s.Name_array[1][1])
 	elseif s.float_array or s.int_array then
-		return loadFloatArray((s.float_array or s.int_array)[1][1])
+		if stride and stride > 1 then
+			return loadVecArray((s.float_array or s.int_array)[1][1], stride)
+		else
+			return loadFloatArray((s.float_array or s.int_array)[1][1])
+		end
 	elseif s.input then
-		return getInput(s.input[1]._attr.source)
+		return getInput(s.input[1]._attr.source, stride)
 	else
 		error("unknown input data type")
 	end
 end
 
 --loads an array of inputs
-local function loadInputs(s, stride, idxs)
-	local vcounts = s.vcount and loadFloatArray(s.vcount[1][1]) or { }
-	local idxs = idxs or loadFloatArray((s.v or s.p)[1][1])
+local function loadInputs(s, strideLookup, idxs)
+	local idxs = idxs or loadFloatArray(s.p[1][1])
+	
+	--use the max offset to determine data width
+	local fields = 0
+	for _,input in ipairs(s.input) do
+		fields = math.max(fields, tonumber(input._attr.offset) + 1)
+	end
+	
+	local data = { }
+	local vertexMapping = { }
+	for _,input in ipairs(s.input) do
+		local set = 1 + tonumber(input._attr.set or "0")
+		local typ = input._attr.semantic
+		local stride = strideLookup[typ] or 1
+		local array = getInput(input._attr.source, stride)
+		local offset = 1 + tonumber(input._attr.offset)
+		
+		data[typ] = data[typ] or { }
+		data[typ][set] = data[typ][set] or { }
+		
+		for vertex = 1, #idxs / fields do
+			local id = idxs[(vertex - 1) * fields + offset]
+			data[typ][set][vertex] = array[id + 1]
+			
+			if typ == "VERTEX" then
+				vertexMapping[vertex] = id + 1
+			end
+		end
+	end
+	
+	return data, vcounts, vertexMapping
+end
+
+--loads an array of inputs
+local function loadWeightsInputs(s)
+	local vcounts = s.vcount and loadFloatArray(s.vcount[1][1])
+	local idxs = idxs or loadFloatArray(s.v[1][1])
 	
 	--use the max offset to determine data width
 	local fields = 0
@@ -76,26 +115,23 @@ local function loadInputs(s, stride, idxs)
 	
 	local data = { }
 	for _,input in ipairs(s.input) do
+		local typ = input._attr.semantic
 		local array = getInput(input._attr.source)
 		local offset = 1 + tonumber(input._attr.offset)
-		local set = 1 + tonumber(input._attr.set or "0")
-		local typ = input._attr.semantic
-		local count = stride and stride[typ] or vcounts[vertex] or 1
-		data[typ] = data[typ] or { }
-		data[typ][set] = data[typ][set] or { }
 		
-		local valueIndex = 0
-		for vertex = 1, #idxs / fields do
-			data[typ][set][vertex] = { }
-			local id = idxs[valueIndex * fields + offset]
+		data[typ] = data[typ] or { }
+		local index = 0
+		for vertex, count in ipairs(vcounts) do
+			data[typ][vertex] = { }
 			for v = 1, count do
-				data[typ][set][vertex][v] = array[id * count + v]
+				index = index + 1
+				local id = (index-1) * fields + offset
+				data[typ][vertex][v] = array[idxs[id] + 1]
 			end
-			valueIndex = valueIndex + 1
 		end
 	end
 	
-	return data, vcounts
+	return data
 end
 
 return function(self, obj, path)
@@ -128,9 +164,9 @@ return function(self, obj, path)
 				controllers[controller._attr.id] = c
 				
 				--load data
-				local data = loadInputs(skin.vertex_weights[1])
-				c.weights = data.WEIGHT[1]
-				c.joints = data.JOINT[1]
+				local data = loadWeightsInputs(skin.vertex_weights[1])
+				c.weights = data.WEIGHT
+				c.joints = data.JOINT
 				
 				--normalize weights and limit to 4 (GPU limit)
 				for i = 1, #c.weights do
@@ -155,6 +191,21 @@ return function(self, obj, path)
 						for d,s in ipairs(c.weights[i]) do
 							c.weights[i][d] = s / sum
 						end
+					end
+				end
+				
+				--map joints to integers for easier processing
+				local lastId = 0
+				for d,s in pairs(obj.jointMapping) do
+					lastId = lastId + 1
+				end
+				for _,joints in ipairs(c.joints) do
+					for i, j in ipairs(joints) do
+						if not obj.jointMapping[j] then
+							lastId = lastId + 1
+							obj.jointMapping[j] = lastId
+						end
+						joints[i] = obj.jointMapping[j]
 					end
 				end
 			end
@@ -203,12 +254,12 @@ return function(self, obj, path)
 				}
 				
 				--load all the buffers
-				local inputs, vcount, matId
+				local inputs, vcount, vertexMapping, matId
 				if mesh.triangles then
-					inputs = loadInputs(mesh.triangles[1], stride)
+					inputs, _, vertexMapping = loadInputs(mesh.triangles[1], stride)
 					matId = mesh.triangles[1]._attr.material
 				elseif mesh.polylist then
-					inputs, vcount = loadInputs(mesh.polylist[1], stride)
+					inputs, vcount, vertexMapping = loadInputs(mesh.polylist[1], stride)
 					matId = mesh.polylist[1]._attr.material
 				elseif mesh.polygons then
 					local idxs = { }
@@ -224,14 +275,15 @@ return function(self, obj, path)
 						table.insert(vcount, #a)
 					end
 					
-					inputs = loadInputs(mesh.polygons[1], stride, idxs)
+					inputs, _, vertexMapping = loadInputs(mesh.polygons[1], stride, idxs)
 				end
 				
 				--create mesh
-				local mat = materials[matId]
-				local material = self.materialLibrary[mat.name] or mat or obj.materials.None
+				local mat = matId and materials[matId]
+				local material = mat and self.materialLibrary[mat.name] or mat or obj.materials.None
 				local m = self:newMesh(geometry._attr.id, material, obj.args.meshType)
 				meshData[id] = m
+				m.vertexMapping = vertexMapping
 				
 				--flip UV
 				for _,array in pairs(inputs["TEXCOORD"] or {}) do
@@ -288,7 +340,7 @@ return function(self, obj, path)
 		local skel = { }
 		for d,s in ipairs(nodes) do
 			if s._attr.type == "JOINT" then
-				local name = s._attr.name or s._attr.id
+				local name = s._attr.sid
 				
 				--todo make common transformation getter
 				local m = mat4(loadFloatArray(s.matrix[1][1]))
@@ -330,8 +382,15 @@ return function(self, obj, path)
 				obj.meshes[name] = mesh:clone()
 				obj.meshes[name]:setName(name)
 				obj.meshes[name].transform = transform
-				obj.meshes[name].weight = controller.weight
-				obj.meshes[name].joints = controller.joints
+				
+				obj.meshes[name].weights = { }
+				obj.meshes[name].joints = { }
+				
+				for d,s in ipairs(mesh.vertexMapping) do
+					obj.meshes[name].weights[d] = controller.weights[s]
+					obj.meshes[name].joints[d] = controller.joints[s]
+				end
+				obj.meshes[name].vertexMapping = nil
 			elseif s.instance_light then
 				--light source
 				local id = s.instance_light[1]._attr.url:sub(2)
@@ -347,7 +406,7 @@ return function(self, obj, path)
 				--start of a skeleton
 				--we treat skeletons different than nodes and will use a different traverser here
 				if s.node then
-					obj.skeleton = skeletonLoader(s.node)
+					obj.skeleton = skeletonLoader(nodes)
 				end
 			end
 			
@@ -389,19 +448,23 @@ return function(self, obj, path)
 				end
 				
 				--get matrices
+				local id = a.channel[1]._attr.target
+				local name = indices[id:sub(1, -11)] and indices[id:sub(1, -11)]._attr.sid
+				assert(name, "animation output channel refers to unknown id " .. id)
+				animation.frames[name] = { }
 				for i = 1, #sources.OUTPUT / 16 do
 					local m = mat4(unpack(sources.OUTPUT, i*16-15, i*16))
-					table.insert(animation.frames, {
+					table.insert(animation.frames[name], {
 						time = sources.INPUT[i],
 						rotation = quat.fromMatrix(m:subm()),
 						position = vec3(m[4], m[8], m[12]),
 					})
-					animation.length = sources.INPUT[#sources.INPUT]
+					animation.length = math.max(animation.length, sources.INPUT[#sources.INPUT])
 				end
 			end
 		end
 		
-		if #animation.frames > 0 then
+		if animation.length > 0 then
 			obj.animations[anim._attr.name or anim._attr.id] = animation
 		end
 	end

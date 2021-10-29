@@ -24,6 +24,7 @@ function lib:newObject(path)
 		physics = { },
 		reflections = { },
 		animations = { },
+		jointMapping = { },
 		args = { },
 		
 		path = path, --absolute path to object
@@ -176,24 +177,21 @@ return {
 		if self.skeleton then
 			print(indent .. "skeleton")
 			local function p(s, indent)
-				print(indent .. s.name)
-				if s.children then
-					for i,v in pairs(s.children) do
-						p(v, "  " .. indent)
+				for i,v in pairs(s) do
+					print(indent .. v.name)
+					if v.children then
+						p(v.children, "  " .. indent)
 					end
 				end
 			end
-			--todo, pfusch
-			for i,v in pairs(self.skeleton) do
-				p(v, indent2)
-			end
+			p(self.skeleton, indent2)
 		end
 		
 		--animations
 		if next(self.animations) then
 			print(indent .. "animations")
 			for d,s in pairs(self.animations) do
-				print(indent2 .. string.format("%s: %d, %.1f sec", d, #s.frames, s.length))
+				print(indent2 .. string.format("%s: %.1f sec", d, s.length))
 			end
 		end
 		

@@ -444,15 +444,18 @@ function lib:processObject(obj)
 	
 	--split animations
 	if obj.args.animations then
-		local amim = obj.animations[next(obj.animations)]
-		if amim then
+		local animation = obj.animations[next(obj.animations)]
+		if animation then
 			obj.animations = { }
 			for anim, time in pairs(obj.args.animations) do
 				obj.animations[anim] = self:newAnimation()
 				obj.animations[anim].length = time[2] - time[1]
-				for _, frame in ipairs(frames) do
-					if frame.time >= time[1] and frame.time <= time[2] then
-						table.insert(obj.animations[anim].frames, frame)
+				for joint, frames in pairs(animation.frames) do
+					obj.animations[anim].frames[joint] = { }
+					for _, frame in ipairs(frames) do
+						if frame.time >= time[1] and frame.time <= time[2] then
+							table.insert(obj.animations[anim].frames[joint], frame)
+						end
 					end
 				end
 			end

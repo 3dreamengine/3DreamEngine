@@ -64,20 +64,19 @@ function lib:applyTransform(s, transform)
 end
 
 --merge all meshes of an object and concat all buffer together
---it uses a random material and therfore either requires baking afterwards or only identical materials in the first place
+--it uses a random material and therefore either requires baking afterwards or only identical materials in the first place
 --it returns a cloned object with only one mesh
 function lib:mergeMeshes(obj)
 	local final = obj:clone()
 	local o = self:newMesh("merged", false, final.args.meshType)
 	final.meshes = {merged = o}
 	
-	for d,s in pairs(obj.meshes) do
-		o.material = s.material
-		o.jointIDs = s.jointIDs
-		if o.jointIDs then
-			o.transform = s.transform
-		end
-		break
+	local s = obj.meshes[next(obj.meshes)]
+	o.material = s.material
+	
+	--objects with skinning information should not get transformed
+	if o.joints then
+		o.transform = s.transform
 	end
 	
 	--get valid objects
@@ -96,7 +95,6 @@ function lib:mergeMeshes(obj)
 		"normals",
 		"texCoords",
 		"colors",
-		"materials",
 		"weights",
 		"joints",
 	}
@@ -124,7 +122,7 @@ function lib:mergeMeshes(obj)
 		startIndices[d] = index
 		
 		local transform, transformNormal
-		if not s.jointIDs then
+		if not s.joints then
 			transform = s.transform
 			transformNormal = transform and transform:subm()
 		end
@@ -140,10 +138,6 @@ function lib:mergeMeshes(obj)
 					elseif buffer == "normals" then
 						v = transformNormal * vec3(v)
 					end
-				end
-				
-				if buffer == "materials" and not v then
-					v = s.material
 				end
 				
 				o[buffer][index + i] = v

@@ -5,7 +5,7 @@ animations.lua - contains animation and skeletal relevant functions
 
 local lib = _3DreamEngine
 
---interpolate position and rotatation between two frames
+--linear interpolation of position and rotatation between two frames
 local function interpolateFrames(f1, f2, factor)
 	return {
 		position = f1.position * (1.0 - factor) + f2.position * factor,
@@ -14,44 +14,24 @@ local function interpolateFrames(f1, f2, factor)
 end
 
 --returns a new animated pose at a specific time stamp
-function lib:getPose(object, animation, time)
+function lib:getPose(animation, time)
+	local animation = time and {{animation, time}} or animation
 	local pose = { }
 	
-	--create rest pose
-	for name,_ in pairs(object.joints) do
-		pose[name] =  {
-			position = vec3(0, 0, 0),
-			rotation = quat(1, 0, 0, 0),
-		}
-	end
-	
-	--type on animation input
-	local inputType
-	if type(animation) == "table" then
-		if animation[1] then
-			inputType = "simple"
-		else
-			inputType = "complex"
-		end
-	else
-		inputType = "single"
-	end
-	
 	--get frame of animation
-	for i,animation in ipairs(type(animation) == "table" and animation or {{animation, time}}) do
-		local anim = object.animations[animation[1]]
-		local length = object.animationLengths[animation[1]]
+	for i,animation in ipairs(animation) do
+		local anim = animation[1]
 		local time = animation[2] or 0
 		local blend = animation[3] or i > 1 and 1 / i
-		assert(anim and length, "animation is nil, is the name correct?")
-		
-		for joint,frames in pairs(anim) do
+		assert(anim, "animation is nil, is the name correct?")
+		for joint,frames in pairs(anim.frames) do
 			if not animation[4] or animation[4][joint] then
 				--general data
 				local start = frames[1].time
-				local t = (time == length and time or time % length) + start
+				local t = (time == anim.length and time or time % (anim.length - start)) + start
 				
 				--find two frames
+				--todo slow, some sort of indexing required
 				local f1 = frames[1]
 				local f2 = frames[2]
 				for f = 2, #frames do
@@ -84,15 +64,21 @@ function lib:applyPose(object, pose, skeleton, parentTransform)
 	if not skeleton then
 		assert(object.skeleton, "object requires a skeleton")
 		object.boneTransforms = { }
-		for name,_ in pairs(object.joints) do
-			object.boneTransforms[name] = identity
-		end
+		skeleton = object.skeleton
 	end
 	
-	for name,joint in pairs(skeleton or object.skeleton) do
-		local poseTransform = mat4:getTranslate(pose[name].position) * pose[name].rotation:toMatrix()
-		local localTransform = parentTransform and parentTransform * poseTransform or poseTransform
-		object.boneTransforms[name] = localTransform * joint.inverseBindTransform
+	for name,joint in pairs(skeleton) do
+		local index = object.jointMapping[name]
+		local localTransform
+		if pose[name] then
+			local poseTransform = mat4:getTranslate(pose[name].position) * pose[name].rotation:toMatrix()
+			localTransform = parentTransform and parentTransform * poseTransform or poseTransform
+		else
+			localTransform = parentTransform or identity
+		end
+		if index then
+			object.boneTransforms[index] = localTransform * joint.inverseBindTransform
+		end
 		
 		if joint.children then
 			self:applyPose(object, pose, joint.children, localTransform)
@@ -102,7 +88,7 @@ end
 
 --all in one
 function lib:setPose(object, animation, time)
-	local p = self:getPose(object, animation, time)
+	local p = self:getPose(animation, time)
 	self:applyPose(object, p)
 end
 
@@ -139,13 +125,12 @@ function lib:applyJoints(object)
 	end
 end
 
-function lib:getJointMat(o, i)
-	local obj = o.obj
-	if obj.boneTransforms then
+--todo outdated
+function lib:getJointMat(mesh, i)
+	if mesh.boneTransforms then
 		local m = mat4()
-		for jointNr = 1, #o.joints[i] do
-			local joint = o.jointIDs[ o.joints[i][jointNr] ]
-			m = m + obj.boneTransforms[ joint ] * o.weights[i][jointNr]
+		for jointNr = 1, #mesh.joints[i] do
+			m = m + mesh.boneTransforms[ mesh.joints[i][jointNr] ] * mesh.weights[i][jointNr]
 		end
 		return m
 	else

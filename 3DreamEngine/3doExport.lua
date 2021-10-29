@@ -41,6 +41,7 @@ local function saveObject(obj, meshCache, dataStrings)
 		
 		["animations"] = obj.animations,
 		["skeleton"] = obj.skeleton,
+		["jointMapping"] = obj.jointMapping,
 		
 		["linkedObjects"] = obj.linkedObjects,
 		
@@ -85,7 +86,6 @@ local function saveObject(obj, meshCache, dataStrings)
 		--export buffer data
 		h["weights"] = o.weights
 		h["joints"] = o.joints
-		h["jointIDs"] = o.jointIDs
 		h["vertices"] = o.vertices
 		h["normals"] = o.normals
 		h["faces"] = o.faces
