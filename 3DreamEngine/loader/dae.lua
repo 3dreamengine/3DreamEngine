@@ -43,7 +43,6 @@ local function indexTree(node)
 	end
 	
 	if node._attr and node._attr.id then
-		--todo meh
 		indices[node._attr.id] = node
 		indices["#" .. node._attr.id] = node
 	end
@@ -168,30 +167,20 @@ return function(self, obj, path)
 				c.weights = data.WEIGHT
 				c.joints = data.JOINT
 				
-				--normalize weights and limit to 4 (GPU limit)
-				for i = 1, #c.weights do
-					while #c.weights[i] > 4 do
-						local min, best = math.huge, 1
-						for d,s in ipairs(c.weights[i]) do
-							if s < min then
-								min = s
-								best = d
+				--sort weights
+				for idx = 1, #c.weights do
+					local n = #c.weights[idx]
+					repeat
+						local newn = 0
+						for i = 2, n do
+							if c.weights[idx][i - 1] < c.weights[idx][i] then
+								c.weights[idx][i - 1], c.weights[idx][i] = c.weights[idx][i], c.weights[idx][i - 1]
+								c.joints[idx][i - 1], c.joints[idx][i] = c.joints[idx][i], c.joints[idx][i - 1]
+								newn = i
 							end
 						end
-						table.remove(c.joints[i], best)
-						table.remove(c.weights[i], best)
-					end
-					
-					--normalize
-					local sum = 0
-					for d,s in ipairs(c.weights[i]) do
-						sum = sum + s
-					end
-					if sum > 0 then
-						for d,s in ipairs(c.weights[i]) do
-							c.weights[i][d] = s / sum
-						end
-					end
+						n = newn
+					until n < 1
 				end
 				
 				--map joints to integers for easier processing
@@ -336,14 +325,18 @@ return function(self, obj, path)
 		end
 	end
 	
+	--todo only matrix is supported
+	local function getTransform(s)
+		return mat4(loadFloatArray(s.matrix[1][1]))
+	end
+	
 	local function skeletonLoader(nodes, parentTransform)
 		local skel = { }
 		for d,s in ipairs(nodes) do
 			if s._attr.type == "JOINT" then
 				local name = s._attr.sid
 				
-				--todo make common transformation getter
-				local m = mat4(loadFloatArray(s.matrix[1][1]))
+				local m = getTransform(s)
 				local bindTransform = parentTransform and parentTransform * m or m
 				
 				skel[name] = {
@@ -364,8 +357,7 @@ return function(self, obj, path)
 	local function loadNodes(nodes)
 		for _,s in ipairs(nodes) do
 			local name = s._attr.name or s._attr.id
-			--todo
-			local transform = mat4(loadFloatArray(s.matrix[1][1]))
+			local transform = getTransform(s)
 			if s.instance_geometry then
 				--object
 				local id = s.instance_geometry[1]._attr.url:sub(2)

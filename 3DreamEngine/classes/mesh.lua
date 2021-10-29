@@ -31,7 +31,7 @@ function lib:newMesh(name, material, meshType)
 end
 
 return {
-	link = {"clone", "shader", "visibility", "mesh"},
+	link = {"clone", "transform", "shader", "visibility", "mesh"},
 	
 	setName = function(self, name)
 		assert(type(name) == "string", "name has to be a string")
@@ -69,20 +69,20 @@ return {
 	initShaders = function(self)
 		--pixel
 		local ps = self.material.pixelShader or self.pixelShader or lib.defaultPixelShader
-		if ps.initObject then
-			ps:initObject(lib, self)
+		if ps.initMesh then
+			ps:initMesh(lib, self)
 		end
 		
 		--vertex
 		local ps = self.material.vertexShader or self.vertexShader or lib.defaultVertexShader
-		if ps.initObject then
-			ps:initObject(lib, self)
+		if ps.initMesh then
+			ps:initMesh(lib, self)
 		end
 		
 		--world
 		local ps = self.material.worldShader or self.worldShader or lib.defaultWorldShader
-		if ps.initObject then
-			ps:initObject(lib, self)
+		if ps.initMesh then
+			ps:initMesh(lib, self)
 		end
 		
 		self.shadersInitialized = true

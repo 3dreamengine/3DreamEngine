@@ -12,7 +12,7 @@ function sh:getId(dream, mat, shadow)
 	end
 end
 
-function sh:initObject(dream, obj)
+function sh:initMesh(dream, obj)
 	if obj.mesh then
 		if not obj.uv2Mesh and not obj.meshes then
 			assert(obj.colors, "To use the multiTetxure module at least a second UV map for the mask texture is required.")

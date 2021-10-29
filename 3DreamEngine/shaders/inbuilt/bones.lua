@@ -8,18 +8,19 @@ function sh:getId(dream, mat, shadow)
 	return 0
 end
 
-function sh:initObject(dream, obj)
+function sh:initMesh(dream, obj)
 	if obj.mesh then
 		--initial prepare bone data
 		if not obj.boneMesh and not obj.meshes then
 			assert(obj.joints and obj.weights, "GPU bones require a joint and weight buffer")
-			obj.boneMesh = love.graphics.newMesh({{"VertexJoint", "byte", 4}, {"VertexWeight", "byte", 4}}, #obj.joints, "triangles", "static")
+			obj.boneMesh = love.graphics.newMesh({{"VertexJoint", "float", 4}, {"VertexWeight", "float", 4}}, #obj.joints, "triangles", "static")
 			
 			--create mesh
 			for index = 1, #obj.joints do
 				local w = obj.weights[index]
 				local j = obj.joints[index]
-				obj.boneMesh:setVertex(index, (j[1] or 0) / 255, (j[2] or 0) / 255, (j[3] or 0) / 255, (j[4] or 0) / 255, w[1] or 0, w[2] or 0, w[3] or 0, w[4] or 0)
+				local sum = (w[1] or 0) + (w[2] or 0) + (w[3] or 0) + (w[4] or 0)
+				obj.boneMesh:setVertex(index, (j[1] or 0) / 255, (j[2] or 0) / 255, (j[3] or 0) / 255, (j[4] or 0) / 255, (w[1] or 0) / sum, (w[2] or 0) / sum, (w[3] or 0) / sum, (w[4] or 0) / sum)
 			end
 		end
 		
