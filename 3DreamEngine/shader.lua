@@ -293,19 +293,19 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, sun)
 		
 		--material shader
 		table.insert(defines, info.pixelShader:buildDefines(self, mat, shadows))
-		table.insert(defines, info.pixelShader.compiledDefines)
+		table.insert(defines, info.pixelShader.defines)
 		table.insert(defines, info.vertexShader:buildDefines(self, mat, shadows))
-		table.insert(defines, info.vertexShader.compiledDefines)
+		table.insert(defines, info.vertexShader.defines)
 		
 		table.insert(pixelMaterial, info.pixelShader:buildPixel(self, mat, shadows))
-		table.insert(pixelMaterial, info.pixelShader.compiledPixel)
+		table.insert(pixelMaterial, info.pixelShader.pixel)
 		table.insert(pixelMaterial, info.vertexShader:buildPixel(self, mat, shadows))
-		table.insert(pixelMaterial, info.vertexShader.compiledPixel)
+		table.insert(pixelMaterial, info.vertexShader.pixel)
 		
 		table.insert(vertex, info.pixelShader:buildVertex(self, mat, shadows))
-		table.insert(vertex, info.pixelShader.compiledVertex)
+		table.insert(vertex, info.pixelShader.vertex)
 		table.insert(vertex, info.vertexShader:buildVertex(self, mat, shadows))
-		table.insert(vertex, info.vertexShader.compiledVertex)
+		table.insert(vertex, info.vertexShader.vertex)
 		
 		--additional code
 		if not shadows then
@@ -334,13 +334,13 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, sun)
 		
 		--world
 		table.insert(defines, info.worldShader:buildDefines(self, mat, shadows))
-		table.insert(defines, info.worldShader.compiledDefines)
+		table.insert(defines, info.worldShader.defines)
 		
 		table.insert(pixel, info.worldShader:buildPixel(self, mat, shadows))
-		table.insert(pixel, info.worldShader.compiledPixel)
+		table.insert(pixel, info.worldShader.pixel)
 		
 		table.insert(vertex, info.worldShader:buildVertex(self, mat, shadows))
-		table.insert(vertex, info.worldShader.compiledVertex)
+		table.insert(vertex, info.worldShader.vertex)
 		
 		--build code
 		local code = codes.base

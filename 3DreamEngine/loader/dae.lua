@@ -336,12 +336,12 @@ return function(self, obj, path)
 			if s._attr.type == "JOINT" then
 				local name = s._attr.sid
 				
-				local m = getTransform(s)
-				local bindTransform = parentTransform and parentTransform * m or m
+				local transform = getTransform(s)
+				local bindTransform = parentTransform and parentTransform * transform or transform
 				
 				skel[name] = {
 					name = name,
-					bindTransform = m,
+					bindTransform = transform,
 					inverseBindTransform = bindTransform:invert(),
 				}
 				
@@ -354,10 +354,11 @@ return function(self, obj, path)
 	end
 	
 	--travers the scene graph
-	local function loadNodes(nodes)
+	local function loadNodes(nodes, parentTransform)
 		for _,s in ipairs(nodes) do
 			local name = s._attr.name or s._attr.id
 			local transform = getTransform(s)
+			transform = parentTransform and parentTransform * transform or transform
 			if s.instance_geometry then
 				--object
 				local id = s.instance_geometry[1]._attr.url:sub(2)
@@ -366,7 +367,6 @@ return function(self, obj, path)
 				obj.meshes[name]:setName(name)
 				obj.meshes[name].transform = transform
 			elseif s.instance_controller then
-				--object associated with skeleton
 				local id = s.instance_controller[1]._attr.url:sub(2)
 				local controller = controllers[id]
 				local mesh = meshData[controller.mesh]
@@ -404,7 +404,7 @@ return function(self, obj, path)
 			
 			--children
 			if s.node and s._attr.type ~= "JOINT" then
-				loadNodes(s.node)
+				loadNodes(s.node, transform)
 			end
 		end
 	end
