@@ -364,12 +364,12 @@ function lib:draw(object, x, y, z, sx, sy, sz)
 	local dynamic = false
 	if x then
 		--simple transform with arguments, ignores object transformation matrix
-		transform = mat4(
+		transform = mat4({
 			sx or 1, 0, 0, x,
 			0, sy or sx or 1, 0, y,
 			0, 0, sz or sx or 1, z,
 			0, 0, 0, 1
-		)
+		}) 
 		dynamic = true
 	end
 	

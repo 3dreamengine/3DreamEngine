@@ -69,19 +69,24 @@ function lib:applyPose(object, pose, skeleton, parentTransform)
 	
 	for name,joint in pairs(skeleton) do
 		local index = object.jointMapping[name]
-		local localTransform
+		local transform
 		if pose[name] then
-			local poseTransform = mat4:getTranslate(pose[name].position) * pose[name].rotation:toMatrix()
-			localTransform = parentTransform and parentTransform * poseTransform or poseTransform
+			local pos = pose[name].position
+			local poseTransform = pose[name].rotation:toMatrix()
+			poseTransform[4] = pos[1]
+			poseTransform[8] = pos[2]
+			poseTransform[12] = pos[3]
+			transform = parentTransform and parentTransform * poseTransform or poseTransform
 		else
-			localTransform = parentTransform or identity
+			transform = parentTransform or identity
 		end
+		
 		if index then
-			object.boneTransforms[index] = localTransform * joint.inverseBindTransform
+			object.boneTransforms[index] = transform * joint.inverseBindTransform
 		end
 		
 		if joint.children then
-			self:applyPose(object, pose, joint.children, localTransform)
+			self:applyPose(object, pose, joint.children, transform)
 		end
 	end
 end
