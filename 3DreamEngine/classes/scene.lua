@@ -43,143 +43,145 @@ local function isWithingLOD(LOD_min, LOD_max, pos, size)
 	end
 end
 
-return {
+local class = {
 	link = {"scene"},
-	
-	clear = function(self)
-		--static tasks
-		self.tasks = {
-			render = {
-				{
-					{}, {}
-				},
-				{
-					{}, {}
-				},
-			},
-			shadows = {
-				{
-					{}, {}
-				},
-				{
-					{}, {}
-				},
-			},
-		}
-	end,
-	
-	preload = function(self)
-		--todo
-	end,
-	
-	addObject = function(self, object, parentTransform, dynamic, boneTransforms, reflection)
-		if object.visible == false then
-			return
-		end
-		
-		if object.dynamic ~= nil then
-			dynamic = object.dynamic
-		end
-		
-		--pass down some additional data
-		boneTransforms = object.boneTransforms or boneTransforms
-		reflection = object.reflection or reflection
-		
-		--apply transformation
-		local transform
-		if parentTransform then
-			if object.transform then
-				transform = parentTransform * object.transform
-			else
-				transform = parentTransform
-			end
-		else
-			transform = object.transform
-		end
-		
-		--handle LOD
-		if object.LOD_min or object.LOD_max then
-			local LOD_min = object.LOD_min or -math.huge
-			local LOD_max = object.LOD_max or math.huge
-			local pos = getPos(object, transform)
-			local size = getSize(object, transform)
-			if not isWithingLOD(LOD_min, LOD_max, pos, size) then
-				return
-			end
-		end
-		
-		--children
-		for _,o in pairs(object.objects) do
-			self:addObject(o, transform, dynamic, boneTransforms, reflection)
-		end
-		
-		--meshes
-		for _,m in pairs(object.meshes) do
-			self:addMesh(m, transform, dynamic, boneTransforms, reflection)
-		end
-	end,
-	
-	addMesh = function(self, mesh, transform, dynamic, boneTransforms, reflection)
-		if mesh.visible == false then
-			return
-		end
-		
-		local pos = getPos(mesh, transform)
-		local size = getSize(mesh, transform)
-		
-		--handle LOD
-		if mesh.LOD_min or mesh.LOD_max then
-			local LOD_min = mesh.LOD_min or -math.huge
-			local LOD_max = mesh.LOD_max or math.huge
-			local found, preload = isWithingLOD(LOD_min, LOD_max, pos, size)
-			if preload then
-				mesh:preload()
-			end
-			if not found then
-				return
-			end
-		end
-		
-		--create task object
-		local task = setmetatable({
-			mesh,
-			transform,
-			pos,
-			size,
-			false,
-			boneTransforms,
-			reflection,
-		}, lib.meta.task)
-		
-		mesh.rID = mesh.rID or math.random()
-		
-		--insert into respective rendering queues
-		local dyn = dynamic and 1 or 2
-		local alpha = mesh.material.alpha and 1 or 2
-		
-		--render pass
-		if mesh.renderVisibility ~= false then
-			local shaderID = lib:getRenderShaderID(task, pass, false)
-			self:addTo(task, self.tasks.render[dyn][alpha], shaderID, mesh.material)
-		end
-		
-		--shadow pass
-		if alpha == 2 and mesh.shadowVisibility ~= false and mesh.material.shadow ~= false then
-			local shaderID = lib:getRenderShaderID(task, pass, true)
-			self:addTo(task, self.tasks.shadows[dyn][alpha], shaderID, mesh.material)
-		end
-	end,
-	
-	addTo = function(self, task, tasks, shaderID, material)
-		--create lists
-		if not tasks[shaderID] then
-			tasks[shaderID] = { }
-		end
-		if not tasks[shaderID][material] then
-			tasks[shaderID][material] = { }
-		end
-		
-		--task batch
-		table.insert(tasks[shaderID][material], task)
-	end
 }
+
+function class:clear()
+	--static tasks
+	self.tasks = {
+		render = {
+			{
+				{}, {}
+			},
+			{
+				{}, {}
+			},
+		},
+		shadows = {
+			{
+				{}, {}
+			},
+			{
+				{}, {}
+			},
+		},
+	}
+end
+
+function class:preload()
+	--todo
+end
+
+function class:addObject(object, parentTransform, dynamic, boneTransforms, reflection)
+	if object.visible == false then
+		return
+	end
+	
+	if object.dynamic ~= nil then
+		dynamic = object.dynamic
+	end
+	
+	--pass down some additional data
+	boneTransforms = object.boneTransforms or boneTransforms
+	reflection = object.reflection or reflection
+	
+	--apply transformation
+	local transform
+	if parentTransform then
+		if object.transform then
+			transform = parentTransform * object.transform
+		else
+			transform = parentTransform
+		end
+	else
+		transform = object.transform
+	end
+	
+	--handle LOD
+	if object.LOD_min or object.LOD_max then
+		local LOD_min = object.LOD_min or -math.huge
+		local LOD_max = object.LOD_max or math.huge
+		local pos = getPos(object, transform)
+		local size = getSize(object, transform)
+		if not isWithingLOD(LOD_min, LOD_max, pos, size) then
+			return
+		end
+	end
+	
+	--children
+	for _,o in pairs(object.objects) do
+		self:addObject(o, transform, dynamic, boneTransforms, reflection)
+	end
+	
+	--meshes
+	for _,m in pairs(object.meshes) do
+		self:addMesh(m, transform, dynamic, boneTransforms, reflection)
+	end
+end
+
+function class:addMesh(mesh, transform, dynamic, boneTransforms, reflection)
+	if mesh.visible == false then
+		return
+	end
+	
+	local pos = getPos(mesh, transform)
+	local size = getSize(mesh, transform)
+	
+	--handle LOD
+	if mesh.LOD_min or mesh.LOD_max then
+		local LOD_min = mesh.LOD_min or -math.huge
+		local LOD_max = mesh.LOD_max or math.huge
+		local found, preload = isWithingLOD(LOD_min, LOD_max, pos, size)
+		if preload then
+			mesh:preload()
+		end
+		if not found then
+			return
+		end
+	end
+	
+	--create task object
+	local task = setmetatable({
+		mesh,
+		transform,
+		pos,
+		size,
+		false,
+		boneTransforms,
+		reflection,
+	}, lib.meta.task)
+	
+	mesh.rID = mesh.rID or math.random()
+	
+	--insert into respective rendering queues
+	local dyn = dynamic and 1 or 2
+	local alpha = mesh.material.alpha and 1 or 2
+	
+	--render pass
+	if mesh.renderVisibility ~= false then
+		local shaderID = lib:getRenderShaderID(task, pass, false)
+		self:addTo(task, self.tasks.render[dyn][alpha], shaderID, mesh.material)
+	end
+	
+	--shadow pass
+	if alpha == 2 and mesh.shadowVisibility ~= false and mesh.material.shadow ~= false then
+		local shaderID = lib:getRenderShaderID(task, pass, true)
+		self:addTo(task, self.tasks.shadows[dyn][alpha], shaderID, mesh.material)
+	end
+end
+
+function class:addTo(task, tasks, shaderID, material)
+	--create lists
+	if not tasks[shaderID] then
+		tasks[shaderID] = { }
+	end
+	if not tasks[shaderID][material] then
+		tasks[shaderID][material] = { }
+	end
+	
+	--task batch
+	table.insert(tasks[shaderID][material], task)
+end
+
+return class

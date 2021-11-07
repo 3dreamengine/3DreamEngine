@@ -1,66 +1,68 @@
 local lib = _3DreamEngine
 
-return {
-	setLOD = function(self, min, max)
-		self.LOD_min = min
-		self.LOD_max = max
-	end,
-	getLOD = function(self)
-		return self.LOD_min, self.LOD_max
-	end,
-	
-	setVisible = function(self, b)
-		self.visible = b
-	end,
-	isVisible = function(self)
-		return self.visible
-	end,
-	
-	setRenderVisibility = function(self, b)
-		if self.class == "object" then
-			for d,s in pairs(self.objects) do
-				s:setRenderVisibility(b)
-			end
-			for d,s in pairs(self.meshes) do
-				s:setRenderVisibility(b)
-			end
-		else
-			self.renderVisibility = b
+local class = { }
+
+function class:setLOD(min, max)
+	self.LOD_min = min
+	self.LOD_max = max
+end
+function class:getLOD()
+	return self.LOD_min, self.LOD_max
+end
+
+function class:setVisible(b)
+	self.visible = b
+end
+function class:isVisible()
+	return self.visible
+end
+
+function class:setRenderVisibility(b)
+	if self.class == "object" then
+		for d,s in pairs(self.objects) do
+			s:setRenderVisibility(b)
 		end
-	end,
-	getRenderVisibility = function(self)
-		return self.renderVisibility == true
-	end,
-	
-	setShadowVisibility = function(self, b)
-		if self.class == "object" then
-			for d,s in pairs(self.objects) do
-				s:setShadowVisibility(b)
-			end
-			for d,s in pairs(self.meshes) do
-				s:setShadowVisibility(b)
-			end
-		else
-			self.shadowVisibility = b
+		for d,s in pairs(self.meshes) do
+			s:setRenderVisibility(b)
 		end
-	end,
-	getShadowVisibility = function(self)
-		return self.shadowVisibility == true
-	end,
-	
-	setFarVisibility = function(self, b)
-		if self.class == "object" then
-			for d,s in pairs(self.objects) do
-				s:setFarVisibility(b)
-			end
-			for d,s in pairs(self.meshes) do
-				s:setFarVisibility(b)
-			end
-		else
-			self.farVisibility = b
+	else
+		self.renderVisibility = b
+	end
+end
+function class:getRenderVisibility()
+	return self.renderVisibility == true
+end
+
+function class:setShadowVisibility(b)
+	if self.class == "object" then
+		for d,s in pairs(self.objects) do
+			s:setShadowVisibility(b)
 		end
-	end,
-	getFarVisibility = function(self)
-		return self.farVisibility == true
-	end,
-}
+		for d,s in pairs(self.meshes) do
+			s:setShadowVisibility(b)
+		end
+	else
+		self.shadowVisibility = b
+	end
+end
+function class:getShadowVisibility()
+	return self.shadowVisibility == true
+end
+
+function class:setFarVisibility(b)
+	if self.class == "object" then
+		for d,s in pairs(self.objects) do
+			s:setFarVisibility(b)
+		end
+		for d,s in pairs(self.meshes) do
+			s:setFarVisibility(b)
+		end
+	else
+		self.farVisibility = b
+	end
+end
+function class:getFarVisibility()
+	return self.farVisibility == true
+end
+
+return class

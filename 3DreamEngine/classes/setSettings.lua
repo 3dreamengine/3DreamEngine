@@ -15,7 +15,7 @@ function lib:newSetSettings()
 	}, self.meta.setSettings)
 end
 
-return {
+local class = {
 	link = {"setSettings"},
 	
 	setterGetter = {
@@ -28,10 +28,12 @@ return {
 		alphaPass = "boolean",
 		mode = "getter",
 	},
-	
-	setMode = function(self, mode)
-		assert(mode == "normal" or mode == "direct" or mode == "lite")
-		self.format = mode == "normal" and "rgba16f" or "rgba8"
-		self.mode = mode
-	end,
 }
+
+function class:setMode(mode)
+	assert(mode == "normal" or mode == "direct" or mode == "lite")
+	self.format = mode == "normal" and "rgba16f" or "rgba8"
+	self.mode = mode
+end
+
+return class

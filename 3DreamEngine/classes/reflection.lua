@@ -29,23 +29,25 @@ function lib:newReflection(static, res, noRoughness)
 	}, self.meta.reflection)
 end
 
-return {
+local class = {
 	link = {"reflection"},
 	
 	setterGetter = {
 		roughness = "boolean",
 	},
-	
-	refresh = function(self)
-		self.done = false
-	end,
-	
-	setLocal = function(self, pos, first, second)
-		self.pos = pos
-		self.first = first
-		self.second = second
-	end,
-	getLocal = function(self)
-		return self.pos, self.first, self.second
-	end,
 }
+
+function class:refresh()
+	self.done = false
+end
+
+function class:setLocal(pos, first, second)
+	self.pos = pos
+	self.first = first
+	self.second = second
+end
+function class:getLocal()
+	return self.pos, self.first, self.second
+end
+
+return class

@@ -2,8 +2,6 @@ local lib = _3DreamEngine
 
 --returns a particle instance used to draw a particle
 function lib:newParticle(texture, emissionTexture, distortionTexture)
-	local color = {love.graphics.getColor()}
-	
 	assert(texture, "texture required")
 	
 	local p = {
@@ -19,7 +17,7 @@ function lib:newParticle(texture, emissionTexture, distortionTexture)
 	return setmetatable(p, self.meta.particle)
 end
 
-return {
+local class = {
 	link = {"particle"},
 	
 	setterGetter = {
@@ -31,25 +29,27 @@ return {
 		vertical = "number",
 		alpha = "boolean",
 	},
-	
-	setEmissionTexture = function(self, tex)
-		self.emission = tex and 1 or 0
-		emissionTexture = tex
-	end,
-	
-	clone = function(self)
-		return setmetatable({
-			texture = self.texture,
-			emissionTexture = self.emissionTexture,
-			distortionTexture = self.distortionTexture,
-			emission = self.emission,
-			distortion = self.distortion,
-			vertical = self.vertical,
-			alpha = self.alpha,
-		}, lib.meta.particle)
-	end,
-	
-	getID = function(self)
-		return (self.emissionTexture and 2 or 1) + (self.distortionTexture and 2 or 0)
-	end
 }
+	
+function class:setEmissionTexture(tex)
+	self.emission = tex and 1 or 0
+	emissionTexture = tex
+end
+
+function class:clone()
+	return setmetatable({
+		texture = self.texture,
+		emissionTexture = self.emissionTexture,
+		distortionTexture = self.distortionTexture,
+		emission = self.emission,
+		distortion = self.distortion,
+		vertical = self.vertical,
+		alpha = self.alpha,
+	}, lib.meta.particle)
+end
+
+function class:getID()
+	return (self.emissionTexture and 2 or 1) + (self.distortionTexture and 2 or 0)
+end
+
+return class

@@ -39,19 +39,21 @@ function lib:newShadowCanvas(typ, res, dynamic)
 	end
 end
 
-return {
+local class = {
 	link = {"shadow"},
 	
 	setterGetter = {
 		refreshStepSize = "number",
 		refreshStepSize = "number",
 	},
-	
-	refresh = function(self)
-		self.done = false
-	end,
-	
-	getStatic = function(self)
-		return self.static
-	end,
 }
+	
+function class:refresh()
+	self.done = false
+end
+
+function class:getStatic()
+	return self.static
+end
+
+return class

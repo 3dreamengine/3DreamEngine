@@ -18,7 +18,7 @@ function lib:newCam(transform, transformProj, pos, normal)
 	}, self.meta.cam)
 end
 
-return {
+local class = {
 	link = {"transform", "cam"},
 	
 	setterGetter = {
@@ -26,9 +26,11 @@ return {
 		near = "number",
 		far = "number",
 	},
-	
-	--required for plane frustum check
-	updateFrustumPlanes = function(self)
-		self.planes = lib:getFrustumPlanes(self.transformProj)
-	end,
 }
+	
+--required for plane frustum check
+function class:updateFrustumPlanes()
+	self.planes = lib:getFrustumPlanes(self.transformProj)
+end
+
+return class

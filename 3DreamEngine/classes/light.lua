@@ -32,7 +32,7 @@ function lib:newLight(typ, pos, color, brightness, old, ...)
 	return setmetatable(l, self.meta.light)
 end
 
-return {
+local class = {
 	link = {"light", "clone"},
 	
 	setterGetter = {
@@ -41,68 +41,70 @@ return {
 		godrayLength = "number",
 		godraySize = "number",
 	},
-	
-	setName = function(self, name)
-		self.name = removePostfix(name)
-	end,
-	
-	setGodrays = function(self, e)
-		self.godrays = e
-	end,
-	getGodrays = function(self)
-		return self.godrays
-	end,
-	
-	setBrightness = function(self, brightness)
-		self.brightness = brightness
-	end,
-	getBrightness = function(self)
-		return self.brightness
-	end,
-	
-	setColor = function(self, r, g, b)
-		self.color = vec3(r, g, b):normalize()
-	end,
-	getColor = function(self)
-		return self.color
-	end,
-	
-	setPosition = function(self, x, y, z)
-		self.pos = vec3(x, y, z)
-	end,
-	getPosition = function(self)
-		return self.pos
-	end,
-	
-	setDirection = function(self, x, y, z)
-		self.direction = vec3(x, y, z):normalize()
-	end,
-	getDirection = function(self)
-		return self.direction
-	end,
-	
-	addShadow = function(self, static, res)
-		if type(static) == "table" then
-			assert(static.typ, "Provides shadow object does not seem to be a shadow.")
-			self.shadow = static
-			self.shadow:refresh()
-		else
-			self.shadow = lib:newShadow(self.typ, static or false, res)
-		end
-	end,
-	
-	setSmoothing = function(self, smooth)
-		assert(type(smooth) == "boolean", "boolean expected!")
-		self.smooth = smooth
-	end,
-	getSmoothing = function(self)
-		return self.smooth
-	end,
-	
-	setShadow = function(self, shadow)
-		self.shadow = shadow
-	end,
-	getShadow = function(self)
-		return self.shadow
-	end,
 }
+
+function class:setName(name)
+	self.name = removePostfix(name)
+end
+
+function class:setGodrays(e)
+	self.godrays = e
+end
+function class:getGodrays()
+	return self.godrays
+end
+
+function class:setBrightness(brightness)
+	self.brightness = brightness
+end
+function class:getBrightness()
+	return self.brightness
+end
+
+function class:setColor(r, g, b)
+	self.color = vec3(r, g, b):normalize()
+end
+function class:getColor()
+	return self.color
+end
+
+function class:setPosition(x, y, z)
+	self.pos = vec3(x, y, z)
+end
+function class:getPosition()
+	return self.pos
+end
+
+function class:setDirection(x, y, z)
+	self.direction = vec3(x, y, z):normalize()
+end
+function class:getDirection()
+	return self.direction
+end
+
+function class:addShadow(static, res)
+	if type(static) == "table" then
+		assert(static.typ, "Provides shadow object does not seem to be a shadow.")
+		self.shadow = static
+		self.shadow:refresh()
+	else
+		self.shadow = lib:newShadow(self.typ, static or false, res)
+	end
+end
+
+function class:setSmoothing(smooth)
+	assert(type(smooth) == "boolean", "boolean expected!")
+	self.smooth = smooth
+end
+function class:getSmoothing()
+	return self.smooth
+end
+
+function class:setShadow(shadow)
+	self.shadow = shadow
+end
+function class:getShadow()
+	return self.shadow
+end
+
+return class
