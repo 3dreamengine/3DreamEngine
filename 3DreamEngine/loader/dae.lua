@@ -451,11 +451,11 @@ return function(self, obj, path)
 						rotation = quat.fromMatrix(m:subm()),
 						position = vec3(m[4], m[8], m[12]),
 					})
-					animation.length = math.max(animation.length, sources.INPUT[#sources.INPUT])
 				end
 			end
 		end
 		
+		animation:finish()
 		if animation.length > 0 then
 			obj.animations[anim._attr.name or anim._attr.id] = animation
 		end

@@ -26,19 +26,20 @@ function lib:getPose(animation, time)
 		assert(anim, "animation is nil, is the name correct?")
 		for joint,frames in pairs(anim.frames) do
 			if not animation[4] or animation[4][joint] then
-				--general data
-				local start = frames[1].time
-				local t = (time == anim.length and time or time % (anim.length - start)) + start
+				local t = time == anim.length and time or time % anim.length
 				
 				--find two frames
 				--todo slow, some sort of indexing required
 				local f1 = frames[1]
 				local f2 = frames[2]
-				for f = 2, #frames do
+				local lu = anim.lookup[joint]
+				for f = lu[math.ceil(t / anim.length * #lu)] or 2, #frames do
 					if frames[f].time >= t then
 						f1 = frames[f-1]
 						f2 = frames[f]
 						break
+					else
+						error()
 					end
 				end
 				
@@ -71,18 +72,22 @@ function lib:applyPose(object, pose, skeleton, parentTransform)
 		local index = object.jointMapping[name]
 		local transform
 		if pose[name] then
-			local pos = pose[name].position
 			local poseTransform = pose[name].rotation:toMatrix()
+			local pos = pose[name].position
 			poseTransform[4] = pos[1]
 			poseTransform[8] = pos[2]
 			poseTransform[12] = pos[3]
 			transform = parentTransform and parentTransform * poseTransform or poseTransform
 		else
-			transform = parentTransform or identity
+			transform = parentTransform
 		end
 		
 		if index then
-			object.boneTransforms[index] = transform * joint.inverseBindTransform
+			if transform then
+				object.boneTransforms[index] = transform * joint.inverseBindTransform
+			else
+				object.boneTransforms[index] = joint.inverseBindTransform
+			end
 		end
 		
 		if joint.children then
