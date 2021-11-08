@@ -83,7 +83,7 @@ function class:addObject(object, parentTransform, dynamic, boneTransforms, refle
 	end
 	
 	--pass down some additional data
-	boneTransforms = object.boneTransforms or boneTransforms
+	boneTransforms = object.skeleton and object.skeleton.transforms or boneTransforms
 	reflection = object.reflection or reflection
 	
 	--apply transformation

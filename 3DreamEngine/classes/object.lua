@@ -24,7 +24,6 @@ function lib:newObject(path)
 		physics = { },
 		reflections = { },
 		animations = { },
-		jointMapping = { },
 		args = { },
 		
 		path = path, --absolute path to object
@@ -114,6 +113,31 @@ function class:generatePhysics()
 	end
 end
 
+--create and apply pose (wrapper)
+function class:setPose(animation, time)
+	assert(self.skeleton, "object requires a skeleton")
+	local p = self:getPose(animation, time)
+	self:applyPose(p)
+end
+
+--apply the pose to the skeleton (wrapper)
+function class:applyPose(pose)
+	assert(self.skeleton, "object requires a skeleton")
+	self.skeleton:applyPose(pose)
+end
+
+--apply joints to mesh data directly
+function class:applyJoints(skeleton)
+	for _,m in pairs(self.meshes) do
+		self:applyJoints(m, self.skeleton or skeleton)
+	end
+	
+	--also apply to children
+	for _,o in pairs(self.objects) do
+		self:applyJoints(o, self.skeleton or skeleton)
+	end
+end
+
 function class:print(tabs)
 	tabs = tabs or 0
 	local indent = string.rep("  ", tabs + 1)
@@ -185,7 +209,7 @@ function class:print(tabs)
 				end
 			end
 		end
-		p(self.skeleton, indent2)
+		p(self.skeleton.bones, indent2)
 	end
 	
 	--animations

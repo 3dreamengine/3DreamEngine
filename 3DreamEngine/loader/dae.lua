@@ -150,6 +150,7 @@ return function(self, obj, path)
 	
 	
 	--load skin controller
+	local jointMapping = { }
 	local controllers = { }
 	if root.library_controllers[1] then
 		for _,controller in ipairs(root.library_controllers[1].controller or { }) do
@@ -185,16 +186,16 @@ return function(self, obj, path)
 				
 				--map joints to integers for easier processing
 				local lastId = 0
-				for d,s in pairs(obj.jointMapping) do
+				for d,s in pairs(jointMapping) do
 					lastId = lastId + 1
 				end
 				for _,joints in ipairs(c.joints) do
 					for i, j in ipairs(joints) do
-						if not obj.jointMapping[j] then
+						if not jointMapping[j] then
 							lastId = lastId + 1
-							obj.jointMapping[j] = lastId
+							jointMapping[j] = lastId
 						end
-						joints[i] = obj.jointMapping[j]
+						joints[i] = jointMapping[j]
 					end
 				end
 			end
@@ -398,7 +399,7 @@ return function(self, obj, path)
 				--start of a skeleton
 				--we treat skeletons different than nodes and will use a different traverser here
 				if s.node then
-					obj.skeleton = skeletonLoader(nodes)
+					obj.skeleton = self:newSkeleton(skeletonLoader(nodes), jointMapping)
 				end
 			end
 			

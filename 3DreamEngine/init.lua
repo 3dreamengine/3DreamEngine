@@ -72,7 +72,6 @@ require((...) .. "/jobs")
 require((...) .. "/particlesystem")
 require((...) .. "/particles")
 require((...) .. "/3doExport")
-require((...) .. "/animations")
 require((...) .. "/bake")
 
 --file loader

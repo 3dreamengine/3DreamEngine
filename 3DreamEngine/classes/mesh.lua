@@ -161,4 +161,35 @@ function class:getMesh(name)
 	end
 end
 
+
+--apply joints to mesh data directly
+function class:applyJoints(skeleton)
+	if self.joints then
+		--make a copy of vertices
+		if not self.verticesOld then
+			self.verticesOld = self.vertices
+			self.normalsOld = self.normals
+			self.vertices = { }
+			self.normals = { }
+		end
+		
+		--apply joint transforms
+		for i,v in ipairs(self.verticesOld) do
+			local m = self:getJointMat(skeleton, i)
+			self.vertices[i] = m * vec3(v)
+			self.normals[i] = m:subm() * vec3(self.normalsOld[i])
+		end
+	end
+end
+
+--todo might be outdated
+function class:getJointMat(skeleton, i)
+	assert(skeleton.transforms, "No pose has bene applied to skeleton!")
+	local m = mat4()
+	for jointNr = 1, #self.joints[i] do
+		m = m + skeleton.transforms[ self.joints[i][jointNr] ] * self.weights[i][jointNr]
+	end
+	return m
+end
+
 return class

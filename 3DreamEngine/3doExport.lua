@@ -41,7 +41,6 @@ local function saveObject(obj, meshCache, dataStrings)
 		
 		["animations"] = obj.animations,
 		["skeleton"] = obj.skeleton,
-		["jointMapping"] = obj.jointMapping,
 		
 		["linkedObjects"] = obj.linkedObjects,
 		
