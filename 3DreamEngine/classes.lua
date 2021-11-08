@@ -5,18 +5,18 @@ classes.lua - contains meta tables and constructors for all 3Dream classes
 
 local lib = _3DreamEngine
 
-local metas = { }
+lib.classes = { }
 for d,s in pairs(love.filesystem.getDirectoryItems(lib.root .. "/classes")) do
 	local name = s:sub(1, #s-4)
-	metas[name] = require(lib.root .. "/classes/" .. name)
-	metas[name].class = name
+	lib.classes[name] = require(lib.root .. "/classes/" .. name)
+	lib.classes[name].class = name
 end
 
 --link several metatables together
 local function link(chain)
 	local m = { }
 	for _,meta in pairs(chain) do
-		for name, func in pairs(metas[meta]) do
+		for name, func in pairs(lib.classes[meta]) do
 			m[name] = func
 		end
 	end
@@ -24,7 +24,7 @@ local function link(chain)
 end
 
 --auto create setter and getter
-for d,s in pairs(metas) do
+for d,s in pairs(lib.classes) do
 	if s.setterGetter then
 		for name, typ in pairs(s.setterGetter) do
 			local n = name:sub(1, 1):upper() .. name:sub(2)
@@ -47,7 +47,7 @@ end
 
 --final meta tables
 lib.meta = { }
-for d,s in pairs(metas) do
+for d,s in pairs(lib.classes) do
 	if s.link then
 		lib.meta[d] = link(s.link)
 	end

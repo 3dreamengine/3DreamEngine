@@ -98,18 +98,11 @@ function utils.table.deepCopy(value, cycles)
     end
 end
 
---copy a table, skip non primitive keys and values
-local primitives = {["boolean"] = true, ["string"] = true, ["number"] = true}
-function utils.table.primitiveCopy(first_table)
+--flat copy a table
+function utils.table.flatCopy(first_table)
 	local second_table = { }
 	for k,v in pairs(first_table) do
-		if primitives[type(k)] then
-			if type(v) == "table" then
-				second_table[k] = utils.table.primitiveCopy(v)
-			elseif primitives[type(v)] then
-				second_table[k] = v
-			end
-		end
+		second_table[k] = v
 	end
 	return second_table
 end

@@ -31,7 +31,7 @@ function class:finish()
 					break
 				end
 			end
-			self.lookup[joint][i] = idx
+			self.lookup[joint][i] = math.max(idx, 2)
 		end
 	end
 	
@@ -39,7 +39,7 @@ function class:finish()
 end
 
 --linear interpolation of position and rotatation between two frames
-local function interpolateFrames(f1, f2, factor)
+function class.interpolateFrames(f1, f2, factor)
 	return {
 		position = f1.position * (1.0 - factor) + f2.position * factor,
 		rotation = f1.rotation:nLerp(f2.rotation, factor),
@@ -49,49 +49,36 @@ end
 --returns a new animated pose at a specific time stamp
 function class:getPose(time)
 	assert(self, "animation is nil, is the name correct?")
-	local pose = { }
+	local pose = lib:newPose()
 	
 	for joint,frames in pairs(self.frames) do
-		local t = time == self.length and time or time % self.length
-		
-		--find two frames
-		local f1 = frames[1]
-		local f2 = frames[2]
-		local lu = self.lookup[joint]
-		for f = lu[math.ceil(t / self.length * #lu)] or 2, #frames do
-			if frames[f].time >= t then
-				f1 = frames[f-1]
-				f2 = frames[f]
-				break
+		if #frames == 0 then
+			self.frames[joint] = nil
+		elseif #frames == 1 then
+			table.insert(frames, frames[1])
+		else
+			local t = time == self.length and time or time % self.length
+			
+			--find two frames
+			local f1 = frames[1]
+			local f2 = frames[2]
+			local lu = self.lookup[joint]
+			for f = lu and lu[math.ceil(t / self.length * #lu)] or 2, #frames do
+				if frames[f].time >= t then
+					f1 = frames[f-1]
+					f2 = frames[f]
+					break
+				end
 			end
+			
+			--get interpolation factor
+			local diff = (f2.time - f1.time)
+			local factor = diff == 0 and 0.5 or (t - f1.time) / diff
+			pose[joint] = self.interpolateFrames(f1, f2, factor)
 		end
-		
-		--get interpolation factor
-		local diff = (f2.time - f1.time)
-		local factor = diff == 0 and 0.5 or (t - f1.time) / diff
-		pose[joint] = interpolateFrames(f1, f2, factor)
 	end
 	
 	return pose
-end
-
---blend with another pose
-function class:blend(b, factor)
-	local final = { }
-	local keys = { }
-	for name, joint in pairs(self) do
-		keys[name] = true
-	end
-	for name, joint in pairs(b) do
-		keys[name] = true
-	end
-	for name, _ in pairs(keys) do
-		if self[name] and b[name] then
-			final[name] = interpolateFrames(self[name], b[name], factor)
-		else
-			final[name] = self[name] or b[name]
-		end
-	end
 end
 
 return class

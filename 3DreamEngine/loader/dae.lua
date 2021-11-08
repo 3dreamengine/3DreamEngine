@@ -152,8 +152,8 @@ return function(self, obj, path)
 	--load skin controller
 	local jointMapping = { }
 	local controllers = { }
-	if root.library_controllers[1] then
-		for _,controller in ipairs(root.library_controllers[1].controller or { }) do
+	for _, library in ipairs(root.library_controllers or { }) do
+		for _,controller in ipairs(library.controller or { }) do
 			local skin = controller.skin[1]
 			if skin then
 				local c = {
