@@ -14,49 +14,52 @@ local function interpolateFrames(f1, f2, factor)
 end
 
 --returns a new animated pose at a specific time stamp
-function lib:getPose(animation, time)
-	local animation = time and {{animation, time}} or animation
+function lib:getPose(anim, time)
+	assert(anim, "animation is nil, is the name correct?")
 	local pose = { }
 	
-	--get frame of animation
-	for i,animation in ipairs(animation) do
-		local anim = animation[1]
-		local time = animation[2] or 0
-		local blend = animation[3] or i > 1 and 1 / i
-		assert(anim, "animation is nil, is the name correct?")
-		for joint,frames in pairs(anim.frames) do
-			if not animation[4] or animation[4][joint] then
-				local t = time == anim.length and time or time % anim.length
-				
-				--find two frames
-				--todo slow, some sort of indexing required
-				local f1 = frames[1]
-				local f2 = frames[2]
-				local lu = anim.lookup[joint]
-				for f = lu[math.ceil(t / anim.length * #lu)] or 2, #frames do
-					if frames[f].time >= t then
-						f1 = frames[f-1]
-						f2 = frames[f]
-						break
-					else
-						error()
-					end
-				end
-				
-				--get interpolation factor
-				local diff = (f2.time - f1.time)
-				local factor = diff == 0 and 0.5 or (t - f1.time) / diff
-				local f = interpolateFrames(f1, f2, factor)
-				if blend then
-					pose[joint] = interpolateFrames(pose[joint], f, blend)
-				else
-					pose[joint] = f
-				end
+	for joint,frames in pairs(anim.frames) do
+		local t = time == anim.length and time or time % anim.length
+		
+		--find two frames
+		local f1 = frames[1]
+		local f2 = frames[2]
+		local lu = anim.lookup[joint]
+		for f = lu[math.ceil(t / anim.length * #lu)] or 2, #frames do
+			if frames[f].time >= t then
+				f1 = frames[f-1]
+				f2 = frames[f]
+				break
+			else
+				error()
 			end
 		end
+		
+		--get interpolation factor
+		local diff = (f2.time - f1.time)
+		local factor = diff == 0 and 0.5 or (t - f1.time) / diff
+		pose[joint] = interpolateFrames(f1, f2, factor)
 	end
 	
 	return pose
+end
+
+function lib:blendPoses(a, b, factor)
+	local final = { }
+	local keys = { }
+	for name, joint in pairs(a) do
+		keys[name] = true
+	end
+	for name, joint in pairs(b) do
+		keys[name] = true
+	end
+	for name, _ in pairs(keys) do
+		if a[name] and b[name] then
+			final[name] = interpolateFrames(a[name], b[name], factor)
+		else
+			final[name] = a[name] or b[name]
+		end
+	end
 end
 
 --apply the pose to the joints
