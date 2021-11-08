@@ -263,4 +263,28 @@ function class:calcTangents()
 	end
 end
 
+--creates a renderable mesh
+function class:create()
+	assert(self.faces, "face array is required")
+	
+	--set up vertex map
+	local vertexMap = { }
+	for d,f in ipairs(self.faces) do
+		table.insert(vertexMap, f[1])
+		table.insert(vertexMap, f[2])
+		table.insert(vertexMap, f[3])
+	end
+	
+	--create mesh
+	local meshFormat = lib.meshFormats[self.meshType]
+	local meshLayout = meshFormat.meshLayout
+	self.mesh = love.graphics.newMesh(meshLayout, #self.vertices, "triangles", "static")
+	
+	--vertex map
+	self.mesh:setVertexMap(vertexMap)
+	
+	--fill vertices
+	meshFormat:create(self)
+end
+
 return class

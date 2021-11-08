@@ -229,4 +229,17 @@ function class:print(tabs)
 	end
 end
 
+--create meshes
+function class:createMeshes()
+	if not self.linked then
+		for d,o in pairs(self.meshes) do
+			o:create()
+		end
+		
+		for d,o in pairs(self.objects) do
+			o:createMeshes()
+		end
+	end
+end
+
 return class

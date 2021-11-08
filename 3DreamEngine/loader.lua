@@ -478,7 +478,7 @@ function lib:finishObject(obj)
 	
 	--create meshes
 	if obj.args.mesh then
-		self:createMesh(obj)
+		obj:createMeshes()
 	end
 	
 	
