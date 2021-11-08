@@ -5,68 +5,68 @@ local notInitError = "Transform not initialized, call reset() at least once."
 local I = mat4:getIdentity()
 
 local class = { }
-function class:reset(obj)
-	obj.transform = I
-	return obj
+function class:reset()
+	self.transform = I
+	return self
 end
 
-function class:setTransform(obj, t)
-	obj.transform = t
-	obj.inverseTransform = false
-	obj.dynamic = true
-	return obj
+function class:setTransform(t)
+	self.transform = t
+	self.inverseTransform = false
+	self.dynamic = true
+	return self
 end
-function class:getTransform(obj)
-	return obj.transform
-end
-
-function class:translate(obj, x, y, z)
-	obj.transform = (obj.transform or I):translate(x, y, z)
-	obj.inverseTransform = false
-	obj.dynamic = true
-	return obj
+function class:getTransform()
+	return self.transform
 end
 
-function class:scale(obj, x, y, z)
-	obj.transform = (obj.transform or I):scale(x, y, z)
-	obj.inverseTransform = false
-	obj.dynamic = true
-	return obj
+function class:translate(x, y, z)
+	self.transform = (self.transform or I):translate(x, y, z)
+	self.inverseTransform = false
+	self.dynamic = true
+	return self
 end
 
-function class:rotateX(obj, rx)
-	obj.transform = (obj.transform or I):rotateX(rx)
-	obj.inverseTransform = false
-	obj.dynamic = true
-	return obj
+function class:scale(x, y, z)
+	self.transform = (self.transform or I):scale(x, y, z)
+	self.inverseTransform = false
+	self.dynamic = true
+	return self
 end
 
-function class:rotateY(obj, ry)
-	obj.transform = (obj.transform or I):rotateY(ry)
-	obj.inverseTransform = false
-	obj.dynamic = true
-	return obj
+function class:rotateX(rx)
+	self.transform = (self.transform or I):rotateX(rx)
+	self.inverseTransform = false
+	self.dynamic = true
+	return self
 end
 
-function class:rotateZ(obj, rz)
-	obj.transform = (obj.transform or I):rotateZ(rz)
-	obj.inverseTransform = false
-	obj.dynamic = true
-	return obj
+function class:rotateY(ry)
+	self.transform = (self.transform or I):rotateY(ry)
+	self.inverseTransform = false
+	self.dynamic = true
+	return self
 end
 
-function class:setDirection(obj, normal, up)
-	obj.transform = lib:lookInDirection(normal, up):invert()
-	obj.inverseTransform = false
-	obj.dynamic = true
-	return obj
+function class:rotateZ(rz)
+	self.transform = (self.transform or I):rotateZ(rz)
+	self.inverseTransform = false
+	self.dynamic = true
+	return self
 end
 
-function class:getInvertedTransform(obj)
-	if not obj.inverseTransform then
-		obj.inverseTransform = obj.transform:invert()
+function class:setDirection(normal, up)
+	self.transform = lib:lookInDirection(normal, up):invert()
+	self.inverseTransform = false
+	self.dynamic = true
+	return self
+end
+
+function class:getInvertedTransform()
+	if not self.inverseTransform then
+		self.inverseTransform = self.transform:invert()
 	end
-	return obj.inverseTransform
+	return self.inverseTransform
 end
 
 function class:setDynamic(dynamic)
