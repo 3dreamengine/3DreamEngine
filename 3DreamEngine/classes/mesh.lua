@@ -163,7 +163,7 @@ end
 
 
 --apply joints to mesh data directly
-function class:applyJoints(skeleton)
+function class:applyBones(skeleton)
 	if self.joints then
 		--make a copy of vertices
 		if not self.verticesOld then
@@ -182,7 +182,7 @@ function class:applyJoints(skeleton)
 	end
 end
 
---todo might be outdated
+--returns the final joint transformation based on vertex weights
 function class:getJointMat(skeleton, i)
 	assert(skeleton.transforms, "No pose has bene applied to skeleton!")
 	local m = mat4()

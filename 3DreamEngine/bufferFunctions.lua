@@ -270,9 +270,9 @@ function lib:createMesh(obj)
 		--set up vertex map
 		local vertexMap = { }
 		for d,f in ipairs(obj.faces) do
-			vertexMap[#vertexMap+1] = f[1]
-			vertexMap[#vertexMap+1] = f[2]
-			vertexMap[#vertexMap+1] = f[3]
+			table.insert(vertexMap, f[1])
+			table.insert(vertexMap, f[2])
+			table.insert(vertexMap, f[3])
 		end
 		
 		--calculate vertex normals and uv normals

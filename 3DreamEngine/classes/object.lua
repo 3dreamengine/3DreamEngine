@@ -127,14 +127,14 @@ function class:applyPose(pose)
 end
 
 --apply joints to mesh data directly
-function class:applyJoints(skeleton)
+function class:applyBones(skeleton)
 	for _,m in pairs(self.meshes) do
-		self:applyJoints(m, self.skeleton or skeleton)
+		m:applyBones(self.skeleton or skeleton)
 	end
 	
 	--also apply to children
 	for _,o in pairs(self.objects) do
-		self:applyJoints(o, self.skeleton or skeleton)
+		o:applyBones(self.skeleton or skeleton)
 	end
 end
 
