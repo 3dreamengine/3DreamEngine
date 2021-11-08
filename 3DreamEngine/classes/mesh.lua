@@ -192,4 +192,75 @@ function class:getJointMat(skeleton, i)
 	return m
 end
 
+--add tangents buffer
+local empty = {0, 0, 0}
+function class:calcTangents()
+	self.tangents = { }
+	for i = 1, #self.vertices do
+		self.tangents[i] = {0, 0, 0, 0}
+	end
+	
+	for i,f in ipairs(self.faces) do
+		--vertices
+		local v1 = self.vertices[f[1]] or empty
+		local v2 = self.vertices[f[2]] or empty
+		local v3 = self.vertices[f[3]] or empty
+		
+		--tex coords
+		local uv1 = self.texCoords[f[1]] or empty
+		local uv2 = self.texCoords[f[2]] or empty
+		local uv3 = self.texCoords[f[3]] or empty
+		
+		local tangent = { }
+		
+		local edge1 = {v2[1] - v1[1], v2[2] - v1[2], v2[3] - v1[3]}
+		local edge2 = {v3[1] - v1[1], v3[2] - v1[2], v3[3] - v1[3]}
+		local edge1uv = {uv2[1] - uv1[1], uv2[2] - uv1[2]}
+		local edge2uv = {uv3[1] - uv1[1], uv3[2] - uv1[2]}
+		
+		local cp = edge1uv[1] * edge2uv[2] - edge1uv[2] * edge2uv[1]
+		
+		if cp ~= 0.0 then
+			--handle clockwise-uvs
+			local clockwise = mat3(uv1[1], uv1[2], 1, uv2[1], uv2[2], 1, uv3[1], uv3[2], 1):det() > 0
+			
+			for i = 1, 3 do
+				tangent[i] = (edge1[i] * edge2uv[2] - edge2[i] * edge1uv[2]) / cp
+			end
+			
+			--sum up tangents to smooth across shared vertices
+			for i = 1, 3 do
+				self.tangents[f[i]][1] = self.tangents[f[i]][1] + tangent[1]
+				self.tangents[f[i]][2] = self.tangents[f[i]][2] + tangent[2]
+				self.tangents[f[i]][3] = self.tangents[f[i]][3] + tangent[3]
+				self.tangents[f[i]][4] = self.tangents[f[i]][4] + (clockwise and 1 or 0)
+			end
+		end
+	end
+	
+	--normalize
+	for i,f in ipairs(self.tangents) do
+		local l = math.sqrt(f[1]^2 + f[2]^2 + f[3]^2)
+		f[1] = f[1] / l
+		f[2] = f[2] / l
+		f[3] = f[3] / l
+	end	
+	
+	--complete smoothing step
+	for i,f in ipairs(self.tangents) do
+		local n = self.normals[i]
+		
+		--Gram-Schmidt orthogonalization
+		local dot = (f[1] * n[1] + f[2] * n[2] + f[3] * n[3])
+		f[1] = f[1] - n[1] * dot
+		f[2] = f[2] - n[2] * dot
+		f[3] = f[3] - n[3] * dot
+		
+		local l = math.sqrt(f[1]^2 + f[2]^2 + f[3]^2)
+		f[1] = f[1] / l
+		f[2] = f[2] / l
+		f[3] = f[3] / l
+	end
+end
+
 return class

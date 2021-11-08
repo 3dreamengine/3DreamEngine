@@ -609,3 +609,7 @@ end
 function lib:getDefaultWorldShader()
 	return self.defaultWorldShader
 end
+
+function lib:registerMeshFormat(name, f)
+	self.meshFormats[name] = f
+end

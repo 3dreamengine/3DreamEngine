@@ -165,6 +165,12 @@ lib.scene = lib:newScene()
 --hardcoded mipmap count, do not change
 lib.reflections_levels = 6
 
+--default meshFormats
+lib.meshFormats = { }
+lib:registerMeshFormat("textured", require(lib.root .. "/meshFormats/textured"))
+lib:registerMeshFormat("simple", require(lib.root .. "/meshFormats/simple"))
+lib:registerMeshFormat("material", require(lib.root .. "/meshFormats/material"))
+
 --default objects
 lib.object_sky = lib:loadObject(lib.root .. "/objects/sky")
 lib.object_cube = lib:loadObject(lib.root .. "/objects/cube")
