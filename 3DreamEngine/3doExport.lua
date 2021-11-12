@@ -109,7 +109,7 @@ local function saveObject(obj, meshCache, dataStrings)
 					--store vertexMap
 					local map = mesh:getVertexMap()
 					if map then
-						local vertexMapData = love.data.newByteData(m.vertexCount * 4)
+						local vertexMapData = love.data.newByteData(#map * 4)
 						local vertexMap = ffi.cast("uint32_t*", vertexMapData:getPointer())
 						for d,s in ipairs(map) do
 							vertexMap[d-1] = s-1

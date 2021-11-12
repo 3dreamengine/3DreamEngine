@@ -98,7 +98,7 @@ local function loadInputs(s, strideLookup, idxs)
 		end
 	end
 	
-	return data, vcounts, vertexMapping
+	return data, vertexMapping
 end
 
 --loads an array of inputs
@@ -246,10 +246,11 @@ return function(self, obj, path)
 				--load all the buffers
 				local inputs, vcount, vertexMapping, matId
 				if mesh.triangles then
-					inputs, _, vertexMapping = loadInputs(mesh.triangles[1], stride)
+					inputs, vertexMapping = loadInputs(mesh.triangles[1], stride)
 					matId = mesh.triangles[1]._attr.material
 				elseif mesh.polylist then
-					inputs, vcount, vertexMapping = loadInputs(mesh.polylist[1], stride)
+					inputs, vertexMapping = loadInputs(mesh.polylist[1], stride)
+					vcount = loadFloatArray(mesh.polylist[1].vcount[1][1])
 					matId = mesh.polylist[1]._attr.material
 				elseif mesh.polygons then
 					local idxs = { }
@@ -292,7 +293,8 @@ return function(self, obj, path)
 				--construct faces
 				local i = 1
 				for face = 1, mesh.triangles and mesh.triangles[1]._attr.count or #vcount do
-					local verts = mesh.triangles and 3 or vcount[i]
+					assert(i < #m.vertices, #m.vertices)
+					local verts = mesh.triangles and 3 or vcount[face]
 					if verts == 3 then
 						--tris
 						table.insert(m.faces, {i, i+1, i+2})

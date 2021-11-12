@@ -71,7 +71,7 @@ function lib:loadLibrary(path, args, prefix)
 	args.loadAsLibrary = true
 	
 	--load
-	local obj = self:loadObject(path, args)
+	local obj = self:loadScene(path, args)
 	
 	--insert into library
 	local changed = { }
