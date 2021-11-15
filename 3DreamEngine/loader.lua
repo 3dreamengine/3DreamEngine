@@ -182,7 +182,7 @@ function lib:loadObject(path, args)
 					--make sure to transform accordingly
 					if m.transform ~= o.transform then
 						local transform = o.transform:invert() * m.transform
-						print("todo: two objects with the same name have different transform matrices, that is illegal!")
+						print(string.format("Warnign: two meshes (%s and %s) within the same object (%s) have different transforms!", id, next(o.meshes), m.name))
 					end
 					
 					m.transform = nil

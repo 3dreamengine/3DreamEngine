@@ -49,25 +49,26 @@ local function indexTree(node)
 end
 
 --returns the data for a given source
-local function getInput(id, stride)
+local function getInput(id)
 	local s = indices[id]
 	if s.Name_array then
 		return loadArray(s.Name_array[1][1])
 	elseif s.float_array or s.int_array then
+		local stride = s.technique_common and s.technique_common[1].accessor and tonumber(s.technique_common[1].accessor[1]._attr.stride)
 		if stride and stride > 1 then
 			return loadVecArray((s.float_array or s.int_array)[1][1], stride)
 		else
 			return loadFloatArray((s.float_array or s.int_array)[1][1])
 		end
 	elseif s.input then
-		return getInput(s.input[1]._attr.source, stride)
+		return getInput(s.input[1]._attr.source)
 	else
 		error("unknown input data type")
 	end
 end
 
 --loads an array of inputs
-local function loadInputs(s, strideLookup, idxs)
+local function loadInputs(s, idxs)
 	local idxs = idxs or loadFloatArray(s.p[1][1])
 	
 	--use the max offset to determine data width
@@ -81,8 +82,7 @@ local function loadInputs(s, strideLookup, idxs)
 	for _,input in ipairs(s.input) do
 		local set = 1 + tonumber(input._attr.set or "0")
 		local typ = input._attr.semantic
-		local stride = strideLookup[typ] or 1
-		local array = getInput(input._attr.source, stride)
+		local array = getInput(input._attr.source)
 		local offset = 1 + tonumber(input._attr.offset)
 		
 		data[typ] = data[typ] or { }
@@ -131,6 +131,57 @@ local function loadWeightsInputs(s)
 	end
 	
 	return data
+end
+
+local function addMesh(self, obj, mat, id, inputs, vertexMapping, meshData, vcount)
+	--create mesh
+	local mat = matId and materials[matId]
+	local material = mat and self.materialLibrary[mat.name] or mat or obj.materials.None
+	local m = self:newMesh(id, material, obj.args.meshType)
+	
+	m.vertexMapping = vertexMapping
+	
+	meshData[id] = meshData[id] or { }
+	table.insert(meshData[id], m)
+	
+	--flip UV
+	for _,array in pairs(inputs["TEXCOORD"] or {}) do
+		for i,v in ipairs(array) do
+			array[i] = {v[1], 1.0 - v[2]}
+		end
+	end
+	
+	--insert values
+	local translate = {
+		["VERTEX"] = "vertices",
+		["NORMAL"] = "normals",
+		["TEXCOORD"] = "texCoords",
+		["COLOR"] = "colors",
+		["TEXTANGENT"] = "tangents",
+		["TANGENT"] = "tangents",
+	}
+	for from, to in pairs(translate) do
+		for set, array in pairs(inputs[from] or { }) do
+			m[set == 1 and to or (to .. set)] = array
+		end
+	end
+	
+	--construct faces
+	local i = 1
+	for face = 1, type(vcount) == "number" and vcount or #vcount do
+		assert(i < #m.vertices, #m.vertices)
+		local verts = type(vcount) == "number" and 3 or vcount[face]
+		if verts == 3 then
+			--tris
+			table.insert(m.faces, {i, i+1, i+2})
+		else
+			--triangulates, fan style
+			for f = 1, verts-2 do
+				table.insert(m.faces, {i, i+f, i+f+1})
+			end
+		end
+		i = i + verts
+	end
 end
 
 return function(self, obj, path)
@@ -223,88 +274,42 @@ return function(self, obj, path)
 				local mesh = geometry.mesh[1]
 				local id = geometry._attr.id
 				
-				--translation table
-				local translate = {
-					["VERTEX"] = "vertices",
-					["NORMAL"] = "normals",
-					["TEXCOORD"] = "texCoords",
-					["COLOR"] = "colors",
-					["TEXTANGENT"] = "tangents",
-					["TANGENT"] = "tangents",
-				}
-				
-				local stride = {
-					["VERTEX"] = 3,
-					["NORMAL"] = 3,
-					["TEXCOORD"] = 2,
-					["COLOR"] = 4,
-					["COLOR"] = 4,
-					["TEXTANGENT"] = 3,
-					["TANGENT"] = 3,
-				}
-				
 				--load all the buffers
-				local inputs, vcount, vertexMapping, matId
 				if mesh.triangles then
-					inputs, vertexMapping = loadInputs(mesh.triangles[1], stride)
-					matId = mesh.triangles[1]._attr.material
-				elseif mesh.polylist then
-					inputs, vertexMapping = loadInputs(mesh.polylist[1], stride)
-					vcount = loadFloatArray(mesh.polylist[1].vcount[1][1])
-					matId = mesh.polylist[1]._attr.material
-				elseif mesh.polygons then
-					local idxs = { }
-					vcount = { }
-					matId = mesh.polygons[1]._attr.material
-					
-					--combine polygons
-					for _,p in ipairs(mesh.polygons.p) do
-						local a = loadFloatArray(p[1])
-						for _,v in ipairs(a) do
-							table.insert(idxs, v)
+					for _,t in ipairs(mesh.triangles) do
+						local inputs, vertexMapping = loadInputs(t)
+						local matId = mesh.triangles[1]._attr.material
+						addMesh(self, obj, matId and materials[matId], id, inputs, vertexMapping, meshData, tonumber(t._attr.count))
+					end
+				end
+				
+				if mesh.polylist then
+					for _,p in ipairs(mesh.polylist) do
+						local inputs, vertexMapping = loadInputs(p)
+						local vcount = loadFloatArray(p.vcount[1][1])
+						local matId = mesh.polylist[1]._attr.material
+						addMesh(self, obj, matId and materials[matId], id, inputs, vertexMapping, meshData, vcount)
+					end
+				end
+				
+				if mesh.polygons then
+					for _,p in ipairs(mesh.polygons) do
+						local idxs = { }
+						local vcount = { }
+						local matId = mesh.polygons[1]._attr.material
+						
+						--combine polygons
+						for _,p in ipairs(mesh.polygons.p) do
+							local a = loadFloatArray(p[1])
+							for _,v in ipairs(a) do
+								table.insert(idxs, v)
+							end
+							table.insert(vcount, #a)
 						end
-						table.insert(vcount, #a)
+						
+						local inputs, _, vertexMapping = loadInputs(mesh.polygons[1], idxs)
+						addMesh(self, obj, matId and materials[matId], id, inputs, vertexMapping, meshData, vcount)
 					end
-					
-					inputs, _, vertexMapping = loadInputs(mesh.polygons[1], stride, idxs)
-				end
-				
-				--create mesh
-				local mat = matId and materials[matId]
-				local material = mat and self.materialLibrary[mat.name] or mat or obj.materials.None
-				local m = self:newMesh(geometry._attr.id, material, obj.args.meshType)
-				meshData[id] = m
-				m.vertexMapping = vertexMapping
-				
-				--flip UV
-				for _,array in pairs(inputs["TEXCOORD"] or {}) do
-					for i,v in ipairs(array) do
-						array[i] = {v[1], 1.0 - v[2]}
-					end
-				end
-				
-				--insert values
-				for from, to in pairs(translate) do
-					for set, array in pairs(inputs[from] or { }) do
-						m[set == 1 and to or (to .. set)] = array
-					end
-				end
-				
-				--construct faces
-				local i = 1
-				for face = 1, mesh.triangles and mesh.triangles[1]._attr.count or #vcount do
-					assert(i < #m.vertices, #m.vertices)
-					local verts = mesh.triangles and 3 or vcount[face]
-					if verts == 3 then
-						--tris
-						table.insert(m.faces, {i, i+1, i+2})
-					else
-						--triangulates, fan style
-						for f = 1, verts-2 do
-							table.insert(m.faces, {i, i+f, i+f+1})
-						end
-					end
-					i = i + verts
 				end
 			end
 		end
@@ -356,6 +361,25 @@ return function(self, obj, path)
 		return skel
 	end
 	
+	local function addMeshesToObject(name, obj, meshes, transform, controller)
+		for i, mesh in ipairs(meshes) do
+			local n = i == 1 and name or name .. "." .. i
+			obj.meshes[n] = mesh:clone()
+			obj.meshes[n]:setName(n)
+			obj.meshes[n].transform = transform
+			
+			if controller then
+				obj.meshes[n].weights = { }
+				obj.meshes[n].joints = { }
+				
+				for d,s in ipairs(mesh.vertexMapping) do
+					obj.meshes[n].weights[d] = controller.weights[s]
+					obj.meshes[n].joints[d] = controller.joints[s]
+				end
+			end
+		end
+	end
+	
 	--travers the scene graph
 	local function loadNodes(nodes, parentTransform)
 		for _,s in ipairs(nodes) do
@@ -366,26 +390,12 @@ return function(self, obj, path)
 				--object
 				local id = s.instance_geometry[1]._attr.url:sub(2)
 				local mesh = meshData[id]
-				obj.meshes[name] = mesh:clone()
-				obj.meshes[name]:setName(name)
-				obj.meshes[name].transform = transform
+				addMeshesToObject(name, obj, mesh, transform)
 			elseif s.instance_controller then
 				local id = s.instance_controller[1]._attr.url:sub(2)
 				local controller = controllers[id]
 				local mesh = meshData[controller.mesh]
-				
-				obj.meshes[name] = mesh:clone()
-				obj.meshes[name]:setName(name)
-				obj.meshes[name].transform = transform
-				
-				obj.meshes[name].weights = { }
-				obj.meshes[name].joints = { }
-				
-				for d,s in ipairs(mesh.vertexMapping) do
-					obj.meshes[name].weights[d] = controller.weights[s]
-					obj.meshes[name].joints[d] = controller.joints[s]
-				end
-				obj.meshes[name].vertexMapping = nil
+				addMeshesToObject(name, obj, mesh, transform, controller)
 			elseif s.instance_light then
 				--light source
 				local id = s.instance_light[1]._attr.url:sub(2)
@@ -410,6 +420,12 @@ return function(self, obj, path)
 				loadNodes(s.node, transform)
 			end
 		end
+	end
+	
+	
+	--cleanup
+	for d,s in pairs(obj.meshes) do
+		s.vertexMapping = nil
 	end
 	
 	

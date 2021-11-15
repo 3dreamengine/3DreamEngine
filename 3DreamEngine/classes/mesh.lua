@@ -72,7 +72,11 @@ function class:tostring()
 		table.insert(tags, tostring(d))
 	end
 	
-	return self.name .. " (" .. table.concat(tags, ", ") .. ")"
+	if #tags > 0 then
+		return self.name .. " (" .. table.concat(tags, ", ") .. ")"
+	else
+		return self.name
+	end
 end
 
 function class:updateBoundingBox()
