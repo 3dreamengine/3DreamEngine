@@ -12,7 +12,7 @@ end
 local class = {
 	link = {"clone", "animation"}
 }
-	
+
 function class:finish()
 	local maxTime = 0
 	for joint, frames in pairs(self.frames) do

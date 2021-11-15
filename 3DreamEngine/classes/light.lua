@@ -43,6 +43,10 @@ local class = {
 	},
 }
 
+function class:tostring()
+	return string.format("%s (%.3f brightness)", self.name, self.brightness)
+end
+
 function class:setName(name)
 	self.name = removePostfix(name)
 end

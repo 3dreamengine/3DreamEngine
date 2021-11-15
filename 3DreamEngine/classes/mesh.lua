@@ -42,6 +42,39 @@ function class:getName()
 	return name
 end
 
+function class:tostring()
+	local tags = { }
+	
+	--vertexcount
+	if self.mesh and self.mesh.getVertexCount then
+		table.insert(tags, self.mesh:getVertexCount() .. " vertices")
+	end
+	
+	--lod
+	local min, max = self:getLOD()
+	if min then
+		table.insert(tags, math.floor(min) .. "-" .. math.floor(max))
+	end
+	
+	--visibility
+	if self.visible == false then
+		table.insert(tags, "hidden")
+	end
+	if self.renderVisibility == false then
+		table.insert(tags, "no shadows")
+	end
+	if self.shadowVisibility == false then
+		table.insert(tags, "shadow caster")
+	end
+	
+	--tags
+	for d,s in pairs(self.tags) do
+		table.insert(tags, tostring(d))
+	end
+	
+	return self.name .. " (" .. table.concat(tags, ", ") .. ")"
+end
+
 function class:updateBoundingBox()
 	if self.instanceMesh then
 		return

@@ -138,94 +138,125 @@ function class:applyBones(skeleton)
 	end
 end
 
-function class:print(tabs)
-	tabs = tabs or 0
-	local indent = string.rep("  ", tabs + 1)
-	local indent2 = string.rep("  ", tabs + 2)
+local tree = { }
+
+local function printf(str, ...)
+	table.insert(tree, {text = string.format(tostring(str), ...)})
+end
+
+local function push(str, ...)
+	printf(str, ...)
+	tree[#tree].children = {parent = tree}
+	tree = tree[#tree].children
+end
+
+local function pop()
+	tree = tree.parent
+end
+
+local function printNode(node, tabs)
+	tabs = tabs or ""
+	for d,s in ipairs(node) do
+		print(tabs .. (d == #node and "└─" or "├─") .. s.text)
+		
+		if s.children then
+			printNode(s.children, tabs .. (d == #node and "  " or "│ "))
+		end
+	end
+	tree = { }
+end
+
+function class:print()
+	local width = 48
 	
 	--general innformation
-	print(string.rep("  ", tabs) .. self.name)
+	if self.linked then
+		push(self.name .. " (linked)")
+	else
+		push(self.name)
+	end
+	
+	if self.linked then
+		pop()
+		return
+	end
 	
 	--print objects
-	local width = 48
 	if next(self.meshes) then
-		print(indent .. "meshes")
-		print(indent2 .. "name " .. string.rep(" ", width-9) .. "tags LOD     V R S  vertexcount")
-	end
-	for _,m in pairs(self.meshes) do
-		--to array
-		local tags = { }
-		for d,s in pairs(m.tags) do
-			table.insert(tags, tostring(d))
+		push("meshes")
+		for _,m in pairs(self.meshes) do
+			printf(m)
 		end
-		
-		--data to display
-		local tags = table.concat(tags, ", "):sub(1, width)
-		local min, max = m:getLOD()
-		local lod = max and (min .. " - " .. max) or ""
-		local visibility = (m.visible ~= false and "X" or " ") .. " " .. (m.renderVisibility ~= false and "X" or " ") .. " " .. (m.shadowVisibility ~= false and "X" or " ")
-		
-		--final string
-		local vertexCount = (m.mesh and m.mesh.getVertexCount and m.mesh:getVertexCount() or "")
-		local str = m.name .. string.rep(" ", width - #tags - #m.name) .. tags .. " " .. lod .. string.rep(" ", 8 - #lod) .. visibility .. "  " .. vertexCount
-		
-		--merge meshes
-		print(indent2 .. str)
+		pop()
 	end
 	
 	--physics
 	if next(self.physics) then
-		print(indent .. "physics")
-		local count = { }
+		push("physics")
 		for d,s in pairs(self.physics or { }) do
-			print(indent2 .. tostring(s.name))
+			printf("%s", s.name)
 		end
+		pop()
 	end
 	
 	--lights
 	if next(self.lights) then
-		print(indent .. "lights")
-		for d,s in pairs(self.lights) do
-			print(indent2 .. tostring(s.name) .. "  " .. s.brightness)
+		push("lights")
+		for _,l in pairs(self.lights) do
+			printf(l)
 		end
+		pop()
 	end
 	
 	--positions
 	if next(self.positions) then
-		print(indent .. "positions")
-		for d,s in pairs(self.positions) do
-			print(indent2 .. tostring(s.name) .. string.format("  %f, %f, %f", s.x, s.y, s.z))
+		push("positions")
+		for _,p in pairs(self.positions) do
+			printf("%s at (%.3f, %.3f, %.3f)", p.name, p.x, p.y, p.z)
 		end
+		pop()
 	end
 	
 	--skeleton
 	if self.skeleton then
-		print(indent .. "skeleton")
-		local function p(s, indent)
+		local function p(s)
 			for i,v in pairs(s) do
-				print(indent .. v.name)
+				push(v.name)
 				if v.children then
-					p(v.children, "  " .. indent)
+					p(v.children)
 				end
+				pop()
 			end
 		end
-		p(self.skeleton.bones, indent2)
+		push("skeleton")
+		p(self.skeleton.bones)
+		pop()
 	end
 	
 	--animations
 	if next(self.animations) then
-		print(indent .. "animations")
+		push("animations")
 		for d,s in pairs(self.animations) do
-			print(indent2 .. string.format("%s: %.1f sec", d, s.length))
+			printf("%s: %.1f sec", d, s.length)
 		end
+		pop()
 	end
 	
 	--print objects
 	if next(self.objects) then
-		print(indent .. "objects")
+		push("objects")
 		for _,o in pairs(self.objects) do
-			o:print(tabs + 2)
+			o:print()
 		end
+		pop()
+	end
+	
+	pop()
+	
+	--print result
+	if not tree.parent then
+		printNode(tree)
+		tree = { }
 	end
 end
 
