@@ -31,7 +31,7 @@ function lib:newMesh(name, material, meshType)
 end
 
 local class = {
-	link = {"clone", "transform", "shader", "visibility", "mesh"},
+	link = {"clone", "shader", "visibility", "mesh"},
 }
 
 function class:setName(name)

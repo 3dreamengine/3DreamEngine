@@ -135,7 +135,6 @@ end
 
 local function addMesh(self, obj, mat, id, inputs, vertexMapping, meshData, vcount)
 	--create mesh
-	local mat = matId and materials[matId]
 	local material = mat and self.materialLibrary[mat.name] or mat or obj.materials.None
 	local m = self:newMesh(id, material, obj.args.meshType)
 	
@@ -278,7 +277,7 @@ return function(self, obj, path)
 				if mesh.triangles then
 					for _,t in ipairs(mesh.triangles) do
 						local inputs, vertexMapping = loadInputs(t)
-						local matId = mesh.triangles[1]._attr.material
+						local matId = t._attr.material
 						addMesh(self, obj, matId and materials[matId], id, inputs, vertexMapping, meshData, tonumber(t._attr.count))
 					end
 				end
@@ -287,7 +286,7 @@ return function(self, obj, path)
 					for _,p in ipairs(mesh.polylist) do
 						local inputs, vertexMapping = loadInputs(p)
 						local vcount = loadFloatArray(p.vcount[1][1])
-						local matId = mesh.polylist[1]._attr.material
+						local matId = p._attr.material
 						addMesh(self, obj, matId and materials[matId], id, inputs, vertexMapping, meshData, vcount)
 					end
 				end
@@ -296,7 +295,7 @@ return function(self, obj, path)
 					for _,p in ipairs(mesh.polygons) do
 						local idxs = { }
 						local vcount = { }
-						local matId = mesh.polygons[1]._attr.material
+						local matId = p._attr.material
 						
 						--combine polygons
 						for _,p in ipairs(mesh.polygons.p) do

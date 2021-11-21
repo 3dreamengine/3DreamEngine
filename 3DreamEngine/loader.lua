@@ -180,9 +180,13 @@ function lib:loadObject(path, args)
 					obj.objects[m.name] = o
 				else
 					--make sure to transform accordingly
-					if m.transform ~= o.transform then
+					local difference = 0
+					for i = 1, 16 do
+						difference = difference + math.abs(m.transform[i] - o.transform[i])
+					end
+					if difference > 10^-10 then
 						local transform = o.transform:invert() * m.transform
-						print(string.format("Warnign: two meshes (%s and %s) within the same object (%s) have different transforms!", id, next(o.meshes), m.name))
+						print(string.format("Warning: two meshes (%s and %s) within the same object (%s) have different transforms!", id, next(o.meshes), m.name))
 					end
 					
 					m.transform = nil
