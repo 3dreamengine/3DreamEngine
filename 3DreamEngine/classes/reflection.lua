@@ -19,7 +19,7 @@ function lib:newReflection(static, res, noRoughness)
 		canvas = canvas,
 		image = image,
 		static = static or false,
-		done = false,
+		rendered = false,
 		pos = false,
 		first = false,
 		second = false,

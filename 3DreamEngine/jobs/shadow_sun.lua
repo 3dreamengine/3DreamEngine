@@ -21,7 +21,6 @@ function job:execute(light)
 		light.shadow.cams = { }
 	end
 	
-	local dynamic = light.shadow.static == "dynamic"
 	local normal = light.direction
 	local pos = light.pos
 	
@@ -46,7 +45,7 @@ function job:execute(light)
 			shadowCam.pos = pos
 			shadowCam.normal = normal
 			shadowCam.transform = lib:lookAt(shadowCam.pos + shadowCam.normal * (f * 0.5), shadowCam.pos, vec3(0.0, 1.0, 0.0))
-			shadowCam.dynamic = false
+			shadowCam.rendered = false
 			
 			--orthopgraphic projected multiplied by the cameras view matrix
 			local a1 = 1 / r
@@ -64,10 +63,8 @@ function job:execute(light)
 			
 			--generate canvas
 			if not light.shadow.canvases[cascade] then
-				light.shadow.canvases[cascade] = lib:newShadowCanvas("sun", light.shadow.res, dynamic)
-			end
-			if not light.shadow.tempCanvas then
-				light.shadow.tempCanvas = lib:newShadowCanvas("sun", light.shadow.res, dynamic)
+				light.shadow.canvases[cascade] = love.graphics.newCanvas(light.shadow.res, light.shadow.res,
+					{format = static and "r16f" or "rg16f", readable = true, msaa = 0, type = "2d"})
 			end
 		end
 		
@@ -75,29 +72,30 @@ function job:execute(light)
 		local blurRes = light.shadow.res / light.size * 0.25 * lib.shadow_factor ^ (cascade-1)
 		
 		--render
-		if dynamic then
-			--dynamic
-			lib:renderShadows(shadowCam, canvases, light.blacklist, shadowCam.dynamic, shadowCam.dynamic and cascade > 1)
-			
-			--also render dynamic if static only is rendered to keep up with transformation
-			if not shadowCam.dynamic then
-				lib:renderShadows(shadowCam, canvases, light.blacklist, true, cascade > 1)
-			end
-			
-			lib:blurCanvas(light.shadow.canvases[cascade], light.shadow.tempCanvas, blurRes, 2, {not shadowCam.dynamic, true, false, false})
-		elseif light.shadow.static then
-			if not shadowCam.dynamic then
-				--static and not done
-				lib:renderShadows(shadowCam, canvases, light.blacklist, false, shadowCam.dynamic and cascade > 1)
-				lib:blurCanvas(light.shadow.canvases[cascade], light.shadow.tempCanvas, blurRes, 1, {true, false, false, false})
+		local smoothStatic = false
+		local smoothDynamic = false
+		if light.shadow.static then
+			--static shadow
+			if not shadowCam.rendered then
+				lib:renderShadows(shadowCam, canvases, light.blacklist, false, cascade > 1)
+				smoothStatic = true
 			end
 		else
-			--full slow render
-			lib:renderShadows(shadowCam, canvases, light.blacklist, nil)
+			if shadowCam.rendered then
+				--dynamic part
+				lib:renderShadows(shadowCam, canvases, light.blacklist, true, cascade > 1)
+				smoothDynamic = true
+			else
+				--initial everything
+				lib:renderShadows(shadowCam, canvases, light.blacklist, nil, cascade > 1)
+				smoothStatic = true
+				smoothDynamic = true
+			end
 		end
 		
-		--next render will be a dynamic
-		shadowCam.dynamic = true
+		lib:blurCanvas(light.shadow.canvases[cascade], blurRes, 2, {smoothStatic, smoothDynamic, false, false})
+		
+		shadowCam.rendered = true
 	end
 end
 

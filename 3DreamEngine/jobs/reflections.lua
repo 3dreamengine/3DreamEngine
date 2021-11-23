@@ -45,7 +45,7 @@ function job:execute(reflection, pos)
 		lib:renderFull(cam, lib.canvases_reflections)
 	end
 	
-	reflection.done = true
+	reflection.rendered = true
 	reflection.canvas = canvas
 	love.graphics.pop()
 end

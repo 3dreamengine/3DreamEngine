@@ -456,7 +456,7 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 	--second pass for dynamics
 	if dynamic then
 		love.graphics.setColorMask(false, true, false, false)
-	else
+	elseif dynamic == false then
 		love.graphics.setColorMask(true, false, false, false)
 	end
 	love.graphics.clear(255, 255, 255, 255)

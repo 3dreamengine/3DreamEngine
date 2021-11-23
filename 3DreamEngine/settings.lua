@@ -234,13 +234,12 @@ end
 
 
 --set sun shadow
-function lib:setSunShadow(e, static)
+function lib:setSunShadow(e)
 	check(e, "boolean")
 	self.sun_shadow = e
-	self.sun_static = static
 end
 function lib:getSunShadow(o)
-	return self.sun_shadow, self.static
+	return self.sun_shadow
 end
 
 

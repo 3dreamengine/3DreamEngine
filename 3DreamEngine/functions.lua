@@ -342,7 +342,8 @@ function lib:newBoundaryBox(initialized)
 	}
 end
 
-function lib:blurCanvas(canvas, temp, resolution, iterations, mask)
+function lib:blurCanvas(canvas, resolution, iterations, mask)
+	local temp = self:getTemporaryCanvas(canvas)
 	local sh = lib:getShader("blur")
 	love.graphics.push("all")
 	love.graphics.reset()

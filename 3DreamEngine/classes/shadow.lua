@@ -1,10 +1,6 @@
 local lib = _3DreamEngine
 
 function lib:newShadow(typ, static, res)
-	if static == nil then
-		static = "dynamic"
-	end
-	
 	if typ == "point" then
 		res = res or self.shadow_cube_resolution
 	else
@@ -21,24 +17,6 @@ function lib:newShadow(typ, static, res)
 	}, self.meta.shadow)
 end
 
-function lib:newShadowCanvas(typ, res, dynamic)
-	if typ == "sun" then
-		local canvas = love.graphics.newCanvas(res, res,
-			{format = dynamic and "rg16f" or "r16f", readable = true, msaa = 0, type = "2d"})
-		
-		canvas:setFilter("linear", "linear")
-		
-		return canvas
-	elseif typ == "point" then
-		local canvas = love.graphics.newCanvas(res, res,
-			{format = dynamic and "rg16f" or "r16f", readable = true, msaa = 0, type = "cube", mipmaps = "manual"})
-		
-		canvas:setFilter("linear", "linear")
-		
-		return canvas
-	end
-end
-
 local class = {
 	link = {"shadow"},
 	
@@ -49,7 +27,7 @@ local class = {
 }
 	
 function class:refresh()
-	self.done = false
+	self.rendered = false
 end
 
 function class:getStatic()

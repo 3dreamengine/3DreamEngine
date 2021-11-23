@@ -120,7 +120,7 @@ lib:setMipmaps(true)
 
 --sun
 lib:setSunOffset(0.0, 0,0)
-lib:setSunShadow(true, "dynamic")
+lib:setSunShadow(true)
 
 --weather
 lib:setWeather(0.5)
@@ -329,7 +329,7 @@ function lib.init(self, w, h)
 	--create sun shadow if requested
 	self.sunObject = lib:newLight("sun", 1, 1, 1, 1, 1, 1, 5)
 	if self.sun_shadow then
-		self.sunObject.shadow = lib:newShadow("sun", self.sun_static)
+		self.sunObject.shadow = lib:newShadow("sun")
 	else
 		self.sunObject.shadow = nil
 	end
