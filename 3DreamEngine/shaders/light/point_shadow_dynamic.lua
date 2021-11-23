@@ -11,7 +11,8 @@ function sh:constructDefinesGlobal(dream)
 		vec3 n = -lightVec * vec3(1.0, -1.0, 1.0);
 		
 		//fetch
-		vec2 r = textureLod(tex, n, min(3.0, depth)).xy;
+		//todo remove magic number 3.0
+		vec2 r = textureLod(tex, n, 0.0).xy;
 		float sharpness = 0.1;
 		return clamp(exp(sharpness * (min(r.x, r.y) - depth * 40.0)), 0.0, 1.0);
 	}

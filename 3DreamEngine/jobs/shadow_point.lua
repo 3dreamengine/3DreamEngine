@@ -63,7 +63,10 @@ function job:execute(light)
 		lib:renderShadows(shadowCam, {{light.shadow.canvas, face = face}}, light.blacklist, dynamic)
 	end
 	
-	lib:blurCubeMap(light.shadow.canvas, 4, light.size * 0.25, {dynamic ~= true, dynamic ~= false, false, false})
+	--prefilter
+	for i = 4, 1, -1 do
+		lib:blurCubeMap(light.shadow.canvas, 1, light.size * 2^(i-1), {dynamic ~= true, dynamic ~= false, false, false}, true)
+	end
 	
 	light.shadow.done = true
 end

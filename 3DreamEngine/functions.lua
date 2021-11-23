@@ -404,8 +404,33 @@ local blurVecs = {
 }
 
 --if the system supports 6+ multicanvas (which most modern systems do) we can use the faster variant
+function lib:getTemporaryCanvas(canvas, half)
+	local id = tostring(canvas) .. (half and "H" or "F")
+	if not self.canvasCache[id] then
+		self.canvasCache[id] = love.graphics.newCanvas(canvas:getWidth() / (half and 2 or 1), canvas:getHeight() / (half and 2 or 1), {
+			format = canvas:getFormat(),
+			readable = canvas:isReadable(),
+			msaa = canvas:getMSAA(),
+			type = canvas:getTextureType(),
+			mipmaps = canvas:getMipmapMode()})
+	end
+	return self.canvasCache[id]
+end
+
+local function setMultiCubeMap(cube, level)
+	love.graphics.setCanvas({
+		{cube, face = 1, mipmap = level},
+		{cube, face = 2, mipmap = level},
+		{cube, face = 3, mipmap = level},
+		{cube, face = 4, mipmap = level},
+		{cube, face = 5, mipmap = level},
+		{cube, face = 6, mipmap = level},
+	})
+end
+
 if love.graphics.getSystemLimits().multicanvas >= 6 then
-	function lib:blurCubeMap(cube, levels, strength, mask)
+	function lib:blurCubeMap(cube, layers, strength, mask)
+		local temp = self:getTemporaryCanvas(cube, layers > 1)
 		local shader = self:getShader("blur_cube_multi")
 		
 		love.graphics.push("all")
@@ -416,21 +441,21 @@ if love.graphics.getSystemLimits().multicanvas >= 6 then
 		love.graphics.setBlendMode("replace", "premultiplied")
 		
 		love.graphics.setShader(shader)
-		shader:send("tex", cube)
-		shader:send("strength",strength or  0.01)
+		shader:send("strength", strength or 0.1)
 		
-		for level = 2, levels do
-			local res = cube:getWidth() / 2 ^ level * 2
+		for level = math.min(layers, 2), layers do
+			local res = cube:getWidth() / 2 ^ (level - 1)
 			shader:send("scale", 1.0 / res)
-			shader:send("lod", level - 2.0)
-			love.graphics.setCanvas({
-				{cube, face = 1, mipmap = level},
-				{cube, face = 2, mipmap = level},
-				{cube, face = 3, mipmap = level},
-				{cube, face = 4, mipmap = level},
-				{cube, face = 5, mipmap = level},
-				{cube, face = 6, mipmap = level},
-			})
+			shader:send("lod", math.max(0, level - 2.0))
+			shader:send("dir", 0.0)
+			shader:send("tex", cube)
+			setMultiCubeMap(temp, math.max(1, level - 1))
+			love.graphics.rectangle("fill", 0, 0, res, res)
+			
+			shader:send("dir", 1.0)
+			shader:send("lod", math.max(0, level - 2.0))
+			shader:send("tex", temp)
+			setMultiCubeMap(cube, level)
 			love.graphics.rectangle("fill", 0, 0, res, res)
 		end
 		
@@ -438,6 +463,7 @@ if love.graphics.getSystemLimits().multicanvas >= 6 then
 	end
 else
 	function lib:blurCubeMap(cube, levels, strength, mask)
+		local temp = self:getTemporaryCanvas(cube)
 		local shader = self:getShader("blur_cube")
 		
 		love.graphics.push("all")
@@ -448,18 +474,26 @@ else
 		love.graphics.setBlendMode("replace", "premultiplied")
 		
 		love.graphics.setShader(shader)
-		shader:send("tex", cube)
-		shader:send("strength", strength or 0.01)
+		shader:send("strength", strength or 0.1)
 		
 		for level = 2, levels do
-			local res = cube:getWidth() / 2 ^ level * 2
+			local res = cube:getWidth() / 2 ^ (level - 1)
 			shader:send("scale", 1.0 / res)
-			shader:send("lod", level - 2.0)
 			for side = 1, 6 do
-				love.graphics.setCanvas(cube, side, level)
 				shader:send("normal", blurVecs[side][1])
 				shader:send("dirX", blurVecs[side][2])
 				shader:send("dirY", blurVecs[side][3])
+				
+				love.graphics.setCanvas(temp, side, level - 1)
+				shader:send("dir", 0.0)
+				shader:send("tex", cube)
+				shader:send("lod", math.max(0, level - 2.0))
+				love.graphics.rectangle("fill", 0, 0, res, res)
+				
+				love.graphics.setCanvas(cube, side, level)
+				shader:send("dir", 1.0)
+				shader:send("tex", temp)
+				shader:send("lod", math.max(0, level - 2.0))
 				love.graphics.rectangle("fill", 0, 0, res, res)
 			end
 		end

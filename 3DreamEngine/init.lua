@@ -130,7 +130,7 @@ lib:setRainbowDir(vec3(1.0, -0.25, 1.0))
 --sky
 lib:setReflection(true)
 lib:setSky(true)
-lib:setSkyReflectionFormat(512, "rgba16f", 4)
+lib:setSkyReflectionFormat(256, "rgba16f", 4)
 
 --clouds
 lib:setClouds(true)
@@ -200,6 +200,9 @@ function lib.initTextures:PBR()
 		lib.textures.brdfLUT = love.graphics.newImage(lib.root .. "/res/brdfLut.png")
 	end
 end
+
+--some functions require temporary canvases
+lib.canvasCache = { }
 
 function lib.initTextures:sky()
 	if not self.sky_done then
@@ -314,6 +317,8 @@ function lib.init(self, w, h)
 	end
 	
 	self:resize(w or love.graphics.getWidth(), h or love.graphics.getHeight())
+	
+	self.canvasCache = { }
 	
 	--reset shader
 	self:loadShader()
