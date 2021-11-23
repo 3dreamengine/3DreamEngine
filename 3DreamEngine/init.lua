@@ -107,8 +107,8 @@ lib:setGodrays(16, false)
 lib:setDistortionMargin(true)
 
 --shadows
-lib:setShadowResolution(1024 * 4, 512)
-lib:setShadowSmoothing(false)
+lib:setShadowResolution(1024, 512)
+lib:setShadowSmoothing(false) --remove smooth shading from the shaders and put those 3 funcs into the light. Dynamic shadowing is too important, there is no reason to disable.
 lib:setShadowCascade(8, 4)
 
 --loader settings
@@ -296,16 +296,6 @@ function lib.resize(self, w, h)
 	self.canvases = self:newCanvasSet(self.renderSet, w, h)
 	self.canvases_reflections = self:newCanvasSet(self.reflectionsSet)
 	self.canvases_mirror = self:newCanvasSet(self.mirrorSet, w, h)
-	
-	--sky box
-	if self.sky_reflection == true then
-		self.sky_reflectionCanvas = love.graphics.newCanvas(self.sky_resolution, self.sky_resolution, {format = self.sky_format, readable = true, msaa = 0, type = "cube", mipmaps = "manual"})
-	else
-		self.sky_reflectionCanvas = false
-	end
-	
-	self:loadShader()
-	self:initJobs()
 end
 
 --applies settings and load canvases
@@ -332,13 +322,22 @@ function lib.init(self, w, h)
 	self.lighting = { }
 	
 	--create sun shadow if requested
-	--TODO sun strength should receive setting
 	self.sunObject = lib:newLight("sun", 1, 1, 1, 1, 1, 1, 5)
 	if self.sun_shadow then
 		self.sunObject.shadow = lib:newShadow("sun", self.sun_static)
 	else
 		self.sunObject.shadow = nil
 	end
+	
+	--sky box
+	if self.sky_reflection == true then
+		self.sky_reflectionCanvas = love.graphics.newCanvas(self.sky_resolution, self.sky_resolution, {format = self.sky_format, readable = true, msaa = 0, type = "cube", mipmaps = "manual"})
+	else
+		self.sky_reflectionCanvas = false
+	end
+	
+	self:loadShader()
+	self:initJobs()
 end
 
 --clears the current scene

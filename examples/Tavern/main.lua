@@ -11,8 +11,6 @@ dream:setNameDecoder()
 
 dream.renderSet:setRefractions(true)
 
-dream:setShadowSmoothing(true)
-
 dream:setSky(false)
 dream:setReflection(cimg:load(projectDir .. "sky.cimg"))
 
@@ -65,10 +63,10 @@ local lights = { }
 for d,s in ipairs(tavern.positions) do
 	if s.name == "light" then
 		lights[d] = dream:newLight("point", s.x, s.y + 0.1, s.z, 1.0, 0.75, 0.3)
-		lights[d].shadow = dream:newShadow("point", true)
+		lights[d].shadow = dream:newShadow("point")
 	elseif s.name == "fire" then
 		lights[d] = dream:newLight("point", s.x, s.y + 0.1, s.z, 1.0, 0.75, 0.2)
-		lights[d].shadow = dream:newShadow("point", true)
+		lights[d].shadow = dream:newShadow("point")
 	end
 end
 

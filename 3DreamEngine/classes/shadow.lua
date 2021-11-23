@@ -31,7 +31,7 @@ function lib:newShadowCanvas(typ, res, dynamic)
 		return canvas
 	elseif typ == "point" then
 		local canvas = love.graphics.newCanvas(res, res,
-			{format = dynamic and "rg16f" or "r16f", readable = true, msaa = 0, type = "cube"})
+			{format = dynamic and "rg16f" or "r16f", readable = true, msaa = 0, type = "cube", mipmaps = "manual"})
 		
 		canvas:setFilter("linear", "linear")
 		

@@ -9,6 +9,8 @@ function lib:renderSky(transformProj, camTransform, transformScale)
 		transformProj = transformProj * mat4:getScale(transformScale)
 	end
 	
+	--remove sky_texture, make it a camera property
+	
 	love.graphics.push("all")
 	if not self.sky_texture then
 		love.graphics.clear()

@@ -122,7 +122,7 @@ function lib:render(canvases, cam)
 		love.graphics.reset()
 	end
 	
-	--clear canvases
+	--clear depth
 	if canvases.mode ~= "direct" then
 		love.graphics.setCanvas({canvases.color, canvases.depth, depthstencil = canvases.depth_buffer})
 		love.graphics.setDepthMode()
@@ -167,7 +167,7 @@ function lib:render(canvases, cam)
 			love.graphics.setBlendMode("alpha", "alphamultiply")
 		end
 		
-		--set canvases
+		--set alpha pass canvases
 		if canvases.mode ~= "direct" and pass == 2 then
 			if canvases.refractions then
 				--refractions only
@@ -250,7 +250,6 @@ function lib:render(canvases, cam)
 			local material = mesh.material
 			if lastMaterial ~= material then
 				lastMaterial = material
-				--self.delton:start("material")
 				
 				--alpha
 				checkAndSendCached(shaderObject, "dither", material.dither and 1 or 0)
@@ -265,7 +264,6 @@ function lib:render(canvases, cam)
 				--culling
 				love.graphics.setMeshCullMode(canvases.cullMode or material.cullMode or "back")
 				
-				--self.delton:stop()
 				self.stats.materialsUsed = self.stats.materialsUsed + 1
 			end
 			
@@ -275,7 +273,6 @@ function lib:render(canvases, cam)
 				local tex = ref and (ref.image or ref.canvas) or self.sky_reflection and self.sky_reflectionCanvas or self.textures.sky_fallback
 				if lastReflection ~= tex then
 					lastReflection = tex
-					self.delton:start("reflection")
 					
 					shader:send("tex_background", tex)
 					shader:send("reflections_levels", (ref and ref.levels or self.reflections_levels) - 1)
@@ -289,8 +286,6 @@ function lib:render(canvases, cam)
 					else
 						shader:send("reflections_enabled", false)
 					end
-					
-					self.delton:stop()
 				end
 			end
 			
@@ -561,6 +556,7 @@ function lib:renderFull(cam, canvases)
 	self:render(canvases, cam)
 	self.delton:stop()
 	
+	--direct rendering has no post effects
 	if canvases.mode == "direct" then
 		love.graphics.pop()
 		return

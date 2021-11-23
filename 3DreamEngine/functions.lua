@@ -342,6 +342,28 @@ function lib:newBoundaryBox(initialized)
 	}
 end
 
+function lib:blurCanvas(canvas, temp, resolution, iterations, mask)
+	local sh = lib:getShader("blur")
+	love.graphics.push("all")
+	love.graphics.reset()
+	if mask then
+		love.graphics.setColorMask(unpack(mask))
+	end
+	love.graphics.setBlendMode("replace", "premultiplied")
+	love.graphics.setShader(sh)
+	
+	for i = iterations, 1, -1 do
+		sh:send("dir", {2^i / resolution, 0})
+		love.graphics.setCanvas(temp)
+		love.graphics.draw(canvas)
+		
+		sh:send("dir", {0, 2^i / resolution})
+		love.graphics.setCanvas(canvas)
+		love.graphics.draw(temp)
+	end
+	love.graphics.pop()
+end
+
 local blurVecs = {
 	{
 		{1.0, 0.0, 0.0},
@@ -383,16 +405,19 @@ local blurVecs = {
 
 --if the system supports 6+ multicanvas (which most modern systems do) we can use the faster variant
 if love.graphics.getSystemLimits().multicanvas >= 6 then
-	function lib:blurCubeMap(cube, levels)
+	function lib:blurCubeMap(cube, levels, strength, mask)
 		local shader = self:getShader("blur_cube_multi")
 		
 		love.graphics.push("all")
 		love.graphics.reset()
+		if mask then
+			love.graphics.setColorMask(unpack(mask))
+		end
 		love.graphics.setBlendMode("replace", "premultiplied")
 		
 		love.graphics.setShader(shader)
 		shader:send("tex", cube)
-		shader:send("strength", 0.01)
+		shader:send("strength",strength or  0.01)
 		
 		for level = 2, levels do
 			local res = cube:getWidth() / 2 ^ level * 2
@@ -412,16 +437,19 @@ if love.graphics.getSystemLimits().multicanvas >= 6 then
 		love.graphics.pop()
 	end
 else
-	function lib:blurCubeMap(cube, levels)
+	function lib:blurCubeMap(cube, levels, strength, mask)
 		local shader = self:getShader("blur_cube")
 		
 		love.graphics.push("all")
 		love.graphics.reset()
+		if mask then
+			love.graphics.setColorMask(unpack(mask))
+		end
 		love.graphics.setBlendMode("replace", "premultiplied")
 		
 		love.graphics.setShader(shader)
 		shader:send("tex", cube)
-		shader:send("strength", 0.01)
+		shader:send("strength", strength or 0.01)
 		
 		for level = 2, levels do
 			local res = cube:getWidth() / 2 ^ level * 2

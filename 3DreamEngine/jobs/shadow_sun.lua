@@ -48,7 +48,7 @@ function job:execute(light)
 			shadowCam.transform = lib:lookAt(shadowCam.pos + shadowCam.normal * (f * 0.5), shadowCam.pos, vec3(0.0, 1.0, 0.0))
 			shadowCam.dynamic = false
 			
-			--optimized orthopgraphic projected multiplied by the cameras view matrix
+			--orthopgraphic projected multiplied by the cameras view matrix
 			local a1 = 1 / r
 			local a6 = -a1
 			local a11 = -2 / (f - n)
@@ -66,9 +66,13 @@ function job:execute(light)
 			if not light.shadow.canvases[cascade] then
 				light.shadow.canvases[cascade] = lib:newShadowCanvas("sun", light.shadow.res, dynamic)
 			end
+			if not light.shadow.tempCanvas then
+				light.shadow.tempCanvas = lib:newShadowCanvas("sun", light.shadow.res, dynamic)
+			end
 		end
 		
 		local canvases = {light.shadow.canvases[cascade]}
+		local blurRes = light.shadow.res / light.size * 0.25 * lib.shadow_factor ^ (cascade-1)
 		
 		--render
 		if dynamic then
@@ -79,10 +83,13 @@ function job:execute(light)
 			if not shadowCam.dynamic then
 				lib:renderShadows(shadowCam, canvases, light.blacklist, true, cascade > 1)
 			end
+			
+			lib:blurCanvas(light.shadow.canvases[cascade], light.shadow.tempCanvas, blurRes, 2, {not shadowCam.dynamic, true, false, false})
 		elseif light.shadow.static then
 			if not shadowCam.dynamic then
 				--static and not done
 				lib:renderShadows(shadowCam, canvases, light.blacklist, false, shadowCam.dynamic and cascade > 1)
+				lib:blurCanvas(light.shadow.canvases[cascade], light.shadow.tempCanvas, blurRes, 1, {true, false, false, false})
 			end
 		else
 			--full slow render
