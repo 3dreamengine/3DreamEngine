@@ -1,13 +1,6 @@
 varying vec3 VertexPos;
-varying vec3 cloudsVec;
 varying vec3 starsVec;
 const float brightness = 1.5;
-
-extern vec3 sunColor;
-extern float cloudsBrightness;
-
-extern CubeImage clouds;
-extern mat3 cloudsTransform;
 
 extern CubeImage stars;
 extern float starsStrength;
@@ -45,10 +38,6 @@ void effect() {
 		}
 	}
 	
-	//clouds
-	float c = Texel(clouds, normalize(cloudsVec).xzy).r * cloudsBrightness;
-	col = mix(col, sunColor, c);
-	
 	love_Canvases[0] = vec4(col, 1.0);
 	love_Canvases[1] = vec4(65504.0, 0.0, 0.0, 1.0);
 }
@@ -59,7 +48,6 @@ extern highp mat4 transformProj;
 
 vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	VertexPos = vertex_position.xyz;
-	cloudsVec = cloudsTransform * vertex_position.xyz;
 	starsVec = starsTransform * vertex_position.xyz;
 	return transformProj * vec4(vertex_position.xyz, 1.0);
 }
