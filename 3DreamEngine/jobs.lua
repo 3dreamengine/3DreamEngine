@@ -5,23 +5,6 @@ jobs.lua - processes all kind of side tasks (shadows, blurring ambient lighting,
 
 local lib = _3DreamEngine
 
---cubemap projection
-do
-	local n = 0.01
-	local f = 1000.0
-	local fov = 90
-	local scale = math.tan(fov/2*math.pi/180)
-	local r = scale * n
-	local l = -r
-	
-	lib.cubeMapProjection = mat4(
-		2*n / (r-l),   0,              (r+l) / (r-l),     0,
-		0,             -2*n / (r - l),  (r+l) / (r-l),     0,
-		0,             0,              -(f+n) / (f-n),    -2*f*n / (f-n),
-		0,             0,              -1,                0
-	)
-end
-
 --load jobs
 lib.jobs = { }
 for d,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/jobs")) do
@@ -30,14 +13,12 @@ for d,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/jobs")) do
 end
 
 local times
-local operationsContinous
-local operationsQueue
+local operations
 
 --resets job handler
 function lib:initJobs()
 	times = { }
-	operationsContinous = { }
-	operationsQueue = { }
+	operations = { }
 	
 	--init jobs
 	for d,s in pairs(self.jobs) do
@@ -48,11 +29,8 @@ function lib:initJobs()
 end
 
 --enqueues a new operation
-function lib:addSingleOperation(...)
-	operationsQueue[#operationsQueue+1] = {...}
-end
 function lib:addOperation(...)
-	operationsContinous[#operationsContinous+1] = {...}
+	table.insert(operations, {...})
 end
 
 function lib:executeJobs()
@@ -64,7 +42,7 @@ function lib:executeJobs()
 	end
 	
 	--execute continous operations
-	for _,o in ipairs(operationsContinous) do
+	for _,o in ipairs(operations) do
 		self.delton:start(o[1])
 		
 		if type(o[1]) == "function" then
@@ -75,29 +53,5 @@ function lib:executeJobs()
 		
 		self.delton:stop()
 	end
-	operationsContinous = { }
-	
-	--execute operations
-	local slots = self.job_slots
-	while operationsQueue[1] do
-		local o = operationsQueue[1]
-		table.remove(operationsQueue, 1)
-		self.delton:start(o[1])
-		
-		--execute
-		local cost
-		if type(o[1]) == "function" then
-			cost = o[1](unpack(o, 2))
-		else
-			cost = self.jobs[o[1]]:execute(unpack(o, 2))
-		end
-		
-		self.delton:stop()
-		
-		--limit processing time
-		slots = slots - (cost or 1)
-		if slots <= 0 then
-			break
-		end
-	end
+	operations = { }
 end

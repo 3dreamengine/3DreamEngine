@@ -553,16 +553,6 @@ function lib:take3DScreenshot(pos, resolution, path)
 	return results
 end
 
---view normals
-lib.lookNormals = {
-	vec3(1, 0, 0),
-	vec3(-1, 0, 0),
-	vec3(0, -1, 0),
-	vec3(0, 1, 0),
-	vec3(0, 0, 1),
-	vec3(0, 0, -1),
-}
-
 function lib:HDRItoCubemap(hdri, resolution)
 	local shader = self:getShader("HDRItoCubemap")
 	local canvas = love.graphics.newCanvas(resolution * 6, resolution)
@@ -577,3 +567,28 @@ function lib:HDRItoCubemap(hdri, resolution)
 	
 	return canvas
 end
+
+--view normals
+lib.lookNormals = {
+	vec3(1, 0, 0),
+	vec3(-1, 0, 0),
+	vec3(0, -1, 0),
+	vec3(0, 1, 0),
+	vec3(0, 0, 1),
+	vec3(0, 0, -1),
+}
+
+--cubemap projection
+local n = 0.01
+local f = 1000.0
+local fov = 90
+local scale = math.tan(fov/2*math.pi/180)
+local r = scale * n
+local l = -r
+
+lib.cubeMapProjection = mat4(
+	2*n / (r-l),   0,              (r+l) / (r-l),     0,
+	0,             -2*n / (r - l),  (r+l) / (r-l),     0,
+	0,             0,              -(f+n) / (f-n),    -2*f*n / (f-n),
+	0,             0,              -1,                0
+)
