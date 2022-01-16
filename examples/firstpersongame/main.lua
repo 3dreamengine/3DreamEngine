@@ -4,8 +4,8 @@ love.window.setTitle("First Person Game")
 love.mouse.setRelativeMode(true)
 
 --settings
-local projectDir = "examples/firstpersongame/"
 dream:init()
+dream:setFogHeight(0.0, 150.0)
 
 --load extensions
 local sky = require("extensions/sky")
@@ -16,12 +16,10 @@ local sun = dream:newLight("sun", vec3(1, 1, 1), vec3(1, 1, 1), 5)
 sun:addShadow()
 
 --load all materials
-dream:loadMaterialLibrary(projectDir .. "materials")
+dream:loadMaterialLibrary("examples/firstpersongame/materials")
 
 --load object
-local scene = dream:loadObject(projectDir .. "objects/scene")
-
-dream:setFogHeight(0.0, 150.0)
+local scene = dream:loadObject("examples/firstpersongame/objects/scene")
 
 local player = {
 	x = 8,
@@ -40,11 +38,12 @@ dream.cam.rx = 0
 dream.cam.ry = 0
 
 local time = 0
-local timeAnimate = true
-local hideTooltips = false
-local rain = 0.45
-
+local rain = 0.0
 local isRaining = false
+local mist = 0.0
+local rainbow = 0.0
+local animateTime = true
+local hideTooltips = false
 
 function love.draw()
 	--update camera
@@ -68,7 +67,7 @@ function love.draw()
 	
 	if not hideTooltips then
 		love.graphics.setColor(1, 1, 1)
-		love.graphics.print("R to toggle rain (" .. tostring(isRaining) .. ")\nT to toggle daytime animation (" .. tostring(timeAnimate) .. ")\nU to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")", 10, 10)
+		love.graphics.print("R to toggle rain (" .. tostring(isRaining) .. ")\nT to toggle daytime animation (" .. tostring(animateTime) .. ")\nU to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")", 10, 10)
 	end
 end
 
@@ -89,13 +88,24 @@ function love.update(dt)
 	local speed = 10*dt
 	
 	--daytime
-	if timeAnimate then
+	if animateTime then
 		time = time + dt * 0.02
 	end
 	sky:setDaytime(sun, time, dream)
 	
 	--weather
-	--dream:updateWeather(rain, 1.0-rain, dt)
+	if isRaining then
+		rain = math.min(1, rain + dt * 0.25)
+		mist = math.min(1, mist + dt * 0.1)
+		rainbow = math.min(1, mist + dt * 0.1)
+	else
+		rain = math.max(0, rain - dt * 0.25)
+		mist = math.max(0, mist - dt * 0.05)
+		rainbow = math.max(0, mist - dt * 0.01)
+	end
+	sky:setSkyColor(rain)
+	sky:setRainbow(math.max(0, rainbow - rain))
+	dream:setFog(0.05 * mist, sky.skyColor, 1.0)
 	
 	--collision
 	local oldX = player.x
@@ -184,15 +194,11 @@ function love.keypressed(key)
 	end
 	
 	if key == "r" then
-		if rain > 0.5 then
-			rain = 0.25
-		else
-			rain = 0.9
-		end
+		isRaining = not isRaining
 	end
 	
 	if key == "t" then
-		timeAnimate = not timeAnimate
+		animateTime = not animateTime
 	end
 	
 	if key == "u" then

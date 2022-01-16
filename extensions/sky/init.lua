@@ -35,6 +35,21 @@ function sky:getClouds()
 	return self.clouds
 end
 
+function sky:setSkyColor(c)
+	if type(c) == "number" then
+		local color = c * 0.75
+		local darkBlue = vec3(30, 40, 60):normalize()
+		local lightBlue = vec3(0.6, 0.8, 1.0)
+		self.skyColor = darkBlue * 0.2 * color + lightBlue * (1.0 - color)
+	else
+		self.skyColor = c
+	end
+end
+function sky:getSkyColor()
+	return self.skyColor
+end
+
+
 --helper function to set 
 function sky:setDaytime(sun, time, dream)
 	local c = #self.sunlight
@@ -68,21 +83,6 @@ function sky:setDaytime(sun, time, dream)
 end
 function sky:getDaytime()
 	return self.sky_time, self.sky_day
-end
-
-function sky:setWeather(rain)
-	--make this more a demo function
-	self.weather_rain = rain
-	
-	--mist level
-	self.weather_mist = 1.0
-	
-	--set fog
-	--self:setFog(self.weather_mist * 0.005, self.sky_color, 1.0)
-	
-	--set rainbow
-	local strength = math.max(0.0, self.weather_mist * (1.0 - self.weather_rain * 2.0))
-	self:setRainbow(strength)
 end
 
 --rainbow
@@ -128,18 +128,13 @@ function sky.render(dream, transformProj, camTransform, transformScale)
 	self.shaders.sky:send("rainbowThickness", 1 / self.rainbow_thickness)
 	self.shaders.sky:send("rainbowDir", {self.rainbow_dir:unpack()})
 	
-	local color = self.weather_rain * 0.75
-	local darkBlue = vec3(30, 40, 60):normalize()
-	self.sky_color = darkBlue * 0.2 * color + vec3(0.6, 0.8, 1.0) * (1.0 - color)
-	love.graphics.setColor((self.sky_color or vec3(0, 0, 0)):unpack())
+	love.graphics.setColor(self.skyColor:unpack())
 	local mesh = dream.object_cube.meshes.Cube.mesh
 	mesh:setTexture(self.textures.sky)
 	love.graphics.draw(mesh)
 	
-	
 	local right = vec3(camTransform[1], camTransform[2], camTransform[3]):normalize()
 	local up = vec3(camTransform[5], camTransform[6], camTransform[7])
-	
 	
 	--moon
 	local size = 0.25
@@ -199,7 +194,7 @@ function sky.render(dream, transformProj, camTransform, transformScale)
 	end
 end
 
-sky:setWeather(0.5)
+sky:setSkyColor(0.0)
 sky:setRainbow(0.0)
 sky:setRainbowDir(vec3(1.0, -0.25, 1.0))
 

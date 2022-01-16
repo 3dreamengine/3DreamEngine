@@ -78,8 +78,8 @@ local function sendFogData(shader)
 	local color = vec3()
 	for _,light in ipairs(lib.lighting) do
 		if light.typ == "sun" then
-			direction = l.direction
-			color = l.color
+			direction = light.direction
+			color = light.color
 		end
 	end
 	
