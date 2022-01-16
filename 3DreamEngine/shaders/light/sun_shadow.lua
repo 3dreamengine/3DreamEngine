@@ -20,7 +20,7 @@ function sh:constructDefinesGlobal(dream)
 			float oy = float(fract(love_PixelCoord.y * 0.5) > 0.25) + ox;
 			if (oy > 1.1) oy = 0.0;
 			
-			float ss_texelSize = 1.0 / 512.0;
+			float ss_texelSize = 1.0 / 1024.0;
 			return (
 				sampleShadowSun22(tex, shadowUV + vec2(-1.5 + ox, 0.5 + oy) * ss_texelSize, depth, distanceFactor, dynamic) +
 				sampleShadowSun22(tex, shadowUV + vec2(0.5 + ox, 0.5 + oy) * ss_texelSize, depth, distanceFactor, dynamic) +
@@ -29,26 +29,26 @@ function sh:constructDefinesGlobal(dream)
 			) * 0.25;
 		}
 		
-		float sampleShadowSun(vec3 VertexPos, vec3 ss_pos, mat4 ss_proj_1, mat4 ss_proj_2, mat4 ss_proj_3, Image ss_tex_1, Image ss_tex_2, Image ss_tex_3, float ss_factor, float ss_shadowDistance, float ss_fade, float distanceFactor, bool dynamic) {
-			float dist = distance(VertexPos, ss_pos) * ss_shadowDistance;
+		float sampleShadowSun(vec3 VertexPos, vec3 pos, mat4 proj_1, mat4 proj_2, mat4 proj_3, Image tex_1, Image tex_2, Image tex_3, float factor, float shadowDistance, float fade, float distanceFactor, bool dynamic) {
+			float dist = distance(VertexPos, pos) * shadowDistance;
 			
-			float f2 = ss_factor * ss_factor;
-			float v1 = clamp((1.0 - dist) * ss_fade * f2, 0.0, 1.0);
-			float v2 = clamp((ss_factor - dist) * ss_fade * ss_factor, 0.0, 1.0) - v1;
-			float v3 = clamp((f2 - dist) * ss_fade, 0.0, 1.0) - v2 - v1;
+			float f2 = factor * factor;
+			float v1 = clamp((1.0 - dist) * fade * f2, 0.0, 1.0);
+			float v2 = clamp((factor - dist) * fade * factor, 0.0, 1.0) - v1;
+			float v3 = clamp((f2 - dist) * fade, 0.0, 1.0) - v2 - v1;
 			
 			float v = 1.0 - v1 - v2 - v3;
 			if (v1 > 0.0) {
-				vec3 uvs = (ss_proj_1 * vec4(VertexPos, 1.0)).xyz;
-				v += v1 * sampleShadowSun2(ss_tex_1, uvs.xy * 0.5 + 0.5, uvs.z, distanceFactor, dynamic);
+				vec3 uvs = (proj_1 * vec4(VertexPos, 1.0)).xyz;
+				v += v1 * sampleShadowSun2(tex_1, uvs.xy * 0.5 + 0.5, uvs.z, distanceFactor, dynamic);
 			}
 			if (v2 > 0.0) {
-				vec3 uvs = (ss_proj_2 * vec4(VertexPos, 1.0)).xyz;
-				v += v2 * sampleShadowSun2(ss_tex_2, uvs.xy * 0.5 + 0.5, uvs.z, distanceFactor, dynamic);
+				vec3 uvs = (proj_2 * vec4(VertexPos, 1.0)).xyz;
+				v += v2 * sampleShadowSun2(tex_2, uvs.xy * 0.5 + 0.5, uvs.z, distanceFactor, dynamic);
 			}
 			if (v3 > 0.0) {
-				vec3 uvs = (ss_proj_3 * vec4(VertexPos, 1.0)).xyz;
-				v += v3 * sampleShadowSun2(ss_tex_3, uvs.xy * 0.5 + 0.5, uvs.z, distanceFactor, dynamic);
+				vec3 uvs = (proj_3 * vec4(VertexPos, 1.0)).xyz;
+				v += v3 * sampleShadowSun2(tex_3, uvs.xy * 0.5 + 0.5, uvs.z, distanceFactor, dynamic);
 			}
 			return v;
 		}
@@ -58,7 +58,7 @@ end
 function sh:constructDefines(dream, ID)
 	return ([[
 		extern float ss_factor_#ID#;
-		extern float ss_shadowDistance_#ID#;
+		extern float ss_distance_#ID#;
 		extern float ss_fade_#ID#;
 		extern float ss_shadowDistanceFactor_#ID#;
 		extern bool ss_shadow_dynamic_#ID#;
@@ -88,7 +88,7 @@ end
 
 function sh:constructPixel(dream, ID)
 	return ([[
-		float shadow = sampleShadowSun(VertexPos, ss_pos_#ID#, ss_proj_1_#ID#, ss_proj_2_#ID#, ss_proj_3_#ID#, ss_tex_1_#ID#, ss_tex_2_#ID#, ss_tex_3_#ID#, ss_factor_#ID#, ss_shadowDistance_#ID#, ss_fade_#ID#, ss_shadowDistanceFactor_#ID#, ss_shadow_dynamic_#ID#);
+		float shadow = sampleShadowSun(VertexPos, ss_pos_#ID#, ss_proj_1_#ID#, ss_proj_2_#ID#, ss_proj_3_#ID#, ss_tex_1_#ID#, ss_tex_2_#ID#, ss_tex_3_#ID#, ss_factor_#ID#, ss_distance_#ID#, ss_fade_#ID#, ss_shadowDistanceFactor_#ID#, ss_shadow_dynamic_#ID#);
 		
 		if (shadow > 0.0) {
 			vec3 lightColor = ss_color_#ID# * shadow;
@@ -100,7 +100,7 @@ end
 
 function sh:constructPixelBasic(dream, ID)
 	return ([[
-		float shadow = sampleShadowSun(VertexPos, ss_pos_#ID#, ss_proj_1_#ID#, ss_proj_2_#ID#, ss_proj_3_#ID#, ss_tex_1_#ID#, ss_tex_2_#ID#, ss_tex_3_#ID#, ss_factor_#ID#, ss_shadowDistance_#ID#, ss_fade_#ID#, ss_shadowDistanceFactor_#ID#, ss_shadow_dynamic_#ID#);
+		float shadow = sampleShadowSun(VertexPos, ss_pos_#ID#, ss_proj_1_#ID#, ss_proj_2_#ID#, ss_proj_3_#ID#, ss_tex_1_#ID#, ss_tex_2_#ID#, ss_tex_3_#ID#, ss_factor_#ID#, ss_distance_#ID#, ss_fade_#ID#, ss_shadowDistanceFactor_#ID#, ss_shadow_dynamic_#ID#);
 		
 		light += ss_color_#ID# * shadow;
 	]]):gsub("#ID#", ID)
@@ -116,7 +116,7 @@ function sh:sendUniforms(dream, shaderObject, light, ID)
 	if light.shadow.canvases and light.shadow.canvases[3] then
 		shader:send("ss_factor_" .. ID, light.shadow.cascadeFactor)
 		shader:send("ss_fade_" .. ID, 4 / light.shadow.cascadeFactor / light.shadow.cascadeFactor)
-		shader:send("ss_shadowDistance_" .. ID, 2 / light.shadow.cascadeDistance)
+		shader:send("ss_distance_" .. ID, 2 / light.shadow.cascadeDistance)
 		
 		shader:send("ss_shadowDistanceFactor_" .. ID, (light.shadow.smoothStatic or light.shadow.smoothDynamic) and 1 / 40 or 1)
 		shader:send("ss_shadow_dynamic_" .. ID, not light.shadow.static)
