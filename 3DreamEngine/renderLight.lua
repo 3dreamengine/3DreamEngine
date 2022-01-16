@@ -26,7 +26,7 @@ function lib:getLightOverview(cam)
 		
 		if (types[typ] or 0) < self.max_lights then
 			types[typ] = (types[typ] or 0) + 1
-			lights[#lights+1] = s
+			table.insert(lights, s)
 			s.active = true
 		end
 	end

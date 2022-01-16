@@ -46,12 +46,10 @@ function lib:buildScene(typ, dynamic, alpha, cam, blacklist, frustumCheck, noSma
 			for _, materialGroup in ipairs(materialGroups) do
 				for _, task in pairs(materialGroup) do
 					local mesh = task:getMesh()
-					if (not blacklist or not blacklist[mesh]) and (not noSmallObjects or mesh.farVisibility ~= false) then
-						if mesh.mesh then
-							if not frustumCheck or not mesh.boundingBox.initialized or self:planeInFrustum(cam, task:getPos(), task:getSize(), mesh.rID) then
-								task:setShaderID(shaderID)
-								table.insert(scene, task)
-							end
+					if mesh.mesh and (not blacklist or not blacklist[mesh]) and (not noSmallObjects or mesh.farVisibility ~= false) then
+						if not frustumCheck or not mesh.boundingBox.initialized or self:planeInFrustum(cam, task:getPos(), task:getSize(), mesh.rID) then
+							task:setShaderID(shaderID)
+							table.insert(scene, task)
 						end
 					end
 				end
@@ -76,10 +74,19 @@ end
 
 --sends fog relevant data to the given shader
 local function sendFogData(shader)
+	local direction = vec3()
+	local color = vec3()
+	for _,light in ipairs(lib.lighting) do
+		if light.typ == "sun" then
+			direction = l.direction
+			color = l.color
+		end
+	end
+	
 	shader:send("fog_density", lib.fog_density)
 	shader:send("fog_color", lib.fog_color)
-	shader:send("fog_sun", lib.sun)
-	shader:send("fog_sunColor", lib.sun_color)
+	shader:send("fog_sun", direction)
+	shader:send("fog_sunColor", color)
 	shader:send("fog_scatter", lib.fog_scatter)
 	shader:send("fog_min", lib.fog_min)
 	shader:send("fog_max", lib.fog_max)
@@ -125,6 +132,7 @@ function lib:render(canvases, cam)
 	--clear depth
 	if canvases.mode ~= "direct" then
 		love.graphics.setCanvas({canvases.color, canvases.depth, depthstencil = canvases.depth_buffer})
+		
 		love.graphics.setDepthMode()
 		love.graphics.clear(false, false, true)
 	end
@@ -343,7 +351,7 @@ function lib:render(canvases, cam)
 				checkAndSendCached(shaderObject, "exposure", self.exposure)
 				checkAndSendCached(shaderObject, "ambient", self.sun_ambient)
 				
-				--light if using forward lighting
+				--light
 				self:sendLightUniforms(light, shaderObject)
 				
 				--fog
@@ -443,8 +451,26 @@ function lib:render(canvases, cam)
 end
 
 --only renders a depth variant
-function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
+function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects, shadowDistanceFactor)
 	self.delton:start("renderShadows")
+	
+	--love shader friendly
+	local viewPos = {cam.pos:unpack()}
+	
+	--update required acceleration data
+	local frustumCheck = self.frustumCheck and not cam.noFrustumCheck
+	if frustumCheck then
+		cam:updateFrustumPlanes()
+	end
+	
+	--get scene
+	local scene = self:buildScene("shadows", dynamic, false, cam, blacklist, frustumCheck, noSmallObjects)
+	
+	--current state
+	local shader
+	local shaderObject
+	local lastShader
+	local lastMaterial
 	
 	love.graphics.push("all")
 	love.graphics.reset()
@@ -460,24 +486,6 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 		love.graphics.setColorMask(true, false, false, false)
 	end
 	love.graphics.clear(255, 255, 255, 255)
-	
-	--love shader friendly
-	local viewPos = {cam.pos:unpack()}
-	
-	--update required acceleration data
-	local frustumCheck = self.frustumCheck and not cam.noFrustumCheck
-	if frustumCheck then
-		cam:updateFrustumPlanes()
-	end
-	
-	--current state
-	local shader
-	local shaderObject
-	local lastShader
-	local lastMaterial
-	
-	--get scene
-	local scene = self:buildScene("shadows", dynamic, false, cam, blacklist, frustumCheck, noSmallObjects)
 	
 	--start rendering
 	for d,task in ipairs(scene) do
@@ -500,6 +508,8 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects)
 			if hasUniform(shaderObject, "viewPos") then
 				shader:send("viewPos", viewPos)
 			end
+			
+			shader:send("shadowDistanceFactor", shadowDistanceFactor and 40 or 1)
 			
 			shaderObject.pixelShader:perShader(self, shaderObject)
 			shaderObject.vertexShader:perShader(self, shaderObject)

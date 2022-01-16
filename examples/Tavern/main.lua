@@ -48,7 +48,7 @@ local factor = texture_candle:getHeight() / texture_candle:getWidth()
 local quads = { }
 for y = 1, 5 do
 	for x = 1, 5 do
-		quads[#quads+1] = love.graphics.newQuad(x-1, (y-1)*factor, 1, factor, 5, 5*factor)
+		table.insert(quads, love.graphics.newQuad(x-1, (y-1)*factor, 1, factor, 5, 5*factor))
 	end
 end
 
@@ -63,10 +63,12 @@ local lights = { }
 for d,s in ipairs(tavern.positions) do
 	if s.name == "light" then
 		lights[d] = dream:newLight("point", s.x, s.y + 0.1, s.z, 1.0, 0.75, 0.3)
-		lights[d].shadow = dream:newShadow("point")
+		lights[d]:addShadow(true)
+		lights[d].shadow:setSmooth(true)
 	elseif s.name == "fire" then
 		lights[d] = dream:newLight("point", s.x, s.y + 0.1, s.z, 1.0, 0.75, 0.2)
-		lights[d].shadow = dream:newShadow("point")
+		lights[d]:addShadow(true)
+		lights[d].shadow:setSmooth(true)
 	end
 end
 
@@ -99,7 +101,7 @@ function love.draw()
 	end
 	
 	--update lights
-	dream:resetLight(true)
+	dream:resetLight()
 	
 	--make the particles black so it only emits light
 	love.graphics.setColor(0, 0, 0, 1)
@@ -128,9 +130,7 @@ function love.draw()
 	if not hideTooltips then
 		love.graphics.setColor(1, 1, 1)
 		love.graphics.print(table.concat({
-			--"R to toggle rain (" .. tostring(dream:isShaderModuleActive("rain")) .. ")",
 			"U to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")",
-			"B to toggle smooth light (" .. tostring(dream.shadow_smooth) .. ")",
 			"F to toggle fog (" .. tostring(dream.fog_enabled) .. ")",
 			"L to toggle looking at check (" .. tostring(lookingAtCheck) .. ")",
 			"K to toggle relative mode (" .. tostring(rotateCamera) .. ")",
@@ -254,18 +254,9 @@ function love.keypressed(key)
 		hideTooltips = not hideTooltips
 	end
 	
-	if key == "r" then
-		
-	end
-	
 	if key == "u" then
 		local enabled = dream:getAutoExposure()
 		dream:setAutoExposure(not enabled)
-		dream:init()
-	end
-	
-	if key == "b" then
-		dream.shadow_smooth = not dream.shadow_smooth
 		dream:init()
 	end
 	
@@ -283,11 +274,6 @@ function love.keypressed(key)
 	
 	if key == "1" then
 		dream.renderSet:setRefractions(not dream.renderSet:getRefractions())
-		dream:init()
-	end
-	
-	if key == "2" then
-		local cullMode = dream:getAlphaCullMode()
 		dream:init()
 	end
 	

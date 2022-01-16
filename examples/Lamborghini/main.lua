@@ -1,7 +1,6 @@
 --load the matrix and the 3D lib
 local dream = require("3DreamEngine")
 love.window.setTitle("Lamborghini Example")
-love.graphics.setBackgroundColor(0.8, 0.8, 0.8)
 
 --settings
 local projectDir = "examples/Lamborghini/"
@@ -12,22 +11,22 @@ dream.cam.fov = 70
 
 dream:init()
 
+--objects
 local car = dream:loadObject(projectDir .. "Lamborghini Aventador")
-
 local socket = dream:loadObject(projectDir .. "socket")
 
+--sun object
+local sun = dream:newLight("sun")
+sun:addShadow()
+sun:setDirection(-1, 1, 1)
+
 function love.draw()
-	dream:update()
-	
-	dream.sun = vec3(-1.0, 1.0, 1.0)
-	dream.sun_color = vec3(1, 1, 1)
-	
 	dream:resetLight()
+	dream:addLight(sun)
 	
 	dream:prepare()
 	
 	--draw the car
-	love.graphics.setColor(1, 1, 1)
 	car:reset()
 	car:scale(0.1)
 	car:rotateY(love.mouse.isDown(1) and (-2.25-(love.mouse.getX()/love.graphics.getWidth()-0.5)*4.0) or love.timer.getTime()*0.5)
@@ -37,8 +36,12 @@ function love.draw()
 	--draw the socket
 	dream:draw(socket, 0, -1, -4.5, 4, 0.25, 4)
 	
-	--render without sky
+	--render
 	dream:present()
+end
+
+function love.update(dt)
+	dream:update()
 end
 
 function love.keypressed(key)

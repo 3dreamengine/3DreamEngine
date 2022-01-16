@@ -177,188 +177,7 @@ function lib:getFogHeight()
 	return self.fog_min, self.fog_max
 end
 
-
---rainbow
-function lib:setRainbow(strength, size, thickness)
-	check(strength, "number")
-	self.rainbow_strength = strength
-	self.rainbow_size = size or self.rainbow_size or math.cos(42 / 180 * math.pi)
-	self.rainbow_thickness = thickness or self.rainbow_thickness or 0.2
-end
-function lib:getRainbow()
-	return self.rainbow_strength, self.rainbow_size, self.rainbow_thickness
-end
-
-function lib:setRainbowDir(v)
-	self.rainbow_dir = v:normalize()
-end
-function lib:getRainbowDir()
-	return self.rainbow_dir:unpack()
-end
-
-
---default shadow resolution
-function lib:setShadowResolution(sun, point)
-	check(sun, "number", 1)
-	check(point, "number", 2)
-	
-	self.shadow_resolution = sun
-	self.shadow_cube_resolution = point
-end
-function lib:getShadowResolution()
-	return self.shadow_resolution, self.shadow_cube_resolution
-end
-
-
---default shadow smoothing mode
-function lib:setShadowSmoothing(enabled)
-	check(enabled, "boolean")
-	self.shadow_smooth = enabled
-end
-function lib:getShadowSmoothing()
-	return self.shadow_smooth
-end
-
-
---sun shadow cascade
-function lib:setShadowCascade(distance, factor)
-	check(distance, "number", 1)
-	check(factor, "number", 2)
-	
-	self.shadow_distance = distance
-	self.shadow_factor = factor
-end
-function lib:getShadowCascade()
-	return self.shadow_distance, self.shadow_factor
-end
-
-
---set sun shadow
-function lib:setSunShadow(e)
-	check(e, "boolean")
-	self.sun_shadow = e
-end
-function lib:getSunShadow(o)
-	return self.sun_shadow
-end
-
-
---set sun offset
-function lib:setSunDir(v)
-	self.sun = v:normalize()
-end
-function lib:getSunDir()
-	return self.sun
-end
-
-
---set sun offset
-function lib:setSunOffset(o, r)
-	check(o, "number", 1)
-	check(r, "number", 2)
-	self.sun_offset = o
-	self.sun_rotation = r
-end
-function lib:getSunOffset()
-	return self.sun_offset, self.rotation
-end
-
-
---day time
-function lib:setDaytime(time)
-	check(time, "number")
-	
-	local c = #self.sunlight
-	
-	--time, 0.0 is sunrise, 0.5 is sunset
-	self.sky_time = time % 1.0
-	self.sky_day = time % c
-	
-	--position
-	self.sun = mat4:getRotateY(self.sun_rotation) * mat4:getRotateZ(self.sun_offset) * vec3(
-		0,
-		math.sin(self.sky_time * math.pi * 2),
-		-math.cos(self.sky_time * math.pi * 2)
-	):normalize()
-	
-	--current sample
-	local p = self.sky_time * c
-	
-	--direct sun color
-	self.sun_color = (
-		self.sunlight[math.max(1, math.min(c, math.ceil(p)))] * (1.0 - p % 1) +
-		self.sunlight[math.max(1, math.min(c, math.ceil(p+1)))] * (p % 1)
-	)
-	
-	--sky color
-	self.sun_ambient = (
-		self.skylight[math.max(1, math.min(c, math.ceil(p)))] * (1.0 - p % 1) +
-		self.skylight[math.max(1, math.min(c, math.ceil(p+1)))] * (p % 1)
-	)
-end
-function lib:getDaytime()
-	return self.sky_time, self.sky_day
-end
-
-
---sets the rain value and temparature
-function lib:setWeather(rain, temp, raining)
-	if rain then
-		temp = temp or (1.0 - rain)
-		self.weather_rain = rain
-		self.weather_temperature = temp
-	end
-	
-	--blue-darken ambient and sun color
-	local color = self.weather_rain * 0.75
-	local darkBlue = vec3(30, 40, 60):normalize() * self.sun_color:length()
-	self.sun_color = darkBlue * 0.2 * color + self.sun_color * (1.0 - color)
-	self.sun_ambient = darkBlue * 0.1 * color + self.sun_ambient * (1.0 - color)
-	self.sky_color = darkBlue * 0.2 * color + vec3(0.6, 0.8, 1.0) * (1.0 - color)
-	
-	--set module settings
-	if raining == nil then
-		raining = self.weather_rain > 0.5
-	end
-	self.weather_rainStrength = raining and (self.weather_rain-0.5) / 0.5 or 0.0
-	
---	self.isRaining = raining
---	self.strength = math.ceil(math.clamp(self.weather_rainStrength * 5.0, 0.001, 5.0))
-end
-function lib:getWeather()
-	return self.weather_rain, self.weather_temperature--, self:getShaderModule("rain").isRaining
-end
-
-
---updates weather slowly
-function lib:updateWeather(rain, temp, dt)
-	if rain > self.weather_rain then
-		self.weather_rain = math.min(rain, self.weather_rain + dt * dt)
-	else
-		self.weather_rain = math.max(rain, self.weather_rain - dt * dt)
-	end
-	
-	if temp > self.weather_temperature then
-		self.weather_temperature = math.min(temp, self.weather_temperature + dt * dt)
-	else
-		self.weather_temperature = math.max(temp, self.weather_temperature - dt * dt)
-	end
-	
-	self:setWeather()
-	
-	--mist level
-	self.weather_mist = math.clamp((self.weather_mist or 0) + (self.weather_rainStrength > 0 and self.weather_rainStrength or -0.1) * dt * 0.1, 0.0, 1.0)
-	
-	--set fog
-	self:setFog(self.weather_mist * 0.005, self.sky_color, 1.0)
-	
-	--set rainbow
-	local strength = math.max(0.0, self.weather_mist * (1.0 - self.weather_rain * 2.0))
-	self:setRainbow(strength)
-end
-
-
---sets the reflection type used to reflections
+--sets the reflection type used for reflections
 function lib:setReflection(tex)
 	if tex == true then
 		--use sky
@@ -366,7 +185,8 @@ function lib:setReflection(tex)
 	elseif tex == false then
 		--use ambient
 		self.sky_reflection = false
-	elseif type(tex) == "table" then
+	elseif type(tex) == "table" and tex.class == "reflection" then
+		--reflection object
 		self.sky_reflection = tex
 	elseif type(tex) == "userdata" and tex:getTextureType() == "cube" then
 		--cubemap, wrap in reflection object
@@ -374,6 +194,8 @@ function lib:setReflection(tex)
 	elseif type(tex) == "userdata" and tex:getTextureType() == "2d" then
 		--HDRI
 		error("HDRI not supported, please convert to cubemap first")
+	else
+		error("Unknown reflection")
 	end
 end
 function lib:getReflection(tex)
@@ -392,110 +214,31 @@ end
 
 
 --sets the sky HDRI, cubemap or just sky dome
-function lib:setSky(tex, exposure)
-	if tex == true then
-		--use sky
-		self.sky_texture = true
-	elseif tex == false then
+function lib:setSky(sky, exposure)
+	if type(sky) == "table" then
+		--use constant color
+		self.sky_texture = sky
+	elseif not sky then
 		--disable sky
 		self.sky_texture = false
-	elseif type(tex) == "userdata" and tex:getTextureType() == "cube" then
+	elseif type(sky) == "userdata" and sky:getTextureType() == "cube" then
 		--cubemap
-		self.sky_texture = tex
+		self.sky_texture = sky
 		
 		--also sets reflections
-		self:setReflection(tex)
-	elseif type(tex) == "userdata" and tex:getTextureType() == "2d" then
+		self:setReflection(sky)
+	elseif type(sky) == "userdata" and sky:getTextureType() == "2d" then
 		--HDRI
-		self.sky_texture = tex
+		self.sky_texture = sky
+		self.sky_hdri_exposure = exposure or 1.0
+	elseif type(sky) == "function" then
+		self.sky_texture = sky
+	else
+		error("Unknown sky")
 	end
-	self.sky_hdri_exposure = exposure or 1.0
 end
 function lib:getSky(tex)
 	return self.sky_texture, self.sky_hdri_exposure
-end
-
-
---sets cloud texture
-function lib:setCloudsTexture(tex)
-	self.textures.clouds = tex or love.graphics.newImage(self.root .. "/res/clouds.png")
-end
-function lib:getCloudsTexture(tex)
-	return self.textures.clouds
-end
-
-
---sets clouds and settings
-function lib:setClouds(enabled, resolution, scale, amount, rotations)
-	if enabled then
-		self.clouds_enabled = true
-		self.clouds_resolution = resolution or 1024
-		self.clouds_scale = scale or 2.0
-		self.clouds_amount = amount or 32
-		self.clouds_rotations = rotations == nil or rotations
-	else
-		self.clouds_enabled = false
-	end
-end
-function lib:getClouds()
-	return self.clouds_enabled, self.clouds_resolution, self.clouds_scale
-end
-
-
---sets clouds and settings
-function lib:setUpperClouds(enabled, density, rotation)
-	if enabled then
-		self.clouds_upper_enabled = true
-		self.clouds_upper_density = density or 0.5
-		self.clouds_upper_rotation = rotation or 0.01
-	else
-		self.clouds_upper_enabled = false
-		self.clouds_upper_density = density or 0.0
-		self.clouds_upper_rotation = rotation or 0.01
-	end
-end
-function lib:getUpperClouds()
-	return self.clouds_upper_enabled, self.clouds_upper_density, self.clouds_upper_rotation
-end
-
-
---sets strength of wind, affecting the clouds
-function lib:setWind(x, y)
-	assert(x, "number", 1)
-	assert(y, "number", 2)
-	self.clouds_wind = vec2(x, y)
-	self.clouds_pos = self.clouds_pos or vec2(0.0, 0.0)
-end
-function lib:getWind()
-	return self.clouds_wind.x, self.clouds_wind.y
-end
-
-
---sets a few cloud animation parameters
-function lib:setCloudsAnim(size, position)
-	assert(size, "number", 1)
-	assert(position, "number", 2)
-	
-	self.clouds_anim_size = size
-	self.clouds_anim_position = position
-end
-function lib:getCloudsAnim()
-	return self.clouds_anim_size, self.clouds_anim_position
-end
-
-
---sets the stretch of the clouds caused by wind
-function lib:setCloudsStretch(stretch, stretch_wind, angle)
-	check(stretch, "number", 1)
-	check(stretch_wind, "number", 2)
-	check(angle, "number", 3)
-	
-	self.clouds_stretch = stretch
-	self.clouds_stretch_wind = stretch_wind
-	self.clouds_angle = angle
-end
-function lib:getCloudsStretch()
-	return self.clouds_stretch, self.clouds_angle
 end
 
 

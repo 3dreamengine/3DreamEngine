@@ -80,10 +80,6 @@ for d,s in pairs(love.filesystem.getDirectoryItems((...) .. "/loader")) do
 	lib.loader[s:sub(1, #s-4)] = require((...) .. "/loader/" .. s:sub(1, #s-4))
 end
 
---get color of sun based on sunrise sky texture
-lib.sunlight = require(lib.root .. "/res/sunlight")
-lib.skylight = require(lib.root .. "/res/skylight")
-
 --supported canvas formats
 lib.canvasFormats = love.graphics and love.graphics.getCanvasFormats() or { }
 
@@ -96,7 +92,6 @@ lib:setAO(32, 0.75, false)
 lib:setBloom(-1)
 lib:setFog()
 lib:setFogHeight()
-lib:setDaytime(0.3)
 lib:setGamma(false)
 lib:setExposure(1.0)
 lib:setMaxLights(16)
@@ -106,11 +101,6 @@ lib:setLODDistance(20)
 lib:setGodrays(16, false)
 lib:setDistortionMargin(true)
 
---shadows
-lib:setShadowResolution(1024, 512)
-lib:setShadowSmoothing(false) --remove smooth shading from the shaders and put those 3 funcs into the light. Dynamic shadowing is too important, there is no reason to disable.
-lib:setShadowCascade(8, 4)
-
 --loader settings
 lib:setResourceLoader(true, true)
 lib:setJobHandlerSlots(1)
@@ -118,26 +108,10 @@ lib:setSmoothLoading(1 / 1000)
 lib:setSmoothLoadingBufferSize(128)
 lib:setMipmaps(true)
 
---sun
-lib:setSunOffset(0.0, 0,0)
-lib:setSunShadow(true)
-
---weather
-lib:setWeather(0.5)
-lib:setRainbow(0.0)
-lib:setRainbowDir(vec3(1.0, -0.25, 1.0))
-
 --sky
 lib:setReflection(true)
-lib:setSky(true)
+lib:setSky({0.5, 0.5, 0.5})
 lib:setSkyReflectionFormat(256, "rgba16f", 4)
-
---clouds
-lib:setClouds(true)
-lib:setWind(0.005, 0.0)
-lib:setCloudsStretch(0, 20, 0)
-lib:setCloudsAnim(0.01, 0.25)
-lib:setUpperClouds(true)
 
 --auto exposure
 lib:setAutoExposure(false)
@@ -171,6 +145,9 @@ lib:registerMeshFormat("textured", require(lib.root .. "/meshFormats/textured"))
 lib:registerMeshFormat("simple", require(lib.root .. "/meshFormats/simple"))
 lib:registerMeshFormat("material", require(lib.root .. "/meshFormats/material"))
 
+--some functions require temporary canvases
+lib.canvasCache = { }
+
 --default objects
 lib.object_sky = lib:loadObject(lib.root .. "/objects/sky")
 lib.object_cube = lib:loadObject(lib.root .. "/objects/cube")
@@ -198,29 +175,6 @@ function lib.initTextures:PBR()
 	if not self.PBR_done then
 		self.PBR_done = true
 		lib.textures.brdfLUT = love.graphics.newImage(lib.root .. "/res/brdfLut.png")
-	end
-end
-
---some functions require temporary canvases
-lib.canvasCache = { }
-
-function lib.initTextures:sky()
-	if not self.sky_done then
-		self.sky_done = true
-		
-		lib.textures.sky = love.graphics.newImage(lib.root .. "/res/sky.png")
-		lib.textures.moon = love.graphics.newImage(lib.root .. "/res/moon.png")
-		lib.textures.moon_normal = love.graphics.newImage(lib.root .. "/res/moon_normal.png")
-		lib.textures.sun = love.graphics.newImage(lib.root .. "/res/sun.png")
-		lib.textures.rainbow = love.graphics.newImage(lib.root .. "/res/rainbow.png")
-		
-		lib.textures.clouds = lib.textures.clouds or love.graphics.newImage(lib.root .. "/res/clouds.png")
-		lib.textures.clouds_base = love.graphics.newImage(lib.root .. "/res/clouds_base.png")
-		lib.textures.clouds_base:setWrap("repeat")
-		lib.textures.clouds_top = love.graphics.newCubeImage(lib.root .. "/res/clouds_top.png")
-		lib.textures.stars = love.graphics.newCubeImage(lib.root .. "/res/stars.png")
-		
-		lib.textures.clouds:setFilter("nearest")
 	end
 end
 
@@ -290,7 +244,10 @@ function lib:unloadCanvasSet(set)
 end
 
 --load canvases
-function lib.resize(self, w, h)
+function lib:resize(w, h)
+	w = w or love.graphics.getWidth()
+	h = h or love.graphics.getHeight()
+	
 	--fully unload previous sets
 	self:unloadCanvasSet(self.canvases)
 	self:unloadCanvasSet(self.canvases_reflections)
@@ -302,7 +259,7 @@ function lib.resize(self, w, h)
 end
 
 --applies settings and load canvases
-function lib.init(self, w, h)
+function lib:init(w, h)
 	if self.renderSet.mode == "direct" then
 		local width, height, flags = love.window.getMode()
 		if flags.depth == 0 then
@@ -316,7 +273,7 @@ function lib.init(self, w, h)
 		self:setAutoExposure(false)
 	end
 	
-	self:resize(w or love.graphics.getWidth(), h or love.graphics.getHeight())
+	self:resize(w, h)
 	
 	self.canvasCache = { }
 	
@@ -325,14 +282,6 @@ function lib.init(self, w, h)
 	
 	--reset lighting
 	self.lighting = { }
-	
-	--create sun shadow if requested
-	self.sunObject = lib:newLight("sun", 1, 1, 1, 1, 1, 1, 5)
-	if self.sun_shadow then
-		self.sunObject.shadow = lib:newShadow("sun")
-	else
-		self.sunObject.shadow = nil
-	end
 	
 	--sky box
 	if self.sky_reflection == true then

@@ -17,9 +17,9 @@ local scene = dream:loadScene(projectDir .. "scene")
 
 --light
 local p = scene.objects.light.positions[1]
-local light = dream:newLight("point", p.x, p.y, p.z, 1.4, 1.2, 1.0, 20.0)
+local light = dream:newLight("point", p.x, p.y, p.z, 1.4, 1.2, 1.0, 40.0)
 light:addShadow(true)
-light:setSmoothing(true)
+light.shadow:setSmooth(true)
 light.blacklist = {[scene.objects.chandelier_glass.meshes.chandelier_glass] = true, [scene.objects.chandelier.meshes.chandelier] = true}
 
 --custom position and rotation
@@ -40,8 +40,7 @@ function love.draw()
 	dream.cam:rotateY(dream.cam.ry)
 	dream.cam:rotateX(dream.cam.rx)
 	
-	--light (no daylight) with two custom light sources
-	dream:resetLight(true)
+	dream:resetLight()
 	dream:addLight(light)
 	
 	dream:prepare()

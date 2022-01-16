@@ -32,13 +32,18 @@ end
 
 -- TABLE --
 --merge two tables into the first
-function utils.table.merge(first, second)
+function utils.table.merge(first, second, cycles)
+	cycles = cycles or { }
+	if cycles[first] then
+		return first
+	end
+	cycles[first] = true
 	for k,v in pairs(second) do
 		if type(v) == "table" then
-			if not first[k] then
-				first[k] = v
+			if type(first[k]) == type(v) then
+				utils.table.merge(first[k], v, cycles)
 			else
-				utils.table.merge(first[k], v)
+				first[k] = v
 			end
 		else
 			first[k] = v
@@ -92,6 +97,32 @@ function utils.table.deepCopy(value, cycles)
             end
 			local meta = utils.table.deepCopy(getmetatable(value), cycles)
             return setmetatable(copy, meta)
+        end
+    else
+        return value
+    end
+end
+
+--copies a table, ignores complex objects
+local valid = {
+	number = true,
+	string = true,
+	boolean = true,
+}
+function utils.table.primitiveCopy(value, cycles)
+    cycles = cycles or { }
+    if type(value) == "table" then
+        if cycles[value] then
+            return cycles[value]
+        else
+            local copy = { }
+            cycles[value] = copy
+            for k, v in next, value do
+				if valid[type(k)] and (valid[type(v)] or type(v) == "table") then
+					copy[k] = utils.table.primitiveCopy(v, cycles)
+				end
+            end
+            return copy
         end
     else
         return value

@@ -116,7 +116,7 @@ return function(self, obj, path)
 		elseif chunk == "XYZI" then
 			local count = parseInt(i+12)
 			for c = 1, count do
-				local x = string.byte(file:sub(i+16+(c-1)*4+1, i+16+(c-1)*4+1)) --todo
+				local x = string.byte(file:sub(i+16+(c-1)*4+1, i+16+(c-1)*4+1))
 				local y = string.byte(file:sub(i+16+(c-1)*4+2, i+16+(c-1)*4+2))
 				local z = string.byte(file:sub(i+16+(c-1)*4+3, i+16+(c-1)*4+3))
 				local i = string.byte(file:sub(i+16+(c-1)*4+4, i+16+(c-1)*4+4))

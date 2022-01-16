@@ -7,18 +7,10 @@ local lib = _3DreamEngine
 
 function lib:resetLight(noDayLight)
 	self.lighting = { }
-	
-	if not noDayLight then
-		self.sunObject.pos = self.cam.pos
-		self.sunObject.direction = self.sun:normalize()
-		self.sunObject.color = self.sun_color
-		
-		self:addLight(self.sunObject)
-	end
 end
 
 function lib:addLight(light)
-	self.lighting[#self.lighting+1] = light
+	table.insert(self.lighting, light)
 end
 
 function lib:addNewLight(...)
@@ -342,7 +334,7 @@ function lib:newBoundaryBox(initialized)
 	}
 end
 
-function lib:blurCanvas(canvas, resolution, iterations, mask)
+function lib:blurCanvas(canvas, strength, iterations, mask)
 	local temp = self:getTemporaryCanvas(canvas)
 	local sh = lib:getShader("blur")
 	love.graphics.push("all")
@@ -354,11 +346,11 @@ function lib:blurCanvas(canvas, resolution, iterations, mask)
 	love.graphics.setShader(sh)
 	
 	for i = iterations, 1, -1 do
-		sh:send("dir", {2^i / resolution, 0})
+		sh:send("dir", {2^(i-1) / canvas:getWidth() * strength, 0})
 		love.graphics.setCanvas(temp)
 		love.graphics.draw(canvas)
 		
-		sh:send("dir", {0, 2^i / resolution})
+		sh:send("dir", {0, 2^(i-1) / canvas:getHeight() * strength})
 		love.graphics.setCanvas(canvas)
 		love.graphics.draw(temp)
 	end
@@ -570,3 +562,18 @@ lib.lookNormals = {
 	vec3(0, 0, 1),
 	vec3(0, 0, -1),
 }
+
+function lib:HDRItoCubemap(hdri, resolution)
+	local shader = self:getShader("HDRItoCubemap")
+	local canvas = love.graphics.newCanvas(resolution * 6, resolution)
+	
+	hdri:setWrap("repeat", "mirroredrepeat")
+	
+	love.graphics.push("all")
+	love.graphics.setShader(shader)
+	love.graphics.setCanvas(canvas)
+	love.graphics.draw(hdri, 0, 0, 0, canvas:getWidth() / hdri:getWidth(), canvas:getHeight() / hdri:getHeight())
+	love.graphics.pop()
+	
+	return canvas
+end

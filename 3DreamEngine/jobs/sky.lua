@@ -6,10 +6,10 @@ function job:init()
 end
 
 function job:queue()
-	--re render sky cube
+	--re-render sky cube
 	if lib.sky_reflection == true then
 		--request rerender
-		if type(lib.sky_texture) == "boolean" or self.lastImage ~= tostring(lib.sky_texture) then
+		if type(lib.sky_texture) == "function" or self.lastImage ~= tostring(lib.sky_texture) then
 			lib:addOperation("sky")
 			lib:addOperation("cubemap", lib.sky_reflectionCanvas,  lib.reflections_levels)
 		end

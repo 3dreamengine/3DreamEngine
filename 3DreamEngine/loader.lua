@@ -168,32 +168,32 @@ function lib:loadObject(path, args)
 	
 	--restructure into tree, the root node contains no data
 	if obj.args.scene then
-		for id,m in pairs(obj.meshes) do
-			if not m.tags.link and not m.tags.reflection then
-				local o = obj.objects[m.name]
+		for id,mesh in pairs(obj.meshes) do
+			if not mesh.tags.link and not mesh.tags.reflection then
+				local o = obj.objects[mesh.name]
 				if not o then
 					o = self:newObject(obj.path)
-					o.name = m.name
+					o.name = mesh.name
 					o.args = obj.args
-					o.transform = m.transform
-					m.transform = nil
-					obj.objects[m.name] = o
+					o.transform = mesh.transform
+					mesh.transform = nil
+					obj.objects[mesh.name] = o
 				else
 					--make sure to transform accordingly
 					local difference = 0
-					for i = 1, 16 do
-						difference = difference + math.abs(m.transform[i] - o.transform[i])
+					if mesh.transform then
+						for i = 1, 16 do
+							difference = difference + math.abs(mesh.transform[i] - o.transform[i])
+						end
 					end
 					if difference > 10^-10 then
-						local transform = o.transform:invert() * m.transform
-						print(string.format("Warning: two meshes (%s and %s) within the same object (%s) have different transforms!", id, next(o.meshes), m.name))
+						print(string.format("Warning: two meshes (%s and %s) within the same object (%s) have different transforms!", id, next(o.meshes), mesh.name))
 					end
-					
-					m.transform = nil
+					mesh.transform = nil
 				end
 				
 				obj.meshes[id] = nil
-				o.meshes[id] = m
+				o.meshes[id] = mesh
 			end
 		end
 		

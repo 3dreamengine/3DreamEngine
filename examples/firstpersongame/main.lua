@@ -7,6 +7,14 @@ love.mouse.setRelativeMode(true)
 local projectDir = "examples/firstpersongame/"
 dream:init()
 
+--load extensions
+local sky = require("extensions/sky")
+dream:setSky(sky.render)
+
+--sun
+local sun = dream:newLight("sun", vec3(1, 1, 1), vec3(1, 1, 1), 5)
+sun:addShadow()
+
 --load all materials
 dream:loadMaterialLibrary(projectDir .. "materials")
 
@@ -47,6 +55,7 @@ function love.draw()
 	
 	--update light
 	dream:resetLight()
+	dream:addLight(sun)
 	if love.mouse.isDown(1) then
 		dream:addNewLight("point", player.x + dream.cam.normal.x, player.y + dream.cam.normal.y, player.z + dream.cam.normal.z, 1.0, 0.75, 0.1, 5.0 + love.math.noise(love.timer.getTime()*2))
 	end
@@ -83,10 +92,10 @@ function love.update(dt)
 	if timeAnimate then
 		time = time + dt * 0.02
 	end
-	dream:setDaytime(time)
+	sky:setDaytime(sun, time, dream)
 	
 	--weather
-	dream:updateWeather(rain, 1.0-rain, dt)
+	--dream:updateWeather(rain, 1.0-rain, dt)
 	
 	--collision
 	local oldX = player.x

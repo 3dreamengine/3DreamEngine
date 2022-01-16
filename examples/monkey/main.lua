@@ -1,18 +1,22 @@
+--window title
+love.window.setTitle("Monkey Example")
+
 --load the 3D lib
 local dream = require("3DreamEngine")
-love.window.setTitle("Monkey Example")
-local projectDir = "examples/monkey/"
 
 --initialize engine
 dream:init()
 
 --load our object
-local monkey = dream:loadObject(projectDir .. "object")
+local monkey = dream:loadObject("examples/monkey/object")
 
-love.graphics.setBackgroundColor(128/255, 218/255, 235/255)
+--make a sun
+local sun = dream:newLight("sun", vec3(1, 1, 1), vec3(1, 1, 1), 5.0)
 
 function love.draw()
+	--setup light
 	dream:resetLight()
+	dream:addLight(sun)
 	
 	--prepare scene
 	dream:prepare()

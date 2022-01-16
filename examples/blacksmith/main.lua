@@ -22,7 +22,7 @@ local factor = texture_candle:getHeight() / texture_candle:getWidth()
 local quads = { }
 for y = 1, 5 do
 	for x = 1, 5 do
-		quads[#quads+1] = love.graphics.newQuad(x-1, (y-1)*factor, 1, factor, 5, 5*factor)
+		table.insert(quads, love.graphics.newQuad(x-1, (y-1)*factor, 1, factor, 5, 5*factor))
 	end
 end
 
@@ -50,7 +50,8 @@ dream.cam.ry = 0
 local lights = { }
 for i = 1, 3 do
 	lights[i] = dream:newLight("point", 0, 0, 0, 1.0, 0.75, 0.5)
-	lights[i].shadow = dream:newShadow("point")
+	lights[i]:addShadow(true)
+	lights[i].shadow:setSmooth(true)
 end
 
 local hideTooltips = false
@@ -63,7 +64,7 @@ function love.draw()
 	dream.cam:rotateX(dream.cam.rx)
 	
 	--update lights
-	dream:resetLight(true)
+	dream:resetLight()
 	
 	--torches, lights and particles
 	for d,s in ipairs({
@@ -106,7 +107,7 @@ function love.draw()
 	
 	if not hideTooltips then
 		love.graphics.setColor(1, 1, 1)
-		love.graphics.print("U to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")", 10, 10)
+		love.graphics.print("U to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")\nB to toggle smooth shadows", 10, 10)
 	end
 end
 
@@ -191,6 +192,12 @@ function love.keypressed(key)
 		local enabled = dream:getAutoExposure()
 		dream:setAutoExposure(not enabled)
 		dream:init()
+	end
+	
+	if key == "b" then
+		for d,s in pairs(lights) do
+			s.shadow:setSmooth(not s.shadow.smoothDynamic)
+		end
 	end
 	
 	if key == "f3" then

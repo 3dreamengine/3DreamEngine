@@ -21,9 +21,9 @@ function lib:newLight(typ, pos, color, brightness, old, ...)
 		pos = pos or vec3(0, 0, 0),
 		size = 0.1,
 		color = color and color:normalize() or vec3(1, 1, 1),
-		direction = vec3(0, -1, 0),
-		smooth = nil,
+		direction = vec3(1, 1, 1),
 		brightness = brightness or 1.0,
+		
 		godray = nil,
 		godrayLength = typ == "sun" and 0.15 or 0.05,
 		godraySize = typ == "sun" and 0.1 or 0.035,
@@ -94,14 +94,6 @@ function class:addShadow(static, res)
 	else
 		self.shadow = lib:newShadow(self.typ, static or false, res)
 	end
-end
-
-function class:setSmoothing(smooth)
-	assert(type(smooth) == "boolean", "boolean expected!")
-	self.smooth = smooth
-end
-function class:getSmoothing()
-	return self.smooth
 end
 
 function class:setShadow(shadow)
