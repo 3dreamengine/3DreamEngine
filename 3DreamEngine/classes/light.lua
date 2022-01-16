@@ -25,7 +25,7 @@ function lib:newLight(typ, pos, color, brightness, old, ...)
 		brightness = brightness or 1.0,
 		
 		godray = nil,
-		godrayLength = typ == "sun" and 0.15 or 0.05,
+		godrayLength = typ == "sun" and 0.1 or 0.05,
 		godraySize = typ == "sun" and 0.1 or 0.035,
 	}
 	
