@@ -372,24 +372,25 @@ function lib:processObject(obj)
 	
 	
 	--extract physics
-	for d,o in pairs(obj.meshes) do
-		if o.tags.physics then
-			if o.vertices then
+	for id,mesh in pairs(obj.meshes) do
+		if mesh.tags.physics then
+			if mesh.vertices then
 				--leave at origin for library entries
 				if obj.args.loadAsLibrary then
-					o.transform = nil
+					mesh.transform = nil
 				end
 				
 				--2.5D physics
-				if o.tags.physics then
-					obj.physics = obj.physics or { }
-					obj.physics[d] = self:getPhysicsData(o)
+				if mesh.tags.physics then
+					for i,m in ipairs(self:separateMesh(mesh)) do
+						obj.physics[id .. "_" .. i] = self:newCollider(m)
+					end
 				end
 			end
 			
 			--remove if no longer used
-			if not o.tags.lod and not o.tags.bake then
-				obj.meshes[d] = nil
+			if not mesh.tags.lod and not mesh.tags.bake then
+				obj.meshes[id] = nil
 			end
 		end
 	end

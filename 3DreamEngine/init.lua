@@ -43,18 +43,6 @@ end
 _3DreamEngine = lib
 lib.root = (...)
 
---shader node types
-lib.shaderNodes = { }
-for _,group in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/nodes")) do
-	for _,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/nodes/" .. group)) do
-		local typ = s:sub(1, #s-4)
-		local n = require(lib.root .. "/nodes/" .. group .. "/" .. typ)
-		n.typ = typ
-		n.group = group
-		lib.shaderNodes[typ] = n
-	end
-end
-
 --load sub modules
 require((...) .. "/functions")
 require((...) .. "/bufferFunctions")

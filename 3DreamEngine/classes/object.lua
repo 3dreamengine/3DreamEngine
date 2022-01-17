@@ -106,11 +106,13 @@ function class:copySkeleton(o)
 	self.sekelton = o.skeleton
 end
 
-function class:generatePhysics()
-	self.physics = { }
-	for d,s in pairs(self.objects) do
-		self.physics[d] = lib:getPhysicsData(s)
+function class:meshesToPhysics()
+	for id,mesh in pairs(self.meshes) do
+		for idx,m in ipairs(lib:separateMesh(mesh)) do
+			self.physics[id .. "_" .. idx] = lib:getPhysicsData(m)
+		end
 	end
+	self.meshes = { }
 end
 
 --create and apply pose (wrapper)

@@ -157,3 +157,63 @@ function lib:mergeMeshes(obj)
 	
 	return final
 end
+
+--seperates a mesh by loose parts and returns a list of new meshes
+function lib:separateMesh(mesh)
+	--initilize group indices
+	local groupIndices = { }
+	for d,s in ipairs(mesh.vertices) do
+		groupIndices[s] = d
+	end
+	
+	--group vertices via floodfill
+	local active
+	local found = true
+	while found do
+		found = false
+		for _,face in ipairs(mesh.faces) do
+			local a = mesh.vertices[face[1]]
+			local b = mesh.vertices[face[2]]
+			local c = mesh.vertices[face[3]]
+			
+			local ga = groupIndices[a]
+			local gb = groupIndices[b]
+			local gc = groupIndices[c]
+			
+			local min = math.min(ga, gb, gc)
+			local max = math.max(ga, gb, gc)
+			
+			if min ~= max then
+				groupIndices[a] = min
+				groupIndices[b] = min
+				groupIndices[c] = min
+				found = true
+			end
+		end
+	end
+	
+	--get a set of remaining lists
+	local active = { }
+	for _,face in ipairs(mesh.faces) do
+		local a = mesh.vertices[face[1]]
+		local ga = groupIndices[a]
+		active[ga] = true
+	end
+	
+	--split into groups
+	local meshes = { }
+	local ID = 0
+	for group,_ in pairs(active) do
+		ID = ID + 1
+		meshes[ID] = mesh:clone()
+		meshes[ID].faces = { }
+		for _,face in ipairs(mesh.faces) do
+			local a = mesh.vertices[face[1]]
+			if groupIndices[a] == group then
+				table.insert(meshes[ID].faces, face)
+			end
+		end
+	end
+	
+	return meshes
+end
