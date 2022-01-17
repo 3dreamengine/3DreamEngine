@@ -423,7 +423,9 @@ end
 
 if love.graphics.getSystemLimits().multicanvas >= 6 then
 	function lib:blurCubeMap(cube, layers, strength, mask)
-		local temp = self:getTemporaryCanvas(cube, layers > 1)
+		assert(layers > 1)
+		
+		local temp = self:getTemporaryCanvas(cube, true)
 		local shader = self:getShader("blur_cube_multi")
 		
 		love.graphics.push("all")
@@ -436,17 +438,17 @@ if love.graphics.getSystemLimits().multicanvas >= 6 then
 		love.graphics.setShader(shader)
 		shader:send("strength", strength or 0.1)
 		
-		for level = math.min(layers, 2), layers do
+		for level = 2, layers do
 			local res = cube:getWidth() / 2 ^ (level - 1)
 			shader:send("scale", 1.0 / res)
-			shader:send("lod", math.max(0, level - 2.0))
+			shader:send("lod", level - 2)
 			shader:send("dir", 0.0)
 			shader:send("tex", cube)
 			setMultiCubeMap(temp, math.max(1, level - 1))
 			love.graphics.rectangle("fill", 0, 0, res, res)
 			
 			shader:send("dir", 1.0)
-			shader:send("lod", math.max(0, level - 2.0))
+			shader:send("lod", level - 2)
 			shader:send("tex", temp)
 			setMultiCubeMap(cube, level)
 			love.graphics.rectangle("fill", 0, 0, res, res)
@@ -455,8 +457,10 @@ if love.graphics.getSystemLimits().multicanvas >= 6 then
 		love.graphics.pop()
 	end
 else
-	function lib:blurCubeMap(cube, levels, strength, mask)
-		local temp = self:getTemporaryCanvas(cube)
+	function lib:blurCubeMap(cube, layers, strength, mask)
+		assert(layers > 1)
+		
+		local temp = self:getTemporaryCanvas(cube, true)
 		local shader = self:getShader("blur_cube")
 		
 		love.graphics.push("all")
@@ -469,7 +473,7 @@ else
 		love.graphics.setShader(shader)
 		shader:send("strength", strength or 0.1)
 		
-		for level = 2, levels do
+		for level = 2, layers do
 			local res = cube:getWidth() / 2 ^ (level - 1)
 			shader:send("scale", 1.0 / res)
 			for side = 1, 6 do
@@ -480,13 +484,13 @@ else
 				love.graphics.setCanvas(temp, side, level - 1)
 				shader:send("dir", 0.0)
 				shader:send("tex", cube)
-				shader:send("lod", math.max(0, level - 2.0))
+				shader:send("lod", level - 2)
 				love.graphics.rectangle("fill", 0, 0, res, res)
 				
 				love.graphics.setCanvas(cube, side, level)
 				shader:send("dir", 1.0)
 				shader:send("tex", temp)
-				shader:send("lod", math.max(0, level - 2.0))
+				shader:send("lod", level - 2)
 				love.graphics.rectangle("fill", 0, 0, res, res)
 			end
 		end

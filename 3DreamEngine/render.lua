@@ -277,8 +277,8 @@ function lib:render(canvases, cam)
 			
 			--reflection
 			if shaderObject.reflection then
-				local ref = task:getReflection() or (type(self.sky_reflection) == "table" and self.sky_reflection)
-				local tex = ref and (ref.image or ref.canvas) or self.sky_reflection and self.sky_reflectionCanvas or self.textures.sky_fallback
+				local ref = task:getReflection() or (type(self.defaultReflection) == "table" and self.defaultReflection)
+				local tex = ref and (ref.image or ref.canvas) or self.defaultReflection and self.defaultReflectionCanvas or self.textures.sky_fallback
 				if lastReflection ~= tex then
 					lastReflection = tex
 					

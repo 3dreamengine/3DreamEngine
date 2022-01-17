@@ -178,19 +178,19 @@ function lib:getFogHeight()
 end
 
 --sets the reflection type used for reflections
-function lib:setReflection(tex)
-	if tex == true then
+function lib:setDefaultReflection(tex)
+	if tex == "sky" then
 		--use sky
-		self.sky_reflection = true
+		self.defaultReflection = "sky"
 	elseif tex == false then
 		--use ambient
-		self.sky_reflection = false
+		self.defaultReflection = false
 	elseif type(tex) == "table" and tex.class == "reflection" then
 		--reflection object
-		self.sky_reflection = tex
+		self.defaultReflection = tex
 	elseif type(tex) == "userdata" and tex:getTextureType() == "cube" then
 		--cubemap, wrap in reflection object
-		self.sky_reflection = lib:newReflection(tex)
+		self.defaultReflection = lib:newReflection(tex)
 	elseif type(tex) == "userdata" and tex:getTextureType() == "2d" then
 		--HDRI
 		error("HDRI not supported, please convert to cubemap first")
@@ -199,14 +199,15 @@ function lib:setReflection(tex)
 	end
 end
 function lib:getReflection(tex)
-	return self.sky_reflection
+	return self.defaultReflection
 end
 
-function lib:setSkyReflectionFormat(resolution, format)
+function lib:setSkyReflectionFormat(resolution, format, lazy)
 	check(resolution, "number", 1)
 	check(format, "string", 2)
 	self.sky_resolution = resolution
 	self.sky_format = format
+	self.sky_lazy = lazy
 end
 function lib:getSkyReflectionFormat()
 	return self.sky_resolution, self.sky_format
@@ -226,7 +227,7 @@ function lib:setSky(sky, exposure)
 		self.sky_texture = sky
 		
 		--also sets reflections
-		self:setReflection(sky)
+		self:setDefaultReflection(sky)
 	elseif type(sky) == "userdata" and sky:getTextureType() == "2d" then
 		--HDRI
 		self.sky_texture = sky

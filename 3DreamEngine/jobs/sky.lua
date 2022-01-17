@@ -1,17 +1,22 @@
 local job = { }
 local lib = _3DreamEngine
 
+local lastSide = 0
+
 function job:init()
 	self.lastImage = false
 end
 
 function job:queue()
 	--re-render sky cube
-	if lib.sky_reflection == true then
+	if lib.defaultReflection == "sky" then
 		--request rerender
 		if type(lib.sky_texture) == "function" or self.lastImage ~= tostring(lib.sky_texture) then
 			lib:addOperation("sky")
-			lib:addOperation("cubemap", lib.sky_reflectionCanvas,  lib.reflections_levels)
+			if lastSide == 6 or not lib.sky_lazy then
+				lastSide = 0
+				lib:addOperation("cubemap", lib.defaultReflectionCanvas,  lib.reflections_levels)
+			end
 		end
 	end
 end
@@ -39,9 +44,10 @@ function job:execute()
 	love.graphics.reset()
 	love.graphics.setDepthMode()
 	love.graphics.setBlendMode("replace", "premultiplied")
-
-	for side = 1, 6 do
-		love.graphics.setCanvas(lib.sky_reflectionCanvas, side)
+	
+	lastSide = lastSide + 1
+	for side = lib.sky_lazy and lastSide or 1, lib.sky_lazy and lastSide or 6 do
+		love.graphics.setCanvas(lib.defaultReflectionCanvas, side)
 		lib:renderSky(projections[side], transformations[side])
 	end
 

@@ -12,7 +12,7 @@ dream:setNameDecoder()
 dream.renderSet:setRefractions(true)
 
 dream:setSky(false)
-dream:setReflection(cimg:load(projectDir .. "sky.cimg"))
+dream:setDefaultReflection(cimg:load(projectDir .. "sky.cimg"))
 
 dream:setAutoExposure(true)
 

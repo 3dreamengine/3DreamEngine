@@ -9,7 +9,7 @@ local projectDir = "examples/blacksmith/"
 --set reflection cubemap with local corrections
 local r = dream:newReflection(cimg:load(projectDir .. "sky.cimg"))
 r:setLocal(vec3(0, 0, 0), vec3(-2, -1, -2), vec3(2, 1, 2))
-dream:setReflection(r)
+dream:setDefaultReflection(r)
 
 dream:init()
 

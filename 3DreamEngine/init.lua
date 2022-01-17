@@ -109,9 +109,9 @@ lib:setSmoothLoadingBufferSize(128)
 lib:setMipmaps(true)
 
 --sky
-lib:setReflection(true)
+lib:setDefaultReflection("sky")
 lib:setSky({0.5, 0.5, 0.5})
-lib:setSkyReflectionFormat(256, "rgba16f", 4)
+lib:setSkyReflectionFormat(256, "rgba16f", true)
 
 --auto exposure
 lib:setAutoExposure(false)
@@ -284,10 +284,10 @@ function lib:init(w, h)
 	self.lighting = { }
 	
 	--sky box
-	if self.sky_reflection == true then
-		self.sky_reflectionCanvas = love.graphics.newCanvas(self.sky_resolution, self.sky_resolution, {format = self.sky_format, readable = true, msaa = 0, type = "cube", mipmaps = "manual"})
+	if self.defaultReflection == "sky" then
+		self.defaultReflectionCanvas = love.graphics.newCanvas(self.sky_resolution, self.sky_resolution, {format = self.sky_format, readable = true, msaa = 0, type = "cube", mipmaps = "manual"})
 	else
-		self.sky_reflectionCanvas = false
+		self.defaultReflectionCanvas = false
 	end
 	
 	self:loadShader()
