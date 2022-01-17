@@ -4,7 +4,7 @@ function lib:newShadow(typ, static, resolution)
 	return setmetatable({
 		typ = typ,
 		
-		resolution = resolution or (typ == "sun" and 1024 or 512),
+		resolution = resolution or (typ == "sun" and 512 or 256),
 		static = static or false,
 		done = false,
 		target = false,
@@ -13,8 +13,7 @@ function lib:newShadow(typ, static, resolution)
 		cascadeDistance = 8,
 		cascadeFactor = 4,
 		
-		smoothDynamic = false,
-		smoothStatic = false,
+		smooth = false,
 	}, self.meta.shadow)
 end
 
@@ -28,8 +27,7 @@ local class = {
 		cascadeDistance = "number",
 		cascadeFactor = "number",
 		
-		smoothDynamic = "boolean",
-		smoothStatic = "boolean",
+		smooth = "boolean",
 	},
 }
 
@@ -52,19 +50,8 @@ function class:setResolution(r)
 	self:clear()
 end
 
-function class:setSmoothDynamic(s)
-	self.smoothDynamic = s
-	self:clear()
-end
-
-function class:setSmoothStatic(s)
-	self.smoothStatic = s
-	self:clear()
-end
-
 function class:setSmooth(s)
-	self.smoothStatic = s
-	self.smoothDynamic = s
+	self.smooth = s
 	self:clear()
 end
 

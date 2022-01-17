@@ -42,8 +42,6 @@ local transformations = {
 }
 
 function job:execute(light)
-	local usesSmothing = light.shadow.smoothStatic or light.shadow.smoothDynamic
-	
 	--create new canvases if necessary
 	if not light.shadow.canvas then
 		light.shadow.canvas = love.graphics.newCanvas(light.shadow.resolution, light.shadow.resolution,
@@ -51,11 +49,10 @@ function job:execute(light)
 			readable = true,
 			msaa = 0,
 			type = "cube",
-			mipmaps = (usesSmothing) and "manual" or "none"})
+			mipmaps = light.shadow.smooth and "manual" or "none"})
 	end
 	
-	local smoothStatic = false
-	local smoothDynamic = false
+	local smooth = false
 	
 	if not light.shadow.lastPos or (light.pos - light.shadow.lastPos):lengthSquared() > 0.0001 then
 		light.shadow.rendered = false
@@ -74,27 +71,25 @@ function job:execute(light)
 		if light.shadow.static then
 			--static shadow
 			if not light.shadow.rendered then
-				lib:renderShadows(shadowCam, {{light.shadow.canvas, face = face}}, light.blacklist, false, nil, usesSmothing)
-				smoothStatic = light.shadow.smoothStatic
+				lib:renderShadows(shadowCam, {{light.shadow.canvas, face = face}}, light.blacklist, false, nil, light.shadow.smooth)
+				smooth = light.shadow.smooth
 			end
 		else
 			if light.shadow.rendered then
 				--dynamic part
-				lib:renderShadows(shadowCam, {{light.shadow.canvas, face = face}}, light.blacklist, true, nil, usesSmothing)
-				smoothDynamic = light.shadow.smoothDynamic
+				lib:renderShadows(shadowCam, {{light.shadow.canvas, face = face}}, light.blacklist, true, nil, false)
 			else
 				--both parts
-				lib:renderShadows(shadowCam, {{light.shadow.canvas, face = face}}, light.blacklist, true, nil, usesSmothing)
-				lib:renderShadows(shadowCam, {{light.shadow.canvas, face = face}}, light.blacklist, false, nil, usesSmothing)
-				smoothDynamic = light.shadow.smoothDynamic
-				smoothStatic = light.shadow.smoothStatic
+				lib:renderShadows(shadowCam, {{light.shadow.canvas, face = face}}, light.blacklist, false, nil, light.shadow.smooth)
+				lib:renderShadows(shadowCam, {{light.shadow.canvas, face = face}}, light.blacklist, true, nil, false)
+				smooth = light.shadow.smooth
 			end
 		end
 	end
 	
 	--prefilter
-	if smoothDynamic or smoothStatic then
-		lib:blurCubeMap(light.shadow.canvas, 4, light.size, {smoothStatic, smoothDynamic, false, false})
+	if smooth then
+		lib:blurCubeMap(light.shadow.canvas, 4, light.size, {smooth, false, false, false})
 	end
 	
 	light.shadow.rendered = true

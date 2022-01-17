@@ -15,8 +15,6 @@ function job:queue()
 end
 
 function job:execute(light)
-	local usesSmothing = light.shadow.smoothStatic or light.shadow.smoothDynamic
-	
 	--create new canvases if necessary
 	if not light.shadow.canvases then
 		light.shadow.canvases = { }
@@ -66,8 +64,8 @@ function job:execute(light)
 			
 			--generate canvas
 			if not light.shadow.canvases[cascade] then
-				light.shadow.canvases[cascade] = love.graphics.newCanvas(light.shadow.resolution, light.shadow.res,
-					{format = static and "r16f" or "rg16f",
+				light.shadow.canvases[cascade] = love.graphics.newCanvas(light.shadow.resolution, light.shadow.resolution,
+					{format = light.shadow.static and "r16f" or "rg16f",
 					readable = true,
 					msaa = 0,
 					type = "2d"})
@@ -78,33 +76,29 @@ function job:execute(light)
 		local blurStrength = 20.0 * light.size / light.shadow.cascadeFactor ^ (cascade-1)
 		
 		--render
-		local smoothStatic = false
-		local smoothDynamic = false
+		local smooth = false
 		if light.shadow.static then
 			--static shadow
 			if not shadowCam.rendered then
-				lib:renderShadows(shadowCam, canvases, light.blacklist, false, cascade > 1, usesSmothing)
-				smoothStatic = light.shadow.smoothStatic
+				lib:renderShadows(shadowCam, canvases, light.blacklist, false, cascade > 1, light.shadow.smooth)
+				smooth = light.shadow.smooth
 			end
 		else
-			if shadowCam.rendered then
+			if shadowCam.rendered and false then
 				--dynamic part
-				lib:renderShadows(shadowCam, canvases, light.blacklist, true, cascade > 1, usesSmothing)
-				smoothDynamic = light.shadow.smoothDynamic
+				lib:renderShadows(shadowCam, canvases, light.blacklist, true, cascade > 1, false)
 			else
 				--both parts
-				lib:renderShadows(shadowCam, canvases, light.blacklist, true, cascade > 1, usesSmothing)
-				lib:renderShadows(shadowCam, canvases, light.blacklist, false, cascade > 1, usesSmothing)
-				smoothDynamic = light.shadow.smoothDynamic
-				smoothStatic = light.shadow.smoothStatic
+				lib:renderShadows(shadowCam, canvases, light.blacklist, false, cascade > 1, light.shadow.smooth)
+				lib:renderShadows(shadowCam, canvases, light.blacklist, true, cascade > 1, false)
+				smooth = light.shadow.smooth
 			end
 		end
 		
 		--smooth lighting
-		local smooth
-		if smoothStatic or smoothDynamic then
+		if smooth then
 			local iterations = math.ceil(blurStrength)
-			lib:blurCanvas(light.shadow.canvases[cascade], blurStrength / iterations, iterations, {smoothStatic, smoothDynamic, false, false})
+			lib:blurCanvas(light.shadow.canvases[cascade], blurStrength / iterations, iterations, {smooth, false, false, false})
 		end
 		
 		shadowCam.rendered = true

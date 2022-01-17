@@ -451,7 +451,7 @@ function lib:render(canvases, cam)
 end
 
 --only renders a depth variant
-function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects, shadowDistanceFactor)
+function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects, smoothShadows)
 	self.delton:start("renderShadows")
 	
 	--love shader friendly
@@ -509,7 +509,7 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects, shad
 				shader:send("viewPos", viewPos)
 			end
 			
-			shader:send("shadowDistanceFactor", shadowDistanceFactor and 40 or 1)
+			shader:send("shadowDistanceFactor", smoothShadows and 30 or 1)
 			
 			shaderObject.pixelShader:perShader(self, shaderObject)
 			shaderObject.vertexShader:perShader(self, shaderObject)
