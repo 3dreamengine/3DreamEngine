@@ -1,5 +1,21 @@
 local lib = _3DreamEngine
 
+--creates an empty material
+function lib:newMaterial(name)
+	return setmetatable({
+		color = {0.5, 0.5, 0.5, 1.0},
+		emission = {0.0, 0.0, 0.0},
+		roughness = 0.5,
+		metallic = 0.0,
+		alpha = false,
+		discard = false,
+		name = name or "None",
+		ior = 1.0,
+		translucent = 0.0,
+		library = false,
+	}, self.meta.material)
+end
+
 local class = {
 	link = {"clone", "shader", "material"},
 	

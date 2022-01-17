@@ -4,7 +4,7 @@ function lib:newShadow(typ, static, resolution)
 	return setmetatable({
 		typ = typ,
 		
-		resolution = resolution or (typ == "sun" and 512 or 256),
+		resolution = resolution or (typ == "sun" and 1024 or 512),
 		static = static or false,
 		done = false,
 		target = false,

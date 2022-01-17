@@ -1,19 +1,17 @@
---load the matrix and the 3D lib
 local dream = require("3DreamEngine")
 love.window.setTitle("Lamborghini Example")
 
 --settings
-local projectDir = "examples/Lamborghini/"
-
-dream:setSky(love.graphics.newImage(projectDir .. "garage.hdr"))
-
+dream:setSky(love.graphics.newImage("examples/Lamborghini/garage.hdr"))
 dream.cam.fov = 70
-
 dream:init()
 
+--materials
+dream:loadMaterialLibrary("examples/Lamborghini/materials")
+
 --objects
-local car = dream:loadObject(projectDir .. "Lamborghini Aventador")
-local socket = dream:loadObject(projectDir .. "socket")
+local car = dream:loadObject("examples/Lamborghini/Lamborghini Aventador")
+local socket = dream:loadObject("examples/Lamborghini/socket")
 
 --sun object
 local sun = dream:newLight("sun")

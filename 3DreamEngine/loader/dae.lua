@@ -135,7 +135,7 @@ end
 
 local function addMesh(self, obj, mat, id, inputs, vertexMapping, meshData, vcount)
 	--create mesh
-	local material = mat and self.materialLibrary[mat.name] or mat or obj.materials.None
+	local material = mat and self.materialLibrary[mat.name] or mat or self:newMaterial()
 	local m = self:newMesh(id, material, obj.args.meshType)
 	
 	m.vertexMapping = vertexMapping
@@ -259,7 +259,6 @@ return function(self, obj, path)
 		for _,mat in ipairs(library.material) do
 			local name = mat._attr.name or mat._attr.id
 			local material = self:newMaterial(name)
-			obj.materials[name] = material
 			materials[mat._attr.id] = material
 		end
 	end

@@ -16,7 +16,8 @@ function job:queue()
 				lib:addOperation("sky")
 			end
 			
-			if lastSide == 6 or not lib.sky_lazy then
+			local lazy = lib.sky_lazy and type(lib.sky_texture) == "function"
+			if lastSide == 6 or not lazy then
 				lastSide = 0
 				lib:addOperation("cubemap", lib.defaultReflectionCanvas,  lib.reflections_levels)
 			end
@@ -49,7 +50,8 @@ function job:execute()
 	love.graphics.setBlendMode("replace", "premultiplied")
 	
 	lastSide = lastSide + 1
-	for side = lib.sky_lazy and lastSide or 1, lib.sky_lazy and lastSide or 6 do
+	local lazy = lib.sky_lazy and type(lib.sky_texture) == "function"
+	for side = lazy and lastSide or 1, lazy and lastSide or 6 do
 		love.graphics.setCanvas(lib.defaultReflectionCanvas, side)
 		lib:renderSky(projections[side], transformations[side])
 	end

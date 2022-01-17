@@ -13,11 +13,13 @@ dream:setDefaultReflection(r)
 
 dream:init()
 
+dream:loadMaterialLibrary(projectDir .. "materials")
+
 local scene = dream:loadObject(projectDir .. "scene")
 local torch = dream:loadObject(projectDir .. "torch")
 
 --particle texture
-local texture_candle = love.graphics.newImage(projectDir .. "textures/candle.png")
+local texture_candle = love.graphics.newImage(projectDir .. "materials/candle.png")
 local factor = texture_candle:getHeight() / texture_candle:getWidth()
 local quads = { }
 for y = 1, 5 do

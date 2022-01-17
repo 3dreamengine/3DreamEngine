@@ -9,7 +9,7 @@ return function(self, obj, path)
 	local texture = { }
 	
 	--initial mesh
-	local material = obj.materials.None
+	local material = self:newMaterial()
 	local mesh = self:newMesh("object", material, obj.args.meshType)
 	local meshID = "object"
 	obj.meshes[meshID] = mesh
@@ -24,7 +24,13 @@ return function(self, obj, path)
 		elseif v[1] == "vt" then
 			table.insert(texture, {tonumber(v[2]), 1.0 - tonumber(v[3])})
 		elseif v[1] == "usemtl" then
-			material = self.materialLibrary[l:sub(8)] or obj.materials[l:sub(8)] or obj.materials.None
+			material = self.materialLibrary[l:sub(8)]
+			if not material then
+				if not obj.args.ignoreMissingMaterials then
+					print("material " .. l:sub(8) .. " is unknown")
+				end
+				material = self:newMaterial()
+			end
 			mesh.material = material
 		elseif v[1] == "f" then
 			local verts = #v-1

@@ -76,7 +76,6 @@ return function(self, obj, path)
 	local version = parseInt(4)
 	
 	local materials = { }
-	obj.materials = materials
 	
 	local nodes = { }
 	local groups = { }

@@ -75,6 +75,9 @@ lib.canvasFormats = love.graphics and love.graphics.getCanvasFormats() or { }
 lib.materialLibrary = { }
 lib.objectLibrary = { }
 
+lib:registerMaterial(lib:newMaterial(), "None")
+lib:registerMaterial(lib:newMaterial(), "Material")
+
 --default settings
 lib:setAO(32, 0.75, false)
 lib:setBloom(-1)

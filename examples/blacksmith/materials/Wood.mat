@@ -1,0 +1,9 @@
+--3DreamEngine material properties file
+return {
+	name = "Wood",
+	metallic = 0.0,
+	tex_albedo = "examples/firstpersongame/materials/planks/albedo",
+	tex_ao = "examples/firstpersongame/materials/planks/ao",
+	tex_normal = "examples/firstpersongame/materials/planks/normal",
+	tex_roughness = "examples/firstpersongame/materials/planks/roughness",
+}

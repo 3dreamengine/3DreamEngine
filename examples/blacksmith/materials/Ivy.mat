@@ -1,0 +1,11 @@
+--3DreamEngine material properties file
+return {
+	name = "Ivy",
+	metallic = 0.0,
+	shaderWindStrength = 0.05,
+	shaderWindScale = 10.0,
+	shaderWindSpeed = 0.5,
+	shadow = false,
+	cullMode = "none",
+	vertexShader = "wind",
+}

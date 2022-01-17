@@ -5,23 +5,6 @@ materials.lua - load and process materials
 
 local lib = _3DreamEngine
 
---creates an empty material
-function lib:newMaterial(name, dir)
-	return setmetatable({
-		color = {0.5, 0.5, 0.5, 1.0},
-		emission = {0.0, 0.0, 0.0},
-		roughness = 0.5,
-		metallic = 0.0,
-		alpha = false,
-		discard = false,
-		name = name or "None",        --name, used for texture linking
-		dir = dir,                    --directory, used for texture linking
-		ior = 1.0,
-		translucent = 0.0,
-		library = false,
-	}, self.meta.material)
-end
-
 function lib:registerMaterial(material, name)
 	name = name or material.name
 	if material.registeredAs then
@@ -32,45 +15,47 @@ function lib:registerMaterial(material, name)
 	self.materialLibrary[name] = material
 end
 
---recognise mat files and directories with an albedo texture or "material.mat" as materials
---if the material is a directory it will skip the structured texture linking and uses the string.find to support extern material libraries
+--looks for mat files or directories with an albedo texture
 function lib:loadMaterialLibrary(path, prefix)
+	if path:sub(-1) == "/" then
+		path = path:sub(1, -1)
+	end
+	
 	prefix = prefix or ""
+	
+	if self:getImagePath(path .. "/albedo") then
+		--directory is a basic material since it contains at least the albedo texture
+		local mat = self:newMaterial(prefix .. (path:match(".*/(.*)") or path))
+		mat.library = true
+		self:lookForTextures(mat, path)
+		mat.library = true
+		self.materialLibrary[mat.name] = mat
+		return
+	end
+	
 	for d,s in ipairs(love.filesystem.getDirectoryItems(path)) do
-		local p = (path:sub(-1) == "/" and path or (path .. "/" )).. s
-		if s:sub(#s-4) == ".mat" then
-			--found material file
-			local dummyObj = {materials = { }, dir = path}
-			self.loader["mat"](self, dummyObj, p)
-			
-			--insert to material library
-			for i,v in pairs(dummyObj.materials) do
-				v.dir = path
-				v.name = prefix .. i
-				v.library = true
-				self:finishMaterial(v)
-				self.materialLibrary[v.name] = v
-			end
-		elseif love.filesystem.getInfo(p .. "/material.mat") then
-			--directory is a material since it contains an anonymous material file (not nested, directly returns material without name)
-			local dummyObj = {materials = { }, dir = p}
-			self.loader["mat"](self, dummyObj, p .. "/material.mat", true)
-			
-			local mat = dummyObj.materials.material
-			mat.dir = p
-			mat.name = prefix .. s
-			self:finishMaterial(mat)
+		local p = path .. "/" .. s
+		if s:sub(#s - 3) == ".mat" then
+			--custom material
+			local mat = self:newMaterial((prefix .. s):sub(1, -5))
+			local matLoaded = love.filesystem.load(p)()
+			table.merge(mat, matLoaded)
+			mat.mat = matLoaded
 			mat.library = true
+			self:lookForTextures(mat, path, mat.name)
 			self.materialLibrary[mat.name] = mat
-		elseif self:getImagePath(p .. "/albedo") then
-			--directory is a material since it contains at least one texture
-			local mat = self:newMaterial(prefix .. s, p)
-			self:finishMaterial(mat)
+		elseif love.filesystem.getInfo(p .. "/material.mat") then
+			--material using the recommended directory-format
+			local mat = self:newMaterial(prefix .. s)
+			local matLoaded = love.filesystem.load(p .. "/material.mat")()
+			table.merge(mat, matLoaded)
+			mat.mat = matLoaded
 			mat.library = true
+			self:lookForTextures(mat, p)
 			self.materialLibrary[mat.name] = mat
 		elseif love.filesystem.getInfo(p, "directory") then
 			--directory is not a material, but maybe its child directories
-			self:loadMaterialLibrary(p, prefix .. s .. "/")
+			self:loadMaterialLibrary(p, prefix)
 		end
 	end
 end
@@ -86,47 +71,36 @@ local function texSetter(mat, typ, tex)
 	end
 end
 
-function lib:finishMaterial(mat, obj)
+function lib:lookForTextures(mat, directory, filter)
 	for _,typ in ipairs({"albedo", "normal", "roughness", "metallic", "emission", "ao", "material"}) do
 		local custom = mat["tex_" .. typ]
 		mat["tex_" .. typ] = nil
-		if custom then
-			if type(custom) == "userdata" then
-				texSetter(mat, typ, custom)
-			elseif type(custom) == "string" then
-				--path specified
-				custom = custom and custom:match("(.+)%..+") or custom
-				for _,p in pairs({
-					custom,
-					(mat.dir and (mat.dir .. "/") or "") .. custom,
-				}) do
-					if self:getImagePath(p) then
-						texSetter(mat, typ, self:getImagePath(p))
+		
+		if type(custom) == "userdata" then
+			--already an image
+			texSetter(mat, typ, custom)
+		elseif type(custom) == "string" then
+			--path or name specified
+			local path = self:getImagePath(custom) or
+				self:getImagePath(directory .. "/" .. custom) or
+				(love.filesystem.getInfo(custom, "file")) and custom or
+				(love.filesystem.getInfo(directory .. "/" .. custom, "file")) and (directory .. "/" .. custom)
+			
+			if path then
+				texSetter(mat, typ, path)
+			end
+		elseif self:getImagePath(directory .. "/" .. typ) then
+			--recommending file naming is used
+			texSetter(mat, typ, self:getImagePath(directory .. "/" .. typ))
+		else
+			--let's look for possible matches
+			for name, path in pairs(lib:getImagePaths()) do
+				if name:sub(1, #directory) == directory then
+					local fn = name:sub(#directory + 2):lower()
+					if fn:find(typ) and (not name or fn:find(filter:lower())) then
+						texSetter(mat, typ, path)
 						break
 					end
-				end
-			end
-		elseif not obj then
-			--this is a material library entry and it expects correctly named files
-			local v = self:getImagePath(mat.dir .. "/" .. typ)
-			if v then
-				texSetter(mat, typ, v)
-			end
-		else
-			--search for correctly named texture in the material directory
-			local dir = mat.dir and (mat.dir .. "/") or ""
-			if not mat.name then
-				require("mobdebug").start()
-				end
-			for _,p in pairs({
-				dir .. typ,                               -- e.g. "materialDirectory/albedo.png"
-				dir .. mat.name .. "/" .. typ,            -- e.g. "materialDirectory/materialName/albedo.png"
-				dir .. mat.name .. "_" .. typ,            -- e.g. "materialDirectory/materialName_albedo.png"
-				dir .. obj.name .. "_" .. typ,      	  -- e.g. "materialDirectory/objectName_albedo.png"
-			}) do
-				if self:getImagePath(p) then
-					texSetter(mat, typ, self:getImagePath(p))
-					break
 				end
 			end
 		end
@@ -144,6 +118,5 @@ function lib:finishMaterial(mat, obj)
 	mat.vertexShader = lib:resolveShaderName(mat.vertexShader)
 	mat.worldShader = lib:resolveShaderName(mat.worldShader)
 	
-	--release original mat file
 	mat.mat = nil
 end

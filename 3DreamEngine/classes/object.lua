@@ -14,9 +14,6 @@ function lib:newObject(path)
 	local dir = #n > 1 and table.concat(n, "/", 1, #n-1) or ""
 	
 	return setmetatable({
-		materials = {
-			None = self:newMaterial()
-		},
 		objects = { },
 		meshes = { },
 		positions = { },

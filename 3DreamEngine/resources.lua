@@ -153,6 +153,9 @@ end
 function lib:getImagePath(path)
 	return images[path]
 end
+function lib:getImagePaths()
+	return images
+end
 
 --get a texture, load it threaded if enabled and therefore may return nil first
 --if a thumbnail is provided, it may return the thumbnail until fully loaded

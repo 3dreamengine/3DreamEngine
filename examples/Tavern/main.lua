@@ -1,6 +1,6 @@
 --load the 3D lib
 local dream = require("3DreamEngine")
-local raytrace = require("3DreamEngine/raytrace")
+local raytrace = require("extensions/raytrace")
 
 love.window.setTitle("PBR Tavern")
 love.window.setVSync(false)

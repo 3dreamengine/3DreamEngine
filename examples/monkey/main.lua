@@ -10,6 +10,8 @@ dream:init()
 --load our object
 local monkey = dream:loadObject("examples/monkey/object")
 
+monkey.meshes.Suzanne.material.color = {0.8, 0.2, 0.085, 1}
+
 --make a sun
 local sun = dream:newLight("sun", vec3(1, 1, 1), vec3(1, 1, 1), 5.0)
 

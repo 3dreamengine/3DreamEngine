@@ -57,8 +57,6 @@ local function cleanEmpties(obj)
 end
 
 lib.supportedFiles = {
-	"mtl", --obj material file
-	"mat", --3DreamEngine material file
 	"3do", --3DreamEngine object file - way faster than obj but does not keep vertex information
 	"vox", --magicka voxel
 	"obj", --obj file
@@ -409,23 +407,6 @@ function lib:processObject(obj)
 	--calculate bounding box
 	if not obj.boundingBox.initialized then
 		obj:updateBoundingBox()
-	end
-	
-	
-	--post load materials
-	do
-		local done = { }
-		for d,s in pairs(obj.materials) do
-			s.dir = s.dir or obj.args.textures or obj.dir
-			self:finishMaterial(s, obj)
-			done[s] = true
-		end
-		for d,s in pairs(obj.meshes) do
-			if not done[s] then
-				done[s]  = true
-				self:finishMaterial(s.material, obj)
-			end
-		end
 	end
 	
 	
