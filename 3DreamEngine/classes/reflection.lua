@@ -54,4 +54,10 @@ function class:getLocal()
 	return self.pos, self.first, self.second
 end
 
+function class:decode()
+	self.pos = vec3(self.pos)
+	self.first = vec3(self.first)
+	self.second = vec3(self.second)
+end
+
 return class

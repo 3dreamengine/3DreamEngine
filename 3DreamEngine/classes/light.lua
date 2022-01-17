@@ -103,4 +103,10 @@ function class:getShadow()
 	return self.shadow
 end
 
+function class:decode()
+	self.pos = vec3(self.pos)
+	self.direction = vec3(self.direction)
+	self.color = vec3(self.color)
+end
+
 return class

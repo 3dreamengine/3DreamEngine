@@ -324,4 +324,136 @@ function class:create()
 	meshFormat:create(self)
 end
 
+function class:encode(meshCache, dataStrings)
+	local ffi = require("ffi")
+	
+	local data = {
+		["name"] = self.name,
+		["meshType"] = self.meshType,
+		["tags"] = self.tags,
+		
+		["boundingBox"] = self.boundingBox,
+		
+		["LOD_min"] = self.LOD_min,
+		["LOD_max"] = self.LOD_max,
+		
+		["renderVisibility"] = self.renderVisibility,
+		["shadowVisibility"] = self.shadowVisibility,
+		["farVisibility"] = self.farVisibility,
+	}
+	
+	--save the material id if its registered or the entire material
+	if self.material.library then
+		data["material"] = self.material.name
+	else
+		data["material"] = self.material
+	end
+	
+	--export buffer data
+	data["weights"] = self.weights
+	data["joints"] = self.joints
+	data["vertices"] = self.vertices
+	data["normals"] = self.normals
+	data["faces"] = self.faces
+	
+	--look for meshes
+	for name, mesh in pairs(self) do
+		if type(mesh) == "userdata" and mesh:typeOf("Mesh") then
+			if meshCache[mesh] then
+				data[name] = meshCache[mesh]
+			else
+				local m = { }
+				meshCache[mesh] = m
+				data[name] = m
+				
+				--store general data
+				local f = mesh:getVertexFormat()
+				m.vertexCount = mesh:getVertexCount()
+				m.vertexFormat = f
+				
+				--store vertexMap
+				local map = mesh:getVertexMap()
+				if map then
+					local vertexMapData = love.data.newByteData(#map * 4)
+					local vertexMap = ffi.cast("uint32_t*", vertexMapData:getPointer())
+					for d,s in ipairs(map) do
+						vertexMap[d-1] = s-1
+					end
+					
+					--compress and store vertex map
+					local c = love.data.compress("string", "lz4", vertexMapData:getString(), compressedLevel)
+					table.insert(dataStrings, c)
+					m.vertexMap = #dataStrings
+				end
+				
+				--give a unique hash for the vertex format
+				local md5 = love.data.hash("md5", packTable.pack(f))
+				local hash = love.data.encode("string", "hex", md5)
+				
+				--build a C struct to make sure data match
+				local str = "typedef struct {" .. "\n"
+				local attrCount = 0
+				local types = { }
+				for _,ff in ipairs(f) do
+					if ff[2] == "float" then
+						str = str .. "float "
+					elseif ff[2] == "byte" then
+						str = str .. "unsigned char "
+					else
+						error("unknown data type " .. ff[2])
+					end
+					
+					for i = 1, ff[3] do
+						attrCount = attrCount + 1
+						types[attrCount] = ff[2]
+						str = str .. "x" .. attrCount .. (i == ff[3] and ";" or ", ")
+					end
+					str = str .. "\n"
+				end
+				str = str .. "} mesh_vertex_" .. hash .. ";"
+				ffi.cdef(str)
+				
+				--byte data
+				local byteData = love.data.newByteData(mesh:getVertexCount() * ffi.sizeof("mesh_vertex_" .. hash))
+				local meshData = ffi.cast("mesh_vertex_" .. hash .. "*", byteData:getPointer())
+				
+				--fill data
+				for i = 1, mesh:getVertexCount() do
+					local v = {mesh:getVertex(i)}
+					for i2 = 1, attrCount do
+						meshData[i-1]["x" .. i2] = (types[i2] == "byte" and math.floor(v[i2]*255) or v[i2])
+					end
+				end
+				
+				--convert to string and store
+				local c = love.data.compress("string", "lz4", byteData:getString(), 9)
+				table.insert(dataStrings, c)
+				m.vertices = #dataStrings
+			end
+		end
+	end
+	
+	return data
+end
+
+function class:decode(meshData)
+	lib:decodeBoundaryBox(self.boundingBox)
+	
+	--look for meshes and link
+	for _,s in pairs(self) do
+		if type(s) == "table" and type(s.vertices) == "number" then
+			s.vertexMap = s.vertexMap and meshData[s.vertexMap]
+			s.vertices = meshData[s.vertices]
+		end
+	end
+	
+	--relink materials
+	local mat = type(self.material) == "table" and self.material or lib.materialLibrary[self.material]
+	if mat then
+		self.material = setmetatable(mat, lib.meta.material)
+	else
+		error("material " .. tostring(self.material) .. " required by object " .. tostring(self.name) .. " does not exist!")
+	end
+end
+
 return class

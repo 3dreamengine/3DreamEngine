@@ -81,4 +81,13 @@ function class:getPose(time)
 	return pose
 end
 
+function class:decode()
+	for _,part in pairs(self) do
+		for _,frame in ipairs(part) do
+			frame.position = vec3(frame.position)
+			frame.rotation = quat(frame.rotation)
+		end
+	end
+end
+
 return class

@@ -57,8 +57,8 @@ function sh:sendGlobalUniforms(dream, shaderObject, count, lighting)
 	local pos = {}
 	for d,s in ipairs(lighting) do
 		if s.light_typ == "point_simple" then
-			colors[#colors+1] = s.color * s.brightness
-			pos[#pos+1] = s.pos
+			table.insert(colors, s.color * s.brightness)
+			table.insert(pos, s.pos)
 		end
 	end
 	

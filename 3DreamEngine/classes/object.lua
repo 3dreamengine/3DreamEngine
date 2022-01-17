@@ -275,4 +275,109 @@ function class:createMeshes()
 	end
 end
 
+function class:encode(meshCache, dataStrings)
+	local data = {
+		["objects"] = { },
+		["meshes"] = { },
+		["positions"] = self.positions,
+		["lights"] = self.lights,
+		["physics"] = self.physics,
+		["reflections"] = self.reflections,
+		["args"] = self.args,
+		
+		["path"] = self.path,
+		["dir"] = self.dir,
+		["name"] = self.name,
+		
+		["boundingBox"] = self.boundingBox,
+		
+		["transform"] = self.transform,
+		
+		["animations"] = self.animations,
+		["skeleton"] = self.skeleton,
+		
+		["linkedObjects"] = self.linkedObjects,
+		
+		["LOD_min"] = self.LOD_min,
+		["LOD_max"] = self.LOD_max,
+	}
+
+	--save objects
+	for d,o in pairs(self.objects) do
+		if not o.linked then
+			data.objects[d] = o:encode(meshCache, dataStrings)
+		end
+	end
+
+	--encode everything else
+	for _,v in ipairs({"meshes"}) do
+		data[v] = { }
+		for d,s in pairs(self[v]) do
+			data[v][d] = s:encode(meshCache, dataStrings)
+		end
+	end
+
+	return data
+end
+
+function class:decode(meshData)
+	--recreate transform
+	if self.transform then
+		self.transform = mat4(self.transform)
+	end
+	
+	--recreate vecs and mats
+	lib:decodeBoundaryBox(self.boundingBox)
+	
+	--recreate objects
+	for d,s in pairs(self.objects) do
+		self.objects[d] = table.merge(lib:newObject(s.name, self, s.material), s)
+		self.objects[d]:decode(meshData)
+	end
+	
+	--decode meshes
+	for d,s in pairs(self.meshes) do
+		setmetatable(s, lib.meta.mesh)
+		s:decode(meshData)
+	end
+	
+	--recreate linked data
+	if self.linkedObjects then
+		for _,s in ipairs(self.linkedObjects) do
+			if s.transform then
+				s.transform = mat4(s.transform)
+			end
+		end
+	end
+	
+	--recreate lights
+	for d,s in pairs(self.lights) do
+		setmetatable(s, lib.meta.light)
+		s:decode()
+	end
+	
+	--decode reflections
+	for d,s in pairs(self.reflections) do
+		setmetatable(s, lib.meta.reflection)
+		s:decode()
+	end
+	
+	--recreate skeleton data
+	if self.skeleton then
+		self.skeleton = lib:newSkeleton(self.skeleton.bones, self.skeleton.jointMapping)
+	end
+	
+	--decode animations
+	for d,s in pairs(self.animations) do
+		setmetatable(s, lib.meta.animation)
+		s:decode()
+	end
+	
+	--decode physics
+	for d,s in pairs(self.physics) do
+		setmetatable(s, lib.meta.collider)
+		s:decode()
+	end
+end
+
 return class

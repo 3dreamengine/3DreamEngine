@@ -19,4 +19,14 @@ local class = {
 	},
 }
 
+function class:decode()
+	self.transform = mat4(self.transform)
+	for i,v in ipairs(self.vertices) do
+		self.vertices[i] = vec3(v)
+	end
+	for i,v in ipairs(self.normals) do
+		self.normals[i] = vec3(v)
+	end
+end
+
 return class

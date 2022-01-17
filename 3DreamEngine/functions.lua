@@ -334,6 +334,16 @@ function lib:newBoundaryBox(initialized)
 	}
 end
 
+function lib:decodeBoundaryBox(bb)
+	return {
+		first = vec3(bb.first),
+		second = vec3(bb.second),
+		center = vec3(bb.center),
+		size = bb.size,
+		initialized = bb.initialized
+	}
+end
+
 function lib:blurCanvas(canvas, strength, iterations, mask)
 	local temp = self:getTemporaryCanvas(canvas)
 	local sh = lib:getShader("blur")

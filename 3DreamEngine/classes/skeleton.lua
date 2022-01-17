@@ -1,5 +1,16 @@
 local lib = _3DreamEngine
 
+local function verfiyBones(bones)
+	for _, bone in pairs(bones) do
+		bone.bindTransform = mat4(bone.bindTransform)
+		bone.inverseBindTransform = mat4(bone.inverseBindTransform)
+		
+		if bone.children then
+			verfiyBones(bone.children)
+		end
+	end
+end
+
 function lib:newSkeleton(bones, jointMapping)
 	local c = 0
 	local function count(n)
@@ -10,6 +21,8 @@ function lib:newSkeleton(bones, jointMapping)
 			end
 		end
 	end
+	
+	verfiyBones(bones)
 	
 	return setmetatable({
 		bones = bones,
