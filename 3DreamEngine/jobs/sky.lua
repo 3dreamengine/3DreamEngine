@@ -12,7 +12,10 @@ function job:queue()
 	if lib.defaultReflection == "sky" then
 		--request rerender
 		if type(lib.sky_texture) == "function" or self.lastImage ~= tostring(lib.sky_texture) then
-			lib:addOperation("sky")
+			if lastSide < 6 then
+				lib:addOperation("sky")
+			end
+			
 			if lastSide == 6 or not lib.sky_lazy then
 				lastSide = 0
 				lib:addOperation("cubemap", lib.defaultReflectionCanvas,  lib.reflections_levels)

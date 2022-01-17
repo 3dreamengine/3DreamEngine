@@ -11,10 +11,12 @@ function job:queue()
 	for reflection, pos in pairs(lib.lastReflections) do
 		if not reflection.static or not reflection.done then
 			--render reflections
-			lib:addOperation("reflections", reflection, pos)
+			if lastSide < 6 then
+				lib:addOperation("reflections", reflection, pos)
+			end
 			
 			--blur mipmaps
-			if lastSide == 6 or not lib.sky_lazy then
+			if lastSide == 6 or not reflection.lazy then
 				lastSide = 0
 				if reflection.roughness then
 					lib:addOperation("cubemap", reflection.canvas, reflection.levels or lib.reflections_levels)
