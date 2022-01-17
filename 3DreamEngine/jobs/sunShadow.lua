@@ -1,6 +1,8 @@
 local job = { }
 local lib = _3DreamEngine
 
+local lazyMapping = {1, 2, 1, 2, 1, 3}
+
 function job:init()
 	self.stencils = { }
 end
@@ -25,7 +27,9 @@ function job:execute(light)
 	local pos = light.pos
 	local pos = lib.cam.pos
 	
-	for cascade = 1, 3 do
+	light.lastCascade = (light.lastCascade or 0) % #lazyMapping + 1
+	
+	for cascade = light.shadow.lazy and lazyMapping[light.lastCascade] or 1, light.shadow.lazy and lazyMapping[light.lastCascade] or 3 do
 		local stepSize = light.shadow.refreshStepSize * 2.3 ^ (cascade-1)
 		
 		local shadowCam = light.shadow.cams[cascade]
@@ -98,7 +102,7 @@ function job:execute(light)
 		--smooth lighting
 		if smooth then
 			local iterations = math.ceil(blurStrength)
-			lib:blurCanvas(light.shadow.canvases[cascade], blurStrength / iterations, iterations, {smooth, false, false, false})
+			lib:blurCanvas(light.shadow.canvases[cascade], blurStrength / iterations, iterations, {true, false, false, false})
 		end
 		
 		shadowCam.rendered = true

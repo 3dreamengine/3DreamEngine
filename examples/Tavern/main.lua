@@ -65,10 +65,14 @@ for d,s in ipairs(tavern.positions) do
 		lights[d] = dream:newLight("point", s.x, s.y + 0.1, s.z, 1.0, 0.75, 0.3)
 		lights[d]:addShadow(true)
 		lights[d].shadow:setSmooth(true)
+		lights[d].shadow:setRefreshStepSize(1000)
+		lights[d].shadow:setLazy(true)
 	elseif s.name == "fire" then
 		lights[d] = dream:newLight("point", s.x, s.y + 0.1, s.z, 1.0, 0.75, 0.2)
 		lights[d]:addShadow(true)
 		lights[d].shadow:setSmooth(true)
+		lights[d].shadow:setRefreshStepSize(1000)
+		lights[d].shadow:setLazy(true)
 	end
 end
 
@@ -77,6 +81,14 @@ local lookingAtCheck = false
 local rotateCamera = true
 
 local noise = require(projectDir .. "noise").Simplex2D
+
+local function getFlickerOffset(d, f)
+	return vec3(
+		noise(love.timer.getTime(), d + 0) * f,
+		noise(love.timer.getTime(), d + 1) * f,
+		noise(love.timer.getTime(), d + 2) * f
+	)
+end
 
 function love.draw()
 	--update camera
@@ -109,6 +121,8 @@ function love.draw()
 		if s.name == "light" then
 			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 500.0
 			lights[d]:setBrightness(power)
+			lights[d].oPos = lights[d].oPos or lights[d].pos
+			lights[d]:setPosition(lights[d].oPos + getFlickerOffset(d, 0.02))
 			dream:addLight(lights[d])
 		elseif s.name == "candle" then
 			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 200.0
@@ -116,6 +130,8 @@ function love.draw()
 		elseif s.name == "fire" then
 			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 300.0
 			lights[d]:setBrightness(power)
+			lights[d].oPos = lights[d].oPos or lights[d].pos
+			lights[d]:setPosition(lights[d].oPos + getFlickerOffset(d, 0.02))
 			dream:addLight(lights[d])
 		end
 	end

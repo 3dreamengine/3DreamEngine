@@ -8,12 +8,13 @@ function lib:newShadow(typ, static, resolution)
 		static = static or false,
 		done = false,
 		target = false,
-		refreshStepSize = 1.0,
+		refreshStepSize = typ == "sun" and 1.0 or 0.0001,
 		
 		cascadeDistance = 8,
 		cascadeFactor = 4,
 		
 		smooth = false,
+		lazy = false,
 	}, self.meta.shadow)
 end
 
@@ -28,6 +29,7 @@ local class = {
 		cascadeFactor = "number",
 		
 		smooth = "boolean",
+		lazy = "boolean",
 	},
 }
 

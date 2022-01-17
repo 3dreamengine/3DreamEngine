@@ -52,15 +52,16 @@ function job:execute(light)
 			mipmaps = light.shadow.smooth and "manual" or "none"})
 	end
 	
-	local smooth = false
-	
-	if not light.shadow.lastPos or (light.pos - light.shadow.lastPos):lengthSquared() > 0.0001 then
+	--rerender static
+	if not light.shadow.lastPos or (light.pos - light.shadow.lastPos):lengthSquared() > light.shadow.refreshStepSize then
 		light.shadow.rendered = false
 		light.shadow.lastPos = light.pos
 	end
 	
+	light.lastFace = (light.lastFace or 0) % 7 + 1
+	
 	--render
-	for face = 1, 6 do
+	for face = light.shadow.lazy and light.lastFace or 1, math.min(6, light.shadow.lazy and light.lastFace or 6) do
 		local t = transformations[face]
 		t[1][4] = t[2]:dot(light.pos)
 		t[1][8] = t[3]:dot(light.pos)
@@ -72,7 +73,7 @@ function job:execute(light)
 			--static shadow
 			if not light.shadow.rendered then
 				lib:renderShadows(shadowCam, {{light.shadow.canvas, face = face}}, light.blacklist, false, nil, light.shadow.smooth)
-				smooth = light.shadow.smooth
+				light.shouldSmooth = light.shadow.smooth
 			end
 		else
 			if light.shadow.rendered then
@@ -82,17 +83,20 @@ function job:execute(light)
 				--both parts
 				lib:renderShadows(shadowCam, {{light.shadow.canvas, face = face}}, light.blacklist, false, nil, light.shadow.smooth)
 				lib:renderShadows(shadowCam, {{light.shadow.canvas, face = face}}, light.blacklist, true, nil, false)
-				smooth = light.shadow.smooth
+				light.shouldSmooth = light.shadow.smooth
 			end
 		end
 	end
 	
 	--prefilter
-	if smooth then
-		lib:blurCubeMap(light.shadow.canvas, 4, light.size, {smooth, false, false, false})
+	if not light.shadow.lazy or light.lastFace == 7 then
+		if light.shouldSmooth then
+			lib:blurCubeMap(light.shadow.canvas, 4, light.size, {true, false, false, false})
+			light.shouldSmooth = true
+		end
+		
+		light.shadow.rendered = true
 	end
-	
-	light.shadow.rendered = true
 end
 
 return job
