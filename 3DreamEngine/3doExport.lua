@@ -46,8 +46,6 @@ local function saveObject(obj, meshCache, dataStrings)
 		
 		["LOD_min"] = obj.LOD_min,
 		["LOD_max"] = obj.LOD_max,
-		
-		["visible"] = obj.visible,
 	}
 	
 	--save objects
@@ -69,7 +67,6 @@ local function saveObject(obj, meshCache, dataStrings)
 			["LOD_min"] = o.LOD_min,
 			["LOD_max"] = o.LOD_max,
 			
-			["visible"] = o.visible,
 			["renderVisibility"] = o.renderVisibility,
 			["shadowVisibility"] = o.shadowVisibility,
 			["farVisibility"] = o.farVisibility,

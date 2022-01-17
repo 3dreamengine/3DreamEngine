@@ -336,7 +336,7 @@ function lib:processObject(obj)
 	for _,typ in ipairs({"renderVisibility", "shadowVisibility"}) do
 		local max = { }
 		for d,o in pairs(obj.meshes) do
-			if o[typ] ~= false and o.tags.lod then
+			if o[typ] and o.tags.lod then
 				local nr = tonumber(o.tags.lod)
 				assert(nr, "LOD nr malformed: " .. o.name .. " (use 'LOD:integer')")
 				max[o.name] = math.max(max[o.name] or 0, nr)
@@ -345,7 +345,7 @@ function lib:processObject(obj)
 		
 		--apply LOD level
 		for d,o in pairs(obj.meshes) do
-			if o[typ] ~= false and max[o.name] then
+			if o[typ] and max[o.name] then
 				local nr = tonumber(o.tags.lod) or 0
 				o:setLOD(nr, max[o.name] == nr and math.huge or nr+1)
 			end

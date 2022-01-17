@@ -74,10 +74,6 @@ function class:preload()
 end
 
 function class:addObject(object, parentTransform, dynamic, boneTransforms, reflection)
-	if object.visible == false then
-		return
-	end
-	
 	if object.dynamic ~= nil then
 		dynamic = object.dynamic
 	end
@@ -121,10 +117,6 @@ function class:addObject(object, parentTransform, dynamic, boneTransforms, refle
 end
 
 function class:addMesh(mesh, transform, dynamic, boneTransforms, reflection)
-	if mesh.visible == false then
-		return
-	end
-	
 	local pos = getPos(mesh, transform)
 	local size = getSize(mesh, transform)
 	
@@ -159,13 +151,13 @@ function class:addMesh(mesh, transform, dynamic, boneTransforms, reflection)
 	local alpha = mesh.material.alpha and 1 or 2
 	
 	--render pass
-	if mesh.renderVisibility ~= false then
+	if mesh.renderVisibility then
 		local shaderID = lib:getRenderShaderID(task, pass, false)
 		self:addTo(task, self.tasks.render[dyn][alpha], shaderID, mesh.material)
 	end
 	
 	--shadow pass
-	if alpha == 2 and mesh.shadowVisibility ~= false and mesh.material.shadow ~= false then
+	if alpha == 2 and mesh.shadowVisibility and mesh.material.shadow ~= false then
 		local shaderID = lib:getRenderShaderID(task, pass, true)
 		self:addTo(task, self.tasks.shadows[dyn][alpha], shaderID, mesh.material)
 	end

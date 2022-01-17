@@ -11,10 +11,8 @@ function class:getLOD()
 end
 
 function class:setVisible(b)
-	self.visible = b
-end
-function class:isVisible()
-	return self.visible
+	self:setRenderVisibility(b)
+	self:setShadowVisibility(b)
 end
 
 function class:setRenderVisibility(b)
@@ -26,11 +24,11 @@ function class:setRenderVisibility(b)
 			s:setRenderVisibility(b)
 		end
 	else
-		self.renderVisibility = b
+		self.renderVisibility = b or false
 	end
 end
 function class:getRenderVisibility()
-	return self.renderVisibility == true
+	return self.renderVisibility
 end
 
 function class:setShadowVisibility(b)
@@ -42,11 +40,11 @@ function class:setShadowVisibility(b)
 			s:setShadowVisibility(b)
 		end
 	else
-		self.shadowVisibility = b
+		self.shadowVisibility = b or false
 	end
 end
 function class:getShadowVisibility()
-	return self.shadowVisibility == true
+	return self.shadowVisibility 
 end
 
 function class:setFarVisibility(b)

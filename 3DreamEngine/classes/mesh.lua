@@ -25,6 +25,9 @@ function lib:newMesh(name, material, meshType)
 		boundingBox = self:newBoundaryBox(),
 		
 		meshType = meshType,
+		
+		renderVisibility = true,
+		shadowVisibility = true,
 	}
 	
 	return setmetatable(o, self.meta.mesh)
@@ -57,13 +60,10 @@ function class:tostring()
 	end
 	
 	--visibility
-	if self.visible == false then
-		table.insert(tags, "hidden")
-	end
-	if self.renderVisibility == false then
+	if not self.renderVisibility then
 		table.insert(tags, "no shadows")
 	end
-	if self.shadowVisibility == false then
+	if not self.shadowVisibility then
 		table.insert(tags, "shadow caster")
 	end
 	
