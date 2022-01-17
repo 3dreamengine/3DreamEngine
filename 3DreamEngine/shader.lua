@@ -146,32 +146,29 @@ function lib.loadShader(self)
 end
 
 --the final canvas combines all resources into one result
-local sh_final = love.filesystem.read(lib.root .. "/shaders/final.glsl")
 function lib.getFinalShader(self, canvases)
 	local parts = { }
 	
-	parts[#parts+1] = canvases.postEffects and "#define POSTEFFECTS_ENABLED" or nil
-	parts[#parts+1] = canvases.postEffects and self.autoExposure_enabled and "#define AUTOEXPOSURE_ENABLED" or nil
-	parts[#parts+1] = canvases.postEffects and not earlyExposure(canvases) and self.exposure and "#define EXPOSURE_ENABLED" or nil
-	parts[#parts+1] = canvases.postEffects and not earlyExposure(canvases) and self.gamma and "#define GAMMA_ENABLED" or nil
-	parts[#parts+1] = canvases.postEffects and self.bloom_enabled and "#define BLOOM_ENABLED" or nil
+	table.insert(parts, canvases.postEffects and "#define POSTEFFECTS_ENABLED" or nil)
+	table.insert(parts, canvases.postEffects and self.autoExposure_enabled and "#define AUTOEXPOSURE_ENABLED" or nil)
+	table.insert(parts, canvases.postEffects and not earlyExposure(canvases) and self.exposure and "#define EXPOSURE_ENABLED" or nil)
+	table.insert(parts, canvases.postEffects and not earlyExposure(canvases) and self.gamma and "#define GAMMA_ENABLED" or nil)
+	table.insert(parts, canvases.postEffects and self.bloom_enabled and "#define BLOOM_ENABLED" or nil)
 	
-	parts[#parts+1] = self.fog_enabled and "#define FOG_ENABLED" or nil
-	parts[#parts+1] = self.AO_enabled and "#define AO_ENABLED" or nil
+	table.insert(parts, self.fog_enabled and "#define FOG_ENABLED" or nil)
+	table.insert(parts, self.AO_enabled and "#define AO_ENABLED" or nil)
 	
-	parts[#parts+1] = canvases.refractions and "#define REFRACTIONS_ENABLED" or nil
+	table.insert(parts, canvases.refractions and "#define REFRACTIONS_ENABLED" or nil)
 	
-	parts[#parts+1] = (canvases.fxaa and canvases.msaa == 0) and "#define FXAA_ENABLED" or nil
+	table.insert(parts, (canvases.fxaa and canvases.msaa == 0) and "#define FXAA_ENABLED" or nil)
 	
-	parts[#parts+1] = self.distortionMargin and string.format("#define DISTORTION_MARGIN %f", self.distortionMargin) or nil
+	table.insert(parts, self.distortionMargin and string.format("#define DISTORTION_MARGIN %f", self.distortionMargin) or nil)
 	
-	if self.fog_enabled then
-		parts[#parts+1] = codes.fog
-	end
+	table.insert(parts, self.fog_enabled and codes.fog or nil)
 	
 	local ID = table.concat(parts, "\n")
 	if not self.shaders.final[ID] then
-		self.shaders.final[ID] = love.graphics.newShader("#pragma language glsl3\n" .. ID .. "\n" .. sh_final)
+		self.shaders.final[ID] = love.graphics.newShader("#pragma language glsl3\n" .. ID .. "\n" .. codes.final)
 	end
 	return self.shaders.final[ID]
 end
@@ -361,7 +358,6 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, sun)
 	return self.mainShaders[shaderID][ID]
 end
 
-local baseParticleShader = love.filesystem.read(lib.root .. "/shaders/particle.glsl")
 function lib:getParticlesShader(pass, canvases, light, emissive, distortion, single)
 	--additional settings
 	local ID_settings = 0
@@ -424,7 +420,7 @@ function lib:getParticlesShader(pass, canvases, light, emissive, distortion, sin
 		}
 		
 		--construct shader
-		local code = baseParticleShader
+		local code = codes.particle
 		
 		--setting specific defines
 		code = code:gsub("#import globalDefines", table.concat(globalDefines, "\n"))

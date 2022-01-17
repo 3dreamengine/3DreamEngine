@@ -15,72 +15,6 @@ function lib:getPhysicsLowerMode()
 	return physicsLowerMode
 end
 
---receives an array of faces defined by three indices and an array with vertices and returns an array of connected subsets and an array of subset vertices indices
---connected sets are defined by a single shared vertex, recognized by its reference
-function lib:groupVertices(faces, vertices)
-	--initilize group indices
-	local groupIndices = { }
-	for d,s in ipairs(vertices) do
-		groupIndices[s] = d
-	end
-	
-	--group vertices
-	local active
-	local found = true
-	while found do
-		found = false
-		active = { }
-		for _,s in ipairs(faces) do
-			local a = vertices[s[1]]
-			local b = vertices[s[2]]
-			local c = vertices[s[3]]
-			
-			local ga = groupIndices[a]
-			local gb = groupIndices[b]
-			local gc = groupIndices[c]
-			
-			local min = math.min(ga, gb, gc)
-			local max = math.max(ga, gb, gc)
-			
-			if min == max then
-				active[ga] = true
-			else
-				groupIndices[a] = min
-				groupIndices[b] = min
-				groupIndices[c] = min
-				found = true
-			end
-		end
-	end
-	
-	--split into groups
-	local groups = { }
-	local ID = 0
-	for group,_ in pairs(active) do
-		ID = ID + 1
-		groups[ID] = { }
-		for _,s in ipairs(faces) do
-			local a = vertices[s[1]]
-			if groupIndices[a] == group then
-				table.insert(groups[ID], s)
-			end
-		end
-	end
-	
-	return groups
-end
-
---preprocess mesh and link required data
-function lib:getPhysicsData(obj)
-	local p = { }
-	p.groups = self:groupVertices(obj.faces, obj.vertices)
-	p.vertices = obj.vertices
-	p.normals = obj.normals
-	p.transform = obj.transform or mat4.getIdentity()
-	p.name = obj.name
-	return p
-end
-
 local threshold = 1 / 0.01
 local function insert(v, g)
 	local vx = math.floor(v.x * threshold)
@@ -118,24 +52,19 @@ function lib:getMeshPhysicsObject(phy, transform)
 	lib.deltonLoad:start("transform")
 	local transformed = { }
 	local vertices = { }
-	local t = (transform or mat4:getIdentity()) * phy.transform
 	for d,s in ipairs(phy.vertices) do
 		if not transformed[s] then
-			transformed[s] = t * vec3(s)
+			transformed[s] = transform and transform * vec3(s) or vec3(s)
 		end
 		vertices[d] = transformed[s]
 	end
 	
-	--transform normals
-	local transformed = { }
-	local normals = { }
-	local subm = phy.transform:subm()
+	--convert normals
 	for d,s in ipairs(phy.normals) do
-		if not transformed[s] then
-			transformed[s] = subm * vec3(s)
-		end
-		normals[d] = transformed[s]
+		phy.normals[d] = vec3(s)
 	end
+	
+	local normals = phy.normals
 	lib.deltonLoad:stop()
 	
 	local bothSides = physicsLowerMode == "complex" or physicsLowerMode == "full"

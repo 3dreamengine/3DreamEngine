@@ -138,7 +138,7 @@ end
 
 function sh:constructPixelBasic(dream, ID)
 	return ([[
-		float bias = mix(4.0, 0.0, dot(normal, viewPos)) / love_ScreenSize.x;
+		float bias = 8.0 / love_ScreenSize.x;
 		float shadow = sampleShadowSun(VertexPos, ss_pos_#ID#, ss_proj_1_#ID#, ss_proj_2_#ID#, ss_proj_3_#ID#, ss_tex_1_#ID#, ss_tex_2_#ID#, ss_tex_3_#ID#, ss_factor_#ID#, ss_distance_#ID#, ss_fade_#ID#, ss_staticShadow_#ID#, ss_smooth_#ID#, bias);
 		
 		light += ss_color_#ID# * shadow;

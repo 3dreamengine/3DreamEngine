@@ -572,6 +572,72 @@ function lib:HDRItoCubemap(hdri, resolution)
 	return canvas
 end
 
+
+--receives an array of faces defined by three indices and an array with vertices and returns an array of connected subsets and an array of subset vertices indices
+--connected sets are defined by a single shared vertex, recognized by its reference
+function lib:groupVertices(faces, vertices)
+	--initilize group indices
+	local groupIndices = { }
+	for d,s in ipairs(vertices) do
+		groupIndices[s] = d
+	end
+	
+	--group vertices
+	local active
+	local found = true
+	while found do
+		found = false
+		active = { }
+		for _,s in ipairs(faces) do
+			local a = vertices[s[1]]
+			local b = vertices[s[2]]
+			local c = vertices[s[3]]
+			
+			local ga = groupIndices[a]
+			local gb = groupIndices[b]
+			local gc = groupIndices[c]
+			
+			local min = math.min(ga, gb, gc)
+			local max = math.max(ga, gb, gc)
+			
+			if min == max then
+				active[ga] = true
+			else
+				groupIndices[a] = min
+				groupIndices[b] = min
+				groupIndices[c] = min
+				found = true
+			end
+		end
+	end
+	
+	--split into groups
+	local groups = { }
+	local ID = 0
+	for group,_ in pairs(active) do
+		ID = ID + 1
+		groups[ID] = { }
+		for _,s in ipairs(faces) do
+			local a = vertices[s[1]]
+			if groupIndices[a] == group then
+				table.insert(groups[ID], s)
+			end
+		end
+	end
+	
+	return groups
+end
+
+--preprocess mesh and link required data
+function lib:getPhysicsData(mesh)
+	local p = { }
+	p.groups = self:groupVertices(mesh.faces, mesh.vertices)
+	p.vertices = mesh.vertices
+	p.normals = mesh.normals
+	p.name = mesh.name
+	return p
+end
+
 --view normals
 lib.lookNormals = {
 	vec3(1, 0, 0),

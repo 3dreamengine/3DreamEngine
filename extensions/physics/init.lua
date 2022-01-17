@@ -2,7 +2,8 @@ local p = { }
 
 local lib = _3DreamEngine
 
-require(lib.root .. "/physicsFunctions")
+local root = (...)
+require(root .. "/functions")
 
 --physics object
 local colliderMeta = {
