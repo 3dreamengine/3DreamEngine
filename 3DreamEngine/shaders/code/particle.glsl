@@ -26,10 +26,6 @@ extern Image tex_distortion;
 extern float exposure;
 #endif
 
-#ifdef GAMMA_ENABLED
-extern float gamma;
-#endif
-
 //uniforms required by the lighting
 #import lightingSystemInit
 
@@ -85,11 +81,6 @@ void effect() {
 	//exposure
 #ifdef EXPOSURE_ENABLED
 	col = vec3(1.0) - exp(-col * exposure);
-#endif
-	
-	//gamma correction
-#ifdef GAMMA_ENABLED
-	col = pow(col, vec3(1.0 / gamma));
 #endif
 
 #ifdef REFRACTIONS_ENABLED

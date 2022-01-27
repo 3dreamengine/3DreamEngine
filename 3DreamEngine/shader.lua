@@ -114,8 +114,9 @@ function lib:getShader(s)
 	return lib.shaders[s]
 end
 
-local function earlyExposure(canvases)
-	return canvases.mode ~= "normal" or canvases.format == "rgba8"
+--returns true of some postprocessing steps
+local function isHDR(canvases)
+	return false--canvases.mode == "normal" and canvases.format ~= "rgba8"
 end
 
 --load all setting depending shaders
@@ -149,11 +150,9 @@ end
 function lib.getFinalShader(self, canvases)
 	local parts = { }
 	
-	table.insert(parts, canvases.postEffects and "#define POSTEFFECTS_ENABLED" or nil)
-	table.insert(parts, canvases.postEffects and self.autoExposure_enabled and "#define AUTOEXPOSURE_ENABLED" or nil)
-	table.insert(parts, canvases.postEffects and not earlyExposure(canvases) and self.exposure and "#define EXPOSURE_ENABLED" or nil)
-	table.insert(parts, canvases.postEffects and not earlyExposure(canvases) and self.gamma and "#define GAMMA_ENABLED" or nil)
-	table.insert(parts, canvases.postEffects and self.bloom_enabled and "#define BLOOM_ENABLED" or nil)
+	table.insert(parts, self.autoExposure_enabled and "#define AUTOEXPOSURE_ENABLED" or nil)
+	table.insert(parts, isHDR(canvases) and self.exposure and "#define EXPOSURE_ENABLED" or nil)
+	table.insert(parts, self.bloom_enabled and "#define BLOOM_ENABLED" or nil)
 	
 	table.insert(parts, self.fog_enabled and "#define FOG_ENABLED" or nil)
 	table.insert(parts, self.AO_enabled and "#define AO_ENABLED" or nil)
@@ -274,11 +273,8 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, sun)
 			end
 			
 			--canvas settings
-			if canvases.postEffects and self.exposure and earlyExposure(canvases) then
+			if self.exposure and not isHDR(canvases) then
 				table.insert(defines, "#define EXPOSURE_ENABLED")
-			end
-			if canvases.postEffects and self.gamma and earlyExposure(canvases) then
-				table.insert(defines, "#define GAMMA_ENABLED")
 			end
 			if canvases.mode ~= "direct" then
 				table.insert(defines, "#define DEPTH_AVAILABLE")
@@ -367,11 +363,8 @@ function lib:getParticlesShader(pass, canvases, light, emissive, distortion, sin
 	if distortion and pass == 2 then
 		ID_settings = ID_settings + 2^1
 	end
-	if canvases.postEffects and self.exposure and earlyExposure(canvases) then
+	if self.exposure and not isHDR(canvases) then
 		ID_settings = ID_settings + 2^2
-	end
-	if canvases.postEffects and self.gamma and earlyExposure(canvases) then
-		ID_settings = ID_settings + 2^3
 	end
 	if self.fog_enabled and canvases.mode ~= "normal" then
 		ID_settings = ID_settings + 2^4
@@ -396,11 +389,8 @@ function lib:getParticlesShader(pass, canvases, light, emissive, distortion, sin
 		if distortion and pass == 2 then
 			table.insert(globalDefines, "#define TEX_DISORTION")
 		end
-		if canvases.postEffects and self.exposure and earlyExposure(canvases) then
+		if self.exposure and not isHDR(canvases) then
 			table.insert(globalDefines, "#define EXPOSURE_ENABLED")
-		end
-		if canvases.postEffects and self.gamma and earlyExposure(canvases) then
-			table.insert(globalDefines, "#define GAMMA_ENABLED")
 		end
 		if self.fog_enabled and canvases.mode ~= "normal" then
 			table.insert(globalDefines, "#define FOG_ENABLED")

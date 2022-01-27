@@ -83,8 +83,7 @@ lib:setAO(32, 0.75, false)
 lib:setBloom(-1)
 lib:setFog()
 lib:setFogHeight()
-lib:setGamma(false)
-lib:setExposure(1.0)
+lib:setExposure(false)
 lib:setMaxLights(16)
 lib:setNameDecoder("(.*)_.*")
 lib:setFrustumCheck(true, false)
@@ -93,7 +92,7 @@ lib:setGodrays(16, false)
 lib:setDistortionMargin(true)
 
 --loader settings
-lib:setResourceLoader(true, true)
+lib:setResourceLoader(true)
 lib:setJobHandlerSlots(1)
 lib:setSmoothLoading(1 / 1000)
 lib:setSmoothLoadingBufferSize(128)
@@ -109,7 +108,6 @@ lib:setAutoExposure(false)
 
 --canvas set settings
 lib.renderSet = lib:newSetSettings()
-lib.renderSet:setPostEffects(true)
 lib.renderSet:setRefractions(true)
 lib.renderSet:setMode("normal")
 
@@ -181,7 +179,6 @@ function lib:newCanvasSet(settings, w, h)
 	set.height = h
 	set.msaa = settings.msaa
 	set.mode = settings.mode
-	set.postEffects = settings.postEffects and settings.mode == "normal"
 	set.refractions = settings.alphaPass and settings.refractions and settings.mode == "normal"
 	set.format = settings.format
 	set.alphaPass = settings.alphaPass
@@ -212,7 +209,7 @@ function lib:newCanvasSet(settings, w, h)
 	end
 	
 	--post effects
-	if set.postEffects then
+	if settings.mode == "normal" then
 		--bloom blurring canvases
 		if self.bloom_enabled then
 			set.bloom_1 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = settings.format, readable = true, msaa = 0})

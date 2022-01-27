@@ -89,19 +89,6 @@ function lib:getAutoExposure()
 end
 
 
---gamma
-function lib:setGamma(g)
-	if g then
-		check(g, "number")
-		self.gamma = g
-	else
-		self.gamma = false
-	end
-end
-function lib:getGamma()
-	return self.gamma
-end
-
 
 --AO settings
 function lib:setAO(samples, resolution, blur)

@@ -12,6 +12,8 @@ varying float depth;               //depth
 
 extern float translucent;
 
+extern float exposure;
+
 extern float shadowDistanceFactor;
 
 //shader specific defines
@@ -61,11 +63,6 @@ void effect() {
 	//exposure
 #ifdef EXPOSURE_ENABLED
 	color = vec3(1.0) - exp(-color * exposure);
-#endif
-	
-	//gamma correction
-#ifdef GAMMA_ENABLED
-	color = pow(color, vec3(1.0 / gamma));
 #endif
 	
 	//distortion

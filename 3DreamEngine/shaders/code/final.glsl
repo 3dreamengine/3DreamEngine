@@ -11,7 +11,6 @@ extern Image canvas_exposure;
 
 extern vec3 viewPos;
 
-extern float gamma;
 extern float exposure;
 
 #ifdef FOG_ENABLED
@@ -140,9 +139,6 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 	col.rgb = mix(col.rgb, fogColor.rgb, fogColor.a);
 #endif
 	
-	//additional post effects
-#ifdef POSTEFFECTS_ENABLED
-	
 	//eye adaption
 #ifdef AUTOEXPOSURE_ENABLED
 	col.rgb *= eyeAdaption;
@@ -151,12 +147,6 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 	//exposure
 #ifdef EXPOSURE_ENABLED
 	col.rgb = vec3(1.0) - exp(-col.rgb * exposure);
-#endif
-	
-	//gamma correction
-#ifdef GAMMA_ENABLED
-	col.rgb = pow(col.rgb, vec3(1.0 / gamma));
-#endif
 #endif
 	
 	return col * color;

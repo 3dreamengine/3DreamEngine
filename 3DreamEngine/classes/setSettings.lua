@@ -5,7 +5,6 @@ function lib:newSetSettings()
 	return setmetatable({
 		resolution = 512,
 		format = "rgba16f",
-		postEffects = false,
 		msaa = 4,
 		fxaa = false,
 		refractions = false,
@@ -21,7 +20,6 @@ local class = {
 	setterGetter = {
 		resolution = "number",
 		format = "string",
-		postEffects = "boolean",
 		msaa = "number",
 		fxaa = "boolean",
 		refractions = "boolean",

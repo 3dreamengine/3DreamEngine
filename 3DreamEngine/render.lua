@@ -240,7 +240,6 @@ function lib:render(canvases, cam)
 						shader:send("tex_depth", canvases.depth)
 					end
 					
-					checkAndSendCached(shaderObject, "gamma", self.gamma)
 					checkAndSendCached(shaderObject, "exposure", self.exposure)
 					
 					--camera
@@ -347,7 +346,6 @@ function lib:render(canvases, cam)
 				
 				shader:send("transformProj", cam.transformProj)
 				if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", {cam.pos:unpack()}) end
-				checkAndSendCached(shaderObject, "gamma", self.gamma)
 				checkAndSendCached(shaderObject, "exposure", self.exposure)
 				checkAndSendCached(shaderObject, "ambient", self.sun_ambient)
 				
@@ -393,7 +391,6 @@ function lib:render(canvases, cam)
 				
 				shader:send("transformProj", cam.transformProj)
 				if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", {cam.pos:unpack()}) end
-				checkAndSendCached(shaderObject, "gamma", self.gamma)
 				checkAndSendCached(shaderObject, "exposure", self.exposure)
 				checkAndSendCached(shaderObject, "ambient", self.sun_ambient)
 				
@@ -554,7 +551,7 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects, smoo
 	return scene
 end
 
---full render, including bloom, fxaa, exposure and gamma correction
+--full render, including bloom, fxaa and exposure
 function lib:renderFull(cam, canvases)
 	love.graphics.push("all")
 	if canvases.mode ~= "direct" then
@@ -610,7 +607,7 @@ function lib:renderFull(cam, canvases)
 	end
 	
 	--bloom
-	if canvases.postEffects and self.bloom_enabled then
+	if canvases.mode == "normal" and self.bloom_enabled then
 		--down sample
 		love.graphics.setCanvas(canvases.bloom_1)
 		love.graphics.clear()
@@ -674,7 +671,6 @@ function lib:renderFull(cam, canvases)
 		checkAndSend(shader, "transformInverse", cam.transformProj:invert())
 		checkAndSend(shader, "viewPos", cam.pos)
 		
-		checkAndSend(shader, "gamma", self.gamma)
 		checkAndSend(shader, "exposure", self.exposure)
 		
 		if shader:hasUniform("fog_density") then
