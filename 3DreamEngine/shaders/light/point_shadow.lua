@@ -4,12 +4,12 @@ sh.type = "light"
 
 function sh:constructDefinesGlobal(dream)
 	return [[
-	#define DISTANCE_FACTOR 30.0f
+	#define DISTANCE_FACTOR 10.0f
 	
 	float sampleShadowPoint(vec3 lightVec, samplerCube tex, bool staticShadow, bool smoothShadows) {
 		float max_distance = 0.5;
 		float mipmap_count = 3.0;
-		float sharpness = 0.2;
+		float sharpness = 1.0;
 		
 		float depth = length(lightVec);
 		float bias = depth * 0.01 + 0.01;
@@ -22,7 +22,7 @@ function sh:constructDefinesGlobal(dream)
 		if (staticShadow) {
 			if (smoothShadows) {
 				float sampleDepth = textureLod(tex, n, mm).x;
-				return clamp(exp(sharpness * (sampleDepth - depth * DISTANCE_FACTOR)), 0.0, 1.0);
+				return clamp(exp(sharpness * (sampleDepth / DISTANCE_FACTOR - depth)), 0.0, 1.0);
 			} else {
 				float r = textureLod(tex, n, 0.0).x;
 				return r + bias > depth ? 1.0 : 0.0;
@@ -31,7 +31,7 @@ function sh:constructDefinesGlobal(dream)
 			if (smoothShadows) {
 				float sampleDepth = textureLod(tex, n, mm).x;
 				return (
-					clamp(exp(sharpness * (sampleDepth - depth * DISTANCE_FACTOR)), 0.0, 1.0) *
+					clamp(exp(sharpness * (sampleDepth / DISTANCE_FACTOR - depth)), 0.0, 1.0) *
 					(textureLod(tex, n, 0.0).y + bias > depth ? 1.0 : 0.0)
 				);
 			} else {

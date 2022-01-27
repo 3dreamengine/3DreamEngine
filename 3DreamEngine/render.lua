@@ -506,7 +506,7 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects, smoo
 				shader:send("viewPos", viewPos)
 			end
 			
-			shader:send("shadowDistanceFactor", smoothShadows and 30 or 1)
+			shader:send("shadowDistanceFactor", smoothShadows and 10 or 1)
 			
 			shaderObject.pixelShader:perShader(self, shaderObject)
 			shaderObject.vertexShader:perShader(self, shaderObject)

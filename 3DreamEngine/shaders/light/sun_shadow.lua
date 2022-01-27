@@ -4,7 +4,7 @@ sh.type = "light"
 
 function sh:constructDefinesGlobal(dream)
 	return [[
-		#define DISTANCE_FACTOR 30.0f
+		#define DISTANCE_FACTOR 10.0f
 		
 		float sampleShadowSun2(Image tex, vec2 shadowUV, float depth, float bias, bool staticShadow, bool smoothShadows) {
 			float ox = float(fract(love_PixelCoord.x * 0.5) > 0.25);
