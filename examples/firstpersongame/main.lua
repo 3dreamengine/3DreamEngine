@@ -12,7 +12,7 @@ local sky = require("extensions/sky")
 dream:setSky(sky.render)
 
 --sun
-local sun = dream:newLight("sun", vec3(1, 1, 1), vec3(1, 1, 1), 5)
+local sun = dream:newLight("sun")
 sun:addShadow()
 
 --load all materials

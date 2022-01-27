@@ -114,11 +114,6 @@ function lib:getShader(s)
 	return lib.shaders[s]
 end
 
---returns true of some postprocessing steps
-local function isHDR(canvases)
-	return false--canvases.mode == "normal" and canvases.format ~= "rgba8"
-end
-
 --load all setting depending shaders
 function lib.loadShader(self)
 	self.shaders.final = { }
@@ -151,7 +146,7 @@ function lib.getFinalShader(self, canvases)
 	local parts = { }
 	
 	table.insert(parts, self.autoExposure_enabled and "#define AUTOEXPOSURE_ENABLED" or nil)
-	table.insert(parts, isHDR(canvases) and self.exposure and "#define EXPOSURE_ENABLED" or nil)
+	table.insert(parts, self.exposure and "#define EXPOSURE_ENABLED" or nil)
 	table.insert(parts, self.bloom_enabled and "#define BLOOM_ENABLED" or nil)
 	
 	table.insert(parts, self.fog_enabled and "#define FOG_ENABLED" or nil)
@@ -273,9 +268,6 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, sun)
 			end
 			
 			--canvas settings
-			if self.exposure and not isHDR(canvases) then
-				table.insert(defines, "#define EXPOSURE_ENABLED")
-			end
 			if canvases.mode ~= "direct" then
 				table.insert(defines, "#define DEPTH_AVAILABLE")
 			end
@@ -363,9 +355,6 @@ function lib:getParticlesShader(pass, canvases, light, emissive, distortion, sin
 	if distortion and pass == 2 then
 		ID_settings = ID_settings + 2^1
 	end
-	if self.exposure and not isHDR(canvases) then
-		ID_settings = ID_settings + 2^2
-	end
 	if self.fog_enabled and canvases.mode ~= "normal" then
 		ID_settings = ID_settings + 2^4
 	end
@@ -388,9 +377,6 @@ function lib:getParticlesShader(pass, canvases, light, emissive, distortion, sin
 		end
 		if distortion and pass == 2 then
 			table.insert(globalDefines, "#define TEX_DISORTION")
-		end
-		if self.exposure and not isHDR(canvases) then
-			table.insert(globalDefines, "#define EXPOSURE_ENABLED")
 		end
 		if self.fog_enabled and canvases.mode ~= "normal" then
 			table.insert(globalDefines, "#define FOG_ENABLED")

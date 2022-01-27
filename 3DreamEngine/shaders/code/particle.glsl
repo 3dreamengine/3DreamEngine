@@ -22,10 +22,6 @@ extern Image tex_distortion;
 
 #import fog
 
-#ifdef EXPOSURE_ENABLED
-extern float exposure;
-#endif
-
 //uniforms required by the lighting
 #import lightingSystemInit
 
@@ -76,11 +72,6 @@ void effect() {
 #ifdef FOG_ENABLED
 	vec4 fogColor = getFog(depth, viewVec, viewPos);
 	col = mix(col, fogColor.rgb, fogColor.a);
-#endif
-
-	//exposure
-#ifdef EXPOSURE_ENABLED
-	col = vec3(1.0) - exp(-col * exposure);
 #endif
 
 #ifdef REFRACTIONS_ENABLED

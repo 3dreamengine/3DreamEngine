@@ -1,6 +1,5 @@
 varying vec3 VertexPos;
 varying vec3 starsVec;
-const float brightness = 1.5;
 
 extern CubeImage stars;
 extern float starsStrength;
@@ -19,7 +18,7 @@ extern Image MainTex;
 
 void effect() {
 	vec3 dir = normalize(VertexPos);
-	vec3 col = Texel(MainTex, vec2(time, 0.5-dir.y*0.5)).rgb * VaryingColor.rgb * brightness;
+	vec3 col = Texel(MainTex, vec2(time, 0.5-dir.y*0.5)).rgb * VaryingColor.rgb;
 	
 	//stars
 	if (starsStrength > 0.0) {

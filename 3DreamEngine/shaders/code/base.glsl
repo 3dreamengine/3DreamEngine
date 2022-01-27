@@ -12,8 +12,6 @@ varying float depth;               //depth
 
 extern float translucent;
 
-extern float exposure;
-
 extern float shadowDistanceFactor;
 
 //shader specific defines
@@ -58,11 +56,6 @@ void effect() {
 #ifdef FOG_ENABLED
 	vec4 fogColor = getFog(depth, viewVec, viewPos);
 	color = mix(color, fogcolor, fogColor.a);
-#endif
-	
-	//exposure
-#ifdef EXPOSURE_ENABLED
-	color = vec3(1.0) - exp(-color * exposure);
 #endif
 	
 	//distortion

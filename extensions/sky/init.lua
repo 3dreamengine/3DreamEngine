@@ -39,8 +39,8 @@ function sky:setSkyColor(c)
 	if type(c) == "number" then
 		local color = c * 0.75
 		local darkBlue = vec3(30, 40, 60):normalize()
-		local lightBlue = vec3(0.6, 0.8, 1.0)
-		self.skyColor = darkBlue * 0.2 * color + lightBlue * (1.0 - color)
+		local lightBlue = vec3(0.6, 0.8, 1.0) * 1.5
+		self.skyColor = darkBlue * 0.3 * color + lightBlue * (1.0 - color)
 	else
 		self.skyColor = c
 	end
@@ -155,23 +155,25 @@ function sky.render(dream, transformProj, camTransform, transformScale)
 	
 	--suns
 	for _,l in ipairs(dream.lighting) do
-		local size = 1 / (2.0 + math.sin(self.sky_time * math.pi * 2.0))
-		
-		love.graphics.setColor(l.color * l.brightness)
-		love.graphics.setBlendMode("add")
-		
-		love.graphics.setShader(self.shaders.sun)
-		
-		self.shaders.sun:send("transformProj", transformProj)
-		self.shaders.sun:send("up", {(up * size):unpack()})
-		self.shaders.sun:send("right", {(right * size):unpack()})
-		self.shaders.sun:send("InstanceCenter", {(l.direction):unpack()})
-		
-		dream.object_plane.meshes.Plane.mesh:setTexture(self.textures.sun)
-		
-		love.graphics.draw(dream.object_plane.meshes.Plane.mesh)
-		
-		love.graphics.setBlendMode("alpha")
+		if l.typ == "sun" then
+			local size = 1 / (2.0 + math.sin(self.sky_time * math.pi * 2.0))
+			
+			love.graphics.setColor(l.color * l.brightness)
+			love.graphics.setBlendMode("add")
+			
+			love.graphics.setShader(self.shaders.sun)
+			
+			self.shaders.sun:send("transformProj", transformProj)
+			self.shaders.sun:send("up", {(up * size):unpack()})
+			self.shaders.sun:send("right", {(right * size):unpack()})
+			self.shaders.sun:send("InstanceCenter", {(l.direction):unpack()})
+			
+			dream.object_plane.meshes.Plane.mesh:setTexture(self.textures.sun)
+			
+			love.graphics.draw(dream.object_plane.meshes.Plane.mesh)
+			
+			love.graphics.setBlendMode("alpha")
+		end
 	end
 	
 	--clouds
@@ -179,7 +181,7 @@ function sky.render(dream, transformProj, camTransform, transformScale)
 		love.graphics.setShader(self.shaders.clouds)
 		self.shaders.clouds:send("transformProj", transformProj)
 		
-		self.shaders.clouds:send("sunColor", {(sun and (sun.color * sun.brightness * 0.25) or vec3(1.0, 1.0, 1.0)):unpack()})
+		self.shaders.clouds:send("sunColor", {(sun and (sun.color * sun.brightness) or vec3(1.0, 1.0, 1.0)):unpack()})
 		
 		self.shaders.clouds:send("sunVec", sun and sun.direction or vec3(0, 1, 0))
 		

@@ -19,12 +19,12 @@ void effect() {
 	
 	float density = Texel(clouds, cloudsVec.xzy).r;
 	
-	float direct = 1.0 + max(dot(sunVec, dir), 0.0) * (1.0 - abs(sunVec.y) * 0.5) * 5.0;
+	float direct = 1.0 + max(dot(sunVec, dir), 0.0) * (1.0 - abs(sunVec.y) * 0.5) * 1.0;
 	
 	vec3 col = sunColor * direct;
 	
 	love_Canvases[0] = vec4(col, density);
-	love_Canvases[1] = vec4(250.0, 0.0, 0.0, density > 0.25 ? 1.0 : 0.0);
+	love_Canvases[1] = vec4(0.0);
 }
 #endif
 
