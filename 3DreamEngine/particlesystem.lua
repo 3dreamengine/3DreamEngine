@@ -8,10 +8,6 @@ local lib = _3DreamEngine
 --load a list of particle objects and prepare them
 local function loadParticles(self, particleSystems)
 	for _, ps in ipairs(particleSystems) do
-		if ps.randomSize then
-			print("warning: depricated particlesystem.randomSize found! Particle systems have changed.")
-		end
-		
 		--default values
 		ps.size = ps.size or {0.75, 1.25}
 		ps.rotation = ps.rotation or 0.0
@@ -193,11 +189,10 @@ function lib:addParticlesystems(obj)
 				t.max = t.max + vec3(_min, _min, _min)
 				
 				--find best splitting layout
-				local target = 10000
 				local splits = vec3(1, 1, 1)
 				local size = t.max - t.min
 				local vertices = #particle.vertices * #t.particles
-				while vertices / (splits[1] * splits[2] * splits[3]) > target do
+				while vertices / (splits[1] * splits[2] * splits[3]) > (ps.maxCellVertexCount or 10000) do
 					local max = math.max(unpack(size / splits))
 					for i = 1, 3 do
 						if size[i] / splits[i] == max then
@@ -209,6 +204,9 @@ function lib:addParticlesystems(obj)
 				
 				--create the particle mesh
 				local delta = size / splits
+				if ps.maxCellSize then
+					delta = delta:min(ps.maxCellSize)
+				end
 				local ID = 0
 				for x = t.min.x, t.max.x, delta.x do
 					for y = t.min.y, t.max.y, delta.y do
@@ -243,6 +241,7 @@ function lib:addParticlesystems(obj)
 								
 								local sz = particle.boundingBox.size * t.maxScale
 								local margin = vec3(sz, sz, sz)
+								
 								po.boundingBox = self:newBoundaryBox(true)
 								po.boundingBox.first = vec3(x, y, z) - margin
 								po.boundingBox.second = po.boundingBox.first + delta + margin * 2

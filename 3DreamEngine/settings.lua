@@ -49,7 +49,7 @@ end
 function lib:setLODDistance(d)
 	check(d, "number")
 	self.LODDistance = d
-	self.LODFactor = 1 / d / d
+	self.LODFactor = 1 / d
 end
 function lib:getLODDistance()
 	return self.LODDistance

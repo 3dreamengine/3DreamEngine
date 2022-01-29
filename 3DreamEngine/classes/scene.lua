@@ -20,21 +20,21 @@ local function getPos(object, transform)
 end
 
 local function getSize(object, transform)
-	local scale = transform and math.max(
+	local scale = transform and math.sqrt(math.max(
 		(transform[1]^2 + transform[5]^2 + transform[9]^2),
 		(transform[2]^2 + transform[6]^2 + transform[10]^2),
 		(transform[3]^2 + transform[7]^2 + transform[11]^2)
-	) or 1
+	)) or 1
 	
-	return math.sqrt(3 * (object.boundingBox.size)^2 * scale)
+	return object.boundingBox.size * scale
 end
 
 local function isWithingLOD(LOD_min, LOD_max, pos, size)
 	local camPos = lib.cam.pos
 	if camPos then
-		local dist = ((pos - camPos):lengthSquared() - size^2) * lib.LODFactor
-		if dist <= (LOD_max + 1)^2 then
-			return (dist <= 0 or dist >= LOD_min^2) and dist <= LOD_max^2, true
+		local dist = math.max(((pos - camPos):length() - size) * lib.LODFactor, 0)
+		if dist <= LOD_max + 1 then
+			return dist >= LOD_min and dist <= LOD_max, true
 		else
 			return false, false
 		end

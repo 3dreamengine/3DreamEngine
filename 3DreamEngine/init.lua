@@ -86,7 +86,7 @@ lib:setExposure(false)
 lib:setMaxLights(16)
 lib:setNameDecoder("(.*)_.*")
 lib:setFrustumCheck(true, false)
-lib:setLODDistance(20)
+lib:setLODDistance(10)
 lib:setGodrays(16, false)
 lib:setDistortionMargin(true)
 
