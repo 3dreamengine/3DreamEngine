@@ -47,10 +47,10 @@ end
 
 function sh:perMaterial(dream, shaderObject, material)
 	local shader = shaderObject.shader
-	shader:send("shader_wind_scale", self.scale * (material.shaderWindScale or 1.0))
-	shader:send("shader_wind_strength", self.strength * (material.shaderWindStrength or 1.0))
-	shader:send("shader_wind_height", material.shaderWindHeight or 1.0)
-	shader:send("shader_wind", love.timer.getTime() * self.speed * (material.shaderWindSpeed or 1.0))
+	shader:send("shader_wind_scale", material.shaderWindScale or self.scale)
+	shader:send("shader_wind_strength", material.shaderWindStrength or self.strength)
+	shader:send("shader_wind_height", 1 / (material.shaderWindHeight or 1.0))
+	shader:send("shader_wind", (love.timer.getTime() % 10000) * (material.shaderWindSpeed or self.speed))
 	shader:send("shader_wind_grass", material.shaderWindGrass and 1 or 0)
 end
 

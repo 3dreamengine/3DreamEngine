@@ -4,10 +4,10 @@ sh.type = "vertex"
 
 function sh:init(dream)
 	self.speed = 0.05      -- the time multiplier
-	self.strength = 1.0    -- the multiplier of animation
+	self.strength = 0.5    -- the multiplier of animation
 	self.scale = 0.25      -- the scale of wind waves
 	
-	self.fadeWidth = 1
+	self.fadeWidth = 1     -- the blending margin
 end
 
 function sh:getId(dream, mat, shadow)
@@ -16,17 +16,16 @@ end
 
 function sh:buildDefines(dream, mat)
 	return [[
-	varying float shader_fade;
-	
+#ifdef PIXEL
+	extern float shader_fade;
+#endif
+
 #ifdef VERTEX
 	extern float shader_wind;
 	extern float shader_wind_strength;
 	extern float shader_wind_scale;
 	extern float shader_wind_height;
 	extern float shader_wind_grass;
-	
-	extern float shader_fade_distance;
-	extern float shader_fade_width;
 	
 	extern Image tex_noise;
 #endif
@@ -35,9 +34,7 @@ end
 
 function sh:buildPixel(dream, mat)
 	return [[
-		if (shader_fade + alpha - 1.0 < 0.0) {
-			discard;
-		}
+		alpha *= shader_fade;
 	]]
 end
 
@@ -48,9 +45,6 @@ function sh:buildVertex(dream, mat)
 		float windStrength = mix(1.0, (normalTransform * VertexPosition.xyz).y * shader_wind_height, shader_wind_grass) * shader_wind_strength;
 		
 		VertexPos = (transform * vec4(VertexPos, 1.0)).xyz + noise * vec3(windStrength, windStrength * 0.25, windStrength);
-		
-		float dist = distance(VertexPos, viewPos);
-		shader_fade = (shader_fade_distance - dist) * shader_fade_width;
 	]]
 end
 
@@ -61,18 +55,20 @@ end
 
 function sh:perMaterial(dream, shaderObject, material)
 	local shader = shaderObject.shader
-	shader:send("shader_wind_scale", self.scale * (material.shaderWindScale or 1.0))
-	shader:send("shader_wind_strength", self.strength * (material.shaderWindStrength or 1.0))
+	shader:send("shader_wind_scale", material.shaderWindScale or self.scale)
+	shader:send("shader_wind_strength", material.shaderWindStrength or self.strength)
 	shader:send("shader_wind_height", 1 / (material.shaderWindHeight or 1.0))
-	shader:send("shader_wind", love.timer.getTime() * self.speed * (material.shaderWindSpeed or 1.0))
-	shader:send("shader_fade_width", 1 / self.fadeWidth / (material.shaderWindFadeWidth or 1.0))
+	shader:send("shader_wind", (love.timer.getTime() % 10000) * (material.shaderWindSpeed or self.speed))
 	shader:send("shader_wind_grass", material.shaderWindGrass and 1 or 0)
 end
 
 function sh:perTask(dream, shaderObject, task)
 	local shader = shaderObject.shader
 	local LOD_max = (task:getMesh().LOD_max or 1) * dream.LODDistance
-	shader:send("shader_fade_distance", LOD_max)
+	local width = task:getMesh().material.shaderWindFadeWidth or self.fadeWidth
+	local dist = (task:getPos() - dream.cam.pos):length() - task:getSize()
+	local fade = math.max(0, math.min(1, (LOD_max - dist) / width))
+	shader:send("shader_fade", fade)
 end
 
 return sh
