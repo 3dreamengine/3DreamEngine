@@ -62,9 +62,9 @@ function class:tostring()
 	--visibility
 	if not self.renderVisibility and not self.shadowVisibility then
 		table.insert(tags, "invisible")
-	elseif not self.renderVisibility then
-		table.insert(tags, "no shadows")
 	elseif not self.shadowVisibility then
+		table.insert(tags, "no shadows")
+	elseif not self.renderVisibility then
 		table.insert(tags, "shadow caster")
 	end
 	
@@ -325,6 +325,8 @@ function class:create()
 	meshFormat:create(self)
 end
 
+local cached = { }
+
 function class:encode(meshCache, dataStrings)
 	local ffi = require("ffi")
 	
@@ -392,27 +394,37 @@ function class:encode(meshCache, dataStrings)
 				local hash = love.data.encode("string", "hex", md5)
 				
 				--build a C struct to make sure data match
-				local str = "typedef struct {" .. "\n"
 				local attrCount = 0
 				local types = { }
-				for _,ff in ipairs(f) do
-					if ff[2] == "float" then
-						str = str .. "float "
-					elseif ff[2] == "byte" then
-						str = str .. "unsigned char "
-					else
-						error("unknown data type " .. ff[2])
+				if cached[hash] then
+					attrCount = cached[hash].attrCount
+					types = cached[hash].types
+				else
+					local str = "typedef struct {" .. "\n"
+					for _,ff in ipairs(f) do
+						if ff[2] == "float" then
+							str = str .. "float "
+						elseif ff[2] == "byte" then
+							str = str .. "unsigned char "
+						else
+							error("unknown data type " .. ff[2])
+						end
+						
+						for i = 1, ff[3] do
+							attrCount = attrCount + 1
+							types[attrCount] = ff[2]
+							str = str .. "x" .. attrCount .. (i == ff[3] and ";" or ", ")
+						end
+						str = str .. "\n"
 					end
+					str = str .. "} mesh_vertex_" .. hash .. ";"
+					ffi.cdef(str)
 					
-					for i = 1, ff[3] do
-						attrCount = attrCount + 1
-						types[attrCount] = ff[2]
-						str = str .. "x" .. attrCount .. (i == ff[3] and ";" or ", ")
-					end
-					str = str .. "\n"
+					cached[hash] = {
+						attrCount = attrCount,
+						types = types,
+					}
 				end
-				str = str .. "} mesh_vertex_" .. hash .. ";"
-				ffi.cdef(str)
 				
 				--byte data
 				local byteData = love.data.newByteData(mesh:getVertexCount() * ffi.sizeof("mesh_vertex_" .. hash))
