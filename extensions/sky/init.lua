@@ -50,23 +50,25 @@ function sky:getSkyColor()
 end
 
 
---helper function to set 
+--helper function to set sun and time
+sky.time = 0
+sky.day = 0
 function sky:setDaytime(sun, time, dream)
 	local c = #self.sunlight
 	
 	--time, 0.0 is sunrise, 0.5 is sunset
-	self.sky_time = time % 1.0
-	self.sky_day = time % c
+	self.time = time % 1.0
+	self.day = time % c
 	
 	--position
 	sun.direction = mat4:getRotateY(self.sun_rotation) * mat4:getRotateZ(self.sun_offset) * vec3(
 		0,
-		math.sin(self.sky_time * math.pi * 2),
-		-math.cos(self.sky_time * math.pi * 2)
+		math.sin(self.time * math.pi * 2),
+		-math.cos(self.time * math.pi * 2)
 	):normalize()
 	
 	--current sample
-	local p = self.sky_time * c
+	local p = self.time * c
 	
 	--direct sun color
 	sun.color = (
@@ -82,7 +84,7 @@ function sky:setDaytime(sun, time, dream)
 	)
 end
 function sky:getDaytime()
-	return self.sky_time, self.sky_day
+	return self.time, self.day
 end
 
 --rainbow
@@ -116,10 +118,10 @@ function sky.render(dream, transformProj, camTransform, transformScale)
 	--simple wilkie hosek sky
 	love.graphics.setShader(self.shaders.sky)
 	self.shaders.sky:send("transformProj", transformProj)
-	self.shaders.sky:send("time", self.sky_time)
+	self.shaders.sky:send("time", self.time)
 	
 	self.shaders.sky:send("stars", self.textures.stars)
-	self.shaders.sky:send("starsStrength", -math.sin(self.sky_time * math.pi * 2))
+	self.shaders.sky:send("starsStrength", -math.sin(self.time * math.pi * 2))
 	self.shaders.sky:send("starsTransform", mat4:getRotateX(love.timer.getTime() * 0.0025):subm())
 	
 	self.shaders.sky:send("rainbow", self.textures.rainbow)
@@ -148,7 +150,7 @@ function sky.render(dream, transformProj, camTransform, transformScale)
 	self.shaders.moon:send("up", {(up * size):unpack()})
 	self.shaders.moon:send("right", {(right * size):unpack()})
 	self.shaders.moon:send("InstanceCenter", {(sun and -sun.direction or vec3(1, 1, 1)):unpack()})
-	self.shaders.moon:send("sun", {math.cos(self.sky_day / 30 * math.pi * 2), math.sin(self.sky_day / 30 * math.pi * 2), 0})
+	self.shaders.moon:send("sun", {math.cos(self.day / 30 * math.pi * 2), math.sin(self.day / 30 * math.pi * 2), 0})
 	self.shaders.moon:send("normalTex", self.textures.moon_normal)
 	
 	dream.object_plane.meshes.Plane.mesh:setTexture(self.textures.moon)
@@ -156,7 +158,7 @@ function sky.render(dream, transformProj, camTransform, transformScale)
 	--suns
 	for _,l in ipairs(dream.lighting) do
 		if l.typ == "sun" then
-			local size = 1 / (2.0 + math.sin(self.sky_time * math.pi * 2.0))
+			local size = 1 / (2.0 + math.sin(self.time * math.pi * 2.0))
 			
 			love.graphics.setColor(l.color * l.brightness)
 			love.graphics.setBlendMode("add")

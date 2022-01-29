@@ -87,10 +87,16 @@ function class:initShaders()
 	for d,s in pairs(self.objects) do
 		s:initShaders()
 	end
+	for d,s in pairs(self.meshes) do
+		s:initShaders()
+	end
 end
 
 function class:cleanup()
 	for d,s in pairs(self.objects) do
+		s:cleanup(s)
+	end
+	for d,s in pairs(self.meshes) do
 		s:cleanup(s)
 	end
 end
@@ -269,7 +275,9 @@ end
 function class:createMeshes()
 	if not self.linked then
 		for d,o in pairs(self.meshes) do
-			o:create()
+			if not o.mesh then
+				o:create()
+			end
 		end
 		
 		for d,o in pairs(self.objects) do

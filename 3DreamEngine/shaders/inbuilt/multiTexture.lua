@@ -12,26 +12,26 @@ function sh:getId(dream, mat, shadow)
 	end
 end
 
-function sh:initMesh(dream, obj)
-	if obj.mesh then
-		if not obj.uv2Mesh and not obj.meshes then
-			assert(obj.colors, "To use the multiTetxure module at least a second UV map for the mask texture is required.")
-			obj.uv2Mesh = love.graphics.newMesh({
+function sh:initMesh(dream, mesh)
+	if mesh.mesh then
+		if not mesh.uv2Mesh and not mesh.meshes then
+			assert(mesh.colors, "To use the multiTetxure shader the color buffer should contain the blending factor.")
+			mesh.uv2Mesh = love.graphics.newMesh({
 				{"VertexBlend", "float", 1},
 				{"VertexTexCoord_2", "float", 2},
-			}, #obj.colors, "triangles", "static")
+			}, #mesh.colors, "triangles", "static")
 			
 			--create mesh
-			local scale = obj.texCoords2 and 1.0 or (obj.multiTextureUV2Scale or 1.0)
-			for d,c in ipairs(obj.colors) do
-				local uv = (obj.texCoords2 or obj.texCoords)[d]
-				obj.uv2Mesh:setVertex(d, c[obj.multiTextureColorChannel or 1], uv[1] * scale, uv[2] * scale)
+			local scale = mesh.texCoords2 and 1.0 or (mesh.multiTextureUV2Scale or 1.0)
+			for d,c in ipairs(mesh.colors) do
+				local uv = (mesh.texCoords2 or mesh.texCoords)[d]
+				mesh.uv2Mesh:setVertex(d, c[mesh.multiTextureColorChannel or 1], uv[1] * scale, uv[2] * scale)
 			end
 		end
 		
-		if obj.uv2Mesh then
-			obj:getMesh("mesh"):attachAttribute("VertexBlend", obj:getMesh("uv2Mesh"))
-			obj:getMesh("mesh"):attachAttribute("VertexTexCoord_2", obj:getMesh("uv2Mesh"))
+		if mesh.uv2Mesh then
+			mesh:getMesh("mesh"):attachAttribute("VertexBlend", mesh:getMesh("uv2Mesh"))
+			mesh:getMesh("mesh"):attachAttribute("VertexTexCoord_2", mesh:getMesh("uv2Mesh"))
 		end
 	end
 end
