@@ -60,7 +60,6 @@ require((...) .. "/jobs")
 require((...) .. "/particlesystem")
 require((...) .. "/particles")
 require((...) .. "/3doExport")
-require((...) .. "/bake")
 
 --file loader
 lib.loader = { }

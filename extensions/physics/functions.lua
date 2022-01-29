@@ -5,7 +5,7 @@ physicsFunctions.lua - contains physics library relevant functions
 
 local lib = _3DreamEngine
 
-local physicsLowerMode = "full"
+local physicsLowerMode = "height"
 
 function lib:setPhysicsLowerMode(m)
 	assert(m == "complex" or m == m == "full" or m == "simple" or m == "height", "lower mode has to be complex, full, simple or height")

@@ -1,5 +1,10 @@
 local lib = _3DreamEngine
 
+local function removePostfix(t)
+	local v = t:match("(.*)%.[^.]+")
+	return v or t
+end
+
 function lib:newLinkedObject(original, source)
 	return setmetatable({
 		linked = source
@@ -10,7 +15,8 @@ function lib:newObject(path)
 	--get name and dir
 	path = path or "unknown"
 	local n = string.split(path, "/")
-	local name = n[#n] or path
+	local name = removePostfix(n[#n] or path)
+	
 	local dir = #n > 1 and table.concat(n, "/", 1, #n-1) or ""
 	
 	return setmetatable({

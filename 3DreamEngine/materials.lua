@@ -97,7 +97,7 @@ function lib:lookForTextures(mat, directory, filter)
 			for name, path in pairs(lib:getImagePaths()) do
 				if name:sub(1, #directory) == directory then
 					local fn = name:sub(#directory + 2):lower()
-					if fn:find(typ) and (not name or fn:find(filter:lower())) then
+					if fn:find(typ) and (not filter or fn:find(filter:lower())) then
 						texSetter(mat, typ, path)
 						break
 					end

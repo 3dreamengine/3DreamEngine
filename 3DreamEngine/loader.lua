@@ -11,7 +11,6 @@ lib.meshTags = {
 	["LOD"] = true,
 	["POS"] = true,
 	["LINK"] = true,
-	["BAKE"] = true,
 	["ID"] = true,
 	["RAYTRACE"] = true,
 	["REFLECTION"] = true,
@@ -136,7 +135,7 @@ function lib:loadObject(path, args)
 	
 	
 	--parse tags
-	for nnn,m in pairs(obj.meshes) do
+	for _,m in pairs(obj.meshes) do
 		m.tags = { }
 		local possibles = string.split(m.name, "_")
 		
@@ -262,10 +261,6 @@ function lib:processObject(obj)
 			end
 			r = r / c
 			
-			if m.transform then
-				x, y, z = (m.transform * vec3(x, y, z)):unpack()
-			end
-			
 			--add position
 			table.insert(obj.positions, {
 				name = type(m.tags.pos) == "string" and m.tags.pos or m.name,
@@ -387,7 +382,7 @@ function lib:processObject(obj)
 			end
 			
 			--remove if no longer used
-			if not mesh.tags.lod and not mesh.tags.bake then
+			if not mesh.tags.lod then
 				obj.meshes[id] = nil
 			end
 		end
@@ -407,24 +402,6 @@ function lib:processObject(obj)
 	--calculate bounding box
 	if not obj.boundingBox.initialized then
 		obj:updateBoundingBox()
-	end
-	
-	
-	--bake
-	do
-		local groups = { }
-		for d,o in pairs(obj.meshes) do
-			if o.tags.bake then
-				if not groups[o.tags.bake] then
-					groups[o.tags.bake] = {o}
-				else
-					table.insert(groups[o.tags.bake], o)
-				end
-			end
-		end
-		for d,s in pairs(groups) do
-			self:bakeMaterials(s, obj.path .. "_" .. tostring(d))
-		end
 	end
 	
 	

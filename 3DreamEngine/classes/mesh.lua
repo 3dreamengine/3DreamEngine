@@ -1,8 +1,8 @@
 local lib = _3DreamEngine
 
 local function removePostfix(t)
-	local v = t:match("(.*)%.[^.]+")
-	return v or t
+	local f = t:find(".", 0, true)
+	return f and t:sub(1, f - 1) or t
 end
 
 function lib:newMesh(name, material, meshType)
@@ -60,10 +60,11 @@ function class:tostring()
 	end
 	
 	--visibility
-	if not self.renderVisibility then
+	if not self.renderVisibility and not self.shadowVisibility then
+		table.insert(tags, "invisible")
+	elseif not self.renderVisibility then
 		table.insert(tags, "no shadows")
-	end
-	if not self.shadowVisibility then
+	elseif not self.shadowVisibility then
 		table.insert(tags, "shadow caster")
 	end
 	

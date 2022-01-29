@@ -360,7 +360,7 @@ return function(self, obj, path)
 	end
 	
 	local function addMeshesToObject(name, obj, meshes, transform, controller)
-		for i, mesh in ipairs(meshes) do
+		for i, mesh in ipairs(meshes or {}) do
 			local n = i == 1 and name or name .. "." .. i
 			obj.meshes[n] = mesh:clone()
 			obj.meshes[n]:setName(n)
