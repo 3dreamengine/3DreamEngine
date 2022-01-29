@@ -222,7 +222,7 @@ end
 
 --returns the final joint transformation based on vertex weights
 function class:getJointMat(skeleton, i)
-	assert(skeleton.transforms, "No pose has bene applied to skeleton!")
+	assert(skeleton.transforms, "No pose has been applied to skeleton!")
 	local m = mat4()
 	for jointNr = 1, #self.joints[i] do
 		m = m + skeleton.transforms[ self.joints[i][jointNr] ] * self.weights[i][jointNr]

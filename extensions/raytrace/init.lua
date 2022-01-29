@@ -113,60 +113,7 @@ local function buildTree(vertices, list, depth)
 end
 
 --returns true of the ray hits the triangle
-local function triangeCheck_bool(o, d, m)
-	--intersection
-	local oz = m[9] * o[1] + m[10] * o[2] + m[11] * o[3] + m[12]
-	local dz = m[9] * d[1] + m[10] * d[2] + m[11] * d[3] 
-	local t = - oz / dz
-	if t < 0 or t > 1 then
-		return false
-	end
-	
-	--barycentric u
-	local ox = m[1] * o[1] + m[2] * o[2] + m[3] * o[3] + m[4]
-	local dx = m[1] * d[1] + m[2] * d[2] + m[3] * d[3]
-	local u = ox + t * dx
-	if u < 0 or u > 1 then
-		return false
-	end
-	
-	--barycentric v
-	local oy = m[5] * o[1] + m[6] * o[2] + m[7] * o[3] + m[8]
-	local dy = m[5] * d[1] + m[6] * d[2] + m[7] * d[3]
-	local v = oy + t * dy
-	return v >= 0 and u+v <= 1
-end
-
---performs a boolean raytrace on given origin and direction vector
-local function raytrace_bool(origin, direction, node)
-	if node.pos then
-		--on which side is the line
-		local a = node.normal:dot(vec3(0, 0, 0) - node.pos) > 0
-		local b = node.normal:dot(origin, direction - node.pos) > 0
-		
-		if a == b then
-			if a then
-				return raytrace_bool(origin, direction, node.left)
-			else
-				return raytrace_bool(origin, direction, node.right)
-			end
-		else
-			--both sides
-			return raytrace_bool(origin, direction, node.left) or raytrace_bool(origin, direction, node.right)
-		end
-	else
-		--leaf node, go through all possible triangles
-		for d,s in ipairs(node) do
-			if triangeCheck_bool(origin, direction, s) then
-				return true
-			end
-		end
-		return false
-	end
-end
-
---returns true of the ray hits the triangle
-local function triangeCheck_position(o, d, m)
+local function triangleCheck(o, d, m)
 	--intersection
 	local oz = m[9] * o[1] + m[10] * o[2] + m[11] * o[3] + m[12]
 	local dz = m[9] * d[1] + m[10] * d[2] + m[11] * d[3]
@@ -197,27 +144,26 @@ local function triangeCheck_position(o, d, m)
 end
 
 --performs a boolean raytrace on given origin and direction vector
-local function raytrace_position(origin, direction, node)
+local function raytraceTree(origin, direction, node)
 	if node.pos then
 		--on which side is the line
 		local a = node.normal:dot(vec3(0, 0, 0) - node.pos) > 0
 		local b = node.normal:dot(origin, direction - node.pos) > 0
-		
 		if a == b then
 			if a then
-				raytrace_position(origin, direction, node.left)
+				raytraceTree(origin, direction, node.left)
 			else
-				raytrace_position(origin, direction, node.right)
+				raytraceTree(origin, direction, node.right)
 			end
 		else
 			--both sides
-			raytrace_position(origin, direction, node.left)
-			raytrace_position(origin, direction, node.right)
+			raytraceTree(origin, direction, node.left)
+			raytraceTree(origin, direction, node.right)
 		end
 	else
 		--leaf node, go through all possible triangles
 		for d,s in ipairs(node) do
-			triangeCheck_position(origin, direction, s)
+			triangleCheck(origin, direction, s)
 		end
 	end
 end
@@ -256,9 +202,16 @@ function raytrace:getObject()
 	return nearestObject
 end
 
+local function getInvertedTransform(object)
+	if not object.inverseTransform then
+		object.inverseTransform = object.transform:invert()
+	end
+	return object.inverseTransform
+end
+
 local function transform(origin, direction, object)
 	if object.transform then
-		local m = object:getInvertedTransform()
+		local m = getInvertedTransform(object)
 		
 		return m * origin, vec3({
 			m[1] * direction[1] + m[2] * direction[2] + m[3] * direction[3],
@@ -270,39 +223,32 @@ local function transform(origin, direction, object)
 	end
 end
 
-function raytrace:raytrace(object, o_origin, o_direction, mode, inner)
+function raytrace:raytrace(object, origin, direction, filterTags, inner)
 	--clear
-	local origin, direction = o_origin, o_direction
 	if not inner then
 		maxT, maxU, maxV, maxF, nearestObject = 1, false, false, false, false
 	end
 	
-	--object transform
-	origin, direction = transform(o_origin, o_direction, object)
-	
 	if object.class == "object" then
+		--object transform
+		local localOrigin, localDirection = transform(origin, direction, object)
+		
 		--for all meshes
 		for _,s in pairs(object.meshes) do
 			if s.vertices then
-				local result = self:raytrace(s, origin, direction, mode, true)
-				if result and mode == "bool" then
-					return true
-				end
+				self:raytrace(s, localOrigin, localDirection, filterTags, true)
 			end
 		end
 		
 		--for all objects
 		for _,s in pairs(object.objects) do
-			local result = self:raytrace(s, origin, direction, mode, true)
-			if result and mode == "bool" then
-				return true
-			end
-		end
-		
-		if mode == "bool" then
-			return false
+			self:raytrace(s, localOrigin, localDirection, filterTags, true)
 		end
 	elseif object.class == "mesh" then
+		if filterTags and not object.tags.raytrace then
+			return false
+		end
+		
 		--boundingbox check
 		local center = object.boundingBox.center
 		local nearest = nearestPointToLine(origin, origin + direction, center)
@@ -318,19 +264,10 @@ function raytrace:raytrace(object, o_origin, o_direction, mode, inner)
 		end
 		
 		--raytrace
-		if mode == "bool" then
-			local found = raytrace_bool(origin, direction, object.raytraceTree)
-			if found then
-				nearestObject = object
-			end
-			return found
-		else
-			--just fill as the super object will handle further math
-			local old = maxT
-			raytrace_position(origin, direction, object.raytraceTree)
-			if old ~= maxT then
-				nearestObject = object
-			end
+		local old = maxT
+		raytraceTree(origin, direction, object.raytraceTree)
+		if old ~= maxT then
+			nearestObject = object
 		end
 	else
 		error("object or mesh expected")
@@ -338,7 +275,7 @@ function raytrace:raytrace(object, o_origin, o_direction, mode, inner)
 	
 	--return final position and normal
 	if not inner and maxU then
-		return o_origin + maxT * o_direction
+		return origin + maxT * direction
 	else
 		return false
 	end

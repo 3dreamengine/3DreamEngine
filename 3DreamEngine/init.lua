@@ -87,7 +87,7 @@ lib:setMaxLights(16)
 lib:setNameDecoder("(.*)_.*")
 lib:setFrustumCheck(true, false)
 lib:setLODDistance(10)
-lib:setGodrays(16, false)
+lib:setGodrays(false, false)
 lib:setDistortionMargin(true)
 
 --loader settings

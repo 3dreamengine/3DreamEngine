@@ -39,6 +39,8 @@ local function smallest(x, y, x1, y1, x2, y2, x3, y3)
 end
 
 function lib:getMeshPhysicsObject(phy, transform)
+	lib.deltonLoad:start("newPhysicsMesh")
+	
 	local n = { }
 	
 	n.typ = "mesh"
@@ -241,6 +243,8 @@ function lib:getMeshPhysicsObject(phy, transform)
 			end
 		end
 	end
+	lib.deltonLoad:stop()
+	
 	lib.deltonLoad:stop()
 	
 	return n
