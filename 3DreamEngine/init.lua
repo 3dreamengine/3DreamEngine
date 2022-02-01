@@ -174,7 +174,6 @@ function lib:newCanvasSet(settings, w, h)
 	h = h or settings.resolution
 	
 	--settings
-	set.shaderID = settings.shaderID
 	set.width = w
 	set.height = h
 	set.msaa = settings.msaa

@@ -200,6 +200,7 @@ function lib:getRenderShaderID(task, pass, shadows)
 	
 	--construct full ID
 	return string.char(
+		mesh.instanceMesh and 1 or 0,
 		reflections and 1 or 0,
 		mesh.instanceMesh and 1 or 0,
 		pixelShader.id % 256, math.floor(pixelShader.id / 256),
@@ -211,19 +212,42 @@ function lib:getRenderShaderID(task, pass, shadows)
 	)
 end
 
-function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, sun)
-	--combine the settings ID and the light id
-	local shaderID = (shadows and sun and 2 or 0) + (pass or 0) + (canvases and canvases.shaderID or 0)
-	if light then
-		shaderID = light.ID .. shaderID
-	end
-	if not self.mainShaders[shaderID] then
-		self.mainShaders[shaderID] = { }
+function lib:getRenderShader(ID, mesh, pass, canvases, light, shadows, sun)
+	--collect additional defines
+	local settings = 0
+	if shadows then
+		settings = settings + 2 ^ 0
+		if sun then
+			settings = settings + 2 ^ 1
+		end
+	else
+		--settings
+		if pass == 1 then
+			settings = settings + 2 ^ 2
+		elseif pass == 2 then
+			if canvases.refractions then
+				settings = settings + 2 ^ 3
+			end
+			settings = settings + 2 ^ 4
+		end
+		
+		--canvas settings
+		if canvases.mode ~= "direct" then
+			settings = settings + 2 ^ 5
+		end
+		if self.gamma then
+			settings = settings + 2 ^ 6
+		end
+		if self.fog_enabled and canvases.mode ~= "normal" then
+			settings = settings + 2 ^ 7
+		end
 	end
 	
-	if not self.mainShaders[shaderID][ID] then
-		local mat = obj.material
-		local reflection = not shadows and (obj.reflection or self.defaultReflection)
+	local shaderID = ID .. (light and light.ID or "") .. string.char(settings)
+	
+	if not self.mainShaders[shaderID] then
+		local mat = mesh.material
+		local reflection = not shadows and (mesh.reflection or self.defaultReflection)
 		
 		--additional data
 		local info = {
@@ -233,11 +257,11 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, sun)
 			shadows = shadows,
 			uniforms = { },
 			
-			pixelShader = mat.pixelShader or obj.pixelShader or self.defaultPixelShader,
-			vertexShader = mat.vertexShader or obj.vertexShader or self.defaultVertexShader,
-			worldShader = mat.worldShader or obj.worldShader or self.defaultWorldShader,
+			pixelShader = mat.pixelShader or mesh.pixelShader or self.defaultPixelShader,
+			vertexShader = mat.vertexShader or mesh.vertexShader or self.defaultVertexShader,
+			worldShader = mat.worldShader or mesh.worldShader or self.defaultWorldShader,
 		}
-		self.mainShaders[shaderID][ID] = info
+		self.mainShaders[shaderID] = info
 		
 		--additional code
 		local defines = { }
@@ -246,7 +270,7 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, sun)
 		local vertex = { }
 		
 		--if instancing is used
-		if obj.instanceMesh then
+		if mesh.instanceMesh then
 			table.insert(defines, "#define INSTANCING")
 		end
 		
@@ -349,7 +373,7 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, sun)
 		self.mainShaderCount = self.mainShaderCount + 1
 	end
 	
-	return self.mainShaders[shaderID][ID]
+	return self.mainShaders[shaderID]
 end
 
 function lib:getParticlesShaderID(pass, canvases, emissive, distortion, single)
