@@ -229,10 +229,10 @@ function raytrace:raytrace(object, origin, direction, filterTags, inner)
 		maxT, maxU, maxV, maxF, nearestObject = 1, false, false, false, false
 	end
 	
+	--object transform
+	local localOrigin, localDirection = transform(origin, direction, object)
+	
 	if object.class == "object" then
-		--object transform
-		local localOrigin, localDirection = transform(origin, direction, object)
-		
 		--for all meshes
 		for _,s in pairs(object.meshes) do
 			if s.vertices then
@@ -251,7 +251,7 @@ function raytrace:raytrace(object, origin, direction, filterTags, inner)
 		
 		--boundingbox check
 		local center = object.boundingBox.center
-		local nearest = nearestPointToLine(origin, origin + direction, center)
+		local nearest = nearestPointToLine(localOrigin, localOrigin + localDirection, center)
 		if (nearest - center):lengthSquared() > object.boundingBox.size^2 then
 			return false
 		end
@@ -265,7 +265,7 @@ function raytrace:raytrace(object, origin, direction, filterTags, inner)
 		
 		--raytrace
 		local old = maxT
-		raytraceTree(origin, direction, object.raytraceTree)
+		raytraceTree(localOrigin, localDirection, object.raytraceTree)
 		if old ~= maxT then
 			nearestObject = object
 		end
