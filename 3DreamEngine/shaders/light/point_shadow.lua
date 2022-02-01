@@ -50,6 +50,7 @@ function sh:constructDefines(dream, ID)
 		extern vec3 ps_color_#ID#;
 		extern bool ps_static_#ID#;
 		extern bool ps_smooth_#ID#;
+		extern float ps_attenuation_#ID#;
 	]]):gsub("#ID#", ID)
 end
 
@@ -69,7 +70,7 @@ function sh:constructPixel(dream, ID)
 		
 		if (shadow > 0.0) {
 			float distance = length(lightVec) + 1.0;
-			float power = 1.0 / (distance * distance);
+			float power = pow(distance, ps_attenuation_#ID#);
 			vec3 lightColor = ps_color_#ID# * shadow * power;
 			lightVec = normalize(lightVec);
 			
@@ -86,7 +87,7 @@ function sh:constructPixelBasic(dream, ID)
 		
 		if (shadow > 0.0) {
 			float distance = length(lightVec) + 1.0;
-			float power = 1.0 / (distance * distance);
+			float power = pow(distance, ps_attenuation_#ID#);
 			light += ps_color_#ID# * shadow * power;
 		}
 	]]):gsub("#ID#", ID)
@@ -103,6 +104,7 @@ function sh:sendUniforms(dream, shaderObject, light, ID)
 		shader:send("ps_tex_" .. ID, light.shadow.canvas)
 		shader:send("ps_color_" .. ID, {(light.color * light.brightness):unpack()})
 		shader:send("ps_pos_" .. ID, {light.pos:unpack()})
+		shader:send("ps_attenuation_" .. ID, -light.attenuation)
 		
 		shader:send("ps_static_" .. ID, light.shadow.static and true or false)
 		shader:send("ps_smooth_" .. ID, light.shadow.smooth and true or false)

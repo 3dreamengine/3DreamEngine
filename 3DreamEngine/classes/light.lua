@@ -23,6 +23,7 @@ function lib:newLight(typ, pos, color, brightness, old, ...)
 		color = color and color:normalize() or vec3(1, 1, 1),
 		direction = vec3(1, 1, 1),
 		brightness = brightness or 1.0,
+		attenuation = 2.0,
 		
 		godray = nil,
 		godrayLength = typ == "sun" and 0.1 or 0.05,
@@ -38,6 +39,7 @@ local class = {
 	setterGetter = {
 		name = "string",
 		size = "number",
+		attenuation = "number",
 		godrayLength = "number",
 		godraySize = "number",
 	},

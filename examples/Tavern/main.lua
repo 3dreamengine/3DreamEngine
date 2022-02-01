@@ -65,12 +65,14 @@ for d,s in ipairs(tavern.positions) do
 		lights[d].shadow:setSmooth(true)
 		lights[d].shadow:setRefreshStepSize(1000)
 		lights[d].shadow:setLazy(true)
+		lights[d]:setAttenuation(3) --unrealistic but looks better
 	elseif s.name == "fire" then
 		lights[d] = dream:newLight("point", s.x, s.y + 0.1, s.z, 1.0, 0.75, 0.2)
 		lights[d]:addShadow(true)
 		lights[d].shadow:setSmooth(true)
 		lights[d].shadow:setRefreshStepSize(1000)
 		lights[d].shadow:setLazy(true)
+		lights[d]:setAttenuation(3) --unrealistic but looks better
 	end
 end
 
@@ -117,7 +119,7 @@ function love.draw()
 	love.graphics.setColor(0, 0, 0, 1)
 	for d,s in ipairs(tavern.positions) do
 		if s.name == "light" then
-			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 35.0
+			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 200.0
 			lights[d]:setBrightness(power)
 			lights[d].oPos = lights[d].oPos or lights[d].pos
 			lights[d]:setPosition(lights[d].oPos + getFlickerOffset(d, 0.02))
@@ -126,7 +128,7 @@ function love.draw()
 			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 200.0
 			particleBatch:addQuad(quads[math.ceil(d + love.timer.getTime() * 24) % 25 + 1], s.x, s.y + 0.02, s.z, 0, power * 0.015, nil, 3.0)
 		elseif s.name == "fire" then
-			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 75.0
+			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 300.0
 			lights[d]:setBrightness(power)
 			lights[d].oPos = lights[d].oPos or lights[d].pos
 			lights[d]:setPosition(lights[d].oPos + getFlickerOffset(d, 0.02))
@@ -268,6 +270,7 @@ function love.keypressed(key)
 	
 	if key == "f" then
 		dream.fog_enabled = not dream.fog_enabled
+		dream:init()
 	end
 	
 	if key == "l" then

@@ -10,6 +10,7 @@ function sh:constructDefinesGlobal(dream)
 		
 		extern vec3 point_simple_pos[]] .. dream.max_lights .. [[];
 		extern vec3 point_simple_color[]] .. dream.max_lights .. [[];
+		extern float point_simple_attenuation[]] .. dream.max_lights .. [[];
 	]]
 end
 
@@ -22,7 +23,7 @@ function sh:constructPixelGlobal(dream)
 		for (int i = 0; i < point_simple_count; i++) {
 			vec3 lightVec = point_simple_pos[i] - VertexPos;
 			float distance = length(lightVec) + 1.0;
-			float power = 1.0 / (distance * distance);
+			float power = pow(distance, point_simple_attenuation[i]);
 			vec3 lightColor = point_simple_color[i] * power;
 			lightVec = normalize(lightVec);
 			
@@ -36,7 +37,7 @@ function sh:constructPixelBasicGlobal(dream)
 		for (int i = 0; i < point_simple_count; i++) {
 			vec3 lightVec = point_simple_pos[i] - VertexPos;
 			float distance = length(lightVec) + 1.0;
-			float power = 1.0 / (distance * distance);
+			float power = pow(distance, point_simple_attenuation[i]);
 			light += point_simple_color[i] * power;
 		}
 	]])
@@ -54,17 +55,20 @@ function sh:sendGlobalUniforms(dream, shaderObject, count, lighting)
 	local shader = shaderObject.shader
 	
 	local colors = { }
-	local pos = {}
+	local pos = { }
+	local attenuation = { }
 	for d,s in ipairs(lighting) do
 		if s.light_typ == "point_simple" then
 			table.insert(colors, s.color * s.brightness)
 			table.insert(pos, s.pos)
+			table.insert(attenuation, s.attenuation)
 		end
 	end
 	
 	shader:send("point_simple_count", count)
 	shader:send("point_simple_pos", unpack(pos))
 	shader:send("point_simple_color", unpack(colors))
+	shader:send("point_simple_attenuation", unpack(attenuation))
 end
 
 function sh:sendUniforms(dream, shaderObject, light, ID)
