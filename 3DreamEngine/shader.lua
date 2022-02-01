@@ -352,30 +352,34 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, sun)
 	return self.mainShaders[shaderID][ID]
 end
 
-function lib:getParticlesShader(pass, canvases, light, emissive, distortion, single)
-	--additional settings
-	--todo cleanup
-	local ID_settings = 0
+function lib:getParticlesShaderID(pass, canvases, emissive, distortion, single)
+	local id = 0
 	if emissive then
-		ID_settings = ID_settings + 2^0
+		id = id + 2^0
 	end
 	if distortion and pass == 2 then
-		ID_settings = ID_settings + 2^1
+		id = id + 2^1
 	end
 	if self.fog_enabled and canvases.mode ~= "normal" then
-		ID_settings = ID_settings + 2^4
+		id = id + 2^2
+	end
+	if self.gamma then
+		id = id + 2^3
 	end
 	if canvases.refractions and pass == 2 then
-		ID_settings = ID_settings + 2^5
+		id = id + 2^4
 	end
 	if pass == 1 and canvases.mode ~= "direct" then
-		ID_settings = ID_settings + 2^6
+		id = id + 2^5
 	end
 	if single then
-		ID_settings = ID_settings + 2^7
+		id = id + 2^6
 	end
-	
-	local ID = light.ID .. string.char(ID_settings)
+	return string.char(id)
+end
+
+function lib:getParticlesShader(pass, canvases, light, emissive, distortion, single)
+	local ID = light.ID .. self:getParticlesShaderID(pass, canvases, emissive, distortion, single)
 	
 	if not self.particlesShader[ID] then
 		local defines = { }
