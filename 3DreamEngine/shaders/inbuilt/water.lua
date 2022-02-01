@@ -96,7 +96,7 @@ function sh:buildPixel(dream, mat)
 	float density = clamp(foamDensity - waterDepth * 4.0, 0.0, 1.0);
 	
 	//color
-	vec4 c = Texel(tex_albedo, uvw) * color_albedo;
+	vec4 c = gammaCorrectedTexel(tex_albedo, uvw) * color_albedo;
 	albedo = mix(liquid_albedo, c.rgb, density);
 	alpha = mix(clamp(liquid_alpha, 0.0, 1.0), c.a, density);
 	
@@ -113,7 +113,7 @@ function sh:buildPixel(dream, mat)
 	
 	//emission
 	#ifdef TEX_EMISSION
-		emission = mix(liquid_emission, Texel(tex_emission, uvw).rgb * color_emission, density);
+		emission = mix(liquid_emission, gammaCorrectedTexel(tex_emission, uvw).rgb * color_emission, density);
 	#else
 		emission = mix(liquid_emission, color_albedo.rgb * color_emission, density);
 	#endif

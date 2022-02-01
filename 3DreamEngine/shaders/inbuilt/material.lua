@@ -55,7 +55,7 @@ end
 function sh:buildVertex(dream, mat)
 	return [[
 	//get color
-	VaryingColor = Texel(tex_lookup, vec2(VertexMaterial, 0.0));
+	VaryingColor = gammaCorrectedTexel(tex_lookup, vec2(VertexMaterial, 0.0));
 	
 	//extract material
 	VaryingMaterial = Texel(tex_lookup, vec2(VertexMaterial, 1.0)).rgb;

@@ -14,8 +14,6 @@ dream.renderSet:setRefractions(true)
 dream:setSky(false)
 --dream:setDefaultReflection(cimg:load(projectDir .. "sky.cimg"))
 
-dream:setAutoExposure(true)
-
 dream:setFog(0.05, {0.7, 0.6, 0.5}, 0.0)
 dream:setFogHeight(0.0, 2.5)
 
@@ -119,7 +117,7 @@ function love.draw()
 	love.graphics.setColor(0, 0, 0, 1)
 	for d,s in ipairs(tavern.positions) do
 		if s.name == "light" then
-			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 500.0
+			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 35.0
 			lights[d]:setBrightness(power)
 			lights[d].oPos = lights[d].oPos or lights[d].pos
 			lights[d]:setPosition(lights[d].oPos + getFlickerOffset(d, 0.02))
@@ -128,7 +126,7 @@ function love.draw()
 			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 200.0
 			particleBatch:addQuad(quads[math.ceil(d + love.timer.getTime() * 24) % 25 + 1], s.x, s.y + 0.02, s.z, 0, power * 0.015, nil, 3.0)
 		elseif s.name == "fire" then
-			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 300.0
+			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 75.0
 			lights[d]:setBrightness(power)
 			lights[d].oPos = lights[d].oPos or lights[d].pos
 			lights[d]:setPosition(lights[d].oPos + getFlickerOffset(d, 0.02))
@@ -247,14 +245,6 @@ function love.update(dt)
 end
 
 function love.keypressed(key)
-	if tonumber(key) then
---		if key == "9" then
---			dream:setBloom(false)
---		else
---			dream:setBloom(tonumber(key))
---		end
-	end
-	
 	--screenshots!
 	if key == "f2" then
 		dream:takeScreenshot()
@@ -296,6 +286,29 @@ function love.keypressed(key)
 	if key == "f3" then
 		dream:take3DScreenshot(vec3(player.x, player.y, player.z), 128)
 	end
+	
+	if key == "g" then
+		dream:setGamma(not dream:getGamma())
+		dream:init()
+	end
+	
+	if key == "e" then
+		dream:setExposure(not dream:getExposure() and 1.0 or false)
+		dream:init()
+	end
+	
+	if key == "8" then
+		dream.renderSet:setMode("direct")
+		dream:init()
+	end
+	
+	if key == "9" then
+		dream.renderSet:setMode("normal")
+		dream:init()
+	end
+	
+	scene = dream:newScene()
+	scene:addObject(tavern)
 end
 
 function love.resize()

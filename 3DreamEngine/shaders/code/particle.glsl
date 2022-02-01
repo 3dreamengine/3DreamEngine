@@ -6,7 +6,7 @@ varying vec3 VertexPos;
 varying float depth;
 
 //setting specific defines
-#import globalDefines
+#import defines
 
 
 #ifdef PIXEL
@@ -33,7 +33,7 @@ void effect() {
 	vec3 viewVec = normalize(VertexPos - viewPos);
 	
 	//fetch color
-	vec4 albedo = Texel(MainTex, VaryingTexCoord.xy);
+	vec4 albedo = gammaCorrectedTexel(MainTex, VaryingTexCoord.xy);
 
 #ifdef DEPTH_ENABLED
 	if (albedo.a <= 0.5) {
@@ -45,10 +45,10 @@ void effect() {
 	
 	//emission
 #ifdef TEX_EMISSION
-	vec3 emission = Texel(tex_emission, VaryingTexCoord.xy).rgb;
-	vec3 col = emission * VaryingEmission;
+	vec3 emission = gammaCorrectedTexel(tex_emission, VaryingTexCoord.xy).rgb;
+	vec3 color = emission * VaryingEmission;
 #else
-	vec3 col = albedo.rgb * VaryingEmission;
+	vec3 color = albedo.rgb * VaryingEmission;
 #endif
 	
 #ifdef TEX_DISORTION
@@ -62,21 +62,25 @@ void effect() {
 	if (length(albedo.rgb) > 0.0) {
 		vec3 light = vec3(0.0);
 #import lightingSystem
-		col += light * albedo.rgb * albedo.a;
+		color += light * albedo.rgb * albedo.a;
 	}
 	
 	//ambient lighting
-	col += ambient;
+	color += ambient;
 	
-	//fog (TODO moving this to vertex had negative results, requires further testing)
+	//fog
 #ifdef FOG_ENABLED
 	vec4 fogColor = getFog(depth, viewVec, viewPos);
-	col = mix(col, fogColor.rgb, fogColor.a);
+	color = mix(color, fogColor.rgb, fogColor.a);
+#endif
+
+#ifdef GAMMA_CORRECTION
+	color.rgb = pow(color.rgb, vec3(1.0 / 2.2));
 #endif
 
 #ifdef REFRACTIONS_ENABLED
 	//to allow distortion blending we use premultiplied alpha blending, which required manual rgb math here
-	col *= albedo.a;
+	color *= albedo.a;
 	
 	love_Canvases[1] = vec4(distortion, 0.0, 0.0);
 #endif
@@ -87,7 +91,7 @@ void effect() {
 #endif
 	
 	//color
-	love_Canvases[0] = vec4(col, albedo.a);
+	love_Canvases[0] = vec4(color, albedo.a);
 }
 #endif
 

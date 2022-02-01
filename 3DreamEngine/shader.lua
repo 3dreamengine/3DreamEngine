@@ -271,26 +271,16 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, sun)
 			if canvases.mode ~= "direct" then
 				table.insert(defines, "#define DEPTH_AVAILABLE")
 			end
+			if self.gamma then
+				table.insert(defines, "#define GAMMA_CORRECTION")
+			end
 			if self.fog_enabled and canvases.mode ~= "normal" then
 				table.insert(defines, "#define FOG_ENABLED")
 			end
 		end
 		
-		--material shader
-		table.insert(defines, info.pixelShader:buildDefines(self, mat, shadows))
-		table.insert(defines, info.pixelShader.defines)
-		table.insert(defines, info.vertexShader:buildDefines(self, mat, shadows))
-		table.insert(defines, info.vertexShader.defines)
-		
-		table.insert(pixelMaterial, info.pixelShader:buildPixel(self, mat, shadows))
-		table.insert(pixelMaterial, info.pixelShader.pixel)
-		table.insert(pixelMaterial, info.vertexShader:buildPixel(self, mat, shadows))
-		table.insert(pixelMaterial, info.vertexShader.pixel)
-		
-		table.insert(vertex, info.pixelShader:buildVertex(self, mat, shadows))
-		table.insert(vertex, info.pixelShader.vertex)
-		table.insert(vertex, info.vertexShader:buildVertex(self, mat, shadows))
-		table.insert(vertex, info.vertexShader.vertex)
+		--helpful functions
+		table.insert(defines, codes.functions)
 		
 		--additional code
 		if not shadows then
@@ -316,6 +306,22 @@ function lib:getRenderShader(ID, obj, pass, canvases, light, shadows, sun)
 				table.insert(defines, codes.ambientOnly)
 			end
 		end
+		
+		--material shader
+		table.insert(defines, info.pixelShader:buildDefines(self, mat, shadows))
+		table.insert(defines, info.pixelShader.defines)
+		table.insert(defines, info.vertexShader:buildDefines(self, mat, shadows))
+		table.insert(defines, info.vertexShader.defines)
+		
+		table.insert(pixelMaterial, info.pixelShader:buildPixel(self, mat, shadows))
+		table.insert(pixelMaterial, info.pixelShader.pixel)
+		table.insert(pixelMaterial, info.vertexShader:buildPixel(self, mat, shadows))
+		table.insert(pixelMaterial, info.vertexShader.pixel)
+		
+		table.insert(vertex, info.pixelShader:buildVertex(self, mat, shadows))
+		table.insert(vertex, info.pixelShader.vertex)
+		table.insert(vertex, info.vertexShader:buildVertex(self, mat, shadows))
+		table.insert(vertex, info.vertexShader.vertex)
 		
 		--world
 		table.insert(defines, info.worldShader:buildDefines(self, mat, shadows))
@@ -348,6 +354,7 @@ end
 
 function lib:getParticlesShader(pass, canvases, light, emissive, distortion, single)
 	--additional settings
+	--todo cleanup
 	local ID_settings = 0
 	if emissive then
 		ID_settings = ID_settings + 2^0
@@ -371,25 +378,31 @@ function lib:getParticlesShader(pass, canvases, light, emissive, distortion, sin
 	local ID = light.ID .. string.char(ID_settings)
 	
 	if not self.particlesShader[ID] then
-		local globalDefines = { }
+		local defines = { }
 		if emissive then
-			table.insert(globalDefines, "#define TEX_EMISSION")
+			table.insert(defines, "#define TEX_EMISSION")
 		end
 		if distortion and pass == 2 then
-			table.insert(globalDefines, "#define TEX_DISORTION")
+			table.insert(defines, "#define TEX_DISORTION")
 		end
 		if self.fog_enabled and canvases.mode ~= "normal" then
-			table.insert(globalDefines, "#define FOG_ENABLED")
+			table.insert(defines, "#define FOG_ENABLED")
+		end
+		if self.gamma then
+			table.insert(defines, "#define GAMMA_CORRECTION")
 		end
 		if canvases.refractions and pass == 2 then
-			table.insert(globalDefines, "#define REFRACTIONS_ENABLED")
+			table.insert(defines, "#define REFRACTIONS_ENABLED")
 		end
 		if pass == 1 and canvases.mode ~= "direct" then
-			table.insert(globalDefines, "#define DEPTH_ENABLED")
+			table.insert(defines, "#define DEPTH_ENABLED")
 		end
 		if single then
-			table.insert(globalDefines, "#define SINGLE")
+			table.insert(defines, "#define SINGLE")
 		end
+		
+		--helpful functions
+		table.insert(defines, codes.functions)
 		
 		local info = {
 			uniforms = { }
@@ -399,7 +412,7 @@ function lib:getParticlesShader(pass, canvases, light, emissive, distortion, sin
 		local code = codes.particle
 		
 		--setting specific defines
-		code = code:gsub("#import globalDefines", table.concat(globalDefines, "\n"))
+		code = code:gsub("#import defines", table.concat(defines, "\n"))
 		
 		--fog engine
 		if self.fog_enabled and canvases.mode ~= "normal" then
@@ -455,7 +468,7 @@ function lib:getLightComponents(light, basic)
 			px = self.lightShaders[s.light_typ]:constructPixel(self, IDs[s.light_typ])
 		end
 		if px then
-			lc[#lc+1] = "{\n" .. px .. "\n}"
+			table.insert(lc, "{\n" .. px .. "\n}")
 		end
 	end
 	

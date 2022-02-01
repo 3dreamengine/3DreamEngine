@@ -55,7 +55,11 @@ void effect() {
 	//fog
 #ifdef FOG_ENABLED
 	vec4 fogColor = getFog(depth, viewVec, viewPos);
-	color = mix(color, fogcolor, fogColor.a);
+	color = mix(color, fogColor.rgb, fogColor.a);
+#endif
+
+#ifdef GAMMA_CORRECTION
+	color.rgb = pow(color.rgb, vec3(1.0 / 2.2));
 #endif
 	
 	//distortion

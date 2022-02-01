@@ -48,7 +48,7 @@ end
 function sh:buildPixel(dream, mat)
 	return [[
 	//color
-	vec4 c = Texel(tex_albedo, VaryingTexCoord.xy) * color_albedo;
+	vec4 c = gammaCorrectedTexel(tex_albedo, VaryingTexCoord.xy) * color_albedo;
 	albedo = c.rgb;
 	alpha = c.a;
 	
@@ -81,7 +81,7 @@ function sh:buildPixel(dream, mat)
 	
 	//emission
 #ifdef TEX_EMISSION
-	emission = Texel(tex_emission, VaryingTexCoord.xy).rgb * color_emission;
+	emission = gammaCorrectedTexel(tex_emission, VaryingTexCoord.xy).rgb * color_emission;
 #else
 	emission = color_albedo.rgb * color_emission;
 #endif

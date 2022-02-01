@@ -90,6 +90,17 @@ end
 
 
 
+--gamma
+function lib:setGamma(g)
+	check(g, "boolean")
+	self.gamma = g
+end
+function lib:getGamma()
+	return self.gamma
+end
+
+
+
 --AO settings
 function lib:setAO(samples, resolution, blur)
 	if samples then
