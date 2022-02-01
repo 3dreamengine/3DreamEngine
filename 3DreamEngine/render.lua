@@ -120,9 +120,6 @@ end
 function lib:render(canvases, cam)
 	self.delton:start("prepare")
 	
-	--love shader friendly
-	local viewPos = {cam.pos:unpack()}
-	
 	--and set canvases
 	love.graphics.push("all")
 	if canvases.mode ~= "direct" then
@@ -244,7 +241,7 @@ function lib:render(canvases, cam)
 					
 					--camera
 					shader:send("transformProj", cam.transformProj)
-					checkAndSendCached(shaderObject, "viewPos", viewPos)
+					checkAndSendCached(shaderObject, "viewPos", cam.pos)
 					
 					checkAndSendCached(shaderObject, "ambient", self.sun_ambient)
 				end
@@ -345,7 +342,7 @@ function lib:render(canvases, cam)
 				love.graphics.setShader(shader)
 				
 				shader:send("transformProj", cam.transformProj)
-				if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", {cam.pos:unpack()}) end
+				if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", cam.pos) end
 				checkAndSendCached(shaderObject, "exposure", self.exposure)
 				checkAndSendCached(shaderObject, "ambient", self.sun_ambient)
 				
@@ -362,8 +359,8 @@ function lib:render(canvases, cam)
 					local v = 1.0 - batch.vertical
 					local right = vec3(cam.transform[1], cam.transform[2] * v, cam.transform[3]):normalize()
 					local up = vec3(cam.transform[5] * v, cam.transform[6], cam.transform[7] * v)
-					shader:send("up", {up:unpack()})
-					shader:send("right", {right:unpack()})
+					shader:send("up", up)
+					shader:send("right", right)
 					
 					--emission texture
 					if hasUniform(shaderObject, "tex_emission") then
@@ -390,7 +387,7 @@ function lib:render(canvases, cam)
 				love.graphics.setShader(shader)
 				
 				shader:send("transformProj", cam.transformProj)
-				if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", {cam.pos:unpack()}) end
+				if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", cam.pos) end
 				checkAndSendCached(shaderObject, "exposure", self.exposure)
 				checkAndSendCached(shaderObject, "ambient", self.sun_ambient)
 				
@@ -408,8 +405,8 @@ function lib:render(canvases, cam)
 					local right = vec3(cam.transform[1], cam.transform[2] * v, cam.transform[3]):normalize()
 					local up = vec3(cam.transform[5] * v, cam.transform[6], cam.transform[7] * v)
 					
-					shader:send("up", {up:unpack()})
-					shader:send("right", {right:unpack()})
+					shader:send("up", up)
+					shader:send("right", right)
 					
 					--position, size and emission multiplier
 					shader:send("InstanceCenter", s.position)
@@ -450,9 +447,6 @@ end
 --only renders a depth variant
 function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects, smoothShadows)
 	self.delton:start("renderShadows")
-	
-	--love shader friendly
-	local viewPos = {cam.pos:unpack()}
 	
 	--update required acceleration data
 	local frustumCheck = self.frustumCheck and not cam.noFrustumCheck
@@ -503,7 +497,7 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects, smoo
 			--camera
 			shader:send("transformProj", cam.transformProj)
 			if hasUniform(shaderObject, "viewPos") then
-				shader:send("viewPos", viewPos)
+				shader:send("viewPos", cam.pos)
 			end
 			
 			shader:send("shadowDistanceFactor", smoothShadows and 10 or 1)

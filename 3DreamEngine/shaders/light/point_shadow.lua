@@ -102,8 +102,8 @@ function sh:sendUniforms(dream, shaderObject, light, ID)
 	
 	if light.shadow.canvas then
 		shader:send("ps_tex_" .. ID, light.shadow.canvas)
-		shader:send("ps_color_" .. ID, {(light.color * light.brightness):unpack()})
-		shader:send("ps_pos_" .. ID, {light.pos:unpack()})
+		shader:send("ps_color_" .. ID, light.color * light.brightness)
+		shader:send("ps_pos_" .. ID, light.pos)
 		shader:send("ps_attenuation_" .. ID, -light.attenuation)
 		
 		shader:send("ps_static_" .. ID, light.shadow.static and true or false)

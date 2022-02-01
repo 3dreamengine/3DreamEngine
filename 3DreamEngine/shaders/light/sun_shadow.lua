@@ -170,10 +170,10 @@ function sh:sendUniforms(dream, shaderObject, light, ID)
 		shader:send("ss_tex_2_" .. ID, light.shadow.canvases[2])
 		shader:send("ss_tex_3_" .. ID, light.shadow.canvases[3])
 		
-		shader:send("ss_color_" .. ID,  {(light.color * light.brightness):unpack()})
+		shader:send("ss_color_" .. ID, light.color * light.brightness)
 		
 		if shader:hasUniform("ss_vec_" .. ID) then
-			shader:send("ss_vec_" .. ID, {light.direction:unpack()})
+			shader:send("ss_vec_" .. ID, light.direction)
 		end
 	else
 		shader:send("ss_color_" .. ID, {0, 0, 0})

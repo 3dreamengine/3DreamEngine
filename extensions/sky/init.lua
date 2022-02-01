@@ -101,7 +101,7 @@ function sky:setRainbowDir(v)
 	self.rainbow_dir = v:normalize()
 end
 function sky:getRainbowDir()
-	return self.rainbow_dir:unpack()
+	return self.rainbow_dir
 end
 
 function sky.render(dream, transformProj, camTransform, transformScale)
@@ -128,9 +128,9 @@ function sky.render(dream, transformProj, camTransform, transformScale)
 	self.shaders.sky:send("rainbowStrength", self.rainbow_strength * (sun and sun.brightness or 0))
 	self.shaders.sky:send("rainbowSize", self.rainbow_size)
 	self.shaders.sky:send("rainbowThickness", 1 / self.rainbow_thickness)
-	self.shaders.sky:send("rainbowDir", {self.rainbow_dir:unpack()})
+	self.shaders.sky:send("rainbowDir", self.rainbow_dir)
 	
-	love.graphics.setColor(self.skyColor:unpack())
+	love.graphics.setColor(self.skyColor)
 	local mesh = dream.object_cube.meshes.Cube.mesh
 	mesh:setTexture(self.textures.sky)
 	love.graphics.draw(mesh)
@@ -147,9 +147,9 @@ function sky.render(dream, transformProj, camTransform, transformScale)
 	love.graphics.setShader(self.shaders.moon)
 	
 	self.shaders.moon:send("transformProj", transformProj)
-	self.shaders.moon:send("up", {(up * size):unpack()})
-	self.shaders.moon:send("right", {(right * size):unpack()})
-	self.shaders.moon:send("InstanceCenter", {(sun and -sun.direction or vec3(1, 1, 1)):unpack()})
+	self.shaders.moon:send("up", up * size)
+	self.shaders.moon:send("right", right * size)
+	self.shaders.moon:send("InstanceCenter", sun and -sun.direction or vec3(1, 1, 1))
 	self.shaders.moon:send("sun", {math.cos(self.day / 30 * math.pi * 2), math.sin(self.day / 30 * math.pi * 2), 0})
 	self.shaders.moon:send("normalTex", self.textures.moon_normal)
 	
@@ -166,9 +166,9 @@ function sky.render(dream, transformProj, camTransform, transformScale)
 			love.graphics.setShader(self.shaders.sun)
 			
 			self.shaders.sun:send("transformProj", transformProj)
-			self.shaders.sun:send("up", {(up * size):unpack()})
-			self.shaders.sun:send("right", {(right * size):unpack()})
-			self.shaders.sun:send("InstanceCenter", {(l.direction):unpack()})
+			self.shaders.sun:send("up", up * size)
+			self.shaders.sun:send("right", right * size)
+			self.shaders.sun:send("InstanceCenter", l.direction)
 			
 			dream.object_plane.meshes.Plane.mesh:setTexture(self.textures.sun)
 			
@@ -183,7 +183,7 @@ function sky.render(dream, transformProj, camTransform, transformScale)
 		love.graphics.setShader(self.shaders.clouds)
 		self.shaders.clouds:send("transformProj", transformProj)
 		
-		self.shaders.clouds:send("sunColor", {(sun and (sun.color * sun.brightness) or vec3(1.0, 1.0, 1.0)):unpack()})
+		self.shaders.clouds:send("sunColor", sun and (sun.color * sun.brightness) or vec3(1.0, 1.0, 1.0))
 		
 		self.shaders.clouds:send("sunVec", sun and sun.direction or vec3(0, 1, 0))
 		
