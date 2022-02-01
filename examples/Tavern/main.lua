@@ -118,21 +118,27 @@ function love.draw()
 	--make the particles black so it only emits light
 	love.graphics.setColor(0, 0, 0, 1)
 	for d,s in ipairs(tavern.positions) do
+		local flicker = love.timer.getTime() / math.sqrt(s.size) * 0.2
 		if s.name == "light" then
-			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 200.0
+			local power = (0.5 + 0.2 * noise(flicker, d)) * s.size * 200.0
 			lights[d]:setBrightness(power)
 			lights[d].oPos = lights[d].oPos or lights[d].pos
 			lights[d]:setPosition(lights[d].oPos + getFlickerOffset(d, 0.02))
 			dream:addLight(lights[d])
 		elseif s.name == "candle" then
-			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 200.0
+			local power = (0.5 + 0.2 * noise(flicker, d)) * s.size * 200.0
 			particleBatch:addQuad(quads[math.ceil(d + love.timer.getTime() * 24) % 25 + 1], s.x, s.y + 0.02, s.z, 0, power * 0.015, nil, 3.0)
 		elseif s.name == "fire" then
-			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 300.0
+			local power = (0.5 + 0.2 * noise(flicker, d)) * s.size * 300.0
 			lights[d]:setBrightness(power)
 			lights[d].oPos = lights[d].oPos or lights[d].pos
 			lights[d]:setPosition(lights[d].oPos + getFlickerOffset(d, 0.02))
 			dream:addLight(lights[d])
+			
+			for i = -3, 3 do
+				local power = (0.5 + 0.15 * noise(flicker, d + i)) * s.size * 300.0 / (1 + 0.1 * math.abs(i))
+				particleBatch:addQuad(quads[math.ceil(i * 17 + d + love.timer.getTime() * 24) % 25 + 1], s.x + i * 0.1, s.y - 0.15, s.z - 0.1 - math.abs(i) * 0.025, 0, power * 0.015, nil, 3.0)
+			end
 		end
 	end
 	love.graphics.setColor(1, 1, 1, 1)
