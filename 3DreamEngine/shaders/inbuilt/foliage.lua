@@ -7,7 +7,7 @@ function sh:init(dream)
 	self.strength = 0.5    -- the multiplier of animation
 	self.scale = 0.25      -- the scale of wind waves
 	
-	self.fadeWidth = 1     -- the blending margin
+	self.fadeWidth = 3     -- the blending margin
 end
 
 function sh:getId(dream, mat, shadow)

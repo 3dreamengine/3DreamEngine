@@ -52,22 +52,6 @@ function sh:buildPixel(dream, mat)
 	albedo = c.rgb;
 	alpha = c.a;
 	
-#ifdef DISCARD
-	if (alpha < 0.5) {
-		discard;
-	}
-#endif
-
-#ifdef DITHER
-	if (alpha < fract(love_PixelCoord.x * 0.37 + love_PixelCoord.y * 73.73 + depth * 3.73)) {
-		discard;
-	}
-#endif
-
-#ifndef ALPHA_PASS
-	alpha = 1.0;
-#endif
-	
 	//material
 #ifdef TEX_MATERIAL
 	vec3 material = Texel(tex_material, VaryingTexCoord.xy).xyz;

@@ -47,7 +47,7 @@ function lib:buildScene(typ, dynamic, alpha, cam, blacklist, frustumCheck, noSma
 				for _, task in pairs(materialGroup) do
 					local mesh = task:getMesh()
 					if mesh.mesh and (not blacklist or not blacklist[mesh]) and (not noSmallObjects or mesh.farVisibility ~= false) then
-						if not frustumCheck or not mesh.boundingBox.initialized or self:planeInFrustum(cam, task:getPos(), task:getSize(), mesh.rID) then
+						if not frustumCheck or not mesh.boundingBox.initialized or self:inFrustum(cam, task:getPos(), task:getSize(), mesh.rID) then
 							task:setShaderID(shaderID)
 							table.insert(scene, task)
 						end
