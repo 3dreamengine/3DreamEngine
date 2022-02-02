@@ -21,13 +21,14 @@ function job:execute(light)
 	if not light.shadow.canvases then
 		light.shadow.canvases = { }
 		light.shadow.cams = { }
+		light.lastCascade = 0
 	end
 	
 	local normal = light.direction
 	local pos = light.pos
 	local pos = lib.cam.pos
 	
-	light.lastCascade = (light.lastCascade or 0) % #lazyMapping + 1
+	light.lastCascade = light.lastCascade % #lazyMapping + 1
 	
 	for cascade = light.shadow.lazy and lazyMapping[light.lastCascade] or 1, light.shadow.lazy and lazyMapping[light.lastCascade] or 3 do
 		local stepSize = light.shadow.refreshStepSize * 2.3 ^ (cascade-1)
