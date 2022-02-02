@@ -93,7 +93,6 @@ lib:setDistortionMargin(true)
 
 --loader settings
 lib:setResourceLoader(true)
-lib:setJobHandlerSlots(1)
 lib:setSmoothLoading(1 / 1000)
 lib:setSmoothLoadingBufferSize(128)
 lib:setMipmaps(true)

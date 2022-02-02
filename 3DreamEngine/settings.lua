@@ -250,14 +250,6 @@ function lib:getResourceLoader()
 	return self.textures_threaded
 end
 
-function lib:setJobHandlerSlots(s)
-	check(s, "number")
-	self.job_slots = s
-end
-function lib:getJobHandler()
-	return self.job_slots
-end
-
 
 --lag-free texture loading
 function lib:setSmoothLoading(time)
