@@ -50,6 +50,8 @@ function job:execute(light)
 			msaa = 0,
 			type = "cube",
 			mipmaps = light.shadow.smooth and "manual" or "none"})
+		
+		light.shadow.lastFace = 0
 	end
 	
 	--rerender static
@@ -58,10 +60,10 @@ function job:execute(light)
 		light.shadow.lastPos = light.pos
 	end
 	
-	light.lastFace = (light.lastFace or 0) % 7 + 1
+	light.shadow.lastFace = light.shadow.lastFace % 7 + 1
 	
 	--render
-	for face = light.shadow.lazy and light.lastFace or 1, math.min(6, light.shadow.lazy and light.lastFace or 6) do
+	for face = light.shadow.lazy and light.shadow.lastFace or 1, math.min(6, light.shadow.lazy and light.shadow.lastFace or 6) do
 		local t = transformations[face]
 		t[1][4] = t[2]:dot(light.pos)
 		t[1][8] = t[3]:dot(light.pos)
@@ -89,7 +91,7 @@ function job:execute(light)
 	end
 	
 	--prefilter
-	if not light.shadow.lazy or light.lastFace == 7 then
+	if not light.shadow.lazy or light.shadow.lastFace == 7 then
 		if light.shouldSmooth then
 			lib:blurCubeMap(light.shadow.canvas, 4, light.size, {true, false, false, false})
 			light.shouldSmooth = true

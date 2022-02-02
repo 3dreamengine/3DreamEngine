@@ -149,6 +149,17 @@ function lib:update()
 	end
 end
 
+function lib:clearLoadedTextures()
+	self.texturesLoaded = { }
+end
+function lib:clearLoadedCanvases()
+	for d,s in pairs(self.texturesLoaded) do
+		if type(s) == "userdata" and s:typeOf("Canvas") then
+			self.texturesLoaded[d] = nil
+		end
+	end
+end
+
 --get image path if present
 function lib:getImagePath(path)
 	return images[path]

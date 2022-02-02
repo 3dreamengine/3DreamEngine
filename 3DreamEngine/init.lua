@@ -238,6 +238,7 @@ function lib:resize(w, h)
 	--fully unload previous sets
 	self:unloadCanvasSet(self.canvases)
 	self:unloadCanvasSet(self.canvases_reflections)
+	self:unloadCanvasSet(self.canvases_mirror)
 	
 	--canvases sets
 	self.canvases = self:newCanvasSet(self.renderSet, w, h)
@@ -264,10 +265,17 @@ function lib:init(w, h)
 	
 	self.canvasCache = { }
 	
+	self:clearLoadedCanvases()
+	
 	--reset shader
 	self:loadShader()
 	
 	--reset lighting
+	for _,l in pairs(self.lighting or { }) do
+		if l.shadow then
+			l.shadow:clear()
+		end
+	end
 	self.lighting = { }
 	
 	--sky box
@@ -277,7 +285,6 @@ function lib:init(w, h)
 		self.defaultReflectionCanvas = false
 	end
 	
-	self:loadShader()
 	self:initJobs()
 end
 
