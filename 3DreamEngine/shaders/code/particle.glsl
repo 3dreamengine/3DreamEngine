@@ -74,7 +74,7 @@ void effect() {
 	color = mix(color, fogColor.rgb, fogColor.a);
 #endif
 
-#ifdef GAMMA_CORRECTION
+#ifdef GAMMA_CORRECTION_OUTPUT
 	color.rgb = pow(color.rgb, vec3(1.0 / 2.2));
 #endif
 

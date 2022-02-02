@@ -80,7 +80,7 @@ vec4 fxaa(Image tex, vec2 tc) {
 #endif
 
 #ifdef PIXEL
-vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
+vec4 effect(vec4 _, Image canvas_color, vec2 tc, vec2 sc) {
 	//distortion
 	vec2 tcd = tc;
 #ifdef REFRACTIONS_ENABLED
@@ -99,20 +99,15 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 	
 	//color
 #ifdef FXAA_ENABLED
-	vec4 col = fxaa(canvas_color, tcd);
+	vec4 color = fxaa(canvas_color, tcd);
 #else
-	vec4 col = Texel(canvas_color, tcd);
+	vec4 color = Texel(canvas_color, tcd);
 #endif
 	
 	//ao
 #ifdef AO_ENABLED
 	float ao = Texel(canvas_ao, tcd).r;
-	col.rgb *= ao;
-#endif
-	
-	//fetch depth for fog
-#ifdef FOG_ENABLED
-	float depth = Texel(canvas_depth, tcd).r;
+	color.rgb *= ao;
 #endif
 	
 	//simple alpha
@@ -123,33 +118,38 @@ vec4 effect(vec4 color, Image canvas_color, vec2 tc, vec2 sc) {
 	vec4 ca = Texel(canvas_alpha, tc);
 #endif
 	
-	col.rgb = col.rgb * (1.0 - ca.a) + ca.rgb;
-	col.a = col.a * (1.0 - ca.a) + ca.a;
+	color.rgb = color.rgb * (1.0 - ca.a) + ca.rgb;
+	color.a = color.a * (1.0 - ca.a) + ca.a;
 #endif
 	
 	//bloom
 #ifdef BLOOM_ENABLED
 	vec3 bloom = Texel(canvas_bloom, tcd).rgb;
-	col.rgb += bloom;
+	color.rgb += bloom;
 #endif
 
 	//fog
 #ifdef FOG_ENABLED
+	float depth = Texel(canvas_depth, tcd).r;
 	vec4 fogColor = getFog(depth, viewVec, viewPos);
-	col.rgb = mix(col.rgb, fogColor.rgb, fogColor.a);
+	color.rgb = mix(color.rgb, fogColor.rgb, fogColor.a);
 #endif
 	
 	//eye adaption
 #ifdef AUTOEXPOSURE_ENABLED
-	col.rgb *= eyeAdaption;
+	color.rgb *= eyeAdaption;
 #endif
 	
 	//exposure
 #ifdef EXPOSURE_ENABLED
-	col.rgb = vec3(1.0) - exp(-col.rgb * exposure);
+	color.rgb = vec3(1.0) - exp(-color.rgb * exposure);
 #endif
 	
-	return col * color;
+#ifdef GAMMA_CORRECTION_OUTPUT
+	color.rgb = pow(color.rgb, vec3(1.0 / 2.2));
+#endif
+	
+	return color;
 }
 #endif
 

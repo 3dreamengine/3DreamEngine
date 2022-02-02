@@ -116,7 +116,7 @@ end
 
 --load all setting depending shaders
 function lib.loadShader(self)
-	self.shaders.final = { }
+	self.finalShaders = { }
 	self.mainShaders = { }
 	self.particlesShader = { }
 	self.mainShaderCount = 0
@@ -156,15 +156,17 @@ function lib.getFinalShader(self, canvases)
 	
 	table.insert(parts, (canvases.fxaa and canvases.msaa == 0) and "#define FXAA_ENABLED" or nil)
 	
+	table.insert(parts, self.gamma and "#define GAMMA_CORRECTION_OUTPUT" or nil)
+	
 	table.insert(parts, self.distortionMargin and string.format("#define DISTORTION_MARGIN %f", self.distortionMargin) or nil)
 	
 	table.insert(parts, self.fog_enabled and codes.fog or nil)
 	
 	local ID = table.concat(parts, "\n")
-	if not self.shaders.final[ID] then
-		self.shaders.final[ID] = love.graphics.newShader("#pragma language glsl3\n" .. ID .. "\n" .. codes.final)
+	if not self.finalShaders[ID] then
+		self.finalShaders[ID] = love.graphics.newShader("#pragma language glsl3\n" .. ID .. "\n" .. codes.final)
 	end
-	return self.shaders.final[ID]
+	return self.finalShaders[ID]
 end
 
 --get a unique ID for this specific light setup
@@ -238,12 +240,15 @@ function lib:getRenderShader(ID, mesh, pass, canvases, light, shadows, sun)
 		if self.gamma then
 			settings = settings + 2 ^ 6
 		end
-		if self.fog_enabled and canvases.mode ~= "normal" then
+		if self.gamma and canvases.mode ~= "normal" then
 			settings = settings + 2 ^ 7
+		end
+		if self.fog_enabled and canvases.mode ~= "normal" then
+			settings = settings + 2 ^ 8
 		end
 	end
 	
-	local shaderID = ID .. (light and light.ID or "") .. string.char(settings)
+	local shaderID = ID .. (light and light.ID or "") .. string.char(settings % 256, math.floor(settings / 256))
 	
 	if not self.mainShaders[shaderID] then
 		local mat = mesh.material
@@ -297,6 +302,9 @@ function lib:getRenderShader(ID, mesh, pass, canvases, light, shadows, sun)
 			end
 			if self.gamma then
 				table.insert(defines, "#define GAMMA_CORRECTION")
+			end
+			if self.gamma and canvases.mode ~= "normal" then
+				table.insert(defines, "#define GAMMA_CORRECTION_OUTPUT")
 			end
 			if self.fog_enabled and canvases.mode ~= "normal" then
 				table.insert(defines, "#define FOG_ENABLED")
@@ -390,14 +398,17 @@ function lib:getParticlesShaderID(pass, canvases, emissive, distortion, single)
 	if self.gamma then
 		id = id + 2^3
 	end
-	if canvases.refractions and pass == 2 then
+	if self.gamma and canvases.mode ~= "normal" then
 		id = id + 2^4
 	end
-	if pass == 1 and canvases.mode ~= "direct" then
+	if canvases.refractions and pass == 2 then
 		id = id + 2^5
 	end
-	if single then
+	if pass == 1 and canvases.mode ~= "direct" then
 		id = id + 2^6
+	end
+	if single then
+		id = id + 2^7
 	end
 	return string.char(id)
 end
@@ -418,6 +429,9 @@ function lib:getParticlesShader(pass, canvases, light, emissive, distortion, sin
 		end
 		if self.gamma then
 			table.insert(defines, "#define GAMMA_CORRECTION")
+		end
+		if self.gamma and canvases.mode ~= "normal" then
+			table.insert(defines, "#define GAMMA_CORRECTION_OUTPUT")
 		end
 		if canvases.refractions and pass == 2 then
 			table.insert(defines, "#define REFRACTIONS_ENABLED")
