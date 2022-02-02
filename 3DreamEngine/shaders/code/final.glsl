@@ -103,6 +103,9 @@ vec4 effect(vec4 _, Image canvas_color, vec2 tc, vec2 sc) {
 #else
 	vec4 color = Texel(canvas_color, tcd);
 #endif
+#ifdef GAMMA_CORRECTION
+	color.rgb = pow(color.rgb, vec3(2.2));
+#endif
 	
 	//ao
 #ifdef AO_ENABLED
@@ -116,6 +119,9 @@ vec4 effect(vec4 _, Image canvas_color, vec2 tc, vec2 sc) {
 	vec4 ca = fxaa(canvas_alpha, tc);
 #else
 	vec4 ca = Texel(canvas_alpha, tc);
+#endif
+#ifdef GAMMA_CORRECTION
+	ca.rgb = pow(ca.rgb, vec3(2.2));
 #endif
 	
 	color.rgb = color.rgb * (1.0 - ca.a) + ca.rgb;
@@ -145,7 +151,7 @@ vec4 effect(vec4 _, Image canvas_color, vec2 tc, vec2 sc) {
 	color.rgb = vec3(1.0) - exp(-color.rgb * exposure);
 #endif
 	
-#ifdef GAMMA_CORRECTION_OUTPUT
+#ifdef GAMMA_CORRECTION
 	color.rgb = pow(color.rgb, vec3(1.0 / 2.2));
 #endif
 	
