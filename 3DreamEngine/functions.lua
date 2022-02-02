@@ -160,9 +160,15 @@ function lib:getFrustumPlanes(m)
 	return planes
 end
 
+
+--todo the frustum culling code fails for close objects, a constant factor "fix" it but it's not fixing the actual problem
+local perspectiveWarpFactor = 1.25
+
 --optimized plane frustum check
 local cache = { }
-function lib:planeInFrustum(cam, pos, radius, id)
+function lib:inFrustum(cam, pos, radius, id)
+	radius = radius * perspectiveWarpFactor
+	
 	local c = cache[id]
 	if c then
 		local plane = cam.planes[c]
