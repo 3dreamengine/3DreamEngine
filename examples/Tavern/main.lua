@@ -121,7 +121,7 @@ function love.draw()
 	for d,s in ipairs(tavern.positions) do
 		local flicker = love.timer.getTime() / math.sqrt(s.size) * 0.2
 		if s.name == "light" then
-			local power = (0.5 + 0.2 * noise(flicker, d)) * s.size * 200.0
+			local power = (0.5 + 0.2 * noise(flicker, d)) * s.size * 500.0
 			lights[d]:setBrightness(power)
 			lights[d].oPos = lights[d].oPos or lights[d].pos
 			lights[d]:setPosition(lights[d].oPos + getFlickerOffset(d, 0.02))
@@ -130,7 +130,7 @@ function love.draw()
 			local power = (0.5 + 0.2 * noise(flicker, d)) * s.size * 4
 			particleBatch:addQuad(quads[math.ceil(d + love.timer.getTime() * 24) % 25 + 1], s.x, s.y + 0.02, s.z, 0, power, nil, 2.0)
 		elseif s.name == "fire" then
-			local power = (0.5 + 0.2 * noise(flicker, d)) * s.size * 500.0
+			local power = (0.5 + 0.2 * noise(flicker, d)) * s.size * 2000.0
 			lights[d]:setBrightness(power)
 			lights[d].oPos = lights[d].oPos or lights[d].pos
 			lights[d]:setPosition(lights[d].oPos + getFlickerOffset(d, 0.02))

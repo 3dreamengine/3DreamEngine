@@ -49,7 +49,8 @@ function job:execute(light)
 			readable = true,
 			msaa = 0,
 			type = "cube",
-			mipmaps = "none"})
+			mipmaps = "none"
+		})
 		
 		light.shadow.lastFace = 0
 	end
