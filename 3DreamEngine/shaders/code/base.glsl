@@ -59,7 +59,7 @@ void effect() {
 #endif
 	
 	//proper backfaces
-	if (dot(normal, viewVec) > 0.0) {
+	if (dot(fragmentNormal, viewVec) > 0.0) {
 		normal = normalize(reflect(normal, fragmentNormal));
 		fragmentNormal = -fragmentNormal;
 	}
