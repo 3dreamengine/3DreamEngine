@@ -67,6 +67,20 @@ void effect() {
 	}
 	
 #import pixel
+
+	//distortion
+#ifdef REFRACTIONS_ENABLED
+	if (ior != 1.0) {
+		//refract and transform back to pixel coord
+		vec3 endPoint = VertexPos + refract(viewVec, normal, ior);
+		vec4 endPixel = transformProj * vec4(endPoint, 1.0);
+		endPixel /= endPixel.w;
+		endPixel.xy = endPixel.xy * 0.5 + 0.5;
+		
+		//uv translation
+		distortion = love_PixelCoord.xy / love_ScreenSize.xy - endPixel.xy;
+	}
+#endif
 	
 	//fog
 #ifdef FOG_ENABLED
