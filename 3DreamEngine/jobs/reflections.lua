@@ -1,8 +1,6 @@
 local job = { }
 local lib = _3DreamEngine
 
-local lastSide = 0
-
 function job:init()
 
 end
@@ -10,14 +8,16 @@ end
 function job:queue()
 	for reflection, pos in pairs(lib.lastReflections) do
 		if not reflection.static or not reflection.done then
+			reflection.lastSide = reflection.lastSide or 0
+			
 			--render reflections
-			if lastSide < 6 then
+			if reflection.lastSide < 6 then
 				lib:addOperation("reflections", reflection, pos)
 			end
 			
 			--blur mipmaps
-			if lastSide == 6 or not reflection.lazy then
-				lastSide = 0
+			if reflection.lastSide == 6 or not reflection.lazy then
+				reflection.lastSide = 0
 				if reflection.roughness then
 					lib:addOperation("cubemap", reflection.canvas, reflection.levels or lib.reflections_levels)
 				end
@@ -45,8 +45,8 @@ function job:execute(reflection, pos)
 	reflection.canvas = nil
 	
 	--render
-	lastSide = lastSide + 1
-	for face = reflection.lazy and lastSide or 1, reflection.lazy and lastSide or 6 do
+	reflection.lastSide = reflection.lastSide + 1
+	for face = reflection.lazy and reflection.lastSide or 1, reflection.lazy and reflection.lastSide or 6 do
 		local cam = lib:newCam(transformations[face], lib.cubeMapProjection, pos, lookNormals[face])
 		love.graphics.setCanvas({{canvas, face = face}, depth = true})
 		love.graphics.clear()
