@@ -4,21 +4,19 @@ sh.type = "light"
 
 function sh:constructDefinesGlobal(dream)
 	return [[
-		#define DISTANCE_FACTOR 10.0f
-		
 		float sampleShadowSun2(Image tex, vec2 shadowUV, float depth, float bias, bool staticShadow, bool smoothShadows) {
 			float ox = float(fract(love_PixelCoord.x * 0.5) > 0.25);
 			float oy = float(fract(love_PixelCoord.y * 0.5) > 0.25) + ox;
 			if (oy > 1.1) oy = 0.0;
 			float ss_texelSize = 1.0 / love_ScreenSize.x;
-			float sharpness = 4.0;
+			float sharpness = 100.0;
 			
 			depth -= 0.001;
 			
 			if (staticShadow) {
 				if (smoothShadows) {
 					float sampleDepth = texture(tex, shadowUV).x;
-					return clamp(exp(sharpness * (sampleDepth - depth * DISTANCE_FACTOR)), 0.0, 1.0);
+					return clamp(exp(sharpness * (sampleDepth - depth)), 0.0, 1.0);
 				} else {
 					float r0 = texture(tex, shadowUV + vec2(-1.5 + ox, 0.5 + oy) * ss_texelSize).x;
 					float r1 = texture(tex, shadowUV + vec2(0.5 + ox, 0.5 + oy) * ss_texelSize).x;
@@ -35,7 +33,7 @@ function sh:constructDefinesGlobal(dream)
 			} else {
 				if (smoothShadows) {
 					float sampleDepth = texture(tex, shadowUV).x;
-					float sh = clamp(exp(sharpness * (sampleDepth - depth * DISTANCE_FACTOR)), 0.0, 1.0);
+					float sh = clamp(exp(sharpness * (sampleDepth - depth)), 0.0, 1.0);
 					
 					float r0 = texture(tex, shadowUV + vec2(-1.5 + ox, 0.5 + oy) * ss_texelSize).y;
 					float r1 = texture(tex, shadowUV + vec2(0.5 + ox, 0.5 + oy) * ss_texelSize).y;

@@ -4,38 +4,33 @@ sh.type = "light"
 
 function sh:constructDefinesGlobal(dream)
 	return [[
-	#define DISTANCE_FACTOR 10.0f
-	
 	float sampleShadowPoint(vec3 lightVec, samplerCube tex, bool staticShadow, bool smoothShadows) {
-		float max_distance = 0.5;
-		float mipmap_count = 3.0;
 		float sharpness = 1.0;
 		
 		float depth = length(lightVec);
 		float bias = depth * 0.01 + 0.01;
 		
 		//direction
-		vec3 n = -lightVec * vec3(1.0, -1.0, 1.0);
+		vec3 n = normalize(-lightVec * vec3(1.0, -1.0, 1.0));
 		
 		//fetch
-		float mm = min(mipmap_count, depth * max_distance);
 		if (staticShadow) {
 			if (smoothShadows) {
-				float sampleDepth = textureLod(tex, n, mm).x;
-				return clamp(exp(sharpness * (sampleDepth / DISTANCE_FACTOR - depth)), 0.0, 1.0);
+				float sampleDepth = texture(tex, n).x;
+				return clamp(exp(sharpness * (sampleDepth - depth)), 0.0, 1.0);
 			} else {
-				float r = textureLod(tex, n, 0.0).x;
+				float r = texture(tex, n).x;
 				return r + bias > depth ? 1.0 : 0.0;
 			}
 		} else {
 			if (smoothShadows) {
-				float sampleDepth = textureLod(tex, n, mm).x;
+				float sampleDepth = texture(tex, n).x;
 				return (
-					clamp(exp(sharpness * (sampleDepth / DISTANCE_FACTOR - depth)), 0.0, 1.0) *
-					(textureLod(tex, n, 0.0).y + bias > depth ? 1.0 : 0.0)
+					clamp(exp(sharpness * (sampleDepth - depth)), 0.0, 1.0) *
+					(texture(tex, n).y + bias > depth ? 1.0 : 0.0)
 				);
 			} else {
-				vec2 r = textureLod(tex, n, 0.0).xy;
+				vec2 r = texture(tex, n).xy;
 				return min(r.x, r.y) + bias > depth ? 1.0 : 0.0;
 			}
 		}

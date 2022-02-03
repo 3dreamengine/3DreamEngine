@@ -12,8 +12,6 @@ varying float depth;               //depth
 
 extern float translucent;
 
-extern float shadowDistanceFactor;
-
 //shader specific defines
 #import defines
 
@@ -107,9 +105,9 @@ void effect() {
 	//returns color
 #ifdef IS_SHADOW
 #ifdef IS_SUN
-	love_Canvases[0] = vec4(depth * shadowDistanceFactor, depth * shadowDistanceFactor, 0.0, 1.0);
+	love_Canvases[0] = vec4(depth, depth, 0.0, 1.0);
 #else
-	float dd = length(viewPos - VertexPos.xyz) * shadowDistanceFactor;
+	float dd = length(viewPos - VertexPos.xyz);
 	love_Canvases[0] = vec4(dd, dd, 0.0, 1.0);
 #endif
 #else

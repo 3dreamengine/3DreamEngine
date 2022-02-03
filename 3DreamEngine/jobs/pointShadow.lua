@@ -49,7 +49,7 @@ function job:execute(light)
 			readable = true,
 			msaa = 0,
 			type = "cube",
-			mipmaps = light.shadow.smooth and "manual" or "none"})
+			mipmaps = "none"})
 		
 		light.shadow.lastFace = 0
 	end
@@ -93,8 +93,8 @@ function job:execute(light)
 	--prefilter
 	if not light.shadow.lazy or light.shadow.lastFace == 7 then
 		if light.shouldSmooth then
-			lib:blurCubeMap(light.shadow.canvas, 4, light.size, {true, false, false, false})
-			light.shouldSmooth = true
+			lib:blurCubeMap(light.shadow.canvas, 1, light.size, {true, false, false, false}, true)
+			light.shouldSmooth = false
 		end
 		
 		light.shadow.rendered = true
