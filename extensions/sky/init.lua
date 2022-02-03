@@ -154,6 +154,7 @@ function sky.render(dream, transformProj, camTransform, transformScale)
 	self.shaders.moon:send("normalTex", self.textures.moon_normal)
 	
 	dream.object_plane.meshes.Plane.mesh:setTexture(self.textures.moon)
+	love.graphics.draw(dream.object_plane.meshes.Plane.mesh)
 	
 	--suns
 	for _,l in ipairs(dream.lighting) do

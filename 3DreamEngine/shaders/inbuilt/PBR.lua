@@ -52,9 +52,9 @@ function sh:buildDefines(dream, mat, shadow)
 				vec3 vec = -viewVec;
 				
 				//backface
-				if (dot(normal, lightVec) < 0.0) {
-					//lightVec = reflect(lightVec, fragmentNormal);
-					//lightColor *= translucent;
+				if (dot(fragmentNormal, lightVec) < 0.0) {
+					lightVec = normalize(reflect(lightVec, fragmentNormal));
+					lightColor *= translucent;
 				}
 				
 				//reflectance
