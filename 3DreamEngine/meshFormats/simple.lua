@@ -12,8 +12,9 @@ function f:create(mesh)
 	for i = 1, #mesh.vertices do
 		local vertex = mesh.vertices[i] or empty
 		local normal = mesh.normals[i] or empty
+		local color = mesh.colors[i] or empty
 		
-		obj.mesh:setVertex(i,
+		mesh.mesh:setVertex(i,
 			vertex[1], vertex[2], vertex[3], 1,
 			normal[1]*0.5+0.5, normal[2]*0.5+0.5, normal[3]*0.5+0.5, 0.0,
 			roughness, metallic, emission,

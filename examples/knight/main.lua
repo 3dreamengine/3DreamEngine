@@ -3,20 +3,26 @@ local dream = require("3DreamEngine")
 love.window.setTitle("Knight Example")
 
 --settings
-local projectDir = "examples/knight/"
+local projectDir = ""
 
-dream.AO_enabled = false
+dream:setAO(false)
+
+dream:setSky(vec3(128/255, 218/255, 235/255) * 0.4)
 
 dream:init()
 
-local knight = dream:loadObject(projectDir.. "knight", {meshType = "simple"})
+--load voxel object using a custom mesh type
+local knight = dream:loadObject("examples/knight/knight", {meshType = "simple"})
 
+--use the simple (non textured) shader which makes use of the simple mesh type
 knight:setPixelShader("simple")
 
-love.graphics.setBackgroundColor(128/255, 218/255, 235/255)
+--make a sun
+local sun = dream:newLight("sun")
 
 function love.draw()
 	dream:resetLight()
+	dream:addLight(sun)
 	
 	dream:prepare()
 
