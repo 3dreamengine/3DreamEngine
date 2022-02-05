@@ -287,17 +287,16 @@ end
 
 
 --godrays
-function lib:setGodrays(quality, allSources)
+function lib:setGodrays(quality)
 	if quality then
 		self.godrays_enabled = true
 		self.godrays_quality = quality
-		self.godrays_allSources = allSources
 	else
 		self.godrays_enabled = false
 	end
 end
 function lib:getGodrays()
-	return self.godrays_enabled, self.godrays_quality, self.godrays_allSources
+	return self.godrays_enabled, self.godrays_quality
 end
 
 

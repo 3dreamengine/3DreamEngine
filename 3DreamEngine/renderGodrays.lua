@@ -9,11 +9,7 @@ function lib:renderGodrays(light, canvases, cam)
 	local colors = { }
 	local sizes = { }
 	for d,s in ipairs(light.lights) do
-		local enabled = s.godrays
-		if enabled == nil then
-			enabled = s.typ == "sun" or self.godrays_allSources
-		end
-		if enabled then
+		if s.godrays then
 			local pos
 			if s.typ == "sun" then
 				pos = cam.transformProjOrigin * vec4(s.direction.x, s.direction.y, s.direction.z, 1.0)
