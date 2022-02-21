@@ -47,7 +47,7 @@ function job:execute(reflection, pos)
 	--render
 	reflection.lastSide = reflection.lastSide + 1
 	for face = reflection.lazy and reflection.lastSide or 1, reflection.lazy and reflection.lastSide or 6 do
-		local cam = lib:newCam(transformations[face], lib.cubeMapProjection, pos, lookNormals[face])
+		local cam = lib:newCamera(transformations[face], lib.cubeMapProjection, pos, lookNormals[face])
 		love.graphics.setCanvas({{canvas, face = face}, depth = true})
 		love.graphics.clear()
 		lib:renderFull(cam, lib.canvases_reflections)

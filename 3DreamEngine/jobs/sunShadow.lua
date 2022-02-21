@@ -37,7 +37,7 @@ function job:execute(light)
 		if not shadowCam or (pos - shadowCam.pos):lengthSquared() > stepSize or (normal - shadowCam.normal):lengthSquared() > 0 then
 			--create shadow camera
 			if not shadowCam then
-				light.shadow.cams[cascade] = lib:newCam()
+				light.shadow.cams[cascade] = lib:newCamera()
 				shadowCam = light.shadow.cams[cascade]
 				shadowCam.noFrustumCheck = true
 				shadowCam.sun = true

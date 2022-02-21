@@ -70,7 +70,7 @@ function job:execute(light)
 		t[1][8] = t[3]:dot(light.pos)
 		t[1][12] = t[4]:dot(light.pos)
 		
-		local shadowCam = lib:newCam(t[1], lib.cubeMapProjection, light.pos, lib.lookNormals[face])
+		local shadowCam = lib:newCamera(t[1], lib.cubeMapProjection, light.pos, lib.lookNormals[face])
 		
 		if light.shadow.static then
 			--static shadow

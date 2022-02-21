@@ -1,6 +1,6 @@
 local lib = _3DreamEngine
 
-function lib:newCam(transform, transformProj, pos, normal)
+function lib:newCamera(transform, transformProj, pos, normal)
 	local m = transform or pos and mat4:getIdentity():translate(pos) or mat4:getIdentity()
 	return setmetatable({
 		transform = m,
@@ -15,11 +15,11 @@ function lib:newCam(transform, transformProj, pos, normal)
 		near = 0.01,
 		far = 1000,
 		aspect = 1.0,
-	}, self.meta.cam)
+	}, self.meta.camera)
 end
 
 local class = {
-	link = {"transform", "cam"},
+	link = {"transform", "camera"},
 	
 	setterGetter = {
 		fov = "number",
