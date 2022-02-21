@@ -35,12 +35,12 @@ c = self:clone()
 
 
 
-## transform class
-Sets the transform matrix using helper functions.
+## Transform class
+Sets the transformation of an object.
 
 ```lua
 self:reset()
-self:transform(mat4)
+self:setTransform(mat4)
 self:translate(x, y, z)
 self:scale(x, y, z)
 self:rotateX(angle)
@@ -48,24 +48,34 @@ self:rotateY(angle)
 self:rotateZ(angle)
 self:setDirection(normal)
 self:setDirection(normal, up)
+self:getInvertedTransform()
 ```
 
 ```lua
 self:setDynamic(dynamic)
 dynamic = self:isDynamic(dynamic)
 ```
-`dynamic` is set when calling any transformation automatically and affects how often it gets refreshed when using dynamic shadows.
+`dynamic` flag is set when calling any transformation automatically and affects how often it gets refreshed when using dynamic shadows.
 
 
 
-## visibility class
-Sets LODs and pass visibility.
+## Visibility class
+Sets LODs and render pass visibility.
 
 ```lua
-self:setLOD(map)
-map = self:getLOD()
+self:setLOD(min, max)
+min, max = self:getLOD()
 ```
-`map` subject to change
+`min` distance before it gets rendered (or `false`)
+`max` distance before it gets out of sight (or `false`)
+
+<br />
+
+```lua
+self:setVisible(enable)
+```
+Shortcut for shadow and render pass visibility  
+`enable` enabled in all passes  
 
 <br />
 
@@ -93,8 +103,6 @@ enable = self:getFarVisibility()
 
 
 
-
-
 ## Animation
 An animation is a clip of transformations for each join for a skeleton.
 Collada files may contain such animations.
@@ -108,7 +116,7 @@ A custom camera can be used in `dream:present()` if necessary, but usually the d
 extends `transform`  
 
 ```lua
-cam = dream:newCam()
+cam = dream:newCamera()
 ```
 
 <br />
@@ -188,62 +196,26 @@ shadow = light:getShadow()
 
 <br />
 
-Enable shadow smoothing for this source. Slow, but beatiful.
-```lua
-light:setSmoothing(smooth)
-smooth = light:setSmoothing()
-```
-`smooth (false)` boolean
-
-<br />
-
-Set the frameskip to slow down shadow rendering on unimportant sources.
-```lua
-light:setFrameSkip(skip)
-skip = light:getFrameSkip()
-```
-`skip (0)` frames to skip for each rendered
-
-<br />
-
-To reset the light (optional without the default sun object), add a light and add a unshadowed new light (same signature as creating a light):
-```lua
-dream:resetLight(noDayLight)
-dream:addLight(light)
-dream:addNewLight(...)
-```
-
-<br />
-
 To control the godray on that specific source.
 ```lua
 dream:setGodrays(enabled)
 dream:setGodrayLength(length)
 dream:setGodraySize(size)
 ```
-`enabled (nil)` enable this light for the godray pass, nil uses the default set by the global setting. 
+`enabled (nil)` enable this light for the godray pass
 
 
 
-## materials
-Materials can be either per object by providing a .mtl or .mat file with the same name as the object file or they can be in a global material library, in which case they got chosen first.
+## Material
+Materials describe the appearance of meshes. For usage information take a look at the engines general documentation.
 
 extends `clone`, `shader`
 
-Load materials into the library. If an objects now requires a material, it will first look into the library.
-
-A material library looks for material files (.mat) or for directory containing material.mat or at least one texture, linking them automatically. See for example the Tavern demo.
-
 ```lua
-dream:loadMaterialLibrary(path)
-dream:loadMaterialLibrary(path, prefix)
+material = dream:newMaterial()
 ```
-`path` path to directory  
-`prefix` prefix to add before name  
 
-<br />
-
-All functions also have getters too. Colors are multiplied with textures. If a texture is set it clears the color to white EXCEPT if set via a .mat file.
+All functions also have getters too. Colors are multiplied with textures, if provided. If a texture is set it clears the color to white.
 ```lua
 material:setIOR(ior)
 material:setDither(enabled)
@@ -251,21 +223,25 @@ material:setDither(enabled)
 material:setColor(r, g, b, a)
 material:setAlbedoTex(tex)
 
-material:setEmission(r, g, b)
-material:setEmissionTex(tex)
-
 material:setRoughness(value)
 material:setRoughnessTex(tex)
 
 material:setMetallic(value)
 material:setMetallicTex(tex)
+
+material:setEmission(r, g, b)
+material:setEmissionTex(tex)
+
+material:setMaterialTex(tex)
 ```
 `enabled` enable feature
 `tex` LÖVE drawable
 `r g b a` color
 
+For performance reasons, roughness, metallic and ambient occlusion is merged into one material image. If avaiable, provide one directly to shorten loading times. Merging is cached.
 
-### data structure
+
+### Data Structure
 ```lua
 {
 	color = {0.5, 0.5, 0.5, 1.0},
@@ -274,20 +250,19 @@ material:setMetallicTex(tex)
 	metallic = 0.0,
 	alpha = false,
 	discard = false,
-	name = "None",         --name, used for texture linking
-	dir = dir,             --directory, used for texture linking
+	name = "None",
 	ior = 1.0,
-	value = 0.0,           --the strength the back face is lit too
 	translucent = 0.0,
 }
 ```
 
 
-### transparent materials
-You have to tell the engine how to render this material.  
-`Alpha` enabled will use the Z-sorted second pass.
+### Transparent Materials
+You have to tell the engine how to render transparent materials.  
+`Alpha` enabled will use the Z-sorted second pass and correct blending, if no object intersections occur.
 `Translucent` puts light on the backside. Settings translucent via the functions also sets the cullmode to none.  
-`Discard` is required if the texture contains an alpha channel, but should not use the alpha pass. Discard is slow on some, usually weaker, systems.
+`Discard` is required if the texture contains an alpha channel, but should not use the alpha pass. Discard is slow on some, usually integrated GPUs.
+
 ```lua
 material:setAlpha(enabled)
 material:setSolid(enabled)
@@ -302,28 +277,27 @@ material:cullMode(cullmode)
 ## Mesh
 A mesh is the actual renderable object containing buffers, material and render settings.
 
-Extends `clone`, 'transform', 'visibility', 'shader'
+Extends `clone`, 'visibility', 'shader'
 
-Similar as a object individual subObjects might be requested manually. Usually not required.
 ```lua
-laoded = self:isLoaded()
-self:request()
-self:wait()
+mesh = dream:newMesh(name, material)
+mesh = dream:newMesh(name, material, meshType)
 ```
+`name` the objects name  
+`material (Material)` material  
+`meshType` the mesh type used to construct the final mesh data, default uses the materials pixel material  
 
 
 
 ## Object
-Returned by `dream:loadObject()`
+A container with all meshes, lights, positions, etc.  
 
 Extends `clone`, 'transform', 'visibility', 'shader'
 
-Subobjects from 3DO files are loaded threaded and may not be loaded yet when using. They will not cause troubles, just wont render. Requesting an object happens automatically if not disabled in `dream:loadObject()` or via `request()`. If tried to render it also requests automatically. You can yield with `wait()` until everything has been loaded.
 ```lua
-loaded = self:isLoaded()
-self:request()
-self:wait()
+object = dream:newObject()
 ```
+
 
 
 
@@ -341,27 +315,19 @@ self:wait()
 A reflection uses a cubemap to render its environment to simulate local reflections.
 
 ```lua
-dream:newReflection(static, res, noRoughness)
+reflection = dream:newReflection(static, resolution, roughness, lazy)
 ```
-`static` only render once  
-`res` resolution, only works with direct render enabled  
-`noRoughness` roughness can be simulated using blurring. If not required, disable it!  
+`static (false)` only render once  
+`resolution` resolution, only works with direct render enabled  
+`roughness (true)` roughness can be simulated using blurring. If not required, disable it!  
+`lazy` lazy rendering spreads the work over several frames  
 
 <br />
 
 ```lua
-reflection:setFrameSkip(skip)
-skip = reflection:getFrameSkip()
+reflection:setLazy(lazy)
+lazy = reflection:getLazy()
 ```
-`skip (0)` number of frame  
-
-<br />
-
-```lua
-reflection:setRoughness(roughness)
-roughness = reflection:getRoughness()
-```
-`roughness (true)` simulate roughness  
 
 <br />
 
@@ -377,7 +343,7 @@ By default cubemaps are treated as infinite cubemaps, working perfect for distan
 ```lua
 reflection:setLocal(pos, first, second)
 ```
-`pos` vec3 center  
+`pos` vec3 origin of reflection  
 `first` vec3 first, smaller corner of AABB  
 `second` vec3 second, larger corner of AABB  
 
@@ -388,7 +354,7 @@ WIP, they would make mirrors and water surfaces possible and are faster than cub
 
 ## Scene
 A scene contains a list of objects to render. They are currently subject to change and will receive a demo project.
-The default scene is saved in `dream.scene`.
+The default scene is stored in `dream.scene`.
 
 extends `visibility`
 
@@ -418,8 +384,8 @@ A canvas set contains the target framebuffers and most of the graphics settings.
 ```lua
 set = dream:newSetSettings()
 
-canvases = newCanvasSet(set)
-canvases = newCanvasSet(set, w, h)
+canvases = dream:newCanvasSet(set)
+canvases = dream:newCanvasSet(set, w, h)
 ```
 `set` settings, no actual data yet  
 `canvases` ready to use canvases  
@@ -431,24 +397,22 @@ All of the following functions have a getter too.
 set:setMode(renderMode)
 set:setResolution(res)
 set:setFormat(format)
-set:setPostEffects(enabled)
 set:setMsaa(msaa)
 set:setFxaa(enabled)
 set:setRefractions(enabled)
 set:setAlphaPass(enabled)
 ```
 `renderMode` String
-* `direct` fastest, very reduced features, requires set depth canvas via conf.lua. If missing it will add it, causing a short flicker, sets format to rgb8
-* `lite` fast, reduced features, does not output, but stores result on `canvases.color`, sets format to rgb8
-* `normal` full features, default, sets to rgba16f HDR canvas.
+* `direct` fastest, very reduced features, requires set depth canvas via conf.lua. If missing dream will add it
+* `lite` fast, reduced features, does not output, but stores result in `canvases.color`
+* `normal (default)` full features, slowest
 
 `res (512)` resolution if not specified in `dream:newCanvasSet()`.  
 `format ("rgba16f")` LÖVE pixel format.  
 
 `enabled` features:
-* post effects are effects like exposure, bloom, ... which are unwanted for temporary results (e.g. reflections)
-* msaa is slower but more beatiful (consider hardware limit), fxaa is faster but blurry. Dont use both.
-* refractions simulate refractions for objects in the alpha pass and ior ~= 1.0
+* MSAA is slower but more beatiful, fxaa is faster but slightly blurry. Dont use both.
+* refractions simulate refractions for objects in the alpha pass for `ior ~= 1.0`
 * alpha pass can be disabled entirely, increasing performance a bit. Disable if no object use the second pass anyways.
 
 
@@ -457,20 +421,33 @@ set:setAlphaPass(enabled)
 A shadow can be attached to a lightsource.
 
 ```lua
-dream:newShadow(typ, static, res)
+dream:newShadow(typ, static, resolution)
 ```
 `typ` "point" or "sun"
 `static` 
-- 'false' render realtime (slow, not recommended) 
+- 'false' render realtime, using a dual-channel dynamic/static optimization
 - 'true' render once, sun will updates on position (with respective step size) or direction changes 
-- 'dynamic' (default) render once, then render all dynamics realtime. Much faster than no static with minor memory impact. 
-`res` resolution
+`resolution` resolution
 
 <br />
 
 Refresh the shadow as soon as possible (relevant for static shadows)
 ```lua
 shadow:refresh()
+```
+<br />
+
+Controls the cascade shadow for sun shadows
+```lua
+shadow:setCascadeDistance(8)
+shadow:setCascadeFactor(4)
+```
+
+<br />
+
+Lazy mode spreads the work across several frames. May cause self-shadowing artifacts but tends to be a lot faster.
+```lua
+shadow:setLazy()
 ```
 
 <br />
