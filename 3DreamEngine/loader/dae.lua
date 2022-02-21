@@ -136,7 +136,7 @@ end
 local function addMesh(self, obj, mat, id, inputs, vertexMapping, meshData, vcount)
 	--create mesh
 	local material = mat and self.materialLibrary[mat.name] or mat or self:newMaterial()
-	local m = self:newMesh(id, material, obj.args.meshType)
+	local m = self:newMesh(id, material)
 	
 	m.vertexMapping = vertexMapping
 	

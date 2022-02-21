@@ -6,7 +6,6 @@ local function removePostfix(t)
 end
 
 function lib:newMesh(name, material, meshType)
-	assert(meshType, "mesh type required")
 	local o = {
 		name = removePostfix(name),
 		material = material,
@@ -24,7 +23,7 @@ function lib:newMesh(name, material, meshType)
 		
 		boundingBox = self:newBoundaryBox(),
 		
-		meshType = meshType,
+		meshType = meshType or (material.pixelShader or self.defaultPixelShader).meshType,
 		
 		renderVisibility = true,
 		shadowVisibility = true,

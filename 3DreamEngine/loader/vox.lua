@@ -205,7 +205,9 @@ return function(self, obj, path)
 	
 	--generate final object
 	local function generate(m, name, t)
-		local o = self:newMesh(name, self:newMaterial(), obj.args.meshType)
+		local material = self:newMaterial()
+		material:setPixelShader("simple")
+		local o = self:newMesh(name, material)
 		obj.meshes[name] = o
 		
 		for x = 0, m.x-1 do

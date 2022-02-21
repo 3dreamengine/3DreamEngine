@@ -25,7 +25,6 @@ lib.defaultArgs = {
 	export3do = false,
 	skip3do = false,
 	particlesystems = true,
-	meshType = "textured",
 	scene = false,
 }
 

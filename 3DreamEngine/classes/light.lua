@@ -11,7 +11,7 @@ function lib:newLight(typ, pos, color, brightness)
 		typ = typ or "point",
 		name = "unnamed",
 		pos = pos or vec3(0, 0, 0),
-		size = 0.1,
+		size = 0.05,
 		color = color and color:normalize() or vec3(1, 1, 1),
 		direction = vec3(1, 1, 1),
 		brightness = brightness or 1.0,

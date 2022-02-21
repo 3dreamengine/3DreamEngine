@@ -10,7 +10,7 @@ return function(self, obj, path)
 	
 	--initial mesh
 	local material = self:newMaterial()
-	local mesh = self:newMesh("object", material, obj.args.meshType)
+	local mesh = self:newMesh("object", material)
 	local meshID = "object"
 	obj.meshes[meshID] = mesh
 	
@@ -57,7 +57,7 @@ return function(self, obj, path)
 			end
 		elseif v[1] == "o" then
 			meshID = self:decodeObjectName(l:sub(3))
-			obj.meshes[meshID] = obj.meshes[meshID] or self:newMesh(meshID, material, obj.args.meshType)
+			obj.meshes[meshID] = obj.meshes[meshID] or self:newMesh(meshID, material)
 			mesh = obj.meshes[meshID]
 		end
 	end

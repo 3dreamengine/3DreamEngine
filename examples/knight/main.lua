@@ -12,7 +12,7 @@ dream:setSky(vec3(128/255, 218/255, 235/255) * 0.4)
 dream:init()
 
 --load voxel object using a custom mesh type
-local knight = dream:loadObject("examples/knight/knight", {meshType = "simple"})
+local knight = dream:loadObject("examples/knight/knight")
 
 --use the simple (non textured) shader which makes use of the simple mesh type
 knight:setPixelShader("simple")
