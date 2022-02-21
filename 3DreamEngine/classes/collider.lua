@@ -1,11 +1,18 @@
 local lib = _3DreamEngine
 
+local shapeModes = {
+	height = true,
+	simple = true,
+	complex = true
+}
+
 function lib:newCollider(mesh)
 	local c = {
 		faces = mesh.faces,
 		vertices = mesh.vertices,
 		normals = mesh.normals,
-		name = mesh.name
+		name = mesh.name,
+		shapeMode = type(mesh.tags.physics) == "string" and shapeModes[mesh.tags.physics] and mesh.tags.physics or "complex",
 	}
 	
 	return setmetatable(c, self.meta.collider)

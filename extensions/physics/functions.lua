@@ -5,20 +5,10 @@ physicsFunctions.lua - contains physics library relevant functions
 
 local lib = _3DreamEngine
 
-local physicsLowerMode = "height"
-
-function lib:setPhysicsLowerMode(m)
-	assert(m == "complex" or m == m == "full" or m == "simple" or m == "height", "lower mode has to be complex, full, simple or height")
-	physicsLowerMode = m
-end
-function lib:getPhysicsLowerMode()
-	return physicsLowerMode
-end
-
-local threshold = 1 / 0.01
+local gridResolution = 100
 local function insert(v, g)
-	local vx = math.floor(v.x * threshold)
-	local vz = math.floor(v.z * threshold)
+	local vx = math.floor(v.x * gridResolution)
+	local vz = math.floor(v.z * gridResolution)
 	if not g[vx] then
 		g[vx] = { }
 	end
@@ -52,35 +42,35 @@ function lib:getMeshPhysicsObject(phy, transform)
 	
 	--transform vertices
 	lib.deltonLoad:start("transform")
-	local transformed = { }
-	local vertices = { }
-	for d,s in ipairs(phy.vertices) do
-		if not transformed[s] then
-			transformed[s] = transform and transform * vec3(s) or vec3(s)
-		end
-		vertices[d] = transformed[s]
-	end
-	
-	--convert normals
 	local subm = transform:subm()
 	local transformed = { }
+	local vertices = { }
 	local normals = { }
-	for d,s in ipairs(phy.normals) do
-		if not transformed[s] then
-			transformed[s] = subm and subm * vec3(s) or vec3(s)
+	for _,f in ipairs(phy.faces) do
+		for i = 1, 3 do
+			local d = f[i]
+			local pos = phy.vertices[d]
+			if not transformed[pos] then
+				transformed[pos] = transform and transform * pos or pos
+			end
+			vertices[d] = transformed[pos]
+			
+			local normal = phy.normals[d]
+			if not transformed[normal] then
+				transformed[normal] = subm and subm * normal or normal
+			end
+			normals[d] = transformed[normal]
 		end
-		normals[d] = transformed[s]
 	end
 	
 	local normals = phy.normals
 	lib.deltonLoad:stop()
 	
-	local bothSides = physicsLowerMode == "complex" or physicsLowerMode == "full"
-	local normalThreshold = 0.01
+	local normalThreshold = 0.0001
 	
 	--create vertex group for faster access
 	lib.deltonLoad:start("height")
-	local g = { }
+	local grid = { }
 	local verts_top = { }
 	local verts_bottom = { }
 	local sides = { }
@@ -91,11 +81,11 @@ function lib:getMeshPhysicsObject(phy, transform)
 		local a = vertices[face[1]]
 		local b = vertices[face[2]]
 		local c = vertices[face[3]]
-		insert(a, g)
-		insert(b, g)
-		insert(c, g)
+		insert(a, grid)
+		insert(b, grid)
+		insert(c, grid)
 		
-		--wether it is a top faced triangle or not
+		--whether it is a top faced triangle or not
 		local n = (b-a):cross(c-a):normalize().y
 		
 		--remember lowest for simple lower mode
@@ -107,7 +97,7 @@ function lib:getMeshPhysicsObject(phy, transform)
 			verts_top[face[2]] = b
 			verts_top[face[3]] = c
 			sides[faceID] = true
-		elseif bothSides and n < -normalThreshold then
+		elseif phy.shapeMode == "complex" and n < -normalThreshold then
 			verts_bottom[face[1]] = a
 			verts_bottom[face[2]] = b
 			verts_bottom[face[3]] = c
@@ -117,57 +107,51 @@ function lib:getMeshPhysicsObject(phy, transform)
 	
 	local opposite = { }
 	for side = 1, 2 do
-		for d,s in pairs(side == 1 and verts_top or verts_bottom) do
-			if physicsLowerMode == "height" then
-				opposite[d] = -math.huge
-			elseif physicsLowerMode == "simple" then
-				opposite[d] = lowest
-			end
-			
-			--find the bottom most vertex
-			if not opposite[d] then
-				lib.deltonLoad:start("find")
-				for x = math.floor(s.x * threshold - 0.5), math.floor(s.x * threshold + 0.5) do
-					if g[x] then
-						for z = math.floor(s.z * threshold - 0.5), math.floor(s.z * threshold + 0.5) do
-							if g[x][z] then
-								if side == 1 then
-									opposite[d] = math.min(opposite[d] or s.y, g[x][z][1])
-								else
-									opposite[d] = math.max(opposite[d] or s.y, g[x][z][2])
+		for i,verts in pairs(side == 1 and verts_top or verts_bottom) do
+			if phy.shapeMode == "height" then
+				opposite[i] = -math.huge
+			elseif phy.shapeMode == "simple" then
+				opposite[i] = lowest
+			else
+				--find the bottom most vertex
+				if not opposite[i] then
+					for x = math.floor(verts.x * gridResolution - 0.5), math.floor(verts.x * gridResolution + 0.5) do
+						if grid[x] then
+							for z = math.floor(verts.z * gridResolution - 0.5), math.floor(verts.z * gridResolution + 0.5) do
+								if grid[x][z] then
+									if side == 1 then
+										opposite[i] = math.min(opposite[i] or verts.y, grid[x][z][1])
+									else
+										opposite[i] = math.max(opposite[i] or verts.y, grid[x][z][2])
+									end
 								end
 							end
 						end
 					end
-				end
-				lib.deltonLoad:stop()
-			end
-			
-			--no real opposite vertex found, interpolate and retriangulate opposite face
-			if math.abs(opposite[d] - s.y) == 0 then
-				if physicsLowerMode == "complex" then
-					lib.deltonLoad:start("interpolate")
-					for faceID, face in ipairs(phy.faces) do
-						--vertices
-						local a = vertices[face[1]]
-						local b = vertices[face[2]]
-						local c = vertices[face[3]]
-						
-						local w1, w2, w3 = self:getBarycentric(s.x, s.z, a.x, a.z, b.x, b.z, c.x, c.z)
-						local inside = w1 >= 0 and w2 >= 0 and w3 >= 0 and w1 <= 1 and w2 <= 1 and w3 <= 1
-						if inside then
-							local h = a.y * w1 + b.y * w2 + c.y * w3
+					
+					--no real opposite vertex found, interpolate and retriangulate opposite face
+					if math.abs(opposite[i] - verts.y) == 0 then
+						for faceID, face in ipairs(phy.faces) do
+							--vertices
+							local a = vertices[face[1]]
+							local b = vertices[face[2]]
+							local c = vertices[face[3]]
 							
-							if side == 1 and h < s.y or side == 2 and h > s.y then
-								opposite[d] = h
-								goto done
+							local w1, w2, w3 = self:getBarycentric(verts.x, verts.z, a.x, a.z, b.x, b.z, c.x, c.z)
+							local inside = w1 >= 0 and w2 >= 0 and w3 >= 0 and w1 <= 1 and w2 <= 1 and w3 <= 1
+							if inside then
+								local h = a.y * w1 + b.y * w2 + c.y * w3
+								
+								if side == 1 and h < verts.y or side == 2 and h > verts.y then
+									opposite[i] = h
+									goto done
+								end
 							end
 						end
+						::done::
 					end
-					::done::
-					lib.deltonLoad:stop()
-				else
-					opposite[d] = lowest
+					
+					opposite[i] = opposite[i] or lowest
 				end
 			end
 		end

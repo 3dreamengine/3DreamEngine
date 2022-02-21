@@ -228,13 +228,16 @@ function lib:loadObject(path, args)
 	self:finishObject(obj)
 	
 	
+	self.deltonLoad:stop()
+	
 	--3do exporter
 	if obj.args.export3do then
 		self:export3do(obj)
+		
+		--doing that enforces loadng the exported 3do object instead, making sure the first load behaves the same as the other ones
+		args.skip3do = false
+		return self:loadObject(path, args)
 	end
-	
-	
-	self.deltonLoad:stop()
 	return obj
 end
 

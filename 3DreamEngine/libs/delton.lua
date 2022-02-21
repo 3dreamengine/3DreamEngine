@@ -195,7 +195,7 @@ end
 
 --perform a step, add changes to buffer and reset counters
 function delton:step(noClear, segment)
-	assert(self.current == self.root, "more starts than stops!")
+	assert(self.current == self.root, "more starts than stops! (" .. tostring(self.current.name) .. ")")
 	
 	if not segment then
 		self:step(noClear, self.root)
