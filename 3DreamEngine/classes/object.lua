@@ -11,14 +11,7 @@ function lib:newLinkedObject(original, source)
 	}, {__index = original})
 end
 
-function lib:newObject(path)
-	--get name and dir
-	path = path or "unknown"
-	local n = string.split(path, "/")
-	local name = removePostfix(n[#n] or path)
-	
-	local dir = #n > 1 and table.concat(n, "/", 1, #n-1) or ""
-	
+function lib:newObject(name)
 	return setmetatable({
 		objects = { },
 		meshes = { },
@@ -29,9 +22,7 @@ function lib:newObject(path)
 		animations = { },
 		args = { },
 		
-		path = path, --absolute path to object
-		name = name, --name of object
-		dir = dir, --dir containing the object
+		name = name,
 		
 		boundingBox = self:newBoundaryBox(),
 		
@@ -296,8 +287,6 @@ function class:encode(meshCache, dataStrings)
 		["reflections"] = self.reflections,
 		["args"] = self.args,
 		
-		["path"] = self.path,
-		["dir"] = self.dir,
 		["name"] = self.name,
 		
 		["boundingBox"] = self.boundingBox,
@@ -342,7 +331,7 @@ function class:decode(meshData)
 	
 	--recreate objects
 	for d,s in pairs(self.objects) do
-		self.objects[d] = table.merge(lib:newObject(s.name, self, s.material), s)
+		self.objects[d] = table.merge(lib:newObject(s.name), s)
 		self.objects[d]:decode(meshData)
 	end
 	

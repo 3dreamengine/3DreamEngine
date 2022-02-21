@@ -163,6 +163,9 @@ change light data. If you want to modify the sun, update `dream.sunObject` after
 light:setBrightness(b)
 b = light:getBrightness()
 
+light:setAttenuation(a)
+a = light:getAttenuation()
+
 light:setColor(r, g, b)
 light:setColor(vec3)
 vec3 = light:getColor()
@@ -202,7 +205,7 @@ dream:setGodrays(enabled)
 dream:setGodrayLength(length)
 dream:setGodraySize(size)
 ```
-`enabled (nil)` enable this light for the godray pass
+`enabled (false)` enable this light for the godray pass
 
 
 

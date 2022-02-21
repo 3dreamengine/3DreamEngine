@@ -1,13 +1,8 @@
 local lib = _3DreamEngine
 
-local function removePostfix(t)
-	local f = t:find(".", 0, true)
-	return f and t:sub(1, f - 1) or t
-end
-
 function lib:newMesh(name, material, meshType)
 	local o = {
-		name = removePostfix(name),
+		name = self:removePostfix(name),
 		material = material,
 		tags = { },
 		
@@ -38,7 +33,7 @@ local class = {
 
 function class:setName(name)
 	assert(type(name) == "string", "name has to be a string")
-	self.name = removePostfix(name)
+	self.name = lib:removePostfix(name)
 end
 function class:getName()
 	return name

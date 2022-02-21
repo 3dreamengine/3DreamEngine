@@ -92,8 +92,14 @@ function lib:loadObject(path, args)
 	--set default args
 	args = prepareArgs(args)
 	
-	local obj = self:newObject(path)
+	
+	local n = string.split(path, "/")
+	local name = self:removePostfix(n[#n] or path)
+	local dir = #n > 1 and table.concat(n, "/", 1, #n-1) or ""
+	
+	local obj = self:newObject(name)
 	obj.args = args
+	obj.dir = dir
 	
 	self.deltonLoad:start("load " .. obj.name)
 	
@@ -101,7 +107,7 @@ function lib:loadObject(path, args)
 	local found = { }
 	local newest = 0
 	for _,typ in ipairs(lib.supportedFiles) do
-		local info = love.filesystem.getInfo(obj.path .. "." .. typ)
+		local info = love.filesystem.getInfo(path .. "." .. typ)
 		if info then
 			found[typ] = info.modtime or 0
 			newest = math.max(info.modtime or 0, newest)
@@ -117,7 +123,7 @@ function lib:loadObject(path, args)
 	for _,typ in ipairs(lib.supportedFiles) do
 		if found[typ] then
 			--load object
-			local failed = self.loader[typ](self, obj, obj.path .. "." .. typ)
+			local failed = self.loader[typ](self, obj, path .. "." .. typ)
 			
 			--skip furhter modifying and exporting if already packed as 3do
 			--also skips mesh loading since it is done manually
@@ -129,7 +135,7 @@ function lib:loadObject(path, args)
 	end
 	
 	if not next(found) then
-		error("object " .. obj.name .. " not found (" .. obj.path .. ")")
+		error("object " .. obj.name .. " not found (" .. path .. ")")
 	end
 	
 	
@@ -168,7 +174,7 @@ function lib:loadObject(path, args)
 			if not mesh.tags.link and not mesh.tags.reflection then
 				local o = obj.objects[mesh.name]
 				if not o then
-					o = self:newObject(obj.path)
+					o = self:newObject(mesh.name)
 					o.name = mesh.name
 					o.args = obj.args
 					o.transform = mesh.transform

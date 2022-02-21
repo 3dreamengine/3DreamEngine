@@ -1,11 +1,5 @@
 local lib = _3DreamEngine
 
-local function removePostfix(t)
-	local v = t:match("(.*)%.[^.]+")
-	return v or t
-end
-
-
 function lib:newLight(typ, pos, color, brightness)
 	local l = {
 		typ = typ or "point",
@@ -17,7 +11,7 @@ function lib:newLight(typ, pos, color, brightness)
 		brightness = brightness or 1.0,
 		attenuation = 2.0,
 		
-		godray = nil,
+		godray = false,
 		godrayLength = typ == "sun" and 0.1 or 0.05,
 		godraySize = typ == "sun" and 0.1 or 0.035,
 	}
@@ -42,7 +36,7 @@ function class:tostring()
 end
 
 function class:setName(name)
-	self.name = removePostfix(name)
+	self.name = self:removePostfix(name)
 end
 
 function class:setGodrays(e)

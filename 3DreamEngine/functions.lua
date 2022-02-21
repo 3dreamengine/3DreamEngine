@@ -609,3 +609,8 @@ lib.cubeMapProjection = mat4(
 	0,             0,              -(f+n) / (f-n),    -2*f*n / (f-n),
 	0,             0,              -1,                0
 )
+
+function lib:removePostfix(t)
+	local f = t:find(".", 0, true)
+	return f and t:sub(1, f - 1) or t
+end
