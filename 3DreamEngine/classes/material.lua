@@ -36,6 +36,8 @@ local class = {
 		roughnessTex = "getter",
 		metallic = "getter",
 		metallicTex = "getter",
+		material = "getter",
+		materialTex = "getter",
 	},
 }
 
@@ -56,7 +58,6 @@ function class:throwsShadow(shadow)
 	self.shadow = shadow
 end
 
---general material properties
 function class:setColor(r, g, b, a)
 	self.color = {r or 1.0, g or 1.0, b or 1.0, a or 1.0}
 end
@@ -83,7 +84,6 @@ function class:setNormalTex(tex)
 	self.tex_normal = tex
 end
 
---roughness-metallic workflow
 function class:setRoughness(r)
 	self.roughness = r
 end
@@ -103,6 +103,21 @@ function class:setMetallicTex(tex)
 	if not self.mat or not self.mat.metallic then
 		self.metallic = 1.0
 	end
+end
+
+function class:setMaterialTex(tex)
+	self.tex_material = tex
+	
+	if not self.mat or not self.mat.roughness then
+		self.roughness = 1.0
+	end
+	
+	if not self.mat or not self.mat.metallic then
+		self.metallic = 1.0
+	end
+end
+function class:getMaterialTex(tex)
+	self.tex_material = tex
 end
 
 function class:preload(force)
