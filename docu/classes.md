@@ -1,22 +1,39 @@
-# objects
-3Dream uses objects to represent its data structure. Each object may extend a number of classes. Classes can not have instances.
+# Objects
+3Dream uses classes and objects to represent its data structure. Each class may extend a number of classes.
 
-* classes
-	- [transform class](#transform)
-	- [visibility class](#visibility)
-	- [clone class](#clone)
-	- [shader class](#shader)
-* objects
-	- [object](#object)
-	- [subObject](#subobject)
-	- [camera](#camera)
-	- [light](#light)
-	- [shadow](#shadow)
-	- [reflection](#reflection)
-	- [scene](#scene)
-	- [setSettings](#setsettings)
-	- [materials](#materials)
-	- [tasks](#tasks)
+* Classes
+	- [Clone class](#clone)
+	- [Transform class](#transform)
+	- [Visibility class](#visibility)
+* Objects
+	- [Animation](#animation)
+	- [Camera](#camera)
+	- [Collider](#collider)
+	- [Light](#light)
+	- [Material](#material)
+	- [Mesh](#mesh)
+	- [Object](#object)
+	- [Particle](#particle)
+	- [Pose](#pose)
+	- [Reflection](#reflection)
+	- [Scene](#scene)
+	- [SetSettings](#setsettings)
+	- [Shader](#shader)
+	- [Shadow](#shadow)
+	- [Skeleton](#skeleton)
+	- [Task](#task)
+
+
+
+## Clone class
+The clone class allows to create a clone with shared data but individual transforms or similar.
+
+```lua
+c = self:clone()
+```
+`c` new object  
+
+
 
 ## transform class
 Sets the transform matrix using helper functions.
@@ -76,58 +93,16 @@ enable = self:getFarVisibility()
 
 
 
-## clone class
-The clone class allows to create a clone with shared data but individual transforms, ...  
-Therefore do not modify data directly.
 
-```lua
-c = self:clone()
-```
-`c` new object  
+
+## Animation
+An animation is a clip of transformations for each join for a skeleton.
+Collada files may contain such animations.
+`todo`
 
 
 
-## shader class
-```lua
-self:setPixelShader(name)
-self:setVertexShader(name)
-self:setWorldShader(name)
-```
-`name` name of shader, or a shader object itself
-`enabled` 
-
-
-
-## object
-Returned by `dream:loadObject()`
-
-Extends `clone`, 'transform', 'visibility', 'shader'
-
-Subobjects from 3DO files are loaded threaded and may not be loaded yet when using. They will not cause troubles, just wont render. Requesting an object happens automatically if not disabled in `dream:loadObject()` or via `request()`. If tried to render it also requests automatically. You can yield with `wait()` until everything has been loaded.
-```lua
-loaded = self:isLoaded()
-self:request()
-self:wait()
-```
-
-
-
-## subObject
-A subobject is an renderable mesh inside an object and is usually not directly controlled.
-
-Extends `clone`, 'transform', 'visibility', 'shader'
-
-Similar as a object individual subObjects might be requested manually. Usually not required.
-```lua
-laoded = self:isLoaded()
-self:request()
-self:wait()
-```
-
-
-
-
-## camera
+## Camera
 A custom camera can be used in `dream:present()` if necessary, but usually the default camera in `dream.cam` is sufficiant.
 
 extends `transform`  
@@ -154,7 +129,13 @@ far = dream:setFar()
 
 
 
-## light
+## Collider
+A collider contains required vertex and normal data to be used as a collision object in the physics extension.
+`todo`
+
+
+
+## Light
 Lights are stored in an active light queue and will be chosen per scene as it fits best.
 
 ```lua
@@ -244,154 +225,6 @@ dream:setGodraySize(size)
 
 
 
-## shadow
-A shadow can be attached to a lightsource.
-
-```lua
-dream:newShadow(typ, static, res)
-```
-`typ` "point" or "sun"
-`static` 
-- 'false' render realtime (slow, not recommended) 
-- 'true' render once, sun will updates on position (with respective step size) or direction changes 
-- 'dynamic' (default) render once, then render all dynamics realtime. Much faster than no static with minor memory impact. 
-`res` resolution
-
-<br />
-
-Refresh the shadow as soon as possible (relevant for static shadows)
-```lua
-shadow:refresh()
-```
-
-<br />
-
-Sets the max distance the sun light can move without re-rendering the static part. Change if artefacts occur, especially when changing the distance of shadow cascades.
-```lua
-shadow:setRefreshStepSize(step)
-step = shadow:getRefreshStepSize()
-```
-`step (1)` distance in units to update first cascade. Second cascade at 2.3 * step and third cascade at 2.3^2 * step. This wierd scales ensure that the distribution of re renders are more even.
-
-
-
-## reflection
-A reflection uses a cubemap to render its environment to simulate local reflections.
-
-```lua
-dream:newReflection(static, res, noRoughness)
-```
-`static` only render once  
-`res` resolution, only works with direct render enabled  
-`noRoughness` roughness can be simulated using blurring. If not required, disable it!  
-
-<br />
-
-```lua
-reflection:setFrameSkip(skip)
-skip = reflection:getFrameSkip()
-```
-`skip (0)` number of frame  
-
-<br />
-
-```lua
-reflection:setRoughness(roughness)
-roughness = reflection:getRoughness()
-```
-`roughness (true)` simulate roughness  
-
-<br />
-
-Rerender it as soon as possible.
-```lua
-reflection:refresh()
-```
-
-
-### local cubemaps
-By default cubemaps are treated as infinite cubemaps, working perfect for distant objects. If all objects are close the same AABB bounding box (e.g. a room, hallway, ...) local correction can be applied.
-
-```lua
-reflection:setLocal(pos, first, second)
-```
-`pos` vec3 center  
-`first` vec3 first, smaller corner of AABB  
-`second` vec3 second, larger corner of AABB  
-
-### Planar reflections
-WIP, they would make mirrors and water surfaces possible and are way faster than cubemap reflections, but cant be static.
-
-
-
-## scene
-A scene contains a list of objects to render. They are currently subject to change and will receive a demo project.
-The default scene is saved in `dream.scene`.
-
-extends `visibility`
-
-Create an activate scene:
-```lua
-scene = dream:newScene()
-dream:drawScene(scene)
-```
-
-<br />
-
-```lua
-scene:clear()
-scene:add(obj)
-scene:add(obj, transform)
-scene:add(obj, transform, col)
-```
-`obj` object or subobject
-`transform (I)` mat4
-`col (white)` vec3 color
-
-
-
-## setSettings
-A canvas set contains the target framebuffers and most of the graphics settings. Default sets are saved in `dream.renderSet`, `dream.reflectionsSet` and `dream.mirrorSet`.
-
-```lua
-set = dream:newSetSettings()
-
-canvases = newCanvasSet(set)
-canvases = newCanvasSet(set, w, h)
-```
-`set` settings, no actual data yet  
-`canvases` ready to use canvases  
-
-<br />
-
-All of the following functions have a getter too.
-```lua
-set:setMode(renderMode)
-set:setResolution(res)
-set:setFormat(format)
-set:setPostEffects(enabled)
-set:setMsaa(msaa)
-set:setFxaa(enabled)
-set:setRefractions(enabled)
-set:setAlphaPass(enabled)
-```
-`renderMode` String
-* `direct` fastest, very reduced features, requires set depth canvas via conf.lua. If missing it will add it, causing a short flicker, sets format to rgb8
-* `lite` fast, reduced features, does not output, but stores result on `canvases.color`, sets format to rgb8
-* `normal` full features, default, sets to rgba16f HDR canvas.
-
-`res (512)` resolution if not specified in `dream:newCanvasSet()`.  
-`format ("rgba16f")` LÖVE pixel format.  
-
-`enabled` features:
-* post effects are effects like exposure, bloom, ... which are unwanted for temporary results (e.g. reflections)
-* msaa is slower but more beatiful (consider hardware limit), fxaa is faster but blurry. Dont use both.
-* refractions simulate refractions for objects in the alpha pass and ior ~= 1.0
-* alpha pass can be disabled entirely, increasing performance a bit. Disable if no object use the second pass anyways.
-
-
-
-
 ## materials
 Materials can be either per object by providing a .mtl or .mat file with the same name as the object file or they can be in a global material library, in which case they got chosen first.
 
@@ -466,5 +299,195 @@ material:cullMode(cullmode)
 
 
 
-## tasks
-A task is a small class containing a scene entry ready to draw. It's not intended to be used directly so I skip further documentation here.
+## Mesh
+A mesh is the actual renderable object containing buffers, material and render settings.
+
+Extends `clone`, 'transform', 'visibility', 'shader'
+
+Similar as a object individual subObjects might be requested manually. Usually not required.
+```lua
+laoded = self:isLoaded()
+self:request()
+self:wait()
+```
+
+
+
+## Object
+Returned by `dream:loadObject()`
+
+Extends `clone`, 'transform', 'visibility', 'shader'
+
+Subobjects from 3DO files are loaded threaded and may not be loaded yet when using. They will not cause troubles, just wont render. Requesting an object happens automatically if not disabled in `dream:loadObject()` or via `request()`. If tried to render it also requests automatically. You can yield with `wait()` until everything has been loaded.
+```lua
+loaded = self:isLoaded()
+self:request()
+self:wait()
+```
+
+
+
+## Particle
+`todo`
+
+
+
+## Pose
+`todo`
+
+
+
+## Reflection
+A reflection uses a cubemap to render its environment to simulate local reflections.
+
+```lua
+dream:newReflection(static, res, noRoughness)
+```
+`static` only render once  
+`res` resolution, only works with direct render enabled  
+`noRoughness` roughness can be simulated using blurring. If not required, disable it!  
+
+<br />
+
+```lua
+reflection:setFrameSkip(skip)
+skip = reflection:getFrameSkip()
+```
+`skip (0)` number of frame  
+
+<br />
+
+```lua
+reflection:setRoughness(roughness)
+roughness = reflection:getRoughness()
+```
+`roughness (true)` simulate roughness  
+
+<br />
+
+Rerender it as soon as possible.
+```lua
+reflection:refresh()
+```
+
+
+### Local Cubemaps
+By default cubemaps are treated as infinite cubemaps, working perfect for distant objects. If all objects are close the same AABB bounding box (e.g. a room, hallway, ...) local correction can be applied.
+
+```lua
+reflection:setLocal(pos, first, second)
+```
+`pos` vec3 center  
+`first` vec3 first, smaller corner of AABB  
+`second` vec3 second, larger corner of AABB  
+
+### Planar reflections
+WIP, they would make mirrors and water surfaces possible and are faster than cubemap reflections, but cant be static.
+
+
+
+## Scene
+A scene contains a list of objects to render. They are currently subject to change and will receive a demo project.
+The default scene is saved in `dream.scene`.
+
+extends `visibility`
+
+Create an activate scene:
+```lua
+scene = dream:newScene()
+dream:drawScene(scene)
+```
+
+<br />
+
+```lua
+scene:clear()
+scene:add(obj)
+scene:add(obj, transform)
+scene:add(obj, transform, col)
+```
+`obj` object or subobject
+`transform (I)` mat4
+`col (white)` vec3 color
+
+
+
+## SetSettings
+A canvas set contains the target framebuffers and most of the graphics settings. Default sets are saved in `dream.renderSet`, `dream.reflectionsSet` and `dream.mirrorSet`.
+
+```lua
+set = dream:newSetSettings()
+
+canvases = newCanvasSet(set)
+canvases = newCanvasSet(set, w, h)
+```
+`set` settings, no actual data yet  
+`canvases` ready to use canvases  
+
+<br />
+
+All of the following functions have a getter too.
+```lua
+set:setMode(renderMode)
+set:setResolution(res)
+set:setFormat(format)
+set:setPostEffects(enabled)
+set:setMsaa(msaa)
+set:setFxaa(enabled)
+set:setRefractions(enabled)
+set:setAlphaPass(enabled)
+```
+`renderMode` String
+* `direct` fastest, very reduced features, requires set depth canvas via conf.lua. If missing it will add it, causing a short flicker, sets format to rgb8
+* `lite` fast, reduced features, does not output, but stores result on `canvases.color`, sets format to rgb8
+* `normal` full features, default, sets to rgba16f HDR canvas.
+
+`res (512)` resolution if not specified in `dream:newCanvasSet()`.  
+`format ("rgba16f")` LÖVE pixel format.  
+
+`enabled` features:
+* post effects are effects like exposure, bloom, ... which are unwanted for temporary results (e.g. reflections)
+* msaa is slower but more beatiful (consider hardware limit), fxaa is faster but blurry. Dont use both.
+* refractions simulate refractions for objects in the alpha pass and ior ~= 1.0
+* alpha pass can be disabled entirely, increasing performance a bit. Disable if no object use the second pass anyways.
+
+
+
+## Shadow
+A shadow can be attached to a lightsource.
+
+```lua
+dream:newShadow(typ, static, res)
+```
+`typ` "point" or "sun"
+`static` 
+- 'false' render realtime (slow, not recommended) 
+- 'true' render once, sun will updates on position (with respective step size) or direction changes 
+- 'dynamic' (default) render once, then render all dynamics realtime. Much faster than no static with minor memory impact. 
+`res` resolution
+
+<br />
+
+Refresh the shadow as soon as possible (relevant for static shadows)
+```lua
+shadow:refresh()
+```
+
+<br />
+
+Sets the max distance the sun light can move without re-rendering the static part. Change if artefacts occur, especially when changing the distance of shadow cascades.
+```lua
+shadow:setRefreshStepSize(step)
+step = shadow:getRefreshStepSize()
+```
+`step (1)` distance in units to update first cascade. Second cascade at 2.3 * step and third cascade at 2.3^2 * step. This wierd scales ensure that the distribution of re renders are more even.
+
+
+
+## Skeleton
+A skeleton contains joints and required mappings to transform an corresponding skin (mesh with joint buffers).
+
+
+
+## Task
+A task is a small class containing a scene entry ready to draw. It's an internal structure so I skip further documentation here.
