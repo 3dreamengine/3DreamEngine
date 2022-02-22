@@ -9,7 +9,7 @@ function job:queue()
 	--shadows
 	for d,s in ipairs(lib.lighting) do
 		if s.shadow and s.active and s.shadow.typ == "point" then
-			if s.shadow.static ~= true or not s.shadow.done then
+			if not s.shadow.static or not s.shadow.done then
 				lib:addOperation("pointShadow", s)
 			end
 		end
@@ -42,10 +42,12 @@ local transformations = {
 }
 
 function job:execute(light)
+	assert(not light.shadow.static or not light.shadow.dynamic, "Shadow can not be both static and dynamic")
+	
 	--create new canvases if necessary
 	if not light.shadow.canvas then
 		light.shadow.canvas = love.graphics.newCanvas(light.shadow.resolution, light.shadow.resolution,
-			{format = light.shadow.static and "r16f" or "rg16f",
+			{format = light.shadow.dynamic and "rg16f" or "r16f",
 			readable = true,
 			msaa = 0,
 			type = "cube",
@@ -72,13 +74,7 @@ function job:execute(light)
 		
 		local shadowCam = lib:newCamera(t[1], lib.cubeMapProjection, light.pos, lib.lookNormals[face])
 		
-		if light.shadow.static then
-			--static shadow
-			if not light.shadow.rendered then
-				lib:renderShadows(shadowCam, {{light.shadow.canvas, face = face}}, light.blacklist, false, nil, light.shadow.smooth)
-				light.shouldSmooth = light.shadow.smooth
-			end
-		else
+		if light.shadow.dynamic then
 			if light.shadow.rendered then
 				--dynamic part
 				lib:renderShadows(shadowCam, {{light.shadow.canvas, face = face}}, light.blacklist, true, nil, false)
@@ -86,6 +82,16 @@ function job:execute(light)
 				--both parts
 				lib:renderShadows(shadowCam, {{light.shadow.canvas, face = face}}, light.blacklist, false, nil, light.shadow.smooth)
 				lib:renderShadows(shadowCam, {{light.shadow.canvas, face = face}}, light.blacklist, true, nil, false)
+				light.shouldSmooth = light.shadow.smooth
+			end
+		else
+			--static shadow
+			if not light.shadow.rendered then
+				local pass = nil
+				if light.shadow.static  then
+					pass = false
+				end
+				lib:renderShadows(shadowCam, {{light.shadow.canvas, face = face}}, light.blacklist, pass, nil, light.shadow.smooth)
 				light.shouldSmooth = light.shadow.smooth
 			end
 		end

@@ -17,6 +17,8 @@ function job:queue()
 end
 
 function job:execute(light)
+	assert(not light.shadow.static or not light.shadow.dynamic, "Shadow can not be both static and dynamic")
+	
 	--create new canvases if necessary
 	if not light.shadow.canvases then
 		light.shadow.canvases = { }
@@ -70,7 +72,7 @@ function job:execute(light)
 			--generate canvas
 			if not light.shadow.canvases[cascade] then
 				light.shadow.canvases[cascade] = love.graphics.newCanvas(light.shadow.resolution, light.shadow.resolution,
-					{format = light.shadow.static and "r16f" or "rg16f",
+					{format = light.shadow.dynamic and "rg16f" or "r16f",
 					readable = true,
 					msaa = 0,
 					type = "2d"})
@@ -78,17 +80,10 @@ function job:execute(light)
 		end
 		
 		local canvases = {light.shadow.canvases[cascade]}
-		local blurStrength = 20.0 * light.size / light.shadow.cascadeFactor ^ (cascade-1)
 		
 		--render
 		local smooth = false
-		if light.shadow.static then
-			--static shadow
-			if not shadowCam.rendered then
-				lib:renderShadows(shadowCam, canvases, light.blacklist, false, cascade > 1, light.shadow.smooth)
-				smooth = light.shadow.smooth
-			end
-		else
+		if light.shadow.dynamic or true then
 			if shadowCam.rendered then
 				--dynamic part
 				lib:renderShadows(shadowCam, canvases, light.blacklist, true, cascade > 1, false)
@@ -98,10 +93,21 @@ function job:execute(light)
 				lib:renderShadows(shadowCam, canvases, light.blacklist, true, cascade > 1, false)
 				smooth = light.shadow.smooth
 			end
+		else
+			--static shadow
+			if not shadowCam.rendered or not light.shadow.static then
+				local pass = nil
+				if light.shadow.static  then
+					pass = false
+				end
+				lib:renderShadows(shadowCam, canvases, light.blacklist, pass, cascade > 1, light.shadow.smooth)
+				smooth = light.shadow.smooth
+			end
 		end
 		
 		--smooth lighting
 		if smooth then
+			local blurStrength = 30.0 * light.size / light.shadow.cascadeFactor ^ (cascade-1)
 			local iterations = math.ceil(blurStrength)
 			lib:blurCanvas(light.shadow.canvases[cascade], blurStrength / iterations, iterations, {true, false, false, false})
 		end

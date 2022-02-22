@@ -169,26 +169,6 @@ function lib.getFinalShader(self, canvases)
 	return self.finalShaders[ID]
 end
 
---get a unique ID for this specific light setup
-do
-	local lastID = 0
-	local IDs = { }
-	function lib:getLightSetupID(lights, types)
-		local ID = {0, 0, 0, 0, 0, 0, 0, 0}
-		if lights then
-			for d,s in pairs(types) do
-				if not IDs[d] then
-					lastID = lastID + 1
-					IDs[d] = lastID
-				end
-				
-				ID[IDs[d]] = lib.lightShaders[d].batchable and 1 or s
-			end
-		end
-		return string.char(unpack(ID))
-	end
-end
-
 function lib:getRenderShaderID(task, pass, shadows)
 	local mesh = task:getMesh()
 	local mat = mesh.material
@@ -474,28 +454,28 @@ function lib:getLightComponents(light, basic)
 	local lc = { }
 	
 	--global defines and code
-	for d,s in pairs(light.types) do
-		assert(self.lightShaders[d], "Light of type '" .. d .. "' does not exist!")
-		lcInit[#lcInit+1] = self.lightShaders[d]:constructDefinesGlobal(self)
+	for typ,count in pairs(light.types) do
+		assert(self.lightShaders[typ], "Light of type '" .. typ .. "' does not exist!")
+		lcInit[#lcInit+1] = self.lightShaders[typ]:constructDefinesGlobal(self)
 		
 		if basic then
-			lc[#lc+1] = self.lightShaders[d]:constructPixelBasicGlobal(self)
+			lc[#lc+1] = self.lightShaders[typ]:constructPixelBasicGlobal(self)
 		else
-			lc[#lc+1] = self.lightShaders[d]:constructPixelGlobal(self)
+			lc[#lc+1] = self.lightShaders[typ]:constructPixelGlobal(self)
 		end
 	end
 	
 	--defines and code
 	local IDs = { }
-	for	d,s in ipairs(light.lights) do
-		IDs[s.light_typ] = (IDs[s.light_typ] or -1) + 1
-		lcInit[#lcInit+1] = self.lightShaders[s.light_typ]:constructDefines(self, IDs[s.light_typ])
+	for	_,light in ipairs(light.lights) do
+		IDs[light.light_typ] = (IDs[light.light_typ] or -1) + 1
+		lcInit[#lcInit+1] = self.lightShaders[light.light_typ]:constructDefines(self, light.light_typ .. "_" .. IDs[light.light_typ])
 		
 		local px
 		if basic then
-			px = self.lightShaders[s.light_typ]:constructPixelBasic(self, IDs[s.light_typ])
+			px = self.lightShaders[light.light_typ]:constructPixelBasic(self, light.light_typ .. "_" .. IDs[light.light_typ])
 		else
-			px = self.lightShaders[s.light_typ]:constructPixel(self, IDs[s.light_typ])
+			px = self.lightShaders[light.light_typ]:constructPixel(self, light.light_typ .. "_" .. IDs[light.light_typ])
 		end
 		if px then
 			table.insert(lc, "{\n" .. px .. "\n}")
