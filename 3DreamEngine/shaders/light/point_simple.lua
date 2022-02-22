@@ -1,7 +1,5 @@
 local sh = { }
 
-sh.type = "light"
-
 sh.batchable = true
 
 function sh:constructDefinesGlobal(dream)

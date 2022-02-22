@@ -1,7 +1,5 @@
 local sh = { }
 
-sh.type = "light"
-
 sh.func = "sampleShadowPoint"
 
 function sh:constructDefinesGlobal(dream)
