@@ -1,6 +1,6 @@
 local lib = _3DreamEngine
 
-function lib:newShadow(typ, static, resolution)
+function lib:newShadow(typ, resolution)
 	return setmetatable({
 		typ = typ,
 		
@@ -12,9 +12,9 @@ function lib:newShadow(typ, static, resolution)
 		cascadeDistance = 8,
 		cascadeFactor = 4,
 		
-		static = static,
+		static = false,
 		smooth = false,
-		dynamic = not static,
+		dynamic = true,
 		lazy = false,
 	}, self.meta.shadow)
 end
@@ -54,6 +54,9 @@ end
 
 function class:setStatic(s)
 	self.static = s
+	if s then
+		self.dynamic = false
+	end
 	self:clear()
 end
 

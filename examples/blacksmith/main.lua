@@ -52,7 +52,8 @@ dream.cam.ry = 0
 local lights = { }
 for i = 1, 3 do
 	lights[i] = dream:newLight("point", 0, 0, 0, 1.0, 0.75, 0.5)
-	lights[i]:addShadow(true)
+	lights[i]:addShadow()
+	lights[i].shadow:setStatic(true)
 	lights[i].shadow:setSmooth(true)
 end
 

@@ -62,14 +62,16 @@ local lights = { }
 for d,s in ipairs(tavern.positions) do
 	if s.name == "light" then
 		lights[d] = dream:newLight("point", vec3(s.x, s.y + 0.1, s.z), vec3(1.0, 0.75, 0.3))
-		lights[d]:addShadow(true)
+		lights[d]:addShadow()
+		lights[d].shadow:setStatic(true)
 		lights[d].shadow:setSmooth(true)
 		lights[d].shadow:setRefreshStepSize(1000)
 		lights[d].shadow:setLazy(true)
 		lights[d]:setAttenuation(3) --unrealistic but looks better
 	elseif s.name == "fire" then
 		lights[d] = dream:newLight("point", vec3(s.x, s.y + 0.1, s.z), vec3(1.0, 0.75, 0.2))
-		lights[d]:addShadow(true)
+		lights[d]:addShadow()
+		lights[d].shadow:setStatic(true)
 		lights[d].shadow:setSmooth(true)
 		lights[d].shadow:setRefreshStepSize(1000)
 		lights[d].shadow:setLazy(true)

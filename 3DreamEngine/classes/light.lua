@@ -74,13 +74,13 @@ function class:getDirection()
 	return self.direction
 end
 
-function class:addShadow(static, res)
-	if type(static) == "table" then
-		assert(static.typ, "Provides shadow object does not seem to be a shadow.")
-		self.shadow = static
+function class:addShadow(res)
+	if type(res) == "table" then
+		assert(res.typ, "Provided shadow object does not seem to be a shadow.")
+		self.shadow = res
 		self.shadow:refresh()
 	else
-		self.shadow = lib:newShadow(self.typ, static or false, res)
+		self.shadow = lib:newShadow(self.typ, res)
 	end
 end
 

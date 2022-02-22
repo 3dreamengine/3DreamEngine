@@ -196,9 +196,8 @@ vec3 = light:getDirection()
 
 Adds a new shadow to the light.
 ```lua
-light:addShadow(static, res)
+light:addShadow(res)
 ```
-`static` only render once, faster but does not reflect changes  
 `res` resolution of shadow map, either cubemap or cascade depending on light typ.  
 
 <br />

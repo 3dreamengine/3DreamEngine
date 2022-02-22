@@ -18,7 +18,8 @@ local scene = dream:loadScene(projectDir .. "scene")
 --light
 local p = scene.objects.light.positions[1]
 local light = dream:newLight("point", p.x, p.y, p.z, 1.4, 1.2, 1.0, 40.0)
-light:addShadow(true)
+light:addShadow()
+light.shadow:setStatic(true)
 light.shadow:setSmooth(true)
 light.blacklist = {[scene.objects.chandelier_glass.meshes.chandelier_glass] = true, [scene.objects.chandelier.meshes.chandelier] = true}
 
