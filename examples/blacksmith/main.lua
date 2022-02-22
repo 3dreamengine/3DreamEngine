@@ -51,7 +51,7 @@ dream.cam.ry = 0
 --create three light sources and assign shadows
 local lights = { }
 for i = 1, 3 do
-	lights[i] = dream:newLight("point", 0, 0, 0, 1.0, 0.75, 0.5)
+	lights[i] = dream:newLight("point", vec3(0, 0, 0), vec3(1.0, 0.75, 0.5))
 	lights[i]:addShadow()
 	lights[i].shadow:setStatic(true)
 	lights[i].shadow:setSmooth(true)

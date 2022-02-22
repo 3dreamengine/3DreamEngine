@@ -36,7 +36,7 @@ function class:tostring()
 end
 
 function class:setName(name)
-	self.name = self:removePostfix(name)
+	self.name = lib:removePostfix(name)
 end
 
 function class:setGodrays(e)

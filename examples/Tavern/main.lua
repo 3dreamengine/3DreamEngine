@@ -157,6 +157,8 @@ function love.draw()
 		love.graphics.print(table.concat({
 			"U to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")",
 			"F to toggle fog (" .. tostring(dream.fog_enabled) .. ")",
+			"8 to enable fast rendering",
+			"9 to enable quality rendering",
 			"L to toggle looking at check (" .. tostring(lookingAtCheck) .. ")",
 			"K to toggle relative mode (" .. tostring(rotateCamera) .. ")",
 			math.ceil(love.graphics.getStats().texturememory / 1024^2) .. " MB VRAM",

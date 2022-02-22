@@ -33,4 +33,12 @@ function class:setMode(mode)
 	self.mode = mode
 end
 
+function class:getRefractions()
+	return self.refractions
+end
+
+function class:getAlphaPass()
+	return self.alphaPass
+end
+
 return class

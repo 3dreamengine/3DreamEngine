@@ -61,10 +61,12 @@ void effect() {
 #endif
 	
 	//proper backfaces
+#ifdef TRANSLUCENCY
 	if (dot(fragmentNormal, viewVec) > 0.0) {
 		normal = normalize(reflect(normal, fragmentNormal));
 		fragmentNormal = -fragmentNormal;
 	}
+#endif
 	
 #import pixel
 

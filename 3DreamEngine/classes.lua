@@ -37,7 +37,7 @@ for d,s in pairs(lib.classes) do
 			end
 			
 			if typ == "boolean" then
-				if not s["is" .. n] then
+				if not s["is" .. n] and not s["get" .. n] then
 					s["is" .. n] = function(self)
 						return self[name]
 					end

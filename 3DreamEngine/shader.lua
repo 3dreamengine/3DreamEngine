@@ -201,6 +201,7 @@ function lib:getRenderShaderID(task, pass, shadows)
 		mesh.instanceMesh and 1 or 0,
 		reflections and 1 or 0,
 		mesh.instanceMesh and 1 or 0,
+		mat.translucent > 0 and 1 or 0,
 		pixelShader.id % 256, math.floor(pixelShader.id / 256),
 		vertexShader.id % 256, math.floor(vertexShader.id / 256),
 		worldShader.id % 256, math.floor(worldShader.id / 256),
@@ -270,6 +271,11 @@ function lib:getRenderShader(ID, mesh, pass, canvases, light, shadows, sun)
 		--if instancing is used
 		if mesh.instanceMesh then
 			table.insert(defines, "#define INSTANCING")
+		end
+		
+		--translucency
+		if mat.translucent > 0 then
+			table.insert(defines, "#define TRANSLUCENCY")
 		end
 		
 		--collect additional defines
