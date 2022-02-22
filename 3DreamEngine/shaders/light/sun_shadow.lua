@@ -6,72 +6,72 @@ sh.func = "sampleShadowSun"
 
 function sh:constructDefinesGlobal(dream)
 	return [[
-		float sampleShadowSun2(Image tex, vec2 shadowUV, float depth) {
-			float ox = float(fract(love_PixelCoord.x * 0.5) > 0.25);
-			float oy = float(fract(love_PixelCoord.y * 0.5) > 0.25) + ox;
-			if (oy > 1.1) oy = 0.0;
-			float ss_texelSize = 1.0 / love_ScreenSize.x;
-			
-			float r0 = texture(tex, shadowUV + vec2(-1.5 + ox, 0.5 + oy) * ss_texelSize).x;
-			float r1 = texture(tex, shadowUV + vec2(0.5 + ox, 0.5 + oy) * ss_texelSize).x;
-			float r2 = texture(tex, shadowUV + vec2(-1.5 + ox, -1.5 + oy) * ss_texelSize).x;
-			float r3 = texture(tex, shadowUV + vec2(0.5 + ox, -1.5 + oy) * ss_texelSize).x;
-			
-			return (r0 > depth ? 0.25 : 0.0) +
-				(r1 > depth ? 0.25 : 0.0) +
-				(r2 > depth ? 0.25 : 0.0) +
-				(r3 > depth ? 0.25 : 0.0)
-			;
-		}
+	float sampleShadowSun2(Image tex, vec2 shadowUV, float depth) {
+		float ox = float(fract(love_PixelCoord.x * 0.5) > 0.25);
+		float oy = float(fract(love_PixelCoord.y * 0.5) > 0.25) + ox;
+		if (oy > 1.1) oy = 0.0;
+		float ss_texelSize = 1.0 / love_ScreenSize.x;
+		
+		float r0 = texture(tex, shadowUV + vec2(-1.5 + ox, 0.5 + oy) * ss_texelSize).x;
+		float r1 = texture(tex, shadowUV + vec2(0.5 + ox, 0.5 + oy) * ss_texelSize).x;
+		float r2 = texture(tex, shadowUV + vec2(-1.5 + ox, -1.5 + oy) * ss_texelSize).x;
+		float r3 = texture(tex, shadowUV + vec2(0.5 + ox, -1.5 + oy) * ss_texelSize).x;
+		
+		return (r0 > depth ? 0.25 : 0.0) +
+			(r1 > depth ? 0.25 : 0.0) +
+			(r2 > depth ? 0.25 : 0.0) +
+			(r3 > depth ? 0.25 : 0.0)
+		;
+	}
 	]] .. self:constructDefinesGlobalCommon(dream)
 end
 
 function sh:constructDefinesGlobalCommon(dream)
 	return [[
-		float ]] .. self.func .. [[(vec3 VertexPos, vec3 pos, mat4 proj_1, mat4 proj_2, mat4 proj_3, Image tex_1, Image tex_2, Image tex_3, float factor, float shadowDistance, float fade, float bias) {
-			float dist = distance(VertexPos, pos) * shadowDistance;
-			
-			float f2 = factor * factor;
-			float v1 = clamp((1.0 - dist) * fade * f2, 0.0, 1.0);
-			float v2 = clamp((factor - dist) * fade * factor, 0.0, 1.0) - v1;
-			float v3 = clamp((f2 - dist) * fade, 0.0, 1.0) - v2 - v1;
-			
-			float v = 1.0 - v1 - v2 - v3;
-			if (v1 > 0.0) {
-				vec3 uvs = (proj_1 * vec4(VertexPos, 1.0)).xyz;
-				v += v1 * ]] .. self.func ..[[2(tex_1, uvs.xy * 0.5 + 0.5, uvs.z - bias);
-			}
-			if (v2 > 0.0) {
-				vec3 uvs = (proj_2 * vec4(VertexPos, 1.0)).xyz;
-				v += v2 * ]] .. self.func ..[[2(tex_2, uvs.xy * 0.5 + 0.5, uvs.z - bias * factor);
-			}
-			if (v3 > 0.0) {
-				vec3 uvs = (proj_3 * vec4(VertexPos, 1.0)).xyz;
-				v += v3 * ]] .. self.func ..[[2(tex_3, uvs.xy * 0.5 + 0.5, uvs.z - bias * f2);
-			}
-			return v;
+	float ]] .. self.func .. [[(vec3 VertexPos, vec3 pos, mat4 proj_1, mat4 proj_2, mat4 proj_3, Image tex_1, Image tex_2, Image tex_3, float factor, float shadowDistance, float fade, float bias) {
+		float dist = distance(VertexPos, pos) * shadowDistance;
+		
+		float f2 = factor * factor;
+		float v1 = clamp((1.0 - dist) * fade * f2, 0.0, 1.0);
+		float v2 = clamp((factor - dist) * fade * factor, 0.0, 1.0) - v1;
+		float v3 = clamp((f2 - dist) * fade, 0.0, 1.0) - v2 - v1;
+		
+		float v = 1.0 - v1 - v2 - v3;
+		if (v1 > 0.0) {
+			vec3 uvs = (proj_1 * vec4(VertexPos, 1.0)).xyz;
+			v += v1 * ]] .. self.func ..[[2(tex_1, uvs.xy * 0.5 + 0.5, uvs.z - bias);
 		}
+		if (v2 > 0.0) {
+			vec3 uvs = (proj_2 * vec4(VertexPos, 1.0)).xyz;
+			v += v2 * ]] .. self.func ..[[2(tex_2, uvs.xy * 0.5 + 0.5, uvs.z - bias * factor);
+		}
+		if (v3 > 0.0) {
+			vec3 uvs = (proj_3 * vec4(VertexPos, 1.0)).xyz;
+			v += v3 * ]] .. self.func ..[[2(tex_3, uvs.xy * 0.5 + 0.5, uvs.z - bias * f2);
+		}
+		return v;
+	}
 	]]
 end
 
 function sh:constructDefines(dream, ID)
 	return ([[
-		extern float ss_factor_#ID#;
-		extern float ss_distance_#ID#;
-		extern float ss_fade_#ID#;
-		
-		extern vec3 ss_pos_#ID#;
-		
-		extern mat4 ss_proj_1_#ID#;
-		extern mat4 ss_proj_2_#ID#;
-		extern mat4 ss_proj_3_#ID#;
-		
-		extern Image ss_tex_1_#ID#;
-		extern Image ss_tex_2_#ID#;
-		extern Image ss_tex_3_#ID#;
-		
-		extern vec3 ss_vec_#ID#;
-		extern vec3 ss_color_#ID#;
+	extern float ss_factor_#ID#;
+	extern float ss_distance_#ID#;
+	extern float ss_fade_#ID#;
+	
+	extern vec3 ss_pos_#ID#;
+	
+	extern mat4 ss_proj_1_#ID#;
+	extern mat4 ss_proj_2_#ID#;
+	extern mat4 ss_proj_3_#ID#;
+	
+	extern Image ss_tex_1_#ID#;
+	extern Image ss_tex_2_#ID#;
+	extern Image ss_tex_3_#ID#;
+	
+	extern vec3 ss_vec_#ID#;
+	extern vec3 ss_color_#ID#;
 	]]):gsub("#ID#", ID)
 end
 
@@ -85,23 +85,23 @@ end
 
 function sh:constructPixel(dream, ID)
 	return ([[
-		float bias = mix(1.0, 0.01, dot(normal, ss_vec_#ID#)) / 512.0;
-		float shadow = ]] .. self.func .. [[(VertexPos, ss_pos_#ID#, ss_proj_1_#ID#, ss_proj_2_#ID#, ss_proj_3_#ID#, ss_tex_1_#ID#, ss_tex_2_#ID#, ss_tex_3_#ID#, ss_factor_#ID#, ss_distance_#ID#, ss_fade_#ID#, bias);
+	float bias = mix(1.0, 0.01, dot(normal, ss_vec_#ID#)) / 512.0;
+	float shadow = ]] .. self.func .. [[(VertexPos, ss_pos_#ID#, ss_proj_1_#ID#, ss_proj_2_#ID#, ss_proj_3_#ID#, ss_tex_1_#ID#, ss_tex_2_#ID#, ss_tex_3_#ID#, ss_factor_#ID#, ss_distance_#ID#, ss_fade_#ID#, bias);
+	
+	if (shadow > 0.0) {
+		vec3 lightColor = ss_color_#ID# * shadow;
 		
-		if (shadow > 0.0) {
-			vec3 lightColor = ss_color_#ID# * shadow;
-			
-			light += getLight(lightColor, viewVec, ss_vec_#ID#, normal, fragmentNormal, albedo, roughness, metallic);
-		}
+		light += getLight(lightColor, viewVec, ss_vec_#ID#, normal, fragmentNormal, albedo, roughness, metallic);
+	}
 	]]):gsub("#ID#", ID)
 end
 
 function sh:constructPixelBasic(dream, ID)
 	return ([[
-		float bias = 1.0 / 512.0;
-		float shadow = ]] .. self.func .. [[(VertexPos, ss_pos_#ID#, ss_proj_1_#ID#, ss_proj_2_#ID#, ss_proj_3_#ID#, ss_tex_1_#ID#, ss_tex_2_#ID#, ss_tex_3_#ID#, ss_factor_#ID#, ss_distance_#ID#, ss_fade_#ID#, bias);
-		
-		light += ss_color_#ID# * shadow;
+	float bias = 1.0 / 512.0;
+	float shadow = ]] .. self.func .. [[(VertexPos, ss_pos_#ID#, ss_proj_1_#ID#, ss_proj_2_#ID#, ss_proj_3_#ID#, ss_tex_1_#ID#, ss_tex_2_#ID#, ss_tex_3_#ID#, ss_factor_#ID#, ss_distance_#ID#, ss_fade_#ID#, bias);
+	
+	light += ss_color_#ID# * shadow;
 	]]):gsub("#ID#", ID)
 end
 

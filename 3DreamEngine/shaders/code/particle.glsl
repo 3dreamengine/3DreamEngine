@@ -9,6 +9,7 @@ varying float depth;
 #import defines
 
 
+
 #ifdef PIXEL
 extern highp vec3 viewPos;
 
@@ -94,6 +95,8 @@ void effect() {
 	love_Canvases[0] = vec4(color, albedo.a);
 }
 #endif
+
+
 
 #ifdef VERTEX
 

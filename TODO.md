@@ -1,6 +1,15 @@
 # TODO
 A list of upcoming changes and features.
 
+# Bufferbuilder
+* Create Meshes from several meshes
+    * Allows tiled worlds etc with high performance
+
+# Particlefield
+* Similar to particlebatch but static
+    * Can be used for dust, rain or similar particle fields
+    * Are way faster than particlebatches since Vertex-shader based
+
 # Reflections
 * Non axis aligned box reflections
 * Easier to use reflection globes

@@ -23,6 +23,8 @@ varying mat3 TBN;
 extern Image tex_depth;
 #endif
 
+
+
 #ifdef PIXEL
 void effect() {
 	vec3 viewVec = normalize(VertexPos - viewPos);
@@ -115,6 +117,7 @@ void effect() {
 #endif
 }
 #endif
+
 
 
 #ifdef VERTEX

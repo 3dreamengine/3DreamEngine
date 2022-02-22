@@ -114,6 +114,22 @@ function lib:getShader(s)
 	return lib.shaders[s]
 end
 
+local function generateHeader(text)
+	return "//########################################//\n//" .. string.rep(" ", math.floor((40 - #text)/2)) .. text .. "//\n//########################################//"
+end
+
+local function generateFooter()
+	return "//////////////////////////////////////////"
+end
+
+local function insertHeadered(t, name, code)
+	if code and #code > 0 then
+		table.insert(t, generateHeader(name))
+		table.insert(t, code)
+		table.insert(t, generateFooter())
+	end
+end
+
 --load all setting depending shaders
 function lib.loadShader(self)
 	self.finalShaders = { }
@@ -302,50 +318,42 @@ function lib:getRenderShader(ID, mesh, pass, canvases, light, shadows, sun)
 			
 			--fog engine
 			if self.fog_enabled then
+				table.insert(defines, generateHeader("fog"))
 				table.insert(defines, codes.fog)
+				table.insert(defines, generateFooter())
 			end
 			
 			--reflection
+			table.insert(defines, generateHeader("reflection"))
 			if reflection then
 				table.insert(defines, codes.reflections)
 			else
 				table.insert(defines, codes.ambientOnly)
 			end
+			table.insert(defines, generateFooter())
 		end
 		
 		--material shader
-		table.insert(defines, info.pixelShader:buildDefines(self, mat, shadows))
-		table.insert(defines, info.pixelShader.defines)
-		table.insert(defines, info.vertexShader:buildDefines(self, mat, shadows))
-		table.insert(defines, info.vertexShader.defines)
+		insertHeadered(defines, "pixel shader", info.pixelShader:buildDefines(self, mat, shadows))
+		insertHeadered(defines, "vertex shader", info.vertexShader:buildDefines(self, mat, shadows))
 		
-		table.insert(pixelMaterial, info.pixelShader:buildPixel(self, mat, shadows))
-		table.insert(pixelMaterial, info.pixelShader.pixel)
-		table.insert(pixelMaterial, info.vertexShader:buildPixel(self, mat, shadows))
-		table.insert(pixelMaterial, info.vertexShader.pixel)
+		insertHeadered(pixelMaterial, "pixel shader", info.pixelShader:buildPixel(self, mat, shadows))
+		insertHeadered(pixelMaterial, "vertex shader", info.vertexShader:buildPixel(self, mat, shadows))
 		
-		table.insert(vertex, info.pixelShader:buildVertex(self, mat, shadows))
-		table.insert(vertex, info.pixelShader.vertex)
-		table.insert(vertex, info.vertexShader:buildVertex(self, mat, shadows))
-		table.insert(vertex, info.vertexShader.vertex)
+		insertHeadered(vertex, "pixel shader", info.pixelShader:buildVertex(self, mat, shadows))
+		insertHeadered(vertex, "vertex shader", info.vertexShader:buildVertex(self, mat, shadows))
 		
 		--world
-		table.insert(defines, info.worldShader:buildDefines(self, mat, shadows))
-		table.insert(defines, info.worldShader.defines)
-		
-		table.insert(pixel, info.worldShader:buildPixel(self, mat, shadows))
-		table.insert(pixel, info.worldShader.pixel)
-		
-		table.insert(vertex, info.worldShader:buildVertex(self, mat, shadows))
-		table.insert(vertex, info.worldShader.vertex)
+		insertHeadered(defines, "world shader", info.worldShader:buildDefines(self, mat, shadows))
+		insertHeadered(pixel, "world shader", info.worldShader:buildPixel(self, mat, shadows))
+		insertHeadered(vertex, "world shader", info.worldShader:buildVertex(self, mat, shadows))
 		
 		--build code
 		local code = codes.base
-		code = code:gsub("#import defines", table.concat(defines, "\n"))
+		code = code:gsub("#import defines", table.concat(defines, "\n\n"))
 		code = code:gsub("#import pixelMaterial", table.concat(pixelMaterial, "\n"))
 		code = code:gsub("#import pixel", table.concat(pixel, "\n"))
 		code = code:gsub("#import vertex", table.concat(vertex, "\n"))
-		code = code:gsub("\t", "")
 		
 		--compile
 		info.code = code
@@ -422,7 +430,7 @@ function lib:getParticlesShader(pass, canvases, light, emissive, distortion, sin
 		local code = codes.particle
 		
 		--setting specific defines
-		code = code:gsub("#import defines", table.concat(defines, "\n"))
+		code = code:gsub("#import defines", table.concat(defines, "\n\n"))
 		
 		--fog engine
 		if self.fog_enabled and canvases.mode ~= "normal" then
@@ -455,30 +463,34 @@ function lib:getLightComponents(light, basic)
 	
 	--global defines and code
 	for typ,count in pairs(light.types) do
+		local id = "light " .. typ
 		assert(self.lightShaders[typ], "Light of type '" .. typ .. "' does not exist!")
-		lcInit[#lcInit+1] = self.lightShaders[typ]:constructDefinesGlobal(self)
+		insertHeadered(lcInit, id, self.lightShaders[typ]:constructDefinesGlobal(self))
 		
 		if basic then
-			lc[#lc+1] = self.lightShaders[typ]:constructPixelBasicGlobal(self)
+			insertHeadered(lc, id, self.lightShaders[typ]:constructPixelBasicGlobal(self))
 		else
-			lc[#lc+1] = self.lightShaders[typ]:constructPixelGlobal(self)
+			insertHeadered(lc, id, self.lightShaders[typ]:constructPixelGlobal(self))
 		end
 	end
 	
 	--defines and code
 	local IDs = { }
 	for	_,light in ipairs(light.lights) do
+		
 		IDs[light.light_typ] = (IDs[light.light_typ] or -1) + 1
-		lcInit[#lcInit+1] = self.lightShaders[light.light_typ]:constructDefines(self, light.light_typ .. "_" .. IDs[light.light_typ])
+		local id = light.light_typ .. "_" .. IDs[light.light_typ]
+		
+		insertHeadered(lcInit, id, self.lightShaders[light.light_typ]:constructDefines(self, id))
 		
 		local px
 		if basic then
-			px = self.lightShaders[light.light_typ]:constructPixelBasic(self, light.light_typ .. "_" .. IDs[light.light_typ])
+			px = self.lightShaders[light.light_typ]:constructPixelBasic(self, id)
 		else
-			px = self.lightShaders[light.light_typ]:constructPixel(self, light.light_typ .. "_" .. IDs[light.light_typ])
+			px = self.lightShaders[light.light_typ]:constructPixel(self, id)
 		end
 		if px then
-			table.insert(lc, "{\n" .. px .. "\n}")
+			insertHeadered(lc, id, "{\n" .. px .. "\n}")
 		end
 	end
 	

@@ -24,10 +24,10 @@ end
 
 function sh:constructDefines(dream, ID)
 	return ([[
-		extern samplerCube ps_tex_#ID#;
-		extern vec3 ps_pos_#ID#;
-		extern vec3 ps_color_#ID#;
-		extern float ps_attenuation_#ID#;
+	extern samplerCube ps_tex_#ID#;
+	extern vec3 ps_pos_#ID#;
+	extern vec3 ps_color_#ID#;
+	extern float ps_attenuation_#ID#;
 	]]):gsub("#ID#", ID)
 end
 
