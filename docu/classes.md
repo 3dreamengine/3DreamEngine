@@ -3,6 +3,7 @@
 
 * Classes
 	- [Clone class](#clone)
+	- [Shader class](#shader)
 	- [Transform class](#transform)
 	- [Visibility class](#visibility)
 * Objects
@@ -18,7 +19,6 @@
 	- [Reflection](#reflection)
 	- [Scene](#scene)
 	- [SetSettings](#setsettings)
-	- [Shader](#shader)
 	- [Shadow](#shadow)
 	- [Skeleton](#skeleton)
 	- [Task](#task)
@@ -32,6 +32,16 @@ The clone class allows to create a clone with shared data but individual transfo
 c = self:clone()
 ```
 `c` new object  
+
+
+
+## Shader class
+Sets mesh shaders. Objects pass the calls recursively down to meshes. Mesh shaders override material shaders. See engine chapter for more details.
+```lua
+self:setPixelShader(shader)
+self:setVertexShader(shader)
+self:setWorldShader(shader)
+```
 
 
 
@@ -165,6 +175,9 @@ b = light:getBrightness()
 
 light:setAttenuation(a)
 a = light:getAttenuation()
+
+light:setSize(size)
+size = light:getSize()
 
 light:setColor(r, g, b)
 light:setColor(vec3)
@@ -424,19 +437,33 @@ set:setAlphaPass(enabled)
 A shadow can be attached to a lightsource.
 
 ```lua
-dream:newShadow(typ, static, resolution)
+dream:newShadow(typ, resolution)
 ```
 `typ` "point" or "sun"
-`static` 
-- 'false' render realtime, using a dual-channel dynamic/static optimization
-- 'true' render once, sun will updates on position (with respective step size) or direction changes 
-`resolution` resolution
+`resolution` resolution, optional
 
 <br />
 
-Refresh the shadow as soon as possible (relevant for static shadows)
+Static shadows are only rendered once, if not moved or refreshed manually.
 ```lua
-shadow:refresh()
+shadow:setStatic(static)
+static = shadow:isStatic()
+```
+<br />
+
+Because static shadows limits shadow mapping to static objects, the alternative dynamic rendering (by default enabled) can be used. Both static and dynamic objects are rendered on seperate channels. This allows dynamic shadows while still making use of static performance. You can not set both dynamic and static flag. You can however set both to false to enforce classic shadowmapping without any fancy stuff.
+```lua
+shadow:setDynamic(dynamic)
+smooth = dynamic:isDynamic()
+```
+<br />
+
+Smoothing increases quality by performing a post-blur on the shadow map. While this produces beatiful results, it may also cause artifacts and slow performance if non-dynamic and non-static mode is chosen.
+If dynamic mode is chosen, the dynamic shadows are not blurred.
+The blurring can be controlled by the light objects size.
+```lua
+shadow:setSmooth(b)
+smooth = shadow:isSmooth()
 ```
 <br />
 

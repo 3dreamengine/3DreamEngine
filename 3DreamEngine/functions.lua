@@ -162,7 +162,7 @@ end
 
 
 --todo the frustum culling code fails for close objects, a constant factor "fix" it but it's not fixing the actual problem
-local perspectiveWarpFactor = 1.25
+local perspectiveWarpFactor = 1.5
 
 --optimized plane frustum check
 local cache = { }
@@ -414,7 +414,7 @@ local blurVecs = {
 
 --if the system supports 6+ multicanvas (which most modern systems do) we can use the faster variant
 function lib:getTemporaryCanvas(canvas, half)
-	local id = tostring(canvas) .. (half and "H" or "F")
+	local id = canvas:getWidth() .. canvas:getFormat() .. canvas:getHeight() .. (half and "H" or "F")
 	if not self.canvasCache[id] then
 		self.canvasCache[id] = love.graphics.newCanvas(canvas:getWidth() / (half and 2 or 1), canvas:getHeight() / (half and 2 or 1), {
 			format = canvas:getFormat(),

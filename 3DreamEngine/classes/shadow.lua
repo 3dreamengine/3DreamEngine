@@ -5,7 +5,6 @@ function lib:newShadow(typ, static, resolution)
 		typ = typ,
 		
 		resolution = resolution or (typ == "sun" and 1024 or 512),
-		static = static or false,
 		done = false,
 		target = false,
 		refreshStepSize = typ == "sun" and 1.0 or 0.0001,
@@ -13,7 +12,9 @@ function lib:newShadow(typ, static, resolution)
 		cascadeDistance = 8,
 		cascadeFactor = 4,
 		
+		static = static,
 		smooth = false,
+		dynamic = not static,
 		lazy = false,
 	}, self.meta.shadow)
 end
@@ -28,6 +29,8 @@ local class = {
 		cascadeDistance = "number",
 		cascadeFactor = "number",
 		
+		static = "boolean",
+		dynamic = "boolean",
 		smooth = "boolean",
 		lazy = "boolean",
 	},
@@ -40,15 +43,22 @@ end
 function class:clear()
 	self.canvases = nil
 	self.canvas = nil
+	self.lastFace = nil
 	self:refresh()
-end
-
-function class:getStatic()
-	return self.static
 end
 
 function class:setResolution(r)
 	self.resolution = r
+	self:clear()
+end
+
+function class:setStatic(s)
+	self.static = s
+	self:clear()
+end
+
+function class:setDynamic(s)
+	self.dynamic = s
 	self:clear()
 end
 
