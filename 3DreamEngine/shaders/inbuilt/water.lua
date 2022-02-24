@@ -8,40 +8,40 @@ function sh:getId(dream, mat, shadow)
 	if shadow then
 		return 0
 	else
-		return (mat.tex_normal and 1 or 0) * 2^1 + (mat.tex_emission and 1 or 0) * 2^2
+		return (mat.normalTexture and 1 or 0) * 2^1 + (mat.emissionTexture and 1 or 0) * 2^2
 	end
 end
 
 function sh:buildDefines(dream, mat, shadow)
 	assert(mat.alpha, "water shader requires alpha pass set to true")
-	assert(mat.tex_normal, "water shader requires a normal texture for wave movement")
+	assert(mat.normalTexture, "water shader requires a normal texture for wave movement")
 	
 	return [[
-		]] .. (mat.tex_normal and "#define TEX_NORMAL\n" or "") .. [[
-		]] .. (mat.tex_normal and "#define TANGENT\n" or "") .. [[
+		]] .. (mat.normalTexture and "#define NORMAL_TEXTURE\n" or "") .. [[
+		]] .. (mat.normalTexture and "#define TANGENT\n" or "") .. [[
 		
-		]] .. (mat.tex_emission and "#define TEX_EMISSION\n" or "") .. [[
-		]] .. (mat.tex_material and "#define TEX_MATERIAL\n" or "") .. [[
+		]] .. (mat.emissionTexture and "#define EMISSION_TEXTURE\n" or "") .. [[
+		]] .. (mat.materialTexture and "#define MATERIAL_TEXTURE\n" or "") .. [[
 		
 		#define TANGENT
 		
 		//#ifdef PIXEL
-		extern Image tex_albedo;
-		extern vec4 color_albedo;
+		extern Image albedoTexture;
+		extern vec4 albedoColor;
 		
-		#ifdef TEX_MATERIAL
-		extern Image tex_material;
+		#ifdef MATERIAL_TEXTURE
+		extern Image materialTexture;
 		#endif
-		extern vec2 color_material;
+		extern vec2 materialColor;
 		
-		extern Image tex_normal;
+		extern Image normalTexture;
 		
-		#ifdef TEX_EMISSION
-		extern Image tex_emission;
+		#ifdef EMISSION_TEXTURE
+		extern Image emissionTexture;
 		#endif
-		extern vec3 color_emission;
+		extern vec3 emissionColor;
 		
-		extern Image tex_noise;
+		extern Image noiseTexture;
 		
 		extern float time;
 		
@@ -54,11 +54,11 @@ function sh:buildDefines(dream, mat, shadow)
 		extern float foamScale;
 		extern float foamSpeed;
 		
-		extern vec3 liquid_albedo;
-		extern float liquid_alpha;
-		extern vec3 liquid_emission;
-		extern float liquid_roughness;
-		extern float liquid_metallic;
+		extern vec3 liquidAlbedo;
+		extern float liquidAlpha;
+		extern vec3 liquidEmission;
+		extern float liquidRoughness;
+		extern float liquidMetallic;
 		
 		//#endif
 	]]
@@ -67,55 +67,55 @@ end
 function sh:buildPixel(dream, mat)
 	return [[
 	//two moving UV coords for the wave normal
-	vec2 waterUV = VaryingTexCoord.xy + VertexPos.xz;
+	vec2 waterUV = VaryingTexCoord.xy + vertexPos.xz;
 	vec2 waterUV1 = waterUV + vec2(0.0, time * waterSpeed);
 	vec2 waterUV2 = waterUV + vec2(time * waterSpeed, 0.0);
 	
 	//wave normal
 	vec3 waterNormal = (
-		Texel(tex_normal, waterUV1 * waterScale).rgb - vec3(0.5) +
-		(Texel(tex_normal, waterUV2 * waterScale * 2.7).rgb - vec3(0.5)) * 0.5
+		Texel(normalTexture, waterUV1 * waterScale).rgb - vec3(0.5) +
+		(Texel(normalTexture, waterUV2 * waterScale * 2.7).rgb - vec3(0.5)) * 0.5
 	);
 	normal = normalize(TBN * waterNormal * vec3(1.0, waterHeight, 1.0));
 	
 	//disorted final uvs
-	vec2 uvd = VertexPos.xz + waterNormal.xz * surfaceDistortion;
+	vec2 uvd = vertexPos.xz + waterNormal.xz * surfaceDistortion;
 	vec2 uvw = uvd * foamScale;
 	
 	//foam
-	float waterDepth = Texel(tex_depth, love_PixelCoord.xy / love_ScreenSize.xy).r - depth;
+	float waterDepth = Texel(depthTexture, love_PixelCoord.xy / love_ScreenSize.xy).r - depth;
 	
 	//two moving UV coords for the wave normal
 	vec2 foamUV = VaryingTexCoord.xy + uvd;
 	vec2 foamUV0 = foamUV + vec2(0.0, time * foamSpeed);
 	vec2 foamUV1 = foamUV + vec2(time * foamSpeed, 0.0);
 	
-	float d0 = Texel(tex_noise, foamUV0).r;
-	float d1 = Texel(tex_noise, foamUV1).b;
+	float d0 = Texel(noiseTexture, foamUV0).r;
+	float d1 = Texel(noiseTexture, foamUV1).b;
 	float foamDensity = d0 + d1;
 	float density = clamp(foamDensity - waterDepth * 4.0, 0.0, 1.0);
 	
 	//color
-	vec4 c = gammaCorrectedTexel(tex_albedo, uvw) * color_albedo;
-	albedo = mix(liquid_albedo, c.rgb, density);
-	alpha = mix(clamp(liquid_alpha, 0.0, 1.0), c.a, density);
+	vec4 c = gammaCorrectedTexel(albedoTexture, uvw) * albedoColor;
+	albedo = mix(liquidAlbedo, c.rgb, density);
+	alpha = mix(clamp(liquidAlpha, 0.0, 1.0), c.a, density);
 	
 	//material
-#ifdef TEX_MATERIAL
-	vec3 material = Texel(tex_material, uvw).xyz;
-	roughness = mix(liquid_roughness, material.x * color_material.x, density);
-	metallic = mix(liquid_metallic, material.y * color_material.y, density);
+#ifdef MATERIAL_TEXTURE
+	vec3 material = Texel(materialTexture, uvw).xyz;
+	roughness = mix(liquidRoughness, material.x * materialColor.x, density);
+	metallic = mix(liquidMetallic, material.y * materialColor.y, density);
 	ao = material.z;
 #else
-	roughness = mix(liquid_roughness, color_material.x, density);
-	metallic = mix(liquid_metallic, color_material.y, density);
+	roughness = mix(liquidRoughness, materialColor.x, density);
+	metallic = mix(liquidMetallic, materialColor.y, density);
 #endif
 	
 	//emission
-	#ifdef TEX_EMISSION
-		emission = mix(liquid_emission, gammaCorrectedTexel(tex_emission, uvw).rgb * color_emission, density);
+	#ifdef EMISSION_TEXTURE
+		emission = mix(liquidEmission, gammaCorrectedTexel(emissionTexture, uvw).rgb * emissionColor, density);
 	#else
-		emission = mix(liquid_emission, color_albedo.rgb * color_emission, density);
+		emission = mix(liquidEmission, albedoColor.rgb * emissionColor, density);
 	#endif
 	]]
 end
@@ -134,23 +134,23 @@ function sh:perMaterial(dream, shaderObject, material)
 	
 	local tex = dream.textures
 	
-	shader:send("tex_albedo", dream:getImage(material.tex_albedo) or tex.default)
-	shader:send("color_albedo", material.color)
+	shader:send("albedoTexture", dream:getImage(material.albedoTexture) or tex.default)
+	shader:send("albedoColor", material.color)
 	
-	if shader:hasUniform("tex_material") then
-		shader:send("tex_material", dream:getImage(material.tex_material) or tex.default)
+	if shader:hasUniform("materialTexture") then
+		shader:send("materialTexture", dream:getImage(material.materialTexture) or tex.default)
 	end
-	shader:send("color_material", {material.roughness, material.metallic})
+	shader:send("materialColor", {material.roughness, material.metallic})
 	
-	shader:send("tex_normal", dream:getImage(material.tex_normal) or tex.default_normal)
+	shader:send("normalTexture", dream:getImage(material.normalTexture) or tex.defaultNormal)
 	
-	if shader:hasUniform("tex_emission") then
-		shader:send("tex_emission", dream:getImage(material.tex_emission) or tex.default)
+	if shader:hasUniform("emissionTexture") then
+		shader:send("emissionTexture", dream:getImage(material.emissionTexture) or tex.default)
 	end
 	
-	shader:send("tex_noise", dream.textures.foam)
+	shader:send("noiseTexture", dream.textures.foam)
 	
-	shader:send("color_emission", material.emission)
+	shader:send("emissionColor", material.emission)
 	
 	shader:send("waterScale", material.waterScale or 1 / 16)
 	shader:send("waterSpeed", material.waterSpeed or 1)
@@ -160,11 +160,11 @@ function sh:perMaterial(dream, shaderObject, material)
 	shader:send("foamScale", material.foamScale or 1 / 8)
 	shader:send("foamSpeed", material.foamSpeed or 0.1)
 	
-	shader:send("liquid_albedo", material.liquid_albedo or {0.5, 0.75, 1.0})
-	shader:send("liquid_alpha", material.liquid_alpha or 0.2)
-	shader:send("liquid_emission", material.liquid_emission or {0.0, 0.0, 0.0})
-	shader:send("liquid_roughness", material.liquid_roughness or 0.0)
-	shader:send("liquid_metallic", material.liquid_metallic or 1.0)
+	shader:send("liquidAlbedo", material.liquidAlbedo or {0.5, 0.75, 1.0})
+	shader:send("liquidAlpha", material.liquidAlpha or 0.2)
+	shader:send("liquidEmission", material.liquidEmission or {0.0, 0.0, 0.0})
+	shader:send("liquidRoughness", material.liquidRoughness or 0.0)
+	shader:send("liquidMetallic", material.liquidMetallic or 1.0)
 end
 
 function sh:perTask(dream, shaderObject, task)

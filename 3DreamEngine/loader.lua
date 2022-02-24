@@ -295,7 +295,7 @@ function lib:processObject(obj)
 			end
 			
 			--new reflection object
-			local r = self:newReflection(self.textures.sky_fallback)
+			local r = self:newReflection(self.textures.skyFallback)
 			r.ID = d
 			
 			if o.transform then

@@ -28,8 +28,8 @@ end
 
 function sh:constructDefinesGlobalCommon(dream)
 	return [[
-	float ]] .. self.func .. [[(vec3 VertexPos, vec3 pos, mat4 proj_1, mat4 proj_2, mat4 proj_3, Image tex_1, Image tex_2, Image tex_3, float factor, float shadowDistance, float fade, float bias) {
-		float dist = distance(VertexPos, pos) * shadowDistance;
+	float ]] .. self.func .. [[(vec3 vertexPos, vec3 pos, mat4 proj1, mat4 proj2, mat4 proj3, Image tex1, Image tex2, Image tex3, float factor, float shadowDistance, float fade, float bias) {
+		float dist = distance(vertexPos, pos) * shadowDistance;
 		
 		float f2 = factor * factor;
 		float v1 = clamp((1.0 - dist) * fade * f2, 0.0, 1.0);
@@ -38,16 +38,16 @@ function sh:constructDefinesGlobalCommon(dream)
 		
 		float v = 1.0 - v1 - v2 - v3;
 		if (v1 > 0.0) {
-			vec3 uvs = (proj_1 * vec4(VertexPos, 1.0)).xyz;
-			v += v1 * ]] .. self.func ..[[2(tex_1, uvs.xy * 0.5 + 0.5, uvs.z - bias);
+			vec3 uvs = (proj1 * vec4(vertexPos, 1.0)).xyz;
+			v += v1 * ]] .. self.func ..[[2(tex1, uvs.xy * 0.5 + 0.5, uvs.z - bias);
 		}
 		if (v2 > 0.0) {
-			vec3 uvs = (proj_2 * vec4(VertexPos, 1.0)).xyz;
-			v += v2 * ]] .. self.func ..[[2(tex_2, uvs.xy * 0.5 + 0.5, uvs.z - bias * factor);
+			vec3 uvs = (proj2 * vec4(vertexPos, 1.0)).xyz;
+			v += v2 * ]] .. self.func ..[[2(tex2, uvs.xy * 0.5 + 0.5, uvs.z - bias * factor);
 		}
 		if (v3 > 0.0) {
-			vec3 uvs = (proj_3 * vec4(VertexPos, 1.0)).xyz;
-			v += v3 * ]] .. self.func ..[[2(tex_3, uvs.xy * 0.5 + 0.5, uvs.z - bias * f2);
+			vec3 uvs = (proj3 * vec4(vertexPos, 1.0)).xyz;
+			v += v3 * ]] .. self.func ..[[2(tex3, uvs.xy * 0.5 + 0.5, uvs.z - bias * f2);
 		}
 		return v;
 	}
@@ -62,13 +62,13 @@ function sh:constructDefines(dream, ID)
 	
 	extern vec3 ss_pos_#ID#;
 	
-	extern mat4 ss_proj_1_#ID#;
-	extern mat4 ss_proj_2_#ID#;
-	extern mat4 ss_proj_3_#ID#;
+	extern mat4 ss_proj1_#ID#;
+	extern mat4 ss_proj2_#ID#;
+	extern mat4 ss_proj3_#ID#;
 	
-	extern Image ss_tex_1_#ID#;
-	extern Image ss_tex_2_#ID#;
-	extern Image ss_tex_3_#ID#;
+	extern Image ss_tex1_#ID#;
+	extern Image ss_tex2_#ID#;
+	extern Image ss_tex3_#ID#;
 	
 	extern vec3 ss_vec_#ID#;
 	extern vec3 ss_color_#ID#;
@@ -86,7 +86,7 @@ end
 function sh:constructPixel(dream, ID)
 	return ([[
 	float bias = mix(1.0, 0.01, dot(normal, ss_vec_#ID#)) / 512.0;
-	float shadow = ]] .. self.func .. [[(VertexPos, ss_pos_#ID#, ss_proj_1_#ID#, ss_proj_2_#ID#, ss_proj_3_#ID#, ss_tex_1_#ID#, ss_tex_2_#ID#, ss_tex_3_#ID#, ss_factor_#ID#, ss_distance_#ID#, ss_fade_#ID#, bias);
+	float shadow = ]] .. self.func .. [[(vertexPos, ss_pos_#ID#, ss_proj1_#ID#, ss_proj2_#ID#, ss_proj3_#ID#, ss_tex1_#ID#, ss_tex2_#ID#, ss_tex3_#ID#, ss_factor_#ID#, ss_distance_#ID#, ss_fade_#ID#, bias);
 	
 	if (shadow > 0.0) {
 		vec3 lightColor = ss_color_#ID# * shadow;
@@ -99,7 +99,7 @@ end
 function sh:constructPixelBasic(dream, ID)
 	return ([[
 	float bias = 1.0 / 512.0;
-	float shadow = ]] .. self.func .. [[(VertexPos, ss_pos_#ID#, ss_proj_1_#ID#, ss_proj_2_#ID#, ss_proj_3_#ID#, ss_tex_1_#ID#, ss_tex_2_#ID#, ss_tex_3_#ID#, ss_factor_#ID#, ss_distance_#ID#, ss_fade_#ID#, bias);
+	float shadow = ]] .. self.func .. [[(vertexPos, ss_pos_#ID#, ss_proj1_#ID#, ss_proj2_#ID#, ss_proj3_#ID#, ss_tex1_#ID#, ss_tex2_#ID#, ss_tex3_#ID#, ss_factor_#ID#, ss_distance_#ID#, ss_fade_#ID#, bias);
 	
 	light += ss_color_#ID# * shadow;
 	]]):gsub("#ID#", ID)
@@ -119,13 +119,13 @@ function sh:sendUniforms(dream, shaderObject, light, ID)
 		
 		shader:send("ss_pos_" .. ID, light.shadow.cams[1].pos)
 		
-		shader:send("ss_proj_1_" .. ID, light.shadow.cams[1].transformProj)
-		shader:send("ss_proj_2_" .. ID, light.shadow.cams[2].transformProj)
-		shader:send("ss_proj_3_" .. ID, light.shadow.cams[3].transformProj)
+		shader:send("ss_proj1_" .. ID, light.shadow.cams[1].transformProj)
+		shader:send("ss_proj2_" .. ID, light.shadow.cams[2].transformProj)
+		shader:send("ss_proj3_" .. ID, light.shadow.cams[3].transformProj)
 		
-		shader:send("ss_tex_1_" .. ID, light.shadow.canvases[1])
-		shader:send("ss_tex_2_" .. ID, light.shadow.canvases[2])
-		shader:send("ss_tex_3_" .. ID, light.shadow.canvases[3])
+		shader:send("ss_tex1_" .. ID, light.shadow.canvases[1])
+		shader:send("ss_tex2_" .. ID, light.shadow.canvases[2])
+		shader:send("ss_tex3_" .. ID, light.shadow.canvases[3])
 		
 		shader:send("ss_color_" .. ID, light.color * light.brightness)
 		

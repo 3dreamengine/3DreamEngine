@@ -56,7 +56,7 @@ function love.draw()
 	dream:resetLight()
 	dream:addLight(sun)
 	if love.mouse.isDown(1) then
-		dream:addNewLight("point", player.x + dream.cam.normal.x, player.y + dream.cam.normal.y, player.z + dream.cam.normal.z, 1.0, 0.75, 0.1, 5.0 + love.math.noise(love.timer.getTime()*2))
+		dream:addNewLight("point", vec3(player.x + dream.cam.normal.x, player.y + dream.cam.normal.y, player.z + dream.cam.normal.z), vec3(1.0, 0.75, 0.1), 5.0 + love.math.noise(love.timer.getTime()*2))
 	end
 	
 	dream:prepare()

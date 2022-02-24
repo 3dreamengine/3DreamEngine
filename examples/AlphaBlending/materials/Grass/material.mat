@@ -4,6 +4,6 @@ return {
 	cullMode = "none",
 	discard = true,
 	vertexShader = "wind",
-	shaderWindGrass = true,
-	shaderWindStrength = 0.25,
+	windShaderGrass = true,
+	windShaderStrength = 0.25,
 }

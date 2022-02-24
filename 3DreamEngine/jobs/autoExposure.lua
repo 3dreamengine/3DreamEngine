@@ -22,7 +22,7 @@ function job:execute()
 	
 	--vignette and downscale
 	local c = lib.canvas_exposure
-	local shader = lib:getShader("autoExposure")
+	local shader = lib:getBasicShader("autoExposure")
 	love.graphics.setCanvas(c)
 	love.graphics.setShader(shader)
 	shader:send("adaptionSpeed", lib.autoExposure_adaptionSpeed * love.timer.getDelta())

@@ -19,7 +19,7 @@ function sh:buildDefines(dream, mat, shadow)
 		//additional vertex attributes
 		#ifdef VERTEX
 		attribute float VertexMaterial;
-		extern Image tex_lookup;
+		extern Image lookupTexture;
 		#endif
 	]]
 end
@@ -48,17 +48,17 @@ function sh:buildPixel(dream, mat)
 	emission = VaryingColor.rgb * VaryingMaterial.z;
 	
 	//normal
-	normal = normalize(VaryingNormal);
+	normal = normalize(varyingNormal);
 	]]
 end
 
 function sh:buildVertex(dream, mat)
 	return [[
 	//get color
-	VaryingColor = gammaCorrectedTexel(tex_lookup, vec2(VertexMaterial, 0.0));
+	VaryingColor = gammaCorrectedTexel(lookupTexture, vec2(VertexMaterial, 0.0));
 	
 	//extract material
-	VaryingMaterial = Texel(tex_lookup, vec2(VertexMaterial, 1.0)).rgb;
+	VaryingMaterial = Texel(lookupTexture, vec2(VertexMaterial, 1.0)).rgb;
 	]]
 end
 
@@ -68,7 +68,7 @@ end
 
 function sh:perMaterial(dream, shaderObject, material)
 	local shader = shaderObject.shader
-	shader:send("tex_lookup", dream:getImage(material.tex_lookup) or dream.textures.default)
+	shader:send("lookupTexture", dream:getImage(material.lookupTexture) or dream.textures.default)
 end
 
 function sh:perTask(dream, shaderObject, task)

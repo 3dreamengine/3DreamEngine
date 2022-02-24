@@ -12,7 +12,7 @@ function class:setPixelShader(shader)
 			s:setPixelShader(shader)
 		end
 	else
-		shader = lib:resolveShaderName(shader)
+		shader = lib:getShader(shader)
 		assert(shader.type == "pixel", "invalid shader type")
 		self.pixelShader = shader
 		
@@ -32,7 +32,7 @@ function class:setVertexShader(shader)
 			s:setVertexShader(shader)
 		end
 	else
-		shader = lib:resolveShaderName(shader)
+		shader = lib:getShader(shader)
 		assert(shader.type == "vertex", "invalid shader type")
 		self.vertexShader = shader
 		
@@ -52,7 +52,7 @@ function class:setWorldShader(shader)
 			s:setWorldShader(shader)
 		end
 	else
-		shader = lib:resolveShaderName(shader)
+		shader = lib:getShader(shader)
 		assert(shader.type == "world", "invalid shader type")
 		self.worldShader = shader
 		

@@ -317,17 +317,17 @@ end
 
 --shaders
 function lib:setDefaultPixelShader(shader)
-	shader = lib:resolveShaderName(shader)
+	shader = lib:getShader(shader)
 	assert(shader.type == "pixel", "invalid shader type")
 	self.defaultPixelShader = shader
 end
 function lib:setDefaultVertexShader(shader)
-	shader = lib:resolveShaderName(shader)
+	shader = lib:getShader(shader)
 	assert(shader.type == "vertex", "invalid shader type")
 	self.defaultVertexShader = shader
 end
 function lib:setDefaultWorldShader(shader)
-	shader = lib:resolveShaderName(shader)
+	shader = lib:getShader(shader)
 	assert(shader.type == "world", "invalid shader type")
 	self.defaultWorldShader = shader
 end

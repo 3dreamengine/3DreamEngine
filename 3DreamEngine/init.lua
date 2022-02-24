@@ -125,7 +125,7 @@ lib.cam = lib:newCamera()
 lib.scene = lib:newScene()
 
 --hardcoded mipmap count, do not change
-lib.reflections_levels = 6
+lib.reflectionsLevels = 6
 
 --default meshFormats
 lib.meshFormats = { }
@@ -137,17 +137,17 @@ lib:registerMeshFormat("material", require(lib.root .. "/meshFormats/material"))
 lib.canvasCache = { }
 
 --default objects
-lib.object_sky = lib:loadObject(lib.root .. "/objects/sky")
-lib.object_cube = lib:loadObject(lib.root .. "/objects/cube")
-lib.object_plane = lib:loadObject(lib.root .. "/objects/plane")
+lib.skyObject = lib:loadObject(lib.root .. "/objects/sky")
+lib.cubeObject = lib:loadObject(lib.root .. "/objects/cube")
+lib.planeObject = lib:loadObject(lib.root .. "/objects/plane")
 
 --default textures
 local pix = love.image.newImageData(2, 2)
 lib.textures = {
 	default = love.graphics.newImage(lib.root .. "/res/default.png"),
 	godray = love.graphics.newImage(lib.root .. "/res/godray.png"),
-	default_normal = love.graphics.newImage(lib.root .. "/res/default_normal.png"),
-	sky_fallback = love.graphics.newCubeImage({pix, pix, pix, pix, pix, pix}),
+	defaultNormal = love.graphics.newImage(lib.root .. "/res/defaultNormal.png"),
+	skyFallback = love.graphics.newCubeImage({pix, pix, pix, pix, pix, pix}),
 }
 lib.textures.godray:setWrap("repeat", "repeat")
 

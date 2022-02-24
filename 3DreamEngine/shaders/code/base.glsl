@@ -6,8 +6,8 @@ extern highp mat4 transform;       //model transformation
 extern highp vec3 viewPos;         //camera position
 
 //varyings
-varying highp vec3 VertexPos;      //vertex position for pixel shader
-varying highp vec3 VaryingNormal;  //vertex normal for pixel shader
+varying highp vec3 vertexPos;      //vertex position for pixel shader
+varying highp vec3 varyingNormal;  //vertex normal for pixel shader
 varying float depth;               //depth
 
 extern float translucent;
@@ -20,21 +20,23 @@ varying mat3 TBN;
 #endif
 
 #ifdef DEPTH_AVAILABLE
-extern Image tex_depth;
+extern Image depthTexture;
 #endif
 
 
 
 #ifdef PIXEL
+vec3 getLight(vec3 lightColor, vec3 viewVec, vec3 lightVec, vec3 normal, vec3 fragmentNormal, vec3 albedo, float roughness, float metallic);
+
 void effect() {
-	vec3 viewVec = normalize(VertexPos - viewPos);
+	vec3 viewVec = normalize(vertexPos - viewPos);
 	vec2 distortion = vec2(0.0);
 	vec3 color = vec3(0.0);
 	vec3 light = vec3(0.0);
 	
 	//material
 	vec3 normal;
-	vec3 fragmentNormal = normalize(VaryingNormal);
+	vec3 fragmentNormal = normalize(varyingNormal);
 	vec3 albedo = vec3(0.5);
 	float alpha = 1.0;
 	float roughness = 0.5;
@@ -62,7 +64,7 @@ void effect() {
 	
 	//proper backfaces
 #ifdef TRANSLUCENCY
-	if (dot(fragmentNormal, viewVec) > 0.0) {
+	if (dot(normal, viewVec) > 0.0) {
 		normal = normalize(reflect(normal, fragmentNormal));
 		fragmentNormal = -fragmentNormal;
 	}
@@ -74,7 +76,7 @@ void effect() {
 #ifdef REFRACTIONS_ENABLED
 	if (ior != 1.0) {
 		//refract and transform back to pixel coord
-		vec3 endPoint = VertexPos + refract(viewVec, normal, ior);
+		vec3 endPoint = vertexPos + refract(viewVec, normal, ior);
 		vec4 endPixel = transformProj * vec4(endPoint, 1.0);
 		endPixel /= endPixel.w;
 		endPixel.xy = endPixel.xy * 0.5 + 0.5;
@@ -111,7 +113,7 @@ void effect() {
 #ifdef IS_SUN
 	love_Canvases[0] = vec4(depth, depth, 0.0, 1.0);
 #else
-	float dd = length(viewPos - VertexPos.xyz);
+	float dd = length(viewPos - vertexPos.xyz);
 	love_Canvases[0] = vec4(dd, dd, 0.0, 1.0);
 #endif
 #else
@@ -148,27 +150,27 @@ vec4 position(mat4 _t, vec4 _v) {
 		InstanceRotation2.xyz
 	);
 	
-	VertexPos = instanceRotation * VertexPosition.xyz + InstancePosition;
+	vertexPos = instanceRotation * VertexPosition.xyz + InstancePosition;
 	
 	normalTransform = instanceRotation * normalTransform;
 #else
-	VertexPos = VertexPosition.xyz;
+	vertexPos = VertexPosition.xyz;
 #endif
 	
 #import vertex
 	
 	//apply projection matrix
-	vec4 vPos = transformProj * vec4(VertexPos, 1.0);
+	vec4 vPos = transformProj * vec4(vertexPos, 1.0);
 	
 	//extract and pass depth
 	depth = vPos.z;
 	
 	//raw normal vector without normal map;
-	VaryingNormal = normalTransform * (VertexNormal - vec3(0.5));
+	varyingNormal = normalTransform * (VertexNormal - vec3(0.5));
 	
 #ifdef TANGENT
 	vec3 T = normalize(normalTransform * (VertexTangent.xyz - vec3(0.5)));
-	vec3 N = normalize(VaryingNormal);
+	vec3 N = normalize(varyingNormal);
 	
 	//in case the UV is mirrored
 	vec3 B;

@@ -2,8 +2,8 @@
 return {
 	name = "Wood",
 	metallic = 0.0,
-	tex_albedo = "examples/firstpersongame/materials/planks/albedo",
-	tex_ao = "examples/firstpersongame/materials/planks/ao",
-	tex_normal = "examples/firstpersongame/materials/planks/normal",
-	tex_roughness = "examples/firstpersongame/materials/planks/roughness",
+	albedoTexture = "examples/firstpersongame/materials/planks/albedo",
+	aoTexture = "examples/firstpersongame/materials/planks/ao",
+	normalTexture = "examples/firstpersongame/materials/planks/normal",
+	roughnessTexture = "examples/firstpersongame/materials/planks/roughness",
 }

@@ -53,7 +53,7 @@ function sh:buildDefines(dream, mat, shadow)
 				
 				//backface
 				#ifdef TRANSLUCENCY
-				if (dot(fragmentNormal, lightVec) < 0.0) {
+				if (dot(normal, lightVec) < 0.0) {
 					lightVec = normalize(reflect(lightVec, fragmentNormal));
 					lightColor *= translucent;
 				}
@@ -126,15 +126,6 @@ end
 
 function sh:buildVertex(dream, mat)
 	return ""
---	return [[
---		float maxDist = 10.0;
---		float dist = length(VertexPos.xz - viewPos.xz);
---		if (dist > maxDist) {
---			VertexPos.y -= 1000.0;
---		} else {
---			VertexPos.y -= sin(dist / maxDist) * maxDist;
---		}
---	]]
 end
 
 function sh:perShader(dream, shaderObject)

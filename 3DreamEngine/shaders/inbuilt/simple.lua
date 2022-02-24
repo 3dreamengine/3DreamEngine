@@ -47,7 +47,7 @@ function sh:buildPixel(dream, mat)
 	emission = VaryingColor.rgb * VaryingMaterial.z;
 	
 	//normal
-	normal = normalize(VaryingNormal);
+	normal = normalize(varyingNormal);
 	]]
 end
 

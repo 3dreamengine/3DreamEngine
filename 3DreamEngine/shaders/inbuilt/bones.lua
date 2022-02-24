@@ -8,26 +8,23 @@ function sh:getId(dream, mat, shadow)
 	return 0
 end
 
-function sh:initMesh(dream, obj)
-	if obj.mesh then
-		--initial prepare bone data
-		if not obj.boneMesh and not obj.meshes then
-			assert(obj.joints and obj.weights, "GPU bones require a joint and weight buffer")
-			obj.boneMesh = love.graphics.newMesh({{"VertexJoint", "float", 4}, {"VertexWeight", "float", 4}}, #obj.joints, "triangles", "static")
+function sh:initMesh(dream, mesh)
+	if mesh:getMesh("mesh") then
+		if not mesh:getMesh("boneMesh") then
+			assert(mesh.joints and mesh.weights, "GPU bones require a joint and weight buffer")
+			mesh.boneMesh = love.graphics.newMesh({{"VertexJoint", "float", 4}, {"VertexWeight", "float", 4}}, #mesh.joints, "triangles", "static")
 			
 			--create mesh
-			for index = 1, #obj.joints do
-				local w = obj.weights[index]
-				local j = obj.joints[index]
+			for index = 1, #mesh.joints do
+				local w = mesh.weights[index]
+				local j = mesh.joints[index]
 				local sum = (w[1] or 0) + (w[2] or 0) + (w[3] or 0) + (w[4] or 0)
-				obj.boneMesh:setVertex(index, (j[1] or 0) / 255, (j[2] or 0) / 255, (j[3] or 0) / 255, (j[4] or 0) / 255, (w[1] or 0) / sum, (w[2] or 0) / sum, (w[3] or 0) / sum, (w[4] or 0) / sum)
+				mesh.boneMesh:setVertex(index, (j[1] or 0) / 255, (j[2] or 0) / 255, (j[3] or 0) / 255, (j[4] or 0) / 255, (w[1] or 0) / sum, (w[2] or 0) / sum, (w[3] or 0) / sum, (w[4] or 0) / sum)
 			end
 		end
 		
-		if obj.boneMesh then
-			obj:getMesh("mesh"):attachAttribute("VertexJoint", obj:getMesh("boneMesh"))
-			obj:getMesh("mesh"):attachAttribute("VertexWeight", obj:getMesh("boneMesh"))
-		end
+		mesh:getMesh("mesh"):attachAttribute("VertexJoint", mesh:getMesh("boneMesh"))
+		mesh:getMesh("mesh"):attachAttribute("VertexWeight", mesh:getMesh("boneMesh"))
 	end
 end
 
@@ -59,8 +56,8 @@ function sh:buildVertex(dream, mat)
 		jointTransforms[int(VertexJoint[3]*255.0)] * VertexWeight[3]
 	);
 	
-	VertexPos = (boneTransform * VertexPosition).xyz;
-	VertexPos = (transform * vec4(VertexPos.xyz, 1.0)).xyz;
+	vertexPos = (boneTransform * VertexPosition).xyz;
+	vertexPos = (transform * vec4(vertexPos.xyz, 1.0)).xyz;
 	
 	normalTransform = mat3(boneTransform) * normalTransform;
 	]]

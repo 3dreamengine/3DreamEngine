@@ -24,7 +24,7 @@ if _DEBUGMODE then
 			print("-----------------")
 			
 			--dump shader in case of error
-			love.filesystem.write("shader_errored.glsl", pixel)
+			love.filesystem.write("shaderErrored.glsl", pixel)
 			error("shader compile failed")
 		end
 		local sh = love.graphics.newShader_old(pixel, vertex)
@@ -67,7 +67,7 @@ function lib:registerShader(shader, name)
 	return self.shaderRegister[name]
 end
 
-function lib:resolveShaderName(name)
+function lib:getShader(name)
 	if type(name) == "table" then
 		return name
 	elseif name then
@@ -85,9 +85,9 @@ for d,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/inbuil
 end
 
 --default shader
-lib.defaultPixelShader = lib:resolveShaderName("textured")
-lib.defaultVertexShader = lib:resolveShaderName("vertex")
-lib.defaultWorldShader = lib:resolveShaderName("PBR")
+lib.defaultPixelShader = lib:getShader("textured")
+lib.defaultVertexShader = lib:getShader("vertex")
+lib.defaultWorldShader = lib:getShader("PBR")
 
 --load code snippsets
 local codes = { }
@@ -104,7 +104,7 @@ end
 
 --return and load shader if nececary
 lib.shaders = { }
-function lib:getShader(s)
+function lib:getBasicShader(s)
 	if not lib.shaders[s] then
 		local r = love.filesystem.read
 		local shader = r(lib.root .. "/shaders/" .. s .. ".glsl") or r(lib.root .. "/shaders/sky/" .. s .. ".glsl") or r(lib.root .. "/shaders/debug/" .. s .. ".glsl")
@@ -201,7 +201,7 @@ function lib:getRenderShaderID(task, pass, shadows)
 		mesh.instanceMesh and 1 or 0,
 		reflections and 1 or 0,
 		mesh.instanceMesh and 1 or 0,
-		mat.translucent > 0 and 1 or 0,
+		mat.translucent >= 0 and 1 or 0,
 		pixelShader.id % 256, math.floor(pixelShader.id / 256),
 		vertexShader.id % 256, math.floor(vertexShader.id / 256),
 		worldShader.id % 256, math.floor(worldShader.id / 256),
@@ -274,7 +274,7 @@ function lib:getRenderShader(ID, mesh, pass, canvases, light, shadows, sun)
 		end
 		
 		--translucency
-		if mat.translucent > 0 then
+		if mat.translucent >= 0 then
 			table.insert(defines, "#define TRANSLUCENCY")
 		end
 		
@@ -346,8 +346,8 @@ function lib:getRenderShader(ID, mesh, pass, canvases, light, shadows, sun)
 		insertHeadered(pixelMaterial, "pixel shader", info.pixelShader:buildPixel(self, mat, shadows))
 		insertHeadered(pixelMaterial, "vertex shader", info.vertexShader:buildPixel(self, mat, shadows))
 		
-		insertHeadered(vertex, "pixel shader", info.pixelShader:buildVertex(self, mat, shadows))
 		insertHeadered(vertex, "vertex shader", info.vertexShader:buildVertex(self, mat, shadows))
+		insertHeadered(vertex, "pixel shader", info.pixelShader:buildVertex(self, mat, shadows))
 		
 		--world
 		insertHeadered(defines, "world shader", info.worldShader:buildDefines(self, mat, shadows))
@@ -404,10 +404,10 @@ function lib:getParticlesShader(pass, canvases, light, emissive, distortion, sin
 	if not self.particlesShader[ID] then
 		local defines = { }
 		if emissive then
-			table.insert(defines, "#define TEX_EMISSION")
+			table.insert(defines, "#define EMISSION_TEXTURE")
 		end
 		if distortion and pass == 2 then
-			table.insert(defines, "#define TEX_DISORTION")
+			table.insert(defines, "#define DISORTION_TEXTURE")
 		end
 		if self.fog_enabled and canvases.mode ~= "normal" then
 			table.insert(defines, "#define FOG_ENABLED")

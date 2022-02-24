@@ -19,7 +19,7 @@ function job:queue()
 			if reflection.lastSide == 6 or not reflection.lazy then
 				reflection.lastSide = 0
 				if reflection.roughness then
-					lib:addOperation("cubemap", reflection.canvas, reflection.levels or lib.reflections_levels)
+					lib:addOperation("cubemap", reflection.canvas, reflection.levels or lib.reflectionsLevels)
 				end
 			end
 		end

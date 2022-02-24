@@ -160,11 +160,11 @@ vec4 effect(vec4 _, Image canvas_color, vec2 tc, vec2 sc) {
 #endif
 
 #ifdef VERTEX
-	vec4 position(mat4 transform_projection, vec4 vertex_position) {
+	vec4 position(mat4 transform_projection, vec4 VertexPosition) {
 #ifdef AUTOEXPOSURE_ENABLED
 		eyeAdaption = Texel(canvas_exposure, vec2(0.5, 0.5)).r;
 #endif
-		vec4 pos = transform_projection * vertex_position;
+		vec4 pos = transform_projection * VertexPosition;
 #ifdef FOG_ENABLED
 		viewVec = (transformInverse * vec4(pos.x, - pos.y, 1.0, 1.0)).xyz;
 #endif

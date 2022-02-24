@@ -38,6 +38,7 @@ local class = {
 		metallicTex = "getter",
 		material = "getter",
 		materialTex = "getter",
+		aoTex = "getter",
 	},
 }
 
@@ -61,8 +62,8 @@ end
 function class:setColor(r, g, b, a)
 	self.color = {r or 1.0, g or 1.0, b or 1.0, a or 1.0}
 end
-function class:setAlbedoTex(tex)
-	self.tex_albedo = tex
+function class:setAlbedoTexture(tex)
+	self.albedoTexture = tex
 	
 	if not self.mat or not self.mat.color then
 		self.color = {1.0, 1.0, 1.0, 1.0}
@@ -71,17 +72,17 @@ end
 function class:setEmission(r, g, b)
 	self.emission = {r or 0.0, g or r or 0.0, b or r or 0.0}
 end
-function class:setEmissionTex(tex)
-	self.tex_emission = tex
+function class:setEmissionTexture(tex)
+	self.emissionTexture = tex
 	if not self.mat or not self.mat.emission then
 		self.emission = {1.0, 1.0, 1.0}
 	end
 end
-function class:setAOTex(tex)
-	self.tex_ao = tex
+function class:setAoTexture(tex)
+	self.ambientOcclusionTexture = tex
 end
-function class:setNormalTex(tex)
-	self.tex_normal = tex
+function class:setNormalTexture(tex)
+	self.normalTexture = tex
 end
 
 function class:setRoughness(r)
@@ -90,23 +91,23 @@ end
 function class:setMetallic(m)
 	self.metallic = m
 end
-function class:setRoughnessTex(tex)
-	self.tex_roughness = tex
+function class:setRoughnessTexture(tex)
+	self.roughnessTexture = tex
 	
 	if not self.mat or not self.mat.roughness then
 		self.roughness = 1.0
 	end
 end
-function class:setMetallicTex(tex)
-	self.tex_metallic = tex
+function class:setMetallicTexture(tex)
+	self.metallicTexture = tex
 	
 	if not self.mat or not self.mat.metallic then
 		self.metallic = 1.0
 	end
 end
 
-function class:setMaterialTex(tex)
-	self.tex_material = tex
+function class:setMaterialTexture(tex)
+	self.materialTexture = tex
 	
 	if not self.mat or not self.mat.roughness then
 		self.roughness = 1.0
@@ -116,8 +117,8 @@ function class:setMaterialTex(tex)
 		self.metallic = 1.0
 	end
 end
-function class:getMaterialTex(tex)
-	self.tex_material = tex
+function class:getMaterialTexture(tex)
+	self.materialTexture = tex
 end
 
 function class:preload(force)

@@ -39,7 +39,7 @@ end
 
 function sh:constructPixel(dream, ID)
 	return ([[
-		vec3 lightVec = ps_pos_#ID# - VertexPos;
+		vec3 lightVec = ps_pos_#ID# - vertexPos;
 		
 		float shadow = ]] .. self.func .. [[(lightVec, ps_tex_#ID#); //hee
 		
@@ -56,7 +56,7 @@ end
 
 function sh:constructPixelBasic(dream, ID)
 	return ([[
-		vec3 lightVec = ps_pos_#ID# - VertexPos;
+		vec3 lightVec = ps_pos_#ID# - vertexPos;
 		
 		float shadow = ]] .. self.func .. [[(lightVec, ps_tex_#ID#);
 		

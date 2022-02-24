@@ -1,6 +1,10 @@
 # Shaders
-Every material or subObject can have a pixel shader, vertex shader and world shader.
+Every material or mesh can have a pixel shader, vertex shader and world shader.
 A pixel shader handles materials related stuff, a vertex shader the vertex position and the world shader combines everything and outputs to the screen.
+
+Usually, the world shader is set globally and not per mesh or material.
+
+Every shader can extend both the pixel and the vertex shader, with some limitations.
 
 
 ## create shader
@@ -22,19 +26,21 @@ function sh:getId(dream, mat, shadow)
 	return 0
 end
 
-function sh:initObject(dream, obj)
-	if obj.mesh then
-		--any additional initializion you may need, called once after load and for each shader assignment on an object
+function sh:initMesh(dream, mesh)
+	if mesh:getMesh("mesh") then
+		--any additional initializion you may need
+		--initMesh is called after load and after a shader change
 	end
 end
 
 function sh:buildDefines(dream, mat)
 	return [[
-		// any additional externs, attributes or defines you need
-		// use isdefine PIXEL/VERTEX if necessary
+		// any additional externs, attributes, defines or functions you need
+		// use ifdef PIXEL/VERTEX if necessary
 		
-		// the world shader has to implemented, called for each light
+		// the world shader has to implemented
 		vec3 getLight(vec3 lightColor, vec3 viewVec, vec3 lightVec, vec3 normal, vec3 fragmentNormal, vec3 albedo, float roughness, float metallic)
+		// which is called for each light source
 	]]
 end
 
@@ -57,11 +63,11 @@ function sh:buildPixel(dream, mat)
 		
 		//for solid, non direct passes you have access to the depth texture
 		#ifdef DEPTH_AVAILABLE
-		extern Image tex_depth;
+		extern Image depthTexture;
 		#endif
 		
 		// if this shader is a pixel shader:
-		// write to those (already defined!) outputs, you may not use them and use the default value instead
+		// optionally overwrite to those (already defined!) outputs
 		vec3 normal;
 		vec3 albedo = vec3(0.5);
 		float alpha = 1.0;
@@ -87,8 +93,8 @@ function sh:buildVertex(dream, mat)
 		mat4 transform;       // model transformation
 		vec3 viewPos;         // camera position
 		
-		// this is the default transformation, only modify VertexPos in the vertex shader
-		VertexPos = (transform * vec4(VertexPos, 1.0)).xyz;
+		// this is the default transformation
+		vertexPos = (transform * vec4(vertexPos, 1.0)).xyz;
 		
 		// optional you can transform the normal transform
 		mat3 normalTransform;
@@ -113,7 +119,7 @@ return sh
 ```
 
 ## register shader
-Once a shader is registered, you can use the string for setting shaders.
+Once a shader is registered, you can use the name/path for setting shaders.
 You need this if you want to set the shader in the .mat file.
 
 ```lua
@@ -149,7 +155,7 @@ A water material shader. Uses the normal texture for the wave animation.
 
 
 ### vertex
-A vertex shader doing nothing.
+A vertex shader doing nothing special.
 
 
 ### PBR
@@ -157,26 +163,29 @@ The default world shader is a PBR shader.
 
 
 ### wind and foliage
-Wind lets the vertices wave. Foliage also uses a better fade out at the edge of the LoD draw range
+Wind lets the vertices wave. Foliage also uses a better fade out at the edge of the LoD draw range. You can set global shader settings or pet-material settings.
 
-local shader = dream:resolveShaderName("wind")
+local shader = dream:getShader("wind")
 shader.speed = 0.05      -- the time multiplier
 shader.strength = 1.0    -- the multiplier of animation
 shader.scale = 0.25      -- the scale of wind waves
 
-local shader = dream:resolveShaderName("foliage")
+local shader = dream:getShader("foliage")
 shader.fadeWidth = 1
 
 ```lua
 --example material file for grass
 return {
+	-- double sided and translucent
 	cullMode = "none",
+	translucents = 1,
 	
+	-- registered (default) wind shader
 	vertexShader = "wind",
 	
-	shaderWindStrength = 1.0, -- additional wave strength factor
-	shaderWindGrass = false,  -- behave like grass, lower part wont move
-	shaderWindHeight = 1.0,   -- how height the plant is, determines the strength of animation on the upper part
+	windShaderStrength = 1.0, -- additional wave strength factor
+	windShaderGrass = false,  -- behave like grass, lower part wont move
+	windShaderHeight = 1.0,   -- how height the plant is, determines the strength of animation on the upper part
 }
 ```
 
@@ -185,7 +194,7 @@ return {
 ### bones
 3Dream supports animations with a few conditions:
 1. it requires a skeleton and skin information, therefore export your object as a COLLADA file (.dae)
-2. apply the bone vertex shader to the subObject in order to properly trigger its initialision
+2. apply the bone vertex shader to the mesh in order to properly trigger its initialision
 3. update animations as in the skeletal animations chapter specified
 
 
@@ -195,9 +204,9 @@ Uses a second material, a blend texture and a optional second UV map to blend tw
 The blend texture gives the blend more detail. 
 ```
 --the second material to use
-subObj.material.material_2 = Material
+subObj.material.material2 = Material
 
-subObj.material.tex_blend = "path" or Drawable
+subObj.material.blendTexture = "path" or Drawable
 
 --scale of the blend texture
 subObj.material.multiTextureBlendScale

@@ -352,7 +352,7 @@ end
 
 function lib:blurCanvas(canvas, strength, iterations, mask)
 	local temp = self:getTemporaryCanvas(canvas)
-	local sh = lib:getShader("blur")
+	local sh = lib:getBasicShader("blur")
 	love.graphics.push("all")
 	love.graphics.reset()
 	if mask then
@@ -440,7 +440,7 @@ end
 if love.graphics.getSystemLimits().multicanvas >= 6 then
 	function lib:blurCubeMap(cube, layers, strength, mask, blurFirst)
 		local temp = self:getTemporaryCanvas(cube, not blurFirst)
-		local shader = self:getShader("blur_cube_multi")
+		local shader = self:getBasicShader("blur_cube_multi")
 		
 		love.graphics.push("all")
 		love.graphics.reset()
@@ -474,7 +474,7 @@ if love.graphics.getSystemLimits().multicanvas >= 6 then
 else
 	function lib:blurCubeMap(cube, layers, strength, mask, blurFirst)
 		local temp = self:getTemporaryCanvas(cube, not blurFirst)
-		local shader = self:getShader("blur_cube")
+		local shader = self:getBasicShader("blur_cube")
 		
 		love.graphics.push("all")
 		love.graphics.reset()
@@ -571,7 +571,7 @@ function lib:take3DScreenshot(pos, resolution, path)
 end
 
 function lib:HDRItoCubemap(hdri, resolution)
-	local shader = self:getShader("HDRItoCubemap")
+	local shader = self:getBasicShader("HDRItoCubemap")
 	local canvas = love.graphics.newCanvas(resolution * 6, resolution)
 	
 	hdri:setWrap("repeat", "mirroredrepeat")

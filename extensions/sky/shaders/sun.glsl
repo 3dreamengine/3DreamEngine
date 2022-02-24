@@ -18,8 +18,8 @@ extern vec3 InstanceCenter;
 extern vec3 up;
 extern vec3 right;
 
-vec4 position(mat4 transform_projection, vec4 vertex_position) {
-	vec3 vPos = InstanceCenter + (right * vertex_position.x + up * vertex_position.y);
+vec4 position(mat4 transform_projection, vec4 VertexPosition) {
+	vec3 vPos = InstanceCenter + (right * VertexPosition.x + up * VertexPosition.y);
 	height = vPos.y;
 	return transformProj * vec4(vPos, 1.0);
 }

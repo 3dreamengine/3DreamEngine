@@ -76,6 +76,7 @@ for d,s in ipairs(tavern.positions) do
 		lights[d].shadow:setRefreshStepSize(1000)
 		lights[d].shadow:setLazy(true)
 		lights[d]:setAttenuation(3) --unrealistic but looks better
+		lights[d]:setSize(0.1)
 	end
 end
 

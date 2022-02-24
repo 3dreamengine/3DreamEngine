@@ -1,7 +1,7 @@
 return {
-	tex_albedo = "Lamborghini Aventador_albedo.jpg",
-	tex_emission = "Lamborghini Aventador_emission.jpeg",
-	tex_metallic = "Lamborghini Aventador_metallic.jpeg",
-	tex_roughness = "Lamborghini Aventador_roughness.jpeg",
+	albedoTexture = "Lamborghini Aventador_albedo.jpg",
+	emissionTexture = "Lamborghini Aventador_emission.jpeg",
+	metallicTexture = "Lamborghini Aventador_metallic.jpeg",
+	roughnessTexture = "Lamborghini Aventador_roughness.jpeg",
 	color = {1, 1, 1, 1}
 }

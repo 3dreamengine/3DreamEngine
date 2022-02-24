@@ -63,18 +63,18 @@ end
 --link textures to material
 local function texSetter(mat, typ, tex)
 	--use the setter function to overwrite color
-	local func = "set" .. typ:sub(1, 1):upper() .. typ:sub(2) .. "Tex"
+	local func = "set" .. typ:sub(1, 1):upper() .. typ:sub(2) .. "Texture"
 	if mat[func] then
 		mat[func](mat, tex)
 	else
-		mat["tex_" .. typ] = tex
+		mat[typ .. "Texture"] = tex
 	end
 end
 
 function lib:lookForTextures(mat, directory, filter)
 	for _,typ in ipairs({"albedo", "normal", "roughness", "metallic", "emission", "ao", "material"}) do
-		local custom = mat["tex_" .. typ]
-		mat["tex_" .. typ] = nil
+		local custom = mat[typ .. "Texture"]
+		mat[typ .. "Texture"] = nil
 		
 		if type(custom) == "userdata" then
 			--already an image
@@ -107,16 +107,16 @@ function lib:lookForTextures(mat, directory, filter)
 	end
 	
 	--combiner
-	if not mat["tex_material"] then
-		if mat["tex_metallic"] or mat["tex_roughness"] or mat["tex_ao"] then
-			mat["tex_material"] = self:combineTextures(mat["tex_roughness"], mat["tex_metallic"], mat["tex_ao"])
+	if not mat["materialTexture"] then
+		if mat["metallicTexture"] or mat["roughnessTexture"] or mat["aoTex"] then
+			mat["materialTexture"] = self:combineTextures(mat["roughnessTexture"], mat["metallicTexture"], mat["aoTex"])
 		end
 	end
 	
 	--convert shader id to actual shader object
-	mat.pixelShader = lib:resolveShaderName(mat.pixelShader)
-	mat.vertexShader = lib:resolveShaderName(mat.vertexShader)
-	mat.worldShader = lib:resolveShaderName(mat.worldShader)
+	mat.pixelShader = lib:getShader(mat.pixelShader)
+	mat.vertexShader = lib:getShader(mat.vertexShader)
+	mat.worldShader = lib:getShader(mat.worldShader)
 	
 	mat.mat = nil
 end

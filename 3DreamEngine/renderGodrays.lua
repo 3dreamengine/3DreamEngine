@@ -37,7 +37,7 @@ function lib:renderGodrays(light, canvases, cam)
 	end
 	
 	if #colors > 0 then
-		local shader = lib:getShader("godrays")
+		local shader = lib:getBasicShader("godrays")
 		love.graphics.setShader(shader)
 		
 		shader:send("density", 1.0)

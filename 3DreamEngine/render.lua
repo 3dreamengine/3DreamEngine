@@ -233,8 +233,8 @@ function lib:render(canvases, cam)
 					end
 					
 					--framebuffer
-					if hasUniform(shaderObject, "tex_depth") then
-						shader:send("tex_depth", canvases.depth)
+					if hasUniform(shaderObject, "depthTexture") then
+						shader:send("depthTexture", canvases.depth)
 					end
 					
 					checkAndSendCached(shaderObject, "exposure", self.exposure)
@@ -274,21 +274,21 @@ function lib:render(canvases, cam)
 			--reflection
 			if shaderObject.reflection then
 				local ref = task:getReflection() or (type(self.defaultReflection) == "table" and self.defaultReflection)
-				local tex = ref and (ref.image or ref.canvas) or self.defaultReflection and self.defaultReflectionCanvas or self.textures.sky_fallback
+				local tex = ref and (ref.image or ref.canvas) or self.defaultReflection and self.defaultReflectionCanvas or self.textures.skyFallback
 				if lastReflection ~= tex then
 					lastReflection = tex
 					
-					shader:send("tex_background", tex)
-					shader:send("reflections_levels", (ref and ref.levels or self.reflections_levels) - 1)
+					shader:send("backgroundTexture", tex)
+					shader:send("reflectionsLevels", (ref and ref.levels or self.reflectionsLevels) - 1)
 					
 					--box for local cubemaps
 					if ref and ref.first then
-						shader:send("reflections_enabled", true)
-						shader:send("reflections_pos", ref.pos)
-						shader:send("reflections_first", ref.first)
-						shader:send("reflections_second", ref.second)
+						shader:send("reflectionsBoxed", true)
+						shader:send("reflectionsPos", ref.pos)
+						shader:send("reflectionsFirst", ref.first)
+						shader:send("reflectionsSecond", ref.second)
 					else
-						shader:send("reflections_enabled", false)
+						shader:send("reflectionsBoxed", false)
 					end
 				end
 			end
@@ -363,13 +363,13 @@ function lib:render(canvases, cam)
 					shader:send("right", right)
 					
 					--emission texture
-					if hasUniform(shaderObject, "tex_emission") then
-						shader:send("tex_emission", batch.emissionTexture)
+					if hasUniform(shaderObject, "emissionTexture") then
+						shader:send("emissionTexture", batch.emissionTexture)
 					end
 					
 					--distortion texture
-					if hasUniform(shaderObject, "tex_distortion") then
-						shader:send("tex_distortion", batch.distortionTexture)
+					if hasUniform(shaderObject, "distortionTexture") then
+						shader:send("distortionTexture", batch.distortionTexture)
 					end
 					
 					batch:present(cam.pos)
@@ -413,13 +413,13 @@ function lib:render(canvases, cam)
 					shader:send("InstanceEmission", s.emission)
 					
 					--emission texture
-					if hasUniform(shaderObject, "tex_emission") then
-						shader:send("tex_emission", s.emissionTexture)
+					if hasUniform(shaderObject, "emissionTexture") then
+						shader:send("emissionTexture", s.emissionTexture)
 					end
 					
 					--emission texture
-					if hasUniform(shaderObject, "tex_distortion") then
-						shader:send("tex_distortion", s.distortionTexture)
+					if hasUniform(shaderObject, "distortionTexture") then
+						shader:send("distortionTexture", s.distortionTexture)
 						shader:send("InstanceDistortion", s.distortion)
 					end
 					
@@ -510,8 +510,8 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects, smoo
 		if lastMaterial ~= material then
 			lastMaterial = material
 			
-			if hasUniform(shaderObject, "tex_alpha") then
-				shaderObject.shader:send("tex_alpha", self:getImage(material.tex_albedo) or self.textures.default)
+			if hasUniform(shaderObject, "alphaTexture") then
+				shaderObject.shader:send("alphaTexture", self:getImage(material.albedoTexture) or self.textures.default)
 			end
 		end
 		
@@ -566,18 +566,18 @@ function lib:renderFull(cam, canvases)
 		love.graphics.setCanvas(canvases.AO_1)
 		love.graphics.clear()
 		love.graphics.setBlendMode("replace", "premultiplied")
-		love.graphics.setShader(self:getShader("SSAO"))
+		love.graphics.setShader(self:getBasicShader("SSAO"))
 		love.graphics.draw(canvases.depth, 0, 0, 0, self.AO_resolution)
 		
 		--blur
 		if self.AO_blur then
-			love.graphics.setShader(self:getShader("blur"))
-			self:getShader("blur"):send("dir", {1.0 / canvases.AO_1:getWidth(), 0.0})
+			love.graphics.setShader(self:getBasicShader("blur"))
+			self:getBasicShader("blur"):send("dir", {1.0 / canvases.AO_1:getWidth(), 0.0})
 			love.graphics.setCanvas(canvases.AO_2)
 			love.graphics.clear()
 			love.graphics.draw(canvases.AO_1)
 			
-			self:getShader("blur"):send("dir", {0.0, 1.0 / canvases.AO_1:getHeight()})
+			self:getBasicShader("blur"):send("dir", {0.0, 1.0 / canvases.AO_1:getHeight()})
 			
 			--without final, draw directly on color
 			if canvases.mode == "normal" then
@@ -591,7 +591,7 @@ function lib:renderFull(cam, canvases)
 			end
 		elseif canvases.smode == "lite" then
 			--without final and blur, draw directly on color
-			love.graphics.setShader(self:getShader("rrr1"))
+			love.graphics.setShader(self:getBasicShader("rrr1"))
 			love.graphics.setCanvas(canvases.color)
 			love.graphics.setBlendMode("multiply", "premultiplied")
 			love.graphics.draw(canvases.AO_1, 0, 0, 0, 1 / self.AO_resolution)
@@ -605,7 +605,7 @@ function lib:renderFull(cam, canvases)
 		love.graphics.clear()
 		
 		--color
-		local shader = self:getShader("bloom")
+		local shader = self:getBasicShader("bloom")
 		love.graphics.setShader(shader)
 		shader:send("strength", self.bloom_strength)
 		love.graphics.setBlendMode("replace", "premultiplied")
@@ -625,7 +625,7 @@ function lib:renderFull(cam, canvases)
 		end
 		
 		--blur
-		local shader = self:getShader("blur")
+		local shader = self:getBasicShader("blur")
 		love.graphics.setShader(shader)
 		for i = quality, 0, -1 do
 			local size = 2^i / 2^quality * self.bloom_size * canvases.width * self.bloom_resolution / 11
@@ -757,8 +757,8 @@ function lib:present(cam, canvases, lite)
 					
 					love.graphics.setColor(0, 0, 0)
 					love.graphics.rectangle("fill", x * w, y, w, h)
-					love.graphics.setShader(self:getShader("replaceAlpha"))
-					self:getShader("replaceAlpha"):send("alpha", b)
+					love.graphics.setShader(self:getBasicShader("replaceAlpha"))
+					self:getBasicShader("replaceAlpha"):send("alpha", b)
 					love.graphics.setBlendMode("add")
 					love.graphics.draw(s, x * w, y, 0, w / s:getWidth())
 					love.graphics.setShader()

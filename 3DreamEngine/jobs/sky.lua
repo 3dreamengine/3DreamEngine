@@ -19,7 +19,7 @@ function job:queue()
 			local lazy = lib.sky_lazy and type(lib.sky_texture) == "function"
 			if lastSide == 6 or not lazy then
 				lastSide = 0
-				lib:addOperation("cubemap", lib.defaultReflectionCanvas,  lib.reflections_levels)
+				lib:addOperation("cubemap", lib.defaultReflectionCanvas,  lib.reflectionsLevels)
 			end
 		end
 	end

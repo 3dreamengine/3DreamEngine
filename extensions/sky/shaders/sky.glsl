@@ -1,4 +1,4 @@
-varying vec3 VertexPos;
+varying vec3 vertexPos;
 varying vec3 starsVec;
 
 extern CubeImage stars;
@@ -17,7 +17,7 @@ extern float time;
 extern Image MainTex;
 
 void effect() {
-	vec3 dir = normalize(VertexPos);
+	vec3 dir = normalize(vertexPos);
 	vec3 col = Texel(MainTex, vec2(time, 0.5-dir.y*0.5)).rgb * VaryingColor.rgb;
 	
 	//stars
@@ -45,9 +45,9 @@ void effect() {
 #ifdef VERTEX
 extern highp mat4 transformProj;
 
-vec4 position(mat4 transform_projection, vec4 vertex_position) {
-	VertexPos = vertex_position.xyz;
-	starsVec = starsTransform * vertex_position.xyz;
-	return transformProj * vec4(vertex_position.xyz, 1.0);
+vec4 position(mat4 transform_projection, vec4 VertexPosition) {
+	vertexPos = VertexPosition.xyz;
+	starsVec = starsTransform * VertexPosition.xyz;
+	return transformProj * vec4(VertexPosition.xyz, 1.0);
 }
 #endif

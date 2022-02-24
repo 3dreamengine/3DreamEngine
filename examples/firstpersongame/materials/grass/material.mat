@@ -15,5 +15,5 @@ return {
 			rotation = 1,
 		},
 	},
-	shaderWindGrass = true,
+	windShaderGrass = true,
 }

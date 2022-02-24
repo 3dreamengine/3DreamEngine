@@ -236,18 +236,20 @@ material:setIOR(ior)
 material:setDither(enabled)
 
 material:setColor(r, g, b, a)
-material:setAlbedoTex(tex)
+material:setAlbedoTexture(tex)
 
 material:setRoughness(value)
-material:setRoughnessTex(tex)
+material:setRoughnessTexture(tex)
 
 material:setMetallic(value)
-material:setMetallicTex(tex)
+material:setMetallicTexture(tex)
 
 material:setEmission(r, g, b)
-material:setEmissionTex(tex)
+material:setEmissionTexture(tex)
 
-material:setMaterialTex(tex)
+material:setMaterialTexture(tex)
+
+material:setAoTexture(tex)
 ```
 `enabled` enable feature
 `tex` LÖVE drawable
@@ -292,7 +294,7 @@ material:cullMode(cullmode)
 ## Mesh
 A mesh is the actual renderable object containing buffers, material and render settings.
 
-Extends `clone`, 'visibility', 'shader'
+Extends `clone`, `visibility`, `shader`
 
 ```lua
 mesh = dream:newMesh(name, material)
@@ -302,12 +304,19 @@ mesh = dream:newMesh(name, material, meshType)
 `material (Material)` material  
 `meshType` the mesh type used to construct the final mesh data, default uses the materials pixel material  
 
+<br />
+
+Returns a mesh with given name, loads it in case it's a 3do object.
+```lua
+mesh:getMesh(name)
+```
+
 
 
 ## Object
 A container with all meshes, lights, positions, etc.  
 
-Extends `clone`, 'transform', 'visibility', 'shader'
+Extends `clone`, `transform`, `visibility`, `shader`
 
 ```lua
 object = dream:newObject()

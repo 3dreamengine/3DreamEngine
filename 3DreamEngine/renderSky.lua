@@ -14,18 +14,18 @@ function lib:renderSky(transformProj, camTransform, transformScale)
 		love.graphics.clear(self.sky_texture, {255, 255, 255})
 	elseif type(self.sky_texture) == "userdata" and self.sky_texture:getTextureType() == "cube" then
 		--cubemap
-		local shader = self:getShader("sky_cube")
+		local shader = self:getBasicShader("sky_cube")
 		love.graphics.setShader(shader)
 		shader:send("transformProj", transformProj)
 		shader:send("sky", self.sky_texture)
-		love.graphics.draw(self.object_cube.objects.Cube.mesh)
+		love.graphics.draw(self.cubeObject.objects.Cube.mesh)
 	elseif type(self.sky_texture) == "userdata" and self.sky_texture:getTextureType() == "2d" then
 		--HDRI
-		local shader = self:getShader("sky_hdri")
+		local shader = self:getBasicShader("sky_hdri")
 		love.graphics.setShader(shader)
 		shader:send("exposure", self.sky_hdri_exposure)
 		shader:send("transformProj", transformProj)
-		local mesh = self.object_sky.meshes.Sphere.mesh
+		local mesh = self.skyObject.meshes.Sphere.mesh
 		mesh:setTexture(self.sky_texture)
 		love.graphics.draw(mesh)
 	elseif type(self.sky_texture) == "function" then

@@ -1,4 +1,4 @@
-varying vec3 VertexPos;
+varying vec3 vertexPos;
 
 varying vec3 cloudsVec;
 
@@ -15,7 +15,7 @@ extern mat3 cloudsTransform;
 extern float time;
 
 void effect() {
-	vec3 dir = normalize(VertexPos);
+	vec3 dir = normalize(vertexPos);
 	
 	float density = Texel(clouds, cloudsVec.xzy).r;
 	
@@ -31,9 +31,9 @@ void effect() {
 #ifdef VERTEX
 extern highp mat4 transformProj;
 
-vec4 position(mat4 transform_projection, vec4 vertex_position) {
-	VertexPos = vertex_position.xyz;
-	cloudsVec = cloudsTransform * vertex_position.xyz;
-	return transformProj * vec4(vertex_position.xyz, 1.0);
+vec4 position(mat4 transform_projection, vec4 VertexPosition) {
+	vertexPos = VertexPosition.xyz;
+	cloudsVec = cloudsTransform * VertexPosition.xyz;
+	return transformProj * vec4(VertexPosition.xyz, 1.0);
 }
 #endif

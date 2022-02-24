@@ -2,7 +2,7 @@
 
 varying float VaryingEmission;
 varying float VaryingDistortion;
-varying vec3 VertexPos;
+varying vec3 vertexPos;
 varying float depth;
 
 //setting specific defines
@@ -13,12 +13,12 @@ varying float depth;
 #ifdef PIXEL
 extern highp vec3 viewPos;
 
-#ifdef TEX_EMISSION
-extern Image tex_emission;
+#ifdef EMISSION_TEXTURE
+extern Image emissionTexture;
 #endif
 
-#ifdef TEX_DISORTION
-extern Image tex_distortion;
+#ifdef DISORTION_TEXTURE
+extern Image distortionTexture;
 #endif
 
 #import fog
@@ -31,7 +31,7 @@ extern vec3 ambient;
 extern Image MainTex;
 
 void effect() {
-	vec3 viewVec = normalize(VertexPos - viewPos);
+	vec3 viewVec = normalize(vertexPos - viewPos);
 	
 	//fetch color
 	vec4 albedo = gammaCorrectedTexel(MainTex, VaryingTexCoord.xy);
@@ -45,15 +45,15 @@ void effect() {
 #endif
 	
 	//emission
-#ifdef TEX_EMISSION
-	vec3 emission = gammaCorrectedTexel(tex_emission, VaryingTexCoord.xy).rgb;
+#ifdef EMISSION_TEXTURE
+	vec3 emission = gammaCorrectedTexel(emissionTexture, VaryingTexCoord.xy).rgb;
 	vec3 color = emission * VaryingEmission;
 #else
 	vec3 color = albedo.rgb * VaryingEmission;
 #endif
 	
-#ifdef TEX_DISORTION
-	vec2 distortion = (Texel(tex_distortion, VaryingTexCoord.xy).xy * 2.0 - 1.0) * VaryingDistortion;
+#ifdef DISORTION_TEXTURE
+	vec2 distortion = (Texel(distortionTexture, VaryingTexCoord.xy).xy * 2.0 - 1.0) * VaryingDistortion;
 #else
 	vec2 distortion = vec2(0.0);
 #endif
@@ -119,11 +119,11 @@ extern mat4 transformProj;
 extern vec3 up;
 extern vec3 right;
 
-vec4 position(mat4 transform_projection, vec4 vertex_position) {
+vec4 position(mat4 transform_projection, vec4 VertexPosition) {
 #ifdef SINGLE
 	VaryingTexCoord = vec4(VertexTexCoord.x, 1.0 - VertexTexCoord.y, 0.0, 0.0);
 	
-	VertexPos = InstanceCenter + (right * vertex_position.x + up * vertex_position.y);
+	vertexPos = InstanceCenter + (right * VertexPosition.x + up * VertexPosition.y);
 #else
 	VaryingTexCoord = vec4(VertexTexCoord.xy * InstanceTexScale + InstanceTexOffset, 0.0, 0.0);
 	VaryingColor = InstanceColor;
@@ -132,17 +132,17 @@ vec4 position(mat4 transform_projection, vec4 vertex_position) {
 	float c = cos(InstanceRotation);
 	float s = sin(InstanceRotation);
 	vec2 p = vec2(
-		vertex_position.x * c - vertex_position.y * s,
-		vertex_position.x * s + vertex_position.y * c
+		VertexPosition.x * c - VertexPosition.y * s,
+		VertexPosition.x * s + VertexPosition.y * c
 	);
 	
-	VertexPos = InstanceCenter + (right * p.x * InstanceSize.x + up * p.y * InstanceSize.y);
+	vertexPos = InstanceCenter + (right * p.x * InstanceSize.x + up * p.y * InstanceSize.y);
 #endif
 
 	VaryingEmission = InstanceEmission;
 	VaryingDistortion = InstanceDistortion;
 	
-	vec4 vPos = transformProj * vec4(VertexPos, 1.0);
+	vec4 vPos = transformProj * vec4(vertexPos, 1.0);
 	
 	//extract and pass depth
 	depth = vPos.z;
