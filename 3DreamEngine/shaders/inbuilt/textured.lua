@@ -6,9 +6,9 @@ sh.meshType = "textured"
 
 function sh:getId(dream, mat, shadow)
 	if shadow then
-		return (mat.discard and 1 or 0)
+		return 0
 	else
-		return (mat.normalTexture and 1 or 0) * 2^1 + (mat.emissionTexture and 1 or 0) * 2^2 + (mat.discard and not mat.dither and 1 or 0) * 2^3 + (mat.dither and 1 or 0) * 2^4
+		return (mat.normalTexture and 1 or 0) * 2^1 + (mat.emissionTexture and 1 or 0) * 2^2
 	end
 end
 
@@ -19,9 +19,6 @@ function sh:buildDefines(dream, mat, shadow)
 		
 		]] .. (mat.emissionTexture and "#define EMISSION_TEXTURE\n" or "") .. [[
 		]] .. (mat.materialTexture and "#define MATERIAL_TEXTURE\n" or "") .. [[
-		
-		]] .. ((not shadow and (mat.discard and not mat.dither) or shadow and mat.discard) and "#define DISCARD\n" or "") .. [[
-		]] .. ((not shadow and mat.dither) and "#define DITHER\n" or "") .. [[
 		
 		#ifdef PIXEL
 		extern Image albedoTexture;

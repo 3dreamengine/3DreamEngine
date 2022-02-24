@@ -198,10 +198,8 @@ function lib:getRenderShaderID(task, pass, shadows)
 	
 	--construct full ID
 	return string.char(
-		mesh.instanceMesh and 1 or 0,
 		reflections and 1 or 0,
-		mesh.instanceMesh and 1 or 0,
-		mat.translucent >= 0 and 1 or 0,
+		(mesh.instanceMesh and 1 or 0) + (mat.discard and 2 or 0) + (mat.dither and 4 or 0) + (mat.translucent > 0 and 8 or 0),
 		pixelShader.id % 256, math.floor(pixelShader.id / 256),
 		vertexShader.id % 256, math.floor(vertexShader.id / 256),
 		worldShader.id % 256, math.floor(worldShader.id / 256),
@@ -273,8 +271,18 @@ function lib:getRenderShader(ID, mesh, pass, canvases, light, shadows, sun)
 			table.insert(defines, "#define INSTANCING")
 		end
 		
+		--discard
+		if mat.discard then
+			table.insert(defines, "#define DISCARD")
+		end
+		
+		--dither
+		if mat.dither then
+			table.insert(defines, "#define DITHER")
+		end
+		
 		--translucency
-		if mat.translucent >= 0 then
+		if mat.translucent > 0 then
 			table.insert(defines, "#define TRANSLUCENCY")
 		end
 		

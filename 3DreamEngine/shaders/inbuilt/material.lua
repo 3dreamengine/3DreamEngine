@@ -5,11 +5,7 @@ sh.type = "pixel"
 sh.meshType = "material"
 
 function sh:getId(dream, mat, shadow)
-	if shadow then
-		return (mat.discard and 1 or 0)
-	else
-		return (mat.discard and not mat.dither and 1 or 0) * 2^0 + (mat.dither and 1 or 0) * 2^1
-	end
+	return 0
 end
 
 function sh:buildDefines(dream, mat, shadow)
@@ -29,18 +25,6 @@ function sh:buildPixel(dream, mat)
 	//color
 	albedo = VaryingColor.rgb;
 	alpha = VaryingColor.a;
-	
-#ifdef DISCARD
-	if (alpha < 0.5) {
-		discard;
-	}
-#endif
-
-#ifdef DITHER
-	if (alpha < fract(love_PixelCoord.x * 0.37 + love_PixelCoord.y * 73.73 + depth * 3.73)) {
-		discard;
-	}
-#endif
 	
 	//material
 	roughness = VaryingMaterial.x;
