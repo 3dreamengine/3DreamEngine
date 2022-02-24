@@ -53,13 +53,11 @@ function love.draw()
 	dream.cam:rotateX(dream.cam.rx)
 	
 	--update light
-	dream:resetLight()
+	dream:prepare()
 	dream:addLight(sun)
 	if love.mouse.isDown(1) then
 		dream:addNewLight("point", vec3(player.x + dream.cam.normal.x, player.y + dream.cam.normal.y, player.z + dream.cam.normal.z), vec3(1.0, 0.75, 0.1), 5.0 + love.math.noise(love.timer.getTime()*2))
 	end
-	
-	dream:prepare()
 	
 	dream:draw(scene)
 	
@@ -91,7 +89,7 @@ function love.update(dt)
 	if animateTime then
 		time = time + dt * 0.02
 	end
-	sky:setDaytime(sun, time, dream)
+	sky:setDaytime(sun, time)
 	
 	--weather
 	if isRaining then

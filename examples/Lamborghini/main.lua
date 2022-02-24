@@ -19,10 +19,8 @@ sun:addShadow()
 sun:setDirection(-1, 1, 1)
 
 function love.draw()
-	dream:resetLight()
-	dream:addLight(sun)
-	
 	dream:prepare()
+	dream:addLight(sun)
 	
 	--draw the car
 	car:reset()
@@ -56,5 +54,5 @@ function love.keypressed(key)
 end
 
 function love.resize()
-	dream:init()
+	dream:resize()
 end

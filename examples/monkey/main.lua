@@ -16,12 +16,9 @@ monkey.meshes.Suzanne.material.color = {0.4, 0.15, 0.05, 1}
 local sun = dream:newLight("sun")
 
 function love.draw()
-	--setup light
-	dream:resetLight()
-	dream:addLight(sun)
-	
-	--prepare scene
 	dream:prepare()
+	
+	dream:addLight(sun)
 	
 	--add (draw) objects, apply transformations
 	monkey:reset()

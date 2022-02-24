@@ -49,11 +49,19 @@ function sky:getSkyColor()
 	return self.skyColor
 end
 
+function sky:setSunOffset(offset, rotation)
+	self.sun_offset = offset
+	self.sun_rotation = rotation
+end
+function sky:setSunOffset()
+	return self.sun_offset, self.sun_rotation
+end
+
 
 --helper function to set sun and time
 sky.time = 0
 sky.day = 0
-function sky:setDaytime(sun, time, dream)
+function sky:setDaytime(sun, time)
 	local c = #self.sunlight
 	
 	--time, 0.0 is sunrise, 0.5 is sunset
@@ -78,7 +86,7 @@ function sky:setDaytime(sun, time, dream)
 	
 	--sky color
 	--todo rename and make more accessable
-	dream.sun_ambient = (
+	_3DreamEngine.sun_ambient = (
 		self.skylight[math.max(1, math.min(c, math.ceil(p)))] * (1.0 - p % 1) +
 		self.skylight[math.max(1, math.min(c, math.ceil(p+1)))] * (p % 1)
 	)
@@ -104,7 +112,7 @@ function sky:getRainbowDir()
 	return self.rainbow_dir
 end
 
-function sky.render(dream, transformProj, camTransform, transformScale)
+function sky.render(dream, transformProj, camTransform)
 	local self = sky
 	
 	--look for suns
@@ -202,6 +210,7 @@ end
 sky:setSkyColor(0.0)
 sky:setRainbow(0.0)
 sky:setRainbowDir(vec3(1.0, -0.25, 1.0))
+sky:setSunOffset(0, 0)
 
 --clouds
 sky:setClouds({

@@ -5,10 +5,6 @@ functions.lua - contains library relevant functions
 
 local lib = _3DreamEngine
 
-function lib:resetLight(noDayLight)
-	self.lighting = { }
-end
-
 function lib:addLight(light)
 	table.insert(self.lighting, light)
 end
@@ -101,15 +97,6 @@ function lib:RGBtoHSV(r, g, b)
 	end
 	
 	return h, s, v
-end
-
-function lib:decodeObjectName(name)
-	if self.nameDecoder then
-		local n = string.match(name, self.nameDecoder)
-		return n or name
-	else
-		return name
-	end
 end
 
 function lib:pointToPixel(point, cam, canvases)

@@ -56,7 +56,11 @@ return function(self, obj, path)
 				end
 			end
 		elseif v[1] == "o" then
-			meshID = self:decodeObjectName(l:sub(3))
+			if obj.args.decodeBlenderNames then
+				meshID = string.match(l:sub(3), "(.*)_.*") or l:sub(3)
+			else
+				meshID = l:sub(3)
+			end
 			obj.meshes[meshID] = obj.meshes[meshID] or self:newMesh(meshID, material)
 			mesh = obj.meshes[meshID]
 		end

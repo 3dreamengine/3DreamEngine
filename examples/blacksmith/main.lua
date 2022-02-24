@@ -66,8 +66,7 @@ function love.draw()
 	dream.cam:rotateY(dream.cam.ry)
 	dream.cam:rotateX(dream.cam.rx)
 	
-	--update lights
-	dream:resetLight()
+	dream:prepare()
 	
 	--torches, lights and particles
 	for d,s in ipairs({
@@ -93,7 +92,6 @@ function love.draw()
 	end
 	love.graphics.setColor(1, 1, 1)
 	
-	dream:prepare()
 	dream:draw(scene)
 	
 	dream:drawParticleBatch(particleBatch)

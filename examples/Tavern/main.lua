@@ -7,7 +7,6 @@ love.window.setVSync(false)
 
 --settings
 local projectDir = "examples/Tavern/"
-dream:setNameDecoder()
 dream:setSmoothLoading(false)
 
 dream.renderSet:setRefractions(true)
@@ -115,9 +114,6 @@ function love.draw()
 		local z = noise(i, 3 + c) * 100 % 10.5 - 5.25
 		particleBatchDust:add(x, y, z, 0, (i % 10 + 10) * 0.002)
 	end
-	
-	--update lights
-	dream:resetLight()
 	
 	--make the particles black so it only emits light
 	love.graphics.setColor(0, 0, 0, 1)

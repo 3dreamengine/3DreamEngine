@@ -41,10 +41,8 @@ function love.draw()
 	dream.cam:rotateY(dream.cam.ry)
 	dream.cam:rotateX(dream.cam.rx)
 	
-	dream:resetLight()
-	dream:addLight(light)
-	
 	dream:prepare()
+	dream:addLight(light)
 	dream:draw(scene)
 	dream:present()
 	

@@ -85,7 +85,6 @@ lib:setFogHeight()
 lib:setExposure(false)
 lib:setGamma(true)
 lib:setMaxLights(16)
-lib:setNameDecoder("(.*)_.*")
 lib:setFrustumCheck(true)
 lib:setLODDistance(10)
 lib:setGodrays(false, false)
@@ -289,6 +288,8 @@ end
 
 --clears the current scene
 function lib:prepare()
+	self.lighting = { }
+	
 	self.scenes = { }
 	
 	lib:drawScene(self.scene)

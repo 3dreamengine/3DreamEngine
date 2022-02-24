@@ -20,20 +20,6 @@ function lib:getMaxLights()
 end
 
 
---sets the regex decoder strings for object names
-function lib:setNameDecoder(regex)
-	if regex then
-		check(regex, "string")
-		self.nameDecoder = regex
-	else
-		self.nameDecoder = false
-	end
-end
-function lib:getNameDecoder()
-	return self.nameDecoder
-end
-
-
 --enable/disable in frustum check
 function lib:setFrustumCheck(c)
 	check(c, "boolean")
@@ -196,7 +182,7 @@ function lib:setDefaultReflection(tex)
 		error("Unknown reflection")
 	end
 end
-function lib:getReflection(tex)
+function lib:getDefaultReflection(tex)
 	return self.defaultReflection
 end
 
@@ -208,7 +194,7 @@ function lib:setSkyReflectionFormat(resolution, format, lazy)
 	self.sky_lazy = lazy
 end
 function lib:getSkyReflectionFormat()
-	return self.sky_resolution, self.sky_format
+	return self.sky_resolution, self.sky_format, self.sky_lazy
 end
 
 

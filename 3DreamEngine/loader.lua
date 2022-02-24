@@ -26,6 +26,7 @@ lib.defaultArgs = {
 	skip3do = false,
 	particlesystems = true,
 	scene = false,
+	decodeBlenderNames = true,
 }
 
 --extends given arg table with default args
@@ -75,6 +76,10 @@ function lib:loadLibrary(path, args, prefix)
 		local id = (prefix or "") .. d
 		self.objectLibrary[id] = o
 	end
+end
+
+function lib:registerObject(object, name)
+	self.objectLibrary[name] = object
 end
 
 --loads an scene

@@ -21,10 +21,8 @@ knight:setPixelShader("simple")
 local sun = dream:newLight("sun")
 
 function love.draw()
-	dream:resetLight()
-	dream:addLight(sun)
-	
 	dream:prepare()
+	dream:addLight(sun)
 
 	knight:reset()
 	knight:translate(-16, -30, -20)
