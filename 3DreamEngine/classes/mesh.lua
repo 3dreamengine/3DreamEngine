@@ -99,6 +99,7 @@ function class:updateBoundingBox()
 	self.boundingBox.size = math.max(math.sqrt(max), self.boundingBox.size)
 end
 
+local meshTypeWarning
 function class:initShaders()
 	--pixel
 	local ps = self.material.pixelShader or self.pixelShader or lib.defaultPixelShader
@@ -107,15 +108,21 @@ function class:initShaders()
 	end
 	
 	--vertex
-	local ps = self.material.vertexShader or self.vertexShader or lib.defaultVertexShader
-	if ps.initMesh then
-		ps:initMesh(lib, self)
+	local vs = self.material.vertexShader or self.vertexShader or lib.defaultVertexShader
+	if vs.initMesh then
+		vs:initMesh(lib, self)
 	end
 	
 	--world
-	local ps = self.material.worldShader or self.worldShader or lib.defaultWorldShader
-	if ps.initMesh then
-		ps:initMesh(lib, self)
+	local ws = self.material.worldShader or self.worldShader or lib.defaultWorldShader
+	if ws.initMesh then
+		ws:initMesh(lib, self)
+	end
+	
+	--recreate mesh
+	if self.mesh and not meshTypeWarning and (ps.meshType ~= self.meshType or vs.meshType ~= self.meshType or ws.meshType ~= self.meshType) then
+		meshTypeWarning = true
+		print("WARNING: Required and given mesh type do not match. Either set a default shader before loading the object or provide a shader in the material file.")
 	end
 	
 	self.shadersInitialized = true

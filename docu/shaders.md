@@ -39,7 +39,7 @@ function sh:buildDefines(dream, mat)
 		// use ifdef PIXEL/VERTEX if necessary
 		
 		// the world shader has to implemented
-		vec3 getLight(vec3 lightColor, vec3 viewVec, vec3 lightVec, vec3 normal, vec3 fragmentNormal, vec3 albedo, float roughness, float metallic)
+		vec3 getLight(vec3 lightColor, vec3 viewVec, vec3 lightVec, vec3 normal, vec3 albedo, float roughness, float metallic)
 		// which is called for each light source
 	]]
 end
@@ -48,7 +48,6 @@ function sh:buildPixel(dream, mat)
 	return [[
 		--you have access to those base values
 		vec3 viewVec;        // camera-to-fragment vector
-		vec3 fragmentNormal; // a normalized per fragment normal
 		vec3 vertexPos;      // the vertex position
 		float depth;         // the view depth
 		

@@ -26,7 +26,7 @@ extern Image depthTexture;
 
 
 #ifdef PIXEL
-vec3 getLight(vec3 lightColor, vec3 viewVec, vec3 lightVec, vec3 normal, vec3 fragmentNormal, vec3 albedo, float roughness, float metallic);
+vec3 getLight(vec3 lightColor, vec3 viewVec, vec3 lightVec, vec3 normal, vec3 albedo, float roughness, float metallic);
 
 void effect() {
 	vec3 viewVec = normalize(vertexPos - viewPos);
@@ -36,7 +36,6 @@ void effect() {
 	
 	//material
 	vec3 normal;
-	vec3 fragmentNormal = normalize(varyingNormal);
 	vec3 albedo = vec3(0.5);
 	float alpha = 1.0;
 	float roughness = 0.5;
@@ -65,8 +64,7 @@ void effect() {
 	//proper backfaces
 #ifdef TRANSLUCENCY
 	if (dot(normal, viewVec) > 0.0) {
-		normal = normalize(reflect(normal, fragmentNormal));
-		fragmentNormal = -fragmentNormal;
+		normal = normalize(reflect(normal, normalize(varyingNormal)));
 	}
 #endif
 	

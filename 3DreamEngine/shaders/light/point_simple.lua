@@ -25,7 +25,7 @@ function sh:constructPixelGlobal(dream)
 		vec3 lightColor = point_simple_color[i] * power;
 		lightVec = normalize(lightVec);
 		
-		light += getLight(lightColor, viewVec, lightVec, normal, fragmentNormal, albedo, roughness, metallic);
+		light += getLight(lightColor, viewVec, lightVec, normal, albedo, roughness, metallic);
 	}
 	]])
 end

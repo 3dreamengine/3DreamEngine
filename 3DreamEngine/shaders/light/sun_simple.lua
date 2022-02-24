@@ -23,7 +23,7 @@ end
 
 function sh:constructPixel(dream, ID)
 	return ([[
-		light += getLight(sun_simple_color_#ID#, viewVec, sun_simple_vec_#ID#, normal, fragmentNormal, albedo, roughness, metallic);
+		light += getLight(sun_simple_color_#ID#, viewVec, sun_simple_vec_#ID#, normal, albedo, roughness, metallic);
 	]]):gsub("#ID#", ID)
 end
 

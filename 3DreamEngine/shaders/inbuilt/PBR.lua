@@ -48,13 +48,13 @@ function sh:buildDefines(dream, mat, shadow)
 				return ggx1 * ggx2;
 			}
 			
-			vec3 getLight(vec3 lightColor, vec3 viewVec, vec3 lightVec, vec3 normal, vec3 fragmentNormal, vec3 albedo, float roughness, float metallic) {
+			vec3 getLight(vec3 lightColor, vec3 viewVec, vec3 lightVec, vec3 normal, vec3 albedo, float roughness, float metallic) {
 				vec3 vec = -viewVec;
 				
 				//backface
 				#ifdef TRANSLUCENCY
 				if (dot(normal, lightVec) < 0.0) {
-					lightVec = normalize(reflect(lightVec, fragmentNormal));
+					lightVec = normalize(reflect(lightVec, normalize(varyingNormal)));
 					lightColor *= translucent;
 				}
 				#endif

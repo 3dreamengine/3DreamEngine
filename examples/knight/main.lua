@@ -14,7 +14,7 @@ dream:init()
 --load voxel object using a custom mesh type
 local knight = dream:loadObject("examples/knight/knight")
 
---use the simple (non textured) shader which makes use of the simple mesh type
+--use the simple (non textured) shader which makes use of the simple mesh type chosen by the VOX loader
 knight:setPixelShader("simple")
 
 --make a sun

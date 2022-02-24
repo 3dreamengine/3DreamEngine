@@ -50,7 +50,7 @@ function sh:perMaterial(dream, shaderObject, material)
 end
 
 function sh:perTask(dream, shaderObject, task)
-
+	
 end
 
 return sh
