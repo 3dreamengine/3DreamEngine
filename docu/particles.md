@@ -1,4 +1,4 @@
-# particle batches
+# Particle Batches
 Particles are batched and rendered all together.
 ```lua
 batch = dream:newParticleBatch(texture)

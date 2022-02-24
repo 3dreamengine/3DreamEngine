@@ -1,42 +1,24 @@
 # settings
 Most settings require `dream:init()` to be called afterwards.
 
-- [max Lights](#max-lights)
-- [name Decoder](#name-decoder)
-- [frustum](#frustum)
+- [Frustum](#frustum)
 - [LOD Distance](#lod-distance)
-- [exposure](#exposure)
-- [auto Exposure](#auto-exposure)
-- [gamma](#gamma)
-- [screen space ambient occlusion](#screen-space-ambient-occlusion)
-- [bloom](#bloom)
-- [fog](#fog)
-- [rainbow](#rainbow)
-- [shadows](#shadows)
-- [sun](#sun)
-- [daytime](#daytime)
-- [weather](#weather)
-- [sky](#sky)
-- [clouds](#clouds)
-- [base reflection](#base-reflection)
-- [resource loader](#resource-loader)
-- [godrays](#godrays)
-- [disortion margin](#disortion-margin)
+- [Exposure](#exposure)
+- [Auto Exposure](#auto-exposure)
+- [Gamma](#gamma)
+- [SSAO](#ssao)
+- [Bloom](#bloom)
+- [Fog](#fog)
+- [Shadows](#shadows)
+- [Sky](#sky)
+- [Default Reflection](#default-reflection)
+- [Resource Loader](#resource-loader)
+- [Godrays](#godrays)
+- [Disortion Margin](#disortion-margin)
 
 
 
-## name Decoder
-Some exporter add some pre and postfixes, with this regex string you can fix the names. False to disable.
-
-```lua
-dream:setNameDecoder(decoder)
-decoder = dream:setNameDecoder()
-```
-`decoder ("^(.+)_([^_]+)$")` regex string  
-
-
-
-## frustum
+## Frustum
 To improve performance you can enable frustum checks to only render visible objects.
 
 ```lua
@@ -58,7 +40,7 @@ distance = dream:getLODDistance()
 
 
 
-## exposure
+## Exposure
 Sets the exposure for HDR, making it possible to represent colors over 1. 1.0 is default. False disables it.
 ```lua
 dream:setExposure(enabled)
@@ -67,7 +49,7 @@ enabled = dream:getExposure(enabled)
 
 
 
-## auto Exposure
+## Auto Exposure
 Sets the target average screen brightness for automatic adaption. Disabled by default.  
 
 ```lua
@@ -81,7 +63,7 @@ A single bool can either disabled or enable with default values.
 
 
 
-## gamma
+## Gamma
 Gamma correction is already applied, therefore default is 1.0. Disabled by default.
 
 ```lua
@@ -92,7 +74,7 @@ gamma = dream:getGamma()
 
 
 
-## screen space ambient occlusion
+## SSAO
 To simulate shadows between close surfaces a lightweight screen space occlusion methode can be used. Enabled by default.
 
 ```lua
@@ -105,7 +87,7 @@ enabled, samples, resolution, blur = dream:getAO()
 
 
 
-## bloom
+## Bloom
 To simulate bright surfaces bloom can be applied. Enabled by default.
 
 ```lua
@@ -120,7 +102,7 @@ enabled, quality, resolution, size, strength = dream:getBloom()
 
 
 
-## fog
+## Fog
 Allows the simulation of fog, smoke or visible gasses and sunlight scatter between two defined density layers.
 
 ```lua
@@ -142,28 +124,7 @@ min, max = dream:getFogHeight()
 `max (-1)` higher, no-fog plane height. When smaller than min, fog is constant.  
 
 
-## rainbow
-Renders a rainbow on the sky dome.
-
-```lua
-dream:setRainbow(strength, size, thickness)
-dream:setRainbow(strength)
-strength, size, thickness = dream:getRainbow()
-```
-`strength` the strength, usually between 0 and 1  
-`size (~42°)` angle from viewer  
-`thickness (0.2)` rainbow width  
-
-<br />
-
-```lua
-dream:setRainbowDir(dir)
-dir = dream:getRainbowDir()
-```
-`dir` vec3 of rainbow. Physically this is always -sunVector, but can be set for artistic reasons manually.  
-
-
-## shadows
+## Shadows
 Shadows can use per light/shadow settings, else they will use default values set here.  
 Higher resolution may increase quality, but usually smoothing hides lower resolutions anyways.  
 
@@ -202,64 +163,8 @@ enabled, static = dream:getSunShadow()
 
 
 
-## sun
-Sets the position of the sun (done automatically by 'dream:setDaytime()'
 
-```lua
-dream:setSunDir(direction)
-direction = dream:getSunDir()
-```
-`direction` vec3 direction of the sun  
-
-<br />
-
-```lua
-dream:setSunOffset(offset, rotation)
-offset, rotation = dream:getSunOffset()
-```
-`offset` offset where 0 is the equator and 1 the north pole when using 'dream:setDaytime()'  
-`rotation` the rotation on the Y axis  
-
-
-
-## daytime
-Automatically fetches sky and sun color, sets sun position based on offset and controls moon cycle.
-
-```lua
-dream:setDaytime(time)
-time = dream:getDaytime()
-```
-`time` Time between 0 and 1, where 0.0 is sunrise and 0.5 sunset.  
-
-
-
-## weather
-The weather controlls sky color, clouds and if enabled the rain module (currently disabled, WIP).
-Those functions has to be called after `setDaytime()`.
-
-```lua
-dream:setWeather(rain)
-dream:setWeather(rain, temp)
-dream:setWeather(rain, temp, raining)
-rain, temp, raining = dream:getWeather()
-```
-`rain` thicker clouds, darker sky, ...  
-`temp (1.0 - rain)` temperature, mainly controls clouds  
-`raining (rain > 0.5)` wether its actually raining  
-
-<br />
-
-An extended version which performs a smooth transition, generated mist and a rainbow after rain:
-```lua
-dream:updateWeather(rain, temp, dt)
-```
-`rain` thicker clouds, darker sky, ...  
-`temp (1.0 - rain)` temperature, mainly controls clouds  
-`dt` delta time, can be used to control speed of weather change
-
-
-
-## sky
+## Sky
 The sky renders behind all objects and if used on the default reflection cubemap.
 
 ```lua
@@ -267,87 +172,30 @@ dream:setSky(texture)
 dream:setSky(texture, exposure)
 texture, exposure = dream:getSky()
 ```
-`texture (true)`
+`texture (true)`  
+Texture can be:
 * true to use sky dome
-* false to use transparent background
+* false to no clear at all
+* a color
 * cubemap (will set `dream:setReflection(cubemap) too as this is faster and the same result`)
-* HDRI image (in combination with `setReflection(true)` bad because of unnesessary HDRI to cubemap render)   
+* HDRI image (in combination with `setReflection(true)` bad because of unnesessary HDRI to cubemap render)
+* a function with signature `(dream, transformProj, camTransform)` rendering to the already set canvas
 
 
 
-## clouds
-If the sky dome is used weather based random clouds can be rendered.
-
-```lua
-dream:setClouds(enabled)
-dream:setClouds(enabled, resolution, scale, amount, rotations)
-enabled, resolution, scale = dream:getClouds()
-```
-`enabled (true)`  
-`resolution (1024)` random cloud buffer canvas size  
-`scale (2.0)` scale of clouds  
-`amount (32)` amount of clouds per sector  
-`rotations (true)` if rotation should be used  
-
-<br />
-
-```lua
-dream:setWind(x, y)
-x, y = dream:getWind()
-```
-`x, y` cloud movement direction  
-
-```lua
-dream:setCloudsStretch(stretch, stretch_wind, angle)
-stretch, stretch_wind, angle = dream:getCloudsStretch()
-```
-`stretch` stretch strength  
-`stretch_wind` stretch strength based on wind  
-`angle` angle offset  
-
-<br />
-
-```lua
-dream:setCloudsAnim(size, position)
-size, position = dream:setCloudsAnim()
-```
-`size (0.01)` randomize size speed  
-`position (0.25)` randomize position speed  
-
-<br />
-
-```lua
-dream:setCloudsStretch(stretch, stretch_wind, angle)
-stretch, stretch_wind, angle = dream:getCloudsStretch()
-```
-`stretch` stretch strength  
-`stretch_wind` stretch strength based on wind  
-`angle` angle offset  
-
-<br />
-
-```lua
-dream:setUpperClouds(enabled, density, rotation)
-enabled, density, rotation = dream:setUpperClouds()
-```
-`enabled (true)`   
-`density (0.5)` density multiplier  
-`rotation (0.01)` rotation effect  
-
-
-
-## base reflection
+## Default Reflection
 Diffuse lighting and reflections fall back to this value if not specified otherwise.
 
 ```lua
-dream:setReflection(texture)
-texture = dream:getReflection()
+dream:setDefaultReflection(texture)
+texture = dream:getDefaultReflection()
 ```
-`texture (true)`
-* true to use sky dome as base reflection
-* false to use ambient color only
-* reflection object
-* cubemap (requires custom mipmaps as specified in the reflections chapter)
+`texture (true)`  
+Texture can be:
+* `true` to use sky dome as base reflection
+* `false` to use ambient color only
+* a reflection object
+* a cubemap (requires custom mipmaps as specified in the reflections chapter)
 
 The cubemap needs prepared mipmaps when using glossy reflections. Therefore, create the cube map with mipmaps set to `manual` and run following code to generate proper mipmaps (`dream:take3DScreenshot()` does that automatically):
 ```lua
@@ -358,18 +206,19 @@ end
 
 
 
-### sky reflection
+### Sky Reflection
 If the base reflection is true following settings affects how the sky dome is rendered.
 ```lua
-dream:setSkyReflectionFormat(resolution, format)
+dream:setSkyReflectionFormat(resolution, format, lazy)
 resolution, format = dream:getSkyReflectionFormat()
 ```
 `resolution (512)` cubemap resolution 
 `format ("rgba16f")` cubemap format, HDR by default  
+`lazy (false)` spread work over several frames  
 
 
 
-## resource loader
+## Resource Loader
 The resource loader can load textures threaded to avoid loading times or lags.
 
 ```lua
@@ -408,7 +257,7 @@ enabled = dream:getMipmaps()
 
 <br />
 
-## godrays
+## Godrays
 Godrays simulate shadow shafts in (dusty) air. Other than volumetric rendering, this is a very fast, multi light source implementation.
 Max source count is currently hardcoded to 8. Settings are hardcoded and will receive appropiate setters soon.
 
@@ -423,7 +272,7 @@ enabled, quality, allSources = dream:getGodrays()
 
 <br />
 
-## disortion margin
+## Disortion Margin
 Alpha pass distortion is a post effect and relys on what is on screen.
 A distortion margin smoothly fades out on the borders.
 
