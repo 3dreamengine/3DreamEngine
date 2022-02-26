@@ -333,7 +333,7 @@ return function(self, obj, path)
 	
 	--todo only matrix is supported
 	local function getTransform(s)
-		return mat4(loadFloatArray(s.matrix[1][1]))
+		return s.matrix and mat4(loadFloatArray(s.matrix[1][1])) or mat4:getIdentity()
 	end
 	
 	local function skeletonLoader(nodes, parentTransform)

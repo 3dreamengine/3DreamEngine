@@ -135,7 +135,7 @@ function lib:render(canvases, cam)
 	end
 	
 	--render sky
-	self:renderSky(cam.transformProjOrigin, cam.transform, (cam.near + cam.far) / 2)
+	self:renderSky(cam.transformProjOrigin, cam:getInvertedTransform(), (cam.near + cam.far) / 2)
 	
 	--update required acceleration data
 	local frustumCheck = self.frustumCheck and not cam.noFrustumCheck
@@ -682,9 +682,8 @@ function lib:present(cam, canvases, lite)
 	
 	--extract camera position and normal
 	cam = cam or self.cam
-	local i = cam.transform:invert()
-	cam.pos = vec3(i[4], i[8], i[12])
-	cam.normal = vec3(-i[3], -i[7], -i[11]):normalize()
+	cam.pos = vec3(cam.transform[4], cam.transform[8], cam.transform[12])
+	cam.normal = vec3(-cam.transform[3], -cam.transform[7], -cam.transform[11]):normalize()
 	
 	--perspective transform
 	do
@@ -699,7 +698,7 @@ function lib:present(cam, canvases, lite)
 		
 		--optimized matrix multiplication by removing constants
 		--looks like a mess, but its only the opengl projection multiplied by the camera
-		local b = cam.transform
+		local b = cam.transform:invert()
 		local a1 = n / r
 		local a6 = n / t * m
 		local fn1 = 1 / (f-n)

@@ -35,18 +35,8 @@ local lastParticleID = 0
 local particleBatch = dream:newParticleBatch(texture_candle)
 particleBatch:setVertical(0.75)
 
-local player = {
-	x = 0,
-	y = 0,
-	z = 0,
-	ax = 0,
-	ay = 0,
-	az = 0,
-}
-
---because it is easier to work with two rotations
-dream.cam.rx = 0
-dream.cam.ry = 0
+--a helper class
+local cameraController = require("examples/firstpersongame/cameraController")
 
 --create three light sources and assign shadows
 local lights = { }
@@ -61,10 +51,7 @@ local hideTooltips = false
 
 function love.draw()
 	--update camera
-	dream.cam:reset()
-	dream.cam:translate(-player.x, -player.y, -player.z)
-	dream.cam:rotateY(dream.cam.ry)
-	dream.cam:rotateX(dream.cam.rx)
+	cameraController:setCamera(dream.cam)
 	
 	dream:prepare()
 	
@@ -113,16 +100,10 @@ function love.draw()
 end
 
 function love.mousemoved(_, _, x, y)
-	local speedH = 0.005
-	local speedV = 0.005
-	dream.cam.ry = dream.cam.ry - x * speedH
-	dream.cam.rx = math.max(-math.pi/2, math.min(math.pi/2, dream.cam.rx + y * speedV))
+	cameraController:mousemoved(x, y)
 end
 
 function love.update(dt)
-	local d = love.keyboard.isDown
-	local speed = 10*dt
-	
 	--particles
 	for d,s in pairs(particles) do
 		s[2] = s[2] + dt*0.25
@@ -132,43 +113,7 @@ function love.update(dt)
 		end
 	end
 	
-	--movement
-	player.x = player.x + player.ax * dt
-	player.y = player.y + player.ay * dt
-	player.z = player.z + player.az * dt
-	
-	if d("w") then
-		player.ax = player.ax + math.cos(-dream.cam.ry-math.pi/2) * speed
-		player.az = player.az + math.sin(-dream.cam.ry-math.pi/2) * speed
-	end
-	if d("s") then
-		player.ax = player.ax + math.cos(-dream.cam.ry+math.pi-math.pi/2) * speed
-		player.az = player.az + math.sin(-dream.cam.ry+math.pi-math.pi/2) * speed
-	end
-	if d("a") then
-		player.ax = player.ax + math.cos(-dream.cam.ry-math.pi/2-math.pi/2) * speed
-		player.az = player.az + math.sin(-dream.cam.ry-math.pi/2-math.pi/2) * speed
-	end
-	if d("d") then
-		player.ax = player.ax + math.cos(-dream.cam.ry+math.pi/2-math.pi/2) * speed
-		player.az = player.az + math.sin(-dream.cam.ry+math.pi/2-math.pi/2) * speed
-	end
-	if d("space") then
-		player.ay = player.ay + speed
-	end
-	if d("lshift") then
-		player.ay = player.ay - speed
-	end
-	
-	--air resistance
-	player.ax = player.ax * (1 - dt*3)
-	player.ay = player.ay * (1 - dt*3)
-	player.az = player.az * (1 - dt*3)
-	
-	--mount cam
-	dream.cam.x = player.x
-	dream.cam.y = player.y
-	dream.cam.z = player.z
+	cameraController:update(dt)
 	
 	--update resource loader
 	dream:update()
