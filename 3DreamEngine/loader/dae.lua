@@ -69,12 +69,13 @@ end
 
 --loads an array of inputs
 local function loadInputs(s, idxs)
-	local idxs = idxs or loadFloatArray((s.p or s.v)[1][1])
+	local idxs = idxs or (s.p or s.v) and loadFloatArray((s.p or s.v)[1][1])
 	
 	--use the max offset to determine data width
 	local fields = 0
 	for _,input in ipairs(s.input) do
-		fields = math.max(fields, tonumber(input._attr.offset) + 1)
+		local offset = 1 + (tonumber(input._attr.offset) or 0)
+		fields = math.max(fields, offset)
 	end
 	
 	local data = { }
@@ -83,17 +84,17 @@ local function loadInputs(s, idxs)
 		local set = 1 + tonumber(input._attr.set or "0")
 		local typ = input._attr.semantic
 		local array = getInput(input._attr.source)
-		local offset = 1 + tonumber(input._attr.offset)
+		local offset = 1 + (tonumber(input._attr.offset) or 0)
 		
 		data[typ] = data[typ] or { }
 		data[typ][set] = data[typ][set] or { }
 		
-		for vertex = 1, #idxs / fields do
-			local id = idxs[(vertex - 1) * fields + offset]
-			data[typ][set][vertex] = array[id + 1]
+		for vertex = 1, idxs and (#idxs / fields) or #array do
+			local id = idxs and (idxs[(vertex - 1) * fields + offset] + 1) or vertex
+			data[typ][set][vertex] = array[id]
 			
 			if typ == "VERTEX" then
-				vertexMapping[vertex] = id + 1
+				vertexMapping[vertex] = id
 			end
 		end
 	end
@@ -168,7 +169,6 @@ return function(self, obj, path)
 	
 	
 	--load skin controller
-	local jointMapping = { }
 	local controllers = { }
 	for _, library in ipairs(root.library_controllers or { }) do
 		for _,controller in ipairs(library.controller or { }) do
@@ -180,6 +180,16 @@ return function(self, obj, path)
 					mesh = skin._attr.source:sub(2)
 				}
 				controllers[controller._attr.id] = c
+				
+				--load bind transform
+				local data = loadInputs(skin.joints[1])
+				c.jointNames = data.JOINT[1]
+				
+				local m = data.INV_BIND_MATRIX[1]
+				c.inverseBindMatrices = { }
+				for i,v in ipairs(m) do
+					c.inverseBindMatrices[i] = mat4(v)
+				end
 				
 				--load data
 				local data = loadInputs(skin.vertex_weights[1])
@@ -214,17 +224,13 @@ return function(self, obj, path)
 				end
 				
 				--map joints to integers for easier processing
-				local lastId = 0
-				for d,s in pairs(jointMapping) do
-					lastId = lastId + 1
+				local mapping = { }
+				for i,v in ipairs(c.jointNames) do
+					mapping[v] = i - 1
 				end
 				for _,joints in ipairs(c.joints) do
 					for i, j in ipairs(joints) do
-						if not jointMapping[j] then
-							lastId = lastId + 1
-							jointMapping[j] = lastId
-						end
-						joints[i] = jointMapping[j]
+						joints[i] = mapping[j]
 					end
 				end
 			end
@@ -315,23 +321,18 @@ return function(self, obj, path)
 		return s.matrix and mat4(loadFloatArray(s.matrix[1][1])) or mat4:getIdentity()
 	end
 	
-	local function skeletonLoader(nodes, parentTransform)
+	local function skeletonLoader(nodes)
 		local skel = { }
 		for d,s in ipairs(nodes) do
 			if s._attr.type == "JOINT" then
 				local name = s._attr.sid
 				
-				local transform = getTransform(s)
-				local bindTransform = parentTransform and parentTransform * transform or transform
-				
 				skel[name] = {
 					name = name,
-					bindTransform = transform,
-					inverseBindTransform = bindTransform:invert(),
 				}
 				
 				if s.node then
-					skel[name].children = skeletonLoader(s.node, bindTransform)
+					skel[name].children = skeletonLoader(s.node)
 				end
 			end
 		end
@@ -353,6 +354,9 @@ return function(self, obj, path)
 					obj.meshes[n].weights[d] = controller.weights[s]
 					obj.meshes[n].joints[d] = controller.joints[s]
 				end
+				
+				obj.meshes[n].jointNames = controller.jointNames
+				obj.meshes[n].inverseBindMatrices = controller.inverseBindMatrices
 			end
 		end
 	end
@@ -388,7 +392,7 @@ return function(self, obj, path)
 				--start of a skeleton
 				--we treat skeletons different than nodes and will use a different traverser here
 				if s.node then
-					obj.skeleton = self:newSkeleton(skeletonLoader(nodes), jointMapping)
+					obj.skeleton = self:newSkeleton(skeletonLoader(nodes))
 				end
 			end
 			

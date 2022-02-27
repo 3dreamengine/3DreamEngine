@@ -364,7 +364,7 @@ function class:decode(meshData)
 	
 	--recreate skeleton data
 	if self.skeleton then
-		self.skeleton = lib:newSkeleton(self.skeleton.bones, self.skeleton.jointMapping)
+		self.skeleton = lib:newSkeleton(self.skeleton.bones)
 	end
 	
 	--decode animations

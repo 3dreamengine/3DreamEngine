@@ -78,8 +78,16 @@ function sh:perTask(dream, shaderObject, task)
 	if shaderObject.session.bones ~= bt then
 		local mesh = task:getMesh()
 		local matrices = { }
-		for i = 1, self.maxJoints do
-			matrices[i] = bt[i - 1] or mat4:getIdentity()
+		for i = 1, #mesh.jointNames do
+			local tr = bt[mesh.jointNames[i]]
+			if tr then
+				matrices[i] = tr * mesh.inverseBindMatrices[i]
+			else
+				matrices[i] = mesh.inverseBindMatrices[i]
+			end
+		end
+		for i = #mesh.jointNames + 1, self.maxJoints do
+			matrices[i] = mat4:getIdentity()
 		end
 		if #matrices > self.maxJoints and not mesh._jointExceededWarning then
 			mesh._jointExceededWarning = true
