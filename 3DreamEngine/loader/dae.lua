@@ -69,7 +69,7 @@ end
 
 --loads an array of inputs
 local function loadInputs(s, idxs)
-	local idxs = idxs or loadFloatArray(s.p[1][1])
+	local idxs = idxs or loadFloatArray((s.p or s.v)[1][1])
 	
 	--use the max offset to determine data width
 	local fields = 0
@@ -99,38 +99,6 @@ local function loadInputs(s, idxs)
 	end
 	
 	return data, vertexMapping
-end
-
---loads an array of inputs
-local function loadWeightsInputs(s)
-	local vcounts = s.vcount and loadFloatArray(s.vcount[1][1])
-	local idxs = idxs or loadFloatArray(s.v[1][1])
-	
-	--use the max offset to determine data width
-	local fields = 0
-	for _,input in ipairs(s.input) do
-		fields = math.max(fields, tonumber(input._attr.offset) + 1)
-	end
-	
-	local data = { }
-	for _,input in ipairs(s.input) do
-		local typ = input._attr.semantic
-		local array = getInput(input._attr.source)
-		local offset = 1 + tonumber(input._attr.offset)
-		
-		data[typ] = data[typ] or { }
-		local index = 0
-		for vertex, count in ipairs(vcounts) do
-			data[typ][vertex] = { }
-			for v = 1, count do
-				index = index + 1
-				local id = (index-1) * fields + offset
-				data[typ][vertex][v] = array[idxs[id] + 1]
-			end
-		end
-	end
-	
-	return data
 end
 
 local function addMesh(self, obj, mat, id, inputs, vertexMapping, meshData, vcount)
@@ -214,18 +182,29 @@ return function(self, obj, path)
 				controllers[controller._attr.id] = c
 				
 				--load data
-				local data = loadWeightsInputs(skin.vertex_weights[1])
-				c.weights = data.WEIGHT
-				c.joints = data.JOINT
+				local data = loadInputs(skin.vertex_weights[1])
+				local vcounts = loadFloatArray(skin.vertex_weights[1].vcount[1][1])
+				local vertex = 0
+				c.weights = { }
+				c.joints = { }
+				for i,vertexCount in ipairs(vcounts) do
+					c.weights[i] = { }
+					c.joints[i] = { }
+					for i2 = 1, vertexCount do
+						vertex = vertex + 1
+						c.weights[i][i2] = data.WEIGHT[1][vertex]
+						c.joints[i][i2] = data.JOINT[1][vertex]
+					end
+				end
 				
 				--sort weights
-				for idx = 1, #c.weights do
-					local n = #c.weights[idx]
+				for idx, w in ipairs(c.weights) do
+					local n = #w
 					repeat
 						local newn = 0
 						for i = 2, n do
-							if c.weights[idx][i - 1] < c.weights[idx][i] then
-								c.weights[idx][i - 1], c.weights[idx][i] = c.weights[idx][i], c.weights[idx][i - 1]
+							if w[i - 1] < w[i] then
+								w[i - 1], w[i] = w[i], w[i - 1]
 								c.joints[idx][i - 1], c.joints[idx][i] = c.joints[idx][i], c.joints[idx][i - 1]
 								newn = i
 							end
