@@ -7,7 +7,7 @@ function lib:newLight(typ, pos, color, brightness)
 		pos = pos or vec3(0, 0, 0),
 		size = 0.05,
 		color = color and color:normalize() or vec3(1, 1, 1),
-		direction = vec3(1, 1, 1),
+		direction = vec3(1, 1, 1):normalize(),
 		brightness = brightness or 1.0,
 		attenuation = 2.0,
 		

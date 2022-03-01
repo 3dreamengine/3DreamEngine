@@ -1,6 +1,6 @@
 local delton = { }
 
-local clock = love.timer.getTime
+local clock = love.timer and love.timer.getTime or os.clock
 local minArc = 0.01
 local borderSize = 0.75
 
@@ -10,7 +10,7 @@ local mx
 local my
 local selected
 
-local bigFont = love.graphics.newFont(24)
+local bigFont = love.graphics and love.graphics.newFont(24)
 
 --return a new benchmark
 function delton:new(bufferLength)

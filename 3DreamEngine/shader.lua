@@ -8,7 +8,7 @@ local lib = _3DreamEngine
 local testForOpenES = true
 
 --enables auto shader validator
-if _DEBUGMODE then
+if _DEBUGMODE and love.graphics then
 	love.graphics.newShader_old = love.graphics.newShader
 	function love.graphics.newShader(pixel, vertex, name)
 		local status, err = love.graphics.validateShader(testForOpenES, pixel, vertex)

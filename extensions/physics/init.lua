@@ -9,7 +9,7 @@ require(root .. "/functions")
 local colliderMeta = {
 	getPosition = function(self)
 		local x, y = self.body:getWorldCenter()
-		return x, self.y, y
+		return vec3(x, self.y, y)
 	end,
 	
 	getVelocity = function(self)

@@ -424,7 +424,7 @@ local function setMultiCubeMap(cube, level)
 	})
 end
 
-if love.graphics.getSystemLimits().multicanvas >= 6 then
+if love.graphics and love.graphics.getSystemLimits().multicanvas >= 6 then
 	function lib:blurCubeMap(cube, layers, strength, mask, blurFirst)
 		local temp = self:getTemporaryCanvas(cube, not blurFirst)
 		local shader = self:getBasicShader("blur_cube_multi")

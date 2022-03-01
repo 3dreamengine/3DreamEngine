@@ -5,6 +5,10 @@ particles.lua - particle spritebatches
 
 local lib = _3DreamEngine
 
+if not love.graphics then
+	return
+end
+
 local minIncreaseStep = 16
 local maxCount = 1024 * 32
 

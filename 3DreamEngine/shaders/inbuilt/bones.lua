@@ -56,10 +56,10 @@ function sh:buildVertex(dream, mat)
 		jointTransforms[int(VertexJoint[3]*255.0)] * VertexWeight[3]
 	);
 	
-	vertexPos = (boneTransform * VertexPosition).xyz;
+	vertexPos = (boneTransform * vec4(VertexPosition.xyz, 1.0)).xyz;
 	vertexPos = (transform * vec4(vertexPos.xyz, 1.0)).xyz;
 	
-	normalTransform = mat3(boneTransform) * normalTransform;
+	normalTransform = normalTransform * mat3(boneTransform);
 	]]
 end
 
@@ -71,6 +71,7 @@ function sh:perMaterial(dream, shaderObject, material)
 	
 end
 
+local ID = mat4:getIdentity()
 function sh:perTask(dream, shaderObject, task)
 	local bt = task:getBoneTransforms()
 	assert(bt, "missing bone transforms")
@@ -87,7 +88,7 @@ function sh:perTask(dream, shaderObject, task)
 			end
 		end
 		for i = #mesh.jointNames + 1, self.maxJoints do
-			matrices[i] = mat4:getIdentity()
+			matrices[i] = I
 		end
 		if #matrices > self.maxJoints and not mesh._jointExceededWarning then
 			mesh._jointExceededWarning = true

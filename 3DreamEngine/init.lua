@@ -135,33 +135,35 @@ lib:registerMeshFormat("material", require(lib.root .. "/meshFormats/material"))
 --some functions require temporary canvases
 lib.canvasCache = { }
 
---default objects
-lib.skyObject = lib:loadObject(lib.root .. "/objects/sky")
-lib.cubeObject = lib:loadObject(lib.root .. "/objects/cube")
-lib.planeObject = lib:loadObject(lib.root .. "/objects/plane")
+if love.graphics then
+	--default objects
+	lib.skyObject = lib:loadObject(lib.root .. "/objects/sky")
+	lib.cubeObject = lib:loadObject(lib.root .. "/objects/cube")
+	lib.planeObject = lib:loadObject(lib.root .. "/objects/plane")
 
---default textures
-local pix = love.image.newImageData(2, 2)
-lib.textures = {
-	default = love.graphics.newImage(lib.root .. "/res/default.png"),
-	godray = love.graphics.newImage(lib.root .. "/res/godray.png"),
-	defaultNormal = love.graphics.newImage(lib.root .. "/res/defaultNormal.png"),
-	skyFallback = love.graphics.newCubeImage({pix, pix, pix, pix, pix, pix}),
-}
-lib.textures.godray:setWrap("repeat", "repeat")
+	--default textures
+	local pix = love.image.newImageData(2, 2)
+	lib.textures = {
+		default = love.graphics.newImage(lib.root .. "/res/default.png"),
+		godray = love.graphics.newImage(lib.root .. "/res/godray.png"),
+		defaultNormal = love.graphics.newImage(lib.root .. "/res/defaultNormal.png"),
+		skyFallback = love.graphics.newCubeImage({pix, pix, pix, pix, pix, pix}),
+	}
+	lib.textures.godray:setWrap("repeat", "repeat")
 
-lib.textures.noise = love.graphics.newImage(lib.root .. "/res/noise.png")
-lib.textures.noise:setWrap("repeat")
+	lib.textures.noise = love.graphics.newImage(lib.root .. "/res/noise.png")
+	lib.textures.noise:setWrap("repeat")
 
-lib.textures.foam = love.graphics.newImage(lib.root .. "/res/foam.png")
-lib.textures.foam:setWrap("repeat")
+	lib.textures.foam = love.graphics.newImage(lib.root .. "/res/foam.png")
+	lib.textures.foam:setWrap("repeat")
 
---load textures once actually needed
-lib.initTextures = { }
-function lib.initTextures:PBR()
-	if not self.PBR_done then
-		self.PBR_done = true
-		lib.textures.brdfLUT = love.graphics.newImage(lib.root .. "/res/brdfLut.png")
+	--load textures once actually needed
+	lib.initTextures = { }
+	function lib.initTextures:PBR()
+		if not self.PBR_done then
+			self.PBR_done = true
+			lib.textures.brdfLUT = love.graphics.newImage(lib.root .. "/res/brdfLut.png")
+		end
 	end
 end
 
