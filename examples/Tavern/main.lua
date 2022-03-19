@@ -55,7 +55,7 @@ particleBatchDust:setSorting(false)
 local lights = { }
 for d,s in ipairs(tavern.positions) do
 	if s.name == "light" then
-		lights[d] = dream:newLight("point", vec3(s.x, s.y + 0.1, s.z), vec3(1.0, 0.75, 0.3))
+		lights[d] = dream:newLight("point", vec3(s.position.x, s.position.y + 0.1, s.position.z), vec3(1.0, 0.75, 0.3))
 		lights[d]:addShadow()
 		lights[d].shadow:setStatic(true)
 		lights[d].shadow:setSmooth(true)
@@ -63,7 +63,7 @@ for d,s in ipairs(tavern.positions) do
 		lights[d].shadow:setLazy(true)
 		lights[d]:setAttenuation(3) --unrealistic but looks better
 	elseif s.name == "fire" then
-		lights[d] = dream:newLight("point", vec3(s.x, s.y + 0.1, s.z), vec3(1.0, 0.75, 0.2))
+		lights[d] = dream:newLight("point", vec3(s.position.x, s.position.y + 0.1, s.position.z), vec3(1.0, 0.75, 0.2))
 		lights[d]:addShadow()
 		lights[d].shadow:setStatic(true)
 		lights[d].shadow:setSmooth(true)
@@ -119,7 +119,7 @@ function love.draw()
 			dream:addLight(lights[d])
 		elseif s.name == "candle" then
 			local power = (0.5 + 0.2 * noise(flicker, d)) * s.size * 4
-			particleBatch:addQuad(quads[math.ceil(d + love.timer.getTime() * 24) % 25 + 1], s.x, s.y + 0.02, s.z, 0, power, nil, 2.0)
+			particleBatch:addQuad(quads[math.ceil(d + love.timer.getTime() * 24) % 25 + 1], s.position.x, s.position.y + 0.02, s.position.z, 0, power, nil, 2.0)
 		elseif s.name == "fire" then
 			local power = (0.5 + 0.2 * noise(flicker, d)) * s.size * 2000.0
 			lights[d]:setBrightness(power)
@@ -129,7 +129,7 @@ function love.draw()
 			
 			for i = -3, 3 do
 				local power = (0.5 + 0.15 * noise(flicker, d + i)) * s.size / (1 + 0.1 * math.abs(i)) * 4
-				particleBatch:addQuad(quads[math.ceil(i * 17 + d + love.timer.getTime() * 24) % 25 + 1], s.x + i * 0.1, s.y - 0.15, s.z - 0.1 - math.abs(i) * 0.025, 0, power, nil, 4.0)
+				particleBatch:addQuad(quads[math.ceil(i * 17 + d + love.timer.getTime() * 24) % 25 + 1], s.position.x + i * 0.1, s.position.y - 0.15, s.position.z - 0.1 - math.abs(i) * 0.025, 0, power, nil, 4.0)
 			end
 		end
 	end
