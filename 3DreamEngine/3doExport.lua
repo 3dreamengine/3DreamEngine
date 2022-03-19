@@ -21,7 +21,12 @@ function lib:export3do(obj)
 	
 	--export
 	local headerData = love.data.compress("string", "lz4", packTable.pack(data), 9)
-	local final = "3DO5    " .. love.data.pack("string", "L", #headerData) .. headerData .. table.concat(dataStrings, "")
+	local headerLength = #headerData
+	local l1 = math.floor(headerLength) % 256
+	local l2 = math.floor(headerLength / 256) % 256
+	local l3 = math.floor(headerLength / 256^2) % 256
+	local l4 = math.floor(headerLength / 256^3) % 256
+	local final = "3DO5    " .. string.char(l1, l2, l3, l4) .. headerData .. table.concat(dataStrings, "")
 	love.filesystem.createDirectory(obj.dir)
 	love.filesystem.write(obj.dir .. "/" .. obj.name .. ".3do", final)
 end

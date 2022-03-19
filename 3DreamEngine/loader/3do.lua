@@ -19,8 +19,8 @@ return function(self, obj, path)
 	local _ = file:read(4)
 	
 	--header
-	local l = file:read(4)
-	local headerLength = love.data.unpack("L", l)
+	local l1, l2, l3, l4 = string.byte(file:read(4), 1, 4)
+	local headerLength = l1 + l2 * 256 + l3 * 256^2 + l4 * 256^3
 	local headerData = file:read(headerLength)
 	
 	--object lua data
