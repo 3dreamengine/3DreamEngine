@@ -214,7 +214,7 @@ function class:print()
 	if next(self.positions) then
 		push("positions")
 		for _,p in pairs(self.positions) do
-			printf("%s at (%.3f, %.3f, %.3f)", p.name, p.x, p.y, p.z)
+			printf("%s at %s", p.name, p.position)
 		end
 		pop()
 	end
@@ -377,6 +377,11 @@ function class:decode(meshData)
 	for d,s in pairs(self.physics) do
 		setmetatable(s, lib.meta.collider)
 		s:decode()
+	end
+	
+	--recreate positions
+	for d,s in pairs(self.positions) do
+		s.position = vec3(s.position)
 	end
 end
 

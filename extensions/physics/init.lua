@@ -13,7 +13,8 @@ local colliderMeta = {
 	end,
 	
 	getVelocity = function(self)
-		return self.body:getLinearVelocity()
+		local cx, cy = self.body:getLinearVelocity()
+		return vec3(cx, self.ay, cy)
 	end,
 	
 	applyForce = function(self, fx, fy)
@@ -71,6 +72,8 @@ local worldMeta = {
 				c.topY = false
 				c.bottomY = false
 				c.groundNormal = false
+				
+				c.collided = false
 			end
 		end
 		
@@ -83,7 +86,7 @@ local worldMeta = {
 				if c.bottomY and c.topY and c.topY - c.bottomY < c.shape.height then
 					c.y = c.oldY
 					c.ay = 0
-					c.body:setPosition(c.oldX, c.oldZ)
+					c.body:setPosition(c.oldX or 0, c.oldZ or 0)
 					c.body:setLinearVelocity(0, 0)
 					c.pre_oldX, c.pre_oldZ = c.oldX, c.oldZ
 					c.newY = nil
@@ -93,11 +96,7 @@ local worldMeta = {
 				--perform step
 				if c.newY then
 					c.y = c.newY
-					if c.groundNormal and love.keyboard.isDown("space") then
-						c.ay = 5
-					else
-						c.ay = 0
-					end
+					c.ay = 0
 				end
 			end
 		end
@@ -170,6 +169,7 @@ local function attemptSolve(a, b)
 		if diff > 0 and diff < stepSize then
 			colliderA.newY = math.min(colliderA.newY or colliderA.y, l - colliderA.shape.height)
 		elseif diff > 0 then
+			colliderA.collided = true
 			return true
 		end
 		
@@ -184,6 +184,7 @@ local function attemptSolve(a, b)
 			local normal = (n[1] * w1 + n[2] * w2 + n[3] * w3):normalize()
 			colliderA.groundNormal = colliderA.groundNormal and colliderA.groundNormal + normal or normal
 		elseif diff > 0 then
+			colliderA.collided = true
 			return true
 		end
 		
@@ -214,7 +215,7 @@ local function preSolve(a, b, c)
 end
 
 --creates a new world
-function p.newWorld()
+function p:newWorld()
 	local w = { }
 	
 	w.world = love.physics.newWorld(0, 0, false)

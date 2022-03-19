@@ -3,7 +3,8 @@ local lib = _3DreamEngine
 local shapeModes = {
 	height = true,
 	simple = true,
-	complex = true
+	complex = true,
+	wall = true
 }
 
 function lib:newCollider(mesh)

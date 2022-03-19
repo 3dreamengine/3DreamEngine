@@ -9,8 +9,6 @@ sh.func = "sampleShadowPointDynamic"
 function sh:constructDefinesGlobal(dream)
 	return [[
 	float sampleShadowPointDynamic(vec3 lightVec, samplerCube tex) {
-		float sharpness = 10.0;
-		
 		float depth = length(lightVec);
 		float bias = depth * 0.01 + 0.01;
 		

@@ -86,7 +86,7 @@ function job:execute(light)
 			end
 		else
 			--static shadow
-			if not light.shadow.rendered then
+			if not light.shadow.rendered or not light.shadow.static then
 				local pass = nil
 				if light.shadow.static  then
 					pass = false

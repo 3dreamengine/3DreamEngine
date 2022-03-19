@@ -128,7 +128,9 @@ function lib:loadObject(path, args)
 	for _,typ in ipairs(lib.supportedFiles) do
 		if found[typ] then
 			--load object
+			self.deltonLoad:start("parser")
 			local failed = self.loader[typ](self, obj, path .. "." .. typ)
+			self.deltonLoad:stop()
 			
 			--skip furhter modifying and exporting if already packed as 3do
 			--also skips mesh loading since it is done manually
@@ -195,8 +197,10 @@ function lib:loadObject(path, args)
 					end
 					if difference > 10^-10 then
 						print(string.format("Warning: two meshes (%s and %s) within the same object (%s) have different transforms!", id, next(o.meshes), mesh.name))
+						mesh.transform = o:getInvertedTransform() * mesh.transform
+					else
+						mesh.transform = nil
 					end
-					mesh.transform = nil
 				end
 				
 				obj.meshes[id] = nil
@@ -256,31 +260,29 @@ function lib:processObject(obj)
 	for d,m in pairs(obj.meshes) do
 		if m.tags.pos then
 			--average position
-			local x, y, z = 0, 0, 0
+			local pos = vec3()
 			for i,v in ipairs(m.vertices) do
-				x = x + v[1]
-				y = y + v[2]
-				z = z + v[3]
+				pos = pos + v
 			end
 			local c = #m.vertices
-			x = x / c
-			y = y / c
-			z = z / c
+			pos = pos / c
 			
 			--average size
 			local r = 0
 			for i,v in ipairs(m.vertices) do
-				r = r + math.sqrt((v[1] - x)^2 + (v[2] - y)^2 + (v[3] - z)^2)
+				r = r + (pos - v):length()
 			end
 			r = r / c
+			
+			if m.transform then
+				pos = m.transform * pos
+			end
 			
 			--add position
 			table.insert(obj.positions, {
 				name = type(m.tags.pos) == "string" and m.tags.pos or m.name,
 				size = r,
-				x = x,
-				y = y,
-				z = z,
+				position = pos,
 			})
 			obj.meshes[d] = nil
 		end
@@ -331,7 +333,7 @@ function lib:processObject(obj)
 			--store link
 			obj.linkedObjects = obj.linkedObjects or { }
 			table.insert(obj.linkedObjects, {
-				source = o.name,
+				source = type(o.tags.link) == "string" and o.tags.link or o.name,
 				transform = o.transform
 			})
 		end

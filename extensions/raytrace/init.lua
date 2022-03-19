@@ -265,8 +265,9 @@ function raytrace:raytrace(object, origin, direction, filterTags, inner)
 		
 		--raytrace
 		local old = maxT
+		local oldF = maxF
 		raytraceTree(localOrigin, localDirection, object.raytraceTree)
-		if old ~= maxT then
+		if old ~= maxT or oldF ~= maxF then
 			nearestObject = object
 		end
 	else

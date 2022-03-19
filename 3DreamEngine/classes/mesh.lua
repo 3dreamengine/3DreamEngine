@@ -28,7 +28,7 @@ function lib:newMesh(name, material, meshType)
 end
 
 local class = {
-	link = {"clone", "shader", "visibility", "mesh"},
+	link = {"clone", "transform", "shader", "visibility", "mesh"},
 }
 
 function class:setName(name)
@@ -356,6 +356,8 @@ function class:encode(meshCache, dataStrings)
 	--export buffer data
 	data["weights"] = self.weights
 	data["joints"] = self.joints
+	data["jointNames"] = self.jointNames
+	data["inverseBindMatrices"] = self.inverseBindMatrices
 	data["vertices"] = self.vertices
 	data["normals"] = self.normals
 	data["faces"] = self.faces
@@ -458,6 +460,13 @@ function class:decode(meshData)
 		if type(s) == "table" and type(s.vertices) == "number" then
 			s.vertexMap = s.vertexMap and meshData[s.vertexMap]
 			s.vertices = meshData[s.vertices]
+		end
+	end
+	
+	--restore matrices
+	if self.inverseBindMatrices then
+		for i,v in ipairs(self.inverseBindMatrices) do
+			self.inverseBindMatrices[i] = mat4(v)
 		end
 	end
 	

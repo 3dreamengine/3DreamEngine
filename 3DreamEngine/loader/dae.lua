@@ -347,6 +347,7 @@ return function(self, obj, path)
 				
 				skel[name] = {
 					name = name,
+					transform = getTransform(s),
 				}
 				
 				if s.node then

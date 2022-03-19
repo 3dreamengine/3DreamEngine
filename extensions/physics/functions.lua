@@ -1,5 +1,5 @@
 --[[
-#part of the 3DreamEngine by Luke100000
+#part of the 3DreamEngine by Lukehuge000
 physicsFunctions.lua - contains physics library relevant functions
 --]]
 
@@ -68,6 +68,9 @@ function lib:getMeshPhysicsObject(phy, transform)
 	
 	local normalThreshold = 0.0001
 	
+	--todo math.huge cause mathematical problems, investogate
+	local huge = 1000
+	
 	--create vertex group for faster access
 	lib.deltonLoad:start("height")
 	local grid = { }
@@ -109,7 +112,7 @@ function lib:getMeshPhysicsObject(phy, transform)
 	for side = 1, 2 do
 		for i,verts in pairs(side == 1 and verts_top or verts_bottom) do
 			if phy.shapeMode == "height" then
-				opposite[i] = -math.huge
+				opposite[i] = -huge
 			elseif phy.shapeMode == "simple" then
 				opposite[i] = lowest
 			else
@@ -210,19 +213,35 @@ function lib:getMeshPhysicsObject(phy, transform)
 						normals[translation[3]] * (side and 1 or -1),
 					})
 					
-					--triangle height
-					table.insert(n[side and "highest" or "lowest"], {
-						vertices[translation[1]].y,
-						vertices[translation[2]].y,
-						vertices[translation[3]].y,
-					})
-					
-					--triangle lowest
-					table.insert(n[side and "lowest" or "highest"], {
-						opposite[translation[1]],
-						opposite[translation[2]],
-						opposite[translation[3]],
-					})
+					if phy.shapeMode == "wall" then
+						--triangle height
+						table.insert(n[side and "highest" or "lowest"], {
+							side and huge or -huge,
+							side and huge or -huge,
+							side and huge or -huge,
+						})
+						
+						--triangle lowest
+						table.insert(n[side and "lowest" or "highest"], {
+							side and -huge or huge,
+							side and -huge or huge,
+							side and -huge or huge,
+						})
+					else
+						--triangle height
+						table.insert(n[side and "highest" or "lowest"], {
+							vertices[translation[1]].y,
+							vertices[translation[2]].y,
+							vertices[translation[3]].y,
+						})
+						
+						--triangle lowest
+						table.insert(n[side and "lowest" or "highest"], {
+							opposite[translation[1]],
+							opposite[translation[2]],
+							opposite[translation[3]],
+						})
+					end
 				end
 			end
 		end

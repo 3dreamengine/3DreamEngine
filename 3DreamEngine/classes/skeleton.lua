@@ -2,6 +2,7 @@ local lib = _3DreamEngine
 
 local function verfiyBones(bones)
 	for _, bone in pairs(bones) do
+		bone.transform = bone.transform and mat4(bone.transform)
 		if bone.children then
 			verfiyBones(bone.children)
 		end
@@ -51,7 +52,7 @@ function class:applyPoseToNode(nodes, pose, parentTransform)
 			poseTransform[12] = pos[3]
 			self.transforms[name] = parentTransform and parentTransform * poseTransform or poseTransform
 		else
-			self.transforms[name] = parentTransform
+			self.transforms[name] = parentTransform and (parentTransform * joint.transform) or joint.transform
 		end
 		
 		if joint.children then
