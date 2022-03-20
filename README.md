@@ -4,7 +4,7 @@
 # Features
 * easy to use yet powerful 3D extension to LÖVE
 * fast forward rendering with alpha pass
-* Metallness workflow (albedo, normal, roughness, metallic, ao, emission)
+* metallness workflow (albedo, normal, roughness, metallic, ao, emission)
 * HDR with bloom
 * refractions
 * screen space ambient occlusion (ssao)
@@ -13,7 +13,6 @@
 * particle batches and single sprites
 * particle/foliage systems
 * simple custom shaders
-* dynamic clouds, sun, moon, stars and rainbows
 * eye adaption effect
 * cascade shadow mapping
 * cubemap shadow mapping
@@ -26,6 +25,7 @@
 * optional high performance file format to accelerate loading times
 * included optimized vec2, vec3, vec4, mat2, mat3 and mat4 library
 * Box2D extension to support basic 3D collisions
+* dynamic clouds, sun, moon, stars and rainbows
 
 ![screenshots](https://raw.githubusercontent.com/3dreamengine/3DreamEngine/master/screenshots.jpg)
 
@@ -48,41 +48,38 @@ dream = require("3DreamEngine")
 --optionally set settings
 dream:setBloom(3)
 
---inits (applies settings)
+--init (applies settings)
 dream:init()
 
 --loads a object
 yourObject = dream:loadObject("examples/monkey/object")
 
 --creates a light
-light = dream:newLight("point", 1, 2, 3, 1.0, 0.75, 0.2)
+light = dream:newLight("point", vec3(3, 2, 1), vec3(1.0, 0.75, 0.2), 50.0)
 
 --add shadow to light source
 light:addShadow()
 
 function love.draw()
-  --reset lighting to default sun
-  dream:resetLight()
+	--prepare for rendering
+	dream:prepare()
 
-  --add light
-  dream:addLight(light)  
-  
-  --prepare for rendering
-  dream:prepare()  
+	--add light
+	dream:addLight(light) 
 
-  --rotate, offset and draw
-  yourObject:reset()  
-  yourObject:rotateY(love.timer.getTime())
-  yourObject:translate(0, 0, -3)
-  dream:draw(yourObject)
+	--rotate, offset and draw
+	yourObject:reset() 
+	yourObject:rotateY(love.timer.getTime())
+	yourObject:translate(0, 0, -3)
+	dream:draw(yourObject)
 
-  --render
-  dream:present()
+	--render
+	dream:present()
 end
 
 function love.update()
-  --update resource loader
-  dream:update()
+	--update resource loader
+	dream:update()
 end
 ```
 

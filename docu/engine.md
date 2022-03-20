@@ -18,7 +18,7 @@ While it's possible to create an own object loader, the recommended way to use 3
 
 In other words, avoid setting materials or shaders after loading. In most cases it works fine, but some shaders do not work on final (cleaned up) objects.
 
-Your draw/update code should look something liek that:
+Your draw/update code should look something like that:
 
 ```lua
 function love.draw()
@@ -57,7 +57,7 @@ It makes sense to use a material loader instead, e.g. the inbuilt [`lib:loadMate
 * a material description file `materialName.mat`
 
 The first two directories should contain following textures (they have to contain the type in their file name)
-* albedo (rgb))
+* albedo (rgb)
 * normal (xyz)
 * roughness (r)
 * metallic (r)
