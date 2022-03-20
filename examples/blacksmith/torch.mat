@@ -3,15 +3,15 @@ return {
 	{
 		name = "Coal",
 		metallic = 0.0,
-		tex_albedo = "textures/coal_albedo",
-		tex_emission = "textures/coal_emission",
+		albedoTexture = "textures/coal_albedo",
+		emissionTexture = "textures/coal_emission",
 		emission = {2.0, 2.0, 2.0},
 	},
 	{
 		name = "Iron",
-		tex_albedo = "textures/iron_albedo",
-		tex_metallic = "textures/iron_metallic",
-		tex_normal = "textures/iron_normal",
-		tex_roughness = "textures/iron_roughness",
+		albedoTexture = "textures/iron_albedo",
+		metallicTexture = "textures/iron_metallic",
+		normalTexture = "textures/iron_normal",
+		roughnessTexture = "textures/iron_roughness",
 	},
 }

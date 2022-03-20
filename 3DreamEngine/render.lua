@@ -6,110 +6,50 @@ local lib = _3DreamEngine
 
 --rendering stats
 lib.stats = {
+	vertices = 0,
 	shadersInUse = 0,
-	lightSetups = 0,
-	materialDraws = 0,
+	materialsUsed = 0,
 	draws = 0,
 }
 
-local sortPosition = vec3(0, 0, 0)
+--sorting function for the alpha pass
 local function sortFunction(a, b)
-	return (a.pos - sortPosition):lengthSquared() > (b.pos - sortPosition):lengthSquared()
+	return a:getDistance() > b:getDistance()
 end
 
-function lib:sendFogData(shader)
-	shader:send("fog_density", self.fog_density)
-	shader:send("fog_color", self.fog_color)
-	shader:send("fog_sun", self.sun)
-	shader:send("fog_sunColor", self.sun_color)
-	shader:send("fog_scatter", self.fog_scatter)
-	shader:send("fog_min", self.fog_min)
-	shader:send("fog_max", self.fog_max)
-end
-
---use active scenes, current canvas set, the usage type and an optional blacklist to create a final, ready to render scene
---typ is the final scene typ and may be 'render', 'shadows' or 'reflections'
-function lib:buildScene(cam, canvases, typ, blacklist)
-	local scene = {
-		solid = { },
-		alpha = typ ~= "shadows" and { } or false,
-		lights = { }
-	}
+function lib:buildScene(typ, dynamic, alpha, cam, blacklist, frustumCheck, noSmallObjects)
+	self.delton:start("scene")
 	
-	--update required acceleration data
-	if self.activeFrustum == self.inFrustum then
-		cam:updateFrustumAngle(canvases.width and canvases.width / canvases.height or 1)
-	elseif self.activeFrustum == self.planeInFrustum then
-		cam:updateFrustumPlanes()
+	--preprocess scenes to group together shader
+	local groups = { }
+	for sc, _ in pairs(self.scenes) do
+		for dyn = dynamic == false and 2 or 1, dynamic == true and 1 or 2 do
+			for shaderID, shaderGroup in pairs(sc.tasks[typ][dyn][alpha and 1 or 2]) do
+				for materialID, materialGroup in pairs(shaderGroup) do
+					if not groups[shaderID] then
+						groups[shaderID] = { }
+					end
+					if groups[shaderID][materialID] then
+						table.insert(groups[shaderID][materialID], materialGroup)
+					else
+						groups[shaderID][materialID] = {materialGroup}
+					end
+				end
+			end
+		end
 	end
 	
-	--add to scene
-	local LODFactor = 10 / self.LODDistance
-	local noFrustumCheck = cam.noFrustumCheck or not self.activeFrustum
-	for sc,_ in pairs(self.scenes) do
-		if not sc.visibility or sc.visibility[typ] then
-			--get light setup per scene
-			local light
-			if typ ~= "shadow" then
-				light = self:getLightOverview(cam)
-				scene.lights[light.ID] = light
-			end
-			
-			for _,task in ipairs(sc.tasks) do
-				local obj = task:getObj()
-				local subObj = task:getS()
-				if not blacklist or not (blacklist[obj] or blacklist[subObj]) then
-					local visibility = subObj.visibility or obj.visibility
-					if not visibility or visibility[typ] then
-						local mat = subObj.material
-						if typ ~= "shadows" or mat.shadow ~= false then
-							local solid = (mat.solid or not canvases.alphaPass) and 1 or 2
-							local alpha = canvases.alphaPass and mat.alpha and typ ~= "shadows" and 2 or 1
-							for pass = solid, alpha do
-								local scene = (not canvases.alphaPass or pass == 1) and scene.solid or scene.alpha
-								local LOD = subObj.LOD or obj.LOD
-								if not LOD or LOD[math.min( math.floor((task:getPos() - cam.pos):length() * LODFactor) + 1, 9 )] then
-									if noFrustumCheck or not subObj.boundingBox or self:activeFrustum(cam, task:getPos(), task:getSize(), subObj) then
-										if subObj.loaded then
-											local shader = self:getRenderShader(subObj, pass, canvases, light, typ == "shadows")
-											local lightID = light.ID
-											
-											--group shader and materials together to reduce shader switches
-											if not scene[shader] then
-												scene[shader] = { }
-											end
-											
-											if typ == "shadows" then
-												table.insert(scene[shader], task)
-											else
-												if not scene[shader][lightID] then
-													scene[shader][lightID] = { }
-												end
-												if not scene[shader][lightID][mat] then
-													scene[shader][lightID][mat] = { }
-												end
-												
-												--add
-												table.insert(scene[shader][lightID][mat], task)
-												
-												--reflections
-												if typ == "render" then
-													local reflection = subObj.reflection or obj.reflection
-													if reflection and reflection.canvas then
-														self.reflections[reflection] = {
-															dist = (task:getPos() - cam.pos):length(),
-															obj = subObj.reflection and subObj or obj,
-															pos = reflection.pos or task:getPos(),
-														}
-													end
-												end
-											end
-										elseif subObj.request then
-											subObj:request()
-										end
-									end
-								end
-							end
+	--build sorted scene list
+	local scene = { }
+	for shaderID, shaderGroup in pairs(groups) do
+		for materialID, materialGroups in pairs(shaderGroup) do
+			for _, materialGroup in ipairs(materialGroups) do
+				for _, task in pairs(materialGroup) do
+					local mesh = task:getMesh()
+					if mesh.mesh and (not blacklist or not blacklist[mesh]) and (not noSmallObjects or mesh.farVisibility ~= false) then
+						if not frustumCheck or not mesh.boundingBox.initialized or self:inFrustum(cam, task:getPos(), task:getSize(), mesh.rID) then
+							task:setShaderID(shaderID)
+							table.insert(scene, task)
 						end
 					end
 				end
@@ -118,24 +58,67 @@ function lib:buildScene(cam, canvases, typ, blacklist)
 	end
 	
 	--sort tables for materials requiring sorting
-	if scene.alpha then
-		sortPosition = cam.pos
-		for shader, shaderGroup in pairs(scene.alpha) do
-			for material, materialGroup in pairs(shaderGroup) do
-				table.sort(materialGroup, sortFunction)
-			end
+	if alpha then
+		self.delton:start("sort")
+		for d,task in ipairs(scene) do
+			local dist = (task:getPos() - cam.pos):lengthSquared()
+			task:setDistance(dist)
 		end
+		table.sort(scene, sortFunction)
+		self.delton:stop()
 	end
 	
+	self.delton:stop()
 	return scene
 end
 
---render the scene onto a canvas set using a specific view camera
-function lib:render(scene, canvases, cam)
-	self.delton:start("prepare")
+--sends fog relevant data to the given shader
+local function sendFogData(shader)
+	local direction = vec3()
+	local color = vec3()
+	for _,light in ipairs(lib.lighting) do
+		if light.typ == "sun" then
+			direction = light.direction
+			color = light.color
+		end
+	end
 	
-	--love shader friendly
-	local viewPos = {cam.pos:unpack()}
+	shader:send("fog_density", lib.fog_density)
+	shader:send("fog_color", lib.fog_color)
+	shader:send("fog_sun", direction)
+	shader:send("fog_sunColor", color)
+	shader:send("fog_scatter", lib.fog_scatter)
+	shader:send("fog_min", lib.fog_min)
+	shader:send("fog_max", lib.fog_max)
+end
+
+--improve speed of uniform check
+function hasUniform(shaderObject, name)
+	local uniforms = shaderObject.uniforms
+	if uniforms[name] == nil then
+		uniforms[name] = shaderObject.shader:hasUniform(name)
+	end
+	return uniforms[name]
+end
+
+--checks if this uniform exists and sends
+local function checkAndSend(shader, name, value)
+	if shader:hasUniform(name) then
+		shader:send(name, value)
+	end
+end
+
+--checks if this uniform exists and sends if not already cached
+function checkAndSendCached(shaderObject, name, value)
+	if hasUniform(shaderObject, name) and shaderObject.cache[name] ~= value then
+		shaderObject.shader:send(name, value)
+		shaderObject.cache[name] = value
+	end
+end
+
+--render the scene onto a canvas set using a specific view camera
+function lib:render(canvases, cam)
+	self.delton:start("prepare")
 	
 	--and set canvases
 	love.graphics.push("all")
@@ -143,283 +126,342 @@ function lib:render(scene, canvases, cam)
 		love.graphics.reset()
 	end
 	
-	--clear canvases
+	--clear depth
 	if canvases.mode ~= "direct" then
 		love.graphics.setCanvas({canvases.color, canvases.depth, depthstencil = canvases.depth_buffer})
+		
 		love.graphics.setDepthMode()
 		love.graphics.clear(false, false, true)
 	end
 	
 	--render sky
-	self:renderSky(cam.transformProjOrigin, cam.transform, (cam.near + cam.far) / 2)
+	self:renderSky(cam.transformProjOrigin, cam:getInvertedTransform(), (cam.near + cam.far) / 2)
+	
+	--update required acceleration data
+	local frustumCheck = self.frustumCheck and not cam.noFrustumCheck
+	if frustumCheck then
+		cam:updateFrustumPlanes()
+	end
+	
+	--get light setup
+	local light = self:getLightOverview(cam)
 	
 	self.delton:stop()
 	
+	--current state
+	local lastMaterial
+	local lastReflection
+	local sessionID = math.random()
+	
 	--start both passes
 	for pass = 1, canvases.alphaPass and 2 or 1 do
+		local shader
+		local shaderObject
+		local lastShader
+		
+		--setup final scene
+		local scene = self:buildScene("render", dynamic, pass == 2, cam, nil, frustumCheck)
+		
 		--only first pass writes depth
 		love.graphics.setDepthMode("less", pass == 1)
-		if canvases.averageAlpha and pass == 2 then
-			love.graphics.setBlendMode("add")
+		
+		--set correct blend mode
+		if canvases.refractions and pass == 2 then
+			love.graphics.setBlendMode("alpha", "premultiplied")
 		else
-			love.graphics.setBlendMode("alpha", canvases.averageAlpha and "premultiplied" or "alphamultiply")
+			love.graphics.setBlendMode("alpha", "alphamultiply")
 		end
 		
-		--set canvases
-		local dataAlpha = canvases.averageAlpha and pass == 2
-		if canvases.mode ~= "direct" then
-			if dataAlpha then
-				--average alpha
-				love.graphics.setCanvas({canvases.colorAlpha, canvases.dataAlpha, depthstencil = canvases.depth_buffer})
-				love.graphics.clear(true, false, false)
-			elseif canvases.refractions and pass == 2 then
+		--set alpha pass canvases
+		if canvases.mode ~= "direct" and pass == 2 then
+			if canvases.refractions then
 				--refractions only
-				love.graphics.setCanvas({canvases.colorAlpha, depthstencil = canvases.depth_buffer})
+				love.graphics.setCanvas({canvases.colorAlpha, canvases.distortion, depthstencil = canvases.depth_buffer})
 				love.graphics.clear(true, false, false)
+			else
+				--disable depth
+				love.graphics.setCanvas({canvases.color, depthstencil = canvases.depth_buffer})
 			end
 		end
 		
-		--final draw
-		for shaderObject, shaderGroup in pairs(pass == 1 and scene.solid or scene.alpha) do
-			self.delton:start("shader")
-			local shader = shaderObject.shader
+		--start rendering
+		self.delton:start("render")
+		for d,task in ipairs(scene) do
+			local mesh = task:getMesh()
+			local shaderID = task:getShaderID()
 			
-			--output settings
-			love.graphics.setShader(shader)
-			if shader:hasUniform("dataAlpha") then
-				shader:send("dataAlpha", dataAlpha)
+			--reflections
+			local ref = task:getReflection()
+			if ref and ref.canvas then
+				self.reflections[ref] = ref.pos or task:getPos(mesh)
 			end
 			
-			--shader
-			local shaderEntry = self.shaderLibrary.base[shaderObject.shaderType]
-			shaderEntry:perShader(self, shaderObject)
-			for d,s in pairs(shaderObject.modules) do
-				s:perShader(self, shaderObject)
-			end
-			
-			--fog
-			if shader:hasUniform("fog_density") then
-				self:sendFogData(shader)
-			end
-			
-			--framebuffer
-			if shader:hasUniform("tex_depth") then
-				shader:send("tex_depth", canvases.depth)
-				shader:send("tex_color", canvases.color)
-				shader:send("screenScale", {1 / canvases.width, 1 / canvases.height})
-			end
-			
-			if shader:hasUniform("gamma") then shader:send("gamma", self.gamma) end
-			if shader:hasUniform("exposure") then shader:send("exposure", self.exposure) end
-			
-			--camera
-			shader:send("transformProj", cam.transformProj)
-			if shader:hasUniform("viewPos") then
-				shader:send("viewPos", viewPos)
-			end
-			
-			if not shaderObject.reflection then
-				shader:send("ambient", self.sun_ambient)
-			end
-			
-			--for each light setup
-			for lightID, lightGroup in pairs(shaderGroup) do
-				self.delton:start("light")
+			--set active shader
+			if lastShader ~= shaderID then
+				lastShader = shaderID
+				lastMaterial = false
+				lastReflection = false
+				self.delton:start("shader")
 				
-				--light if using forward lighting
-				self:sendLightUniforms(scene.lights[lightID], shaderObject)
+				shaderObject = self:getRenderShader(shaderID, mesh, pass, canvases, light, false)
+				shader = shaderObject.shader
+				if shaderObject.sessionID ~= sessionID then
+					shaderObject.session = { }
+					shaderObject.cache = shaderObject.cache or { }
+				end
+				love.graphics.setShader(shader)
 				
-				--for each material
-				for material, materialGroup in pairs(lightGroup) do
-					self.delton:start("material")
+				if not shaderObject.session.init then
+					shaderObject.session.init = true
 					
-					--alpha
-					if shader:hasUniform("isSemi") then
-						shader:send("isSemi", canvases.alphaPass and material.solid and material.alpha and 1 or 0)
-					end
-					if shader:hasUniform("dither") then
-						if material.dither == nil then
-							shader:send("dither", self.dither and 1 or 0)
-						else
-							shader:send("dither", material.dither and 1 or 0)
-						end
-					end
+					--light setup
+					self:sendLightUniforms(light, shaderObject)
 					
-					--ior
-					if shader:hasUniform("ior") then
-						shader:send("ior", 1.0 / material.ior)
-					end
-					
-					if shader:hasUniform("translucent") then
-						shader:send("translucent", material.translucent)
+					--output settings
+					if hasUniform(shaderObject, "dataAlpha") then
+						shader:send("dataAlpha", dataAlpha)
 					end
 					
 					--shader
-					shaderEntry:perMaterial(self, shaderObject, material)
-					for d,s in pairs(shaderObject.modules) do
-						s:perMaterial(self, shaderObject, material)
+					shaderObject.pixelShader:perShader(self, shaderObject)
+					shaderObject.vertexShader:perShader(self, shaderObject)
+					shaderObject.worldShader:perShader(self, shaderObject)
+					
+					--fog
+					if hasUniform(shaderObject, "fog_density") then
+						sendFogData(shader)
 					end
 					
-					--culling
-					love.graphics.setMeshCullMode(canvases.cullMode or material.cullMode or "back")
-					
-					--draw objects
-					for _,task in pairs(materialGroup) do
-						local obj = task:getObj()
-						local subObj = task:getS()
-						
-						--sky texture
-						if shaderObject.reflection then
-							local ref = subObj.reflection or obj.reflection or (type(self.sky_reflection) == "table" and self.sky_reflection)
-							local tex = ref and (ref.image or ref.canvas)
-							if not tex and self.sky_reflection then
-								--use sky dome
-								tex = self.sky_reflectionCanvas
-							end
-							
-							shader:send("tex_background", tex or self.textures.sky_fallback)
-							shader:send("reflections_levels", (ref and ref.levels or self.reflections_levels) - 1)
-							
-							--box for local cubemaps
-							if ref and ref.first then
-								shader:send("reflections_enabled", true)
-								shader:send("reflections_pos", ref.pos)
-								shader:send("reflections_first", ref.first)
-								shader:send("reflections_second", ref.second)
-							else
-								shader:send("reflections_enabled", false)
-							end
-						end
-						
-						--object transformation
-						shader:send("transform", task:getTransform())
-						
-						--shader
-						shaderEntry:perTask(self, shaderObject, task)
-						for d,s in pairs(shaderObject.modules) do
-							s:perTask(self, shaderObject, task)
-						end
-						
-						--render
-						love.graphics.setColor(task:getColor())
-						love.graphics.draw(subObj.mesh)
-						
-						self.stats.draws = self.stats.draws + 1
+					--framebuffer
+					if hasUniform(shaderObject, "depthTexture") then
+						shader:send("depthTexture", canvases.depth)
 					end
-					self.stats.materialDraws = self.stats.materialDraws + 1
-					self.delton:stop()
+					
+					checkAndSendCached(shaderObject, "exposure", self.exposure)
+					
+					--camera
+					shader:send("transformProj", cam.transformProj)
+					checkAndSendCached(shaderObject, "viewPos", cam.pos)
+					
+					checkAndSendCached(shaderObject, "ambient", self.sun_ambient)
 				end
-				self.stats.lightSetups = self.stats.lightSetups + 1
+				
 				self.delton:stop()
+				self.stats.shadersInUse = self.stats.shadersInUse + 1
 			end
-			self.stats.shadersInUse = self.stats.shadersInUse + 1
-			self.delton:stop()
+			
+			--set active material
+			local material = mesh.material
+			if lastMaterial ~= material then
+				lastMaterial = material
+				
+				--alpha
+				checkAndSendCached(shaderObject, "dither", material.dither and 1 or 0)
+				
+				checkAndSendCached(shaderObject, "translucent", material.translucent)
+				
+				--shader
+				shaderObject.pixelShader:perMaterial(self, shaderObject, material)
+				shaderObject.vertexShader:perMaterial(self, shaderObject, material)
+				shaderObject.worldShader:perMaterial(self, shaderObject, material)
+				
+				--culling
+				love.graphics.setMeshCullMode(canvases.cullMode or material.cullMode or "back")
+				
+				self.stats.materialsUsed = self.stats.materialsUsed + 1
+			end
+			
+			--reflection
+			if shaderObject.reflection then
+				local ref = task:getReflection() or (type(self.defaultReflection) == "table" and self.defaultReflection)
+				local tex = ref and (ref.image or ref.canvas) or self.defaultReflection and self.defaultReflectionCanvas or self.textures.skyFallback
+				if lastReflection ~= tex then
+					lastReflection = tex
+					
+					shader:send("backgroundTexture", tex)
+					shader:send("reflectionsLevels", (ref and ref.levels or self.reflectionsLevels) - 1)
+					
+					--box for local cubemaps
+					if ref and ref.first then
+						shader:send("reflectionsBoxed", true)
+						shader:send("reflectionsPos", ref.pos)
+						shader:send("reflectionsFirst", ref.first)
+						shader:send("reflectionsSecond", ref.second)
+					else
+						shader:send("reflectionsBoxed", false)
+					end
+				end
+			end
+			
+			--object transformation
+			shader:send("transform", task:getTransform())
+			
+			--shader
+			if not mesh.shadersInitialized then
+				mesh:initShaders()
+			end
+			
+			--per task
+			shaderObject.pixelShader:perTask(self, shaderObject, task)
+			shaderObject.vertexShader:perTask(self, shaderObject, task)
+			shaderObject.worldShader:perTask(self, shaderObject, task)
+			
+			--render
+			local objectMesh = mesh:getMesh("mesh")
+			local instanceMesh = mesh:getMesh("instanceMesh")
+			if instanceMesh then
+				objectMesh:attachAttribute("InstanceRotation0", instanceMesh, "perinstance")
+				objectMesh:attachAttribute("InstanceRotation1", instanceMesh, "perinstance")
+				objectMesh:attachAttribute("InstanceRotation2", instanceMesh, "perinstance")
+				objectMesh:attachAttribute("InstancePosition", instanceMesh, "perinstance")
+				love.graphics.drawInstanced(objectMesh, instanceMesh:getVertexCount())
+			else
+				love.graphics.draw(objectMesh)
+			end
+			
+			--stats
+			self.stats.draws = self.stats.draws + 1
+			mesh.meshVertexCount = mesh.meshVertexCount or objectMesh:getVertexCount()
+			self.stats.vertices = self.stats.vertices + mesh.meshVertexCount
 		end
-		love.graphics.setColor(1.0, 1.0, 1.0)
-	end
-	
-	--particles on the alpha pass
-	self.delton:start("particles")
-	local light = self:getLightOverview(cam)
-	for e = 1, 2 do
-		local emissive = e == 1
+		self.delton:stop()
 		
-		--batches
-		if self.particleBatchesActive[emissive] then
-			local shaderObject = lib:getParticlesShader(canvases, light, emissive)
-			local shader = shaderObject.shader
-			love.graphics.setShader(shader)
-			
-			shader:send("transformProj", cam.transformProj)
-			if shader:hasUniform("viewPos") then shader:send("viewPos", {cam.pos:unpack()}) end
-			if shader:hasUniform("gamma") then shader:send("gamma", self.gamma) end
-			if shader:hasUniform("exposure") then shader:send("exposure", self.exposure) end
-			
-			--light if using forward lighting
-			self:sendLightUniforms(light, shaderObject)
-			
-			--fog
-			if shader:hasUniform("fog_density") then
-				self:sendFogData(shader)
-			end
-			
-			--render particle batches
-			for batch,_ in pairs(self.particleBatches) do
-				if (batch.emissionTexture and true or false) == emissive then
+		
+		--particles on the alpha pass
+		if dynamic ~= false then
+			love.graphics.setColor(1.0, 1.0, 1.0)
+			self.delton:start("particles")
+			for ID, batches in pairs(self.particleBatches[pass]) do
+				local emissive = ID == 2 or ID == 4
+				local distortion = ID == 3 or ID == 4
+				
+				--batches
+				local shaderObject = lib:getParticlesShader(pass, canvases, light, emissive, distortion)
+				local shader = shaderObject.shader
+				shaderObject.cache = shaderObject.cache or { }
+				love.graphics.setShader(shader)
+				
+				shader:send("transformProj", cam.transformProj)
+				if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", cam.pos) end
+				checkAndSendCached(shaderObject, "exposure", self.exposure)
+				checkAndSendCached(shaderObject, "ambient", self.sun_ambient)
+				
+				--light
+				self:sendLightUniforms(light, shaderObject)
+				
+				--fog
+				if hasUniform(shaderObject, "fog_density") then
+					sendFogData(shader)
+				end
+				
+				--render particle batches
+				for batch,_ in pairs(batches) do
 					local v = 1.0 - batch.vertical
 					local right = vec3(cam.transform[1], cam.transform[2] * v, cam.transform[3]):normalize()
 					local up = vec3(cam.transform[5] * v, cam.transform[6], cam.transform[7] * v)
-					shader:send("up", {up:unpack()})
-					shader:send("right", {right:unpack()})
+					shader:send("up", up)
+					shader:send("right", right)
 					
 					--emission texture
-					if shader:hasUniform("tex_emission") then
-						shader:send("tex_emission", batch.emissionTexture)
+					if hasUniform(shaderObject, "emissionTexture") then
+						shader:send("emissionTexture", batch.emissionTexture)
+					end
+					
+					--distortion texture
+					if hasUniform(shaderObject, "distortionTexture") then
+						shader:send("distortionTexture", batch.distortionTexture)
 					end
 					
 					batch:present(cam.pos)
 				end
 			end
-		end
-		
-		--single particles on the alpha pass
-		local p = emissive and self.particlesEmissive or self.particles
-		if p[1] then
-			local shaderObject = lib:getParticlesShader(canvases, light, emissive, true)
-			local shader = shaderObject.shader
-			love.graphics.setShader(shader)
 			
-			shader:send("transformProj", cam.transformProj)
-			shader:send("dataAlpha", canvases.averageAlpha)
-			if shader:hasUniform("viewPos") then shader:send("viewPos", {cam.pos:unpack()}) end
-			if shader:hasUniform("gamma") then shader:send("gamma", self.gamma) end
-			if shader:hasUniform("exposure") then shader:send("exposure", self.exposure) end
-			
-			--light if using forward lighting
-			self:sendLightUniforms(light, shaderObject)
-			
-			--fog
-			if shader:hasUniform("fog_density") then
-				self:sendFogData(shader)
-			end
-			
-			--render particles
-			for d,s in ipairs(p) do
-				local nr = #s - 6
-				local v = 1.0 - s[4 + nr]
-				local right = vec3(cam.transform[1], cam.transform[2] * v, cam.transform[3]):normalize()
-				local up = vec3(cam.transform[5] * v, cam.transform[6], cam.transform[7] * v)
+			--single particles on the alpha pass
+			for ID, p in pairs(self.particles[pass]) do
+				local emissive = ID == 2 or ID == 4
+				local distortion = ID == 3 or ID == 4
 				
-				shader:send("up", {up:unpack()})
-				shader:send("right", {right:unpack()})
+				local shaderObject = lib:getParticlesShader(pass, canvases, light, emissive, distortion, true)
+				local shader = shaderObject.shader
+				shaderObject.cache = shaderObject.cache or { }
+				love.graphics.setShader(shader)
 				
-				--position, size and emission multiplier
-				shader:send("InstanceCenter", s[2 + nr])
-				shader:send("InstanceEmission", s[5 + nr])
+				shader:send("transformProj", cam.transformProj)
+				if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", cam.pos) end
+				checkAndSendCached(shaderObject, "exposure", self.exposure)
+				checkAndSendCached(shaderObject, "ambient", self.sun_ambient)
 				
-				--emission texture
-				if shader:hasUniform("tex_emission") then
-					shader:send("tex_emission", s[2])
+				--light if using forward lighting
+				self:sendLightUniforms(light, shaderObject)
+				
+				--fog
+				if hasUniform(shaderObject, "fog_density") then
+					sendFogData(shader)
 				end
 				
-				--draw
-				love.graphics.setColor(s[3 + nr])
-				if s[1 + nr].getViewport then
-					love.graphics.draw(s[1], s[1 + nr], 0, 0, unpack(s[6 + nr]))
-				else
-					love.graphics.draw(s[1], 0, 0, unpack(s[6 + nr]))
+				--render particles
+				for d,s in ipairs(p) do
+					local v = 1 - s.vertical
+					local right = vec3(cam.transform[1], cam.transform[2] * v, cam.transform[3]):normalize()
+					local up = vec3(cam.transform[5] * v, cam.transform[6], cam.transform[7] * v)
+					
+					shader:send("up", up)
+					shader:send("right", right)
+					
+					--position, size and emission multiplier
+					shader:send("InstanceCenter", s.position)
+					shader:send("InstanceEmission", s.emission)
+					
+					--emission texture
+					if hasUniform(shaderObject, "emissionTexture") then
+						shader:send("emissionTexture", s.emissionTexture)
+					end
+					
+					--emission texture
+					if hasUniform(shaderObject, "distortionTexture") then
+						shader:send("distortionTexture", s.distortionTexture)
+						shader:send("InstanceDistortion", s.distortion)
+					end
+					
+					--draw
+					love.graphics.setColor(s.color)
+					if s.quad then
+						love.graphics.draw(s.texture, s.quad, 0, 0, s.transform[1], s.transform[2], s.transform[3], s.transform[4], s.transform[5])
+					else
+						love.graphics.draw(s.texture, 0, 0, s.transform[1], s.transform[2], s.transform[3], s.transform[4], s.transform[5])
+					end
 				end
 			end
+			self.delton:stop()
 		end
 	end
-	self.delton:stop()
+	
+	--godrays
+	if dynamics ~= false and self.godrays_enabled and canvases.depth then
+		self:renderGodrays(light, canvases, cam)
+	end
 	
 	love.graphics.pop()
 end
 
 --only renders a depth variant
-function lib:renderShadows(scene, cam, canvas, blacklist)
+function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects, smoothShadows)
 	self.delton:start("renderShadows")
+	
+	--update required acceleration data
+	local frustumCheck = self.frustumCheck and not cam.noFrustumCheck
+	if frustumCheck then
+		cam:updateFrustumPlanes()
+	end
+	
+	--get scene
+	local scene = self:buildScene("shadows", dynamic, false, cam, blacklist, frustumCheck, noSmallObjects)
+	
+	--current state
+	local shader
+	local shaderObject
+	local lastShader
+	local lastMaterial
 	
 	love.graphics.push("all")
 	love.graphics.reset()
@@ -427,49 +469,82 @@ function lib:renderShadows(scene, cam, canvas, blacklist)
 	love.graphics.setDepthMode("less", true)
 	love.graphics.setBlendMode("darken", "premultiplied")
 	love.graphics.setCanvas(canvas)
+	
+	--second pass for dynamics
+	if dynamic then
+		love.graphics.setColorMask(false, true, false, false)
+	elseif dynamic == false then
+		love.graphics.setColorMask(true, false, false, false)
+	end
 	love.graphics.clear(255, 255, 255, 255)
 	
-	--love shader friendly
-	local viewPos = {cam.pos:unpack()}
-	
-	--final draw
-	for shaderObject, shaderGroup in pairs(scene.solid) do
-		local shader = shaderObject.shader
-		love.graphics.setShader(shader)
+	--start rendering
+	for d,task in ipairs(scene) do
+		local mesh = task:getMesh()
+		local shaderID = task:getShaderID()
 		
-		--shader
-		for d,s in pairs(shaderObject.modules) do
-			s:perShader(self, shaderObject)
-		end
-		
-		--camera
-		shader:send("transformProj", cam.transformProj)
-		if shader:hasUniform("viewPos") then
-			shader:send("viewPos", viewPos)
-		end
-		
-		--for each task
-		for _, task in ipairs(shaderGroup) do
-			--object transformation
-			shader:send("transform", task:getTransform())
+		--set active shader
+		if lastShader ~= shaderID then
+			lastShader = shaderID
+			lastMaterial = false
+			lastReflection = false
 			
-			--shader
-			for d,s in pairs(shaderObject.modules) do
-				s:perTask(self, shaderObject, task)
+			shaderObject = self:getRenderShader(shaderID, mesh, pass, { }, nil, true, cam.sun)
+			shader = shaderObject.shader
+			shaderObject.session = { }
+			love.graphics.setShader(shader)
+			
+			--camera
+			shader:send("transformProj", cam.transformProj)
+			if hasUniform(shaderObject, "viewPos") then
+				shader:send("viewPos", cam.pos)
 			end
 			
-			--render
-			love.graphics.setColor(task:getColor())
-			love.graphics.draw(task:getS().mesh)
+			shaderObject.pixelShader:perShader(self, shaderObject)
+			shaderObject.vertexShader:perShader(self, shaderObject)
+			shaderObject.worldShader:perShader(self, shaderObject)
+		end
+		
+		--set active material
+		local material = mesh.material
+		if lastMaterial ~= material then
+			lastMaterial = material
+			
+			if hasUniform(shaderObject, "alphaTexture") then
+				shaderObject.shader:send("alphaTexture", self:getImage(material.albedoTexture) or self.textures.default)
+			end
+		end
+		
+		--object transformation
+		shader:send("transform", task:getTransform())
+		
+		--shader
+		shaderObject.pixelShader:perTask(self, shaderObject, task)
+		shaderObject.vertexShader:perTask(self, shaderObject, task)
+		shaderObject.worldShader:perTask(self, shaderObject, task)
+		
+		--render
+		local objectMesh = mesh:getMesh("mesh")
+		local instanceMesh = mesh:getMesh("instanceMesh")
+		if instanceMesh then
+			objectMesh:attachAttribute("InstanceRotation0", instanceMesh, "perinstance")
+			objectMesh:attachAttribute("InstanceRotation1", instanceMesh, "perinstance")
+			objectMesh:attachAttribute("InstanceRotation2", instanceMesh, "perinstance")
+			objectMesh:attachAttribute("InstancePosition", instanceMesh, "perinstance")
+			love.graphics.drawInstanced(objectMesh, instanceMesh:getVertexCount())
+		else
+			love.graphics.draw(objectMesh)
 		end
 	end
 	
-	self.delton:stop()
 	love.graphics.pop()
+	self.delton:stop()
+	
+	return scene
 end
 
---full render, including bloom, fxaa, exposure and gamma correction
-function lib:renderFull(scene, cam, canvases)
+--full render, including bloom, fxaa and exposure
+function lib:renderFull(cam, canvases)
 	love.graphics.push("all")
 	if canvases.mode ~= "direct" then
 		love.graphics.reset()
@@ -477,9 +552,10 @@ function lib:renderFull(scene, cam, canvases)
 	
 	--render
 	self.delton:start("render")
-	self:render(scene, canvases, cam)
+	self:render(canvases, cam)
 	self.delton:stop()
 	
+	--direct rendering has no post effects
 	if canvases.mode == "direct" then
 		love.graphics.pop()
 		return
@@ -490,18 +566,18 @@ function lib:renderFull(scene, cam, canvases)
 		love.graphics.setCanvas(canvases.AO_1)
 		love.graphics.clear()
 		love.graphics.setBlendMode("replace", "premultiplied")
-		love.graphics.setShader(self:getShader("SSAO"))
+		love.graphics.setShader(self:getBasicShader("SSAO"))
 		love.graphics.draw(canvases.depth, 0, 0, 0, self.AO_resolution)
 		
 		--blur
 		if self.AO_blur then
-			love.graphics.setShader(self:getShader("blur"))
-			self:getShader("blur"):send("dir", {1.0 / canvases.AO_1:getWidth(), 0.0})
+			love.graphics.setShader(self:getBasicShader("blur"))
+			self:getBasicShader("blur"):send("dir", {1.0 / canvases.AO_1:getWidth(), 0.0})
 			love.graphics.setCanvas(canvases.AO_2)
 			love.graphics.clear()
 			love.graphics.draw(canvases.AO_1)
 			
-			self:getShader("blur"):send("dir", {0.0, 1.0 / canvases.AO_1:getHeight()})
+			self:getBasicShader("blur"):send("dir", {0.0, 1.0 / canvases.AO_1:getHeight()})
 			
 			--without final, draw directly on color
 			if canvases.mode == "normal" then
@@ -515,7 +591,7 @@ function lib:renderFull(scene, cam, canvases)
 			end
 		elseif canvases.smode == "lite" then
 			--without final and blur, draw directly on color
-			love.graphics.setShader(self:getShader("rrr1"))
+			love.graphics.setShader(self:getBasicShader("rrr1"))
 			love.graphics.setCanvas(canvases.color)
 			love.graphics.setBlendMode("multiply", "premultiplied")
 			love.graphics.draw(canvases.AO_1, 0, 0, 0, 1 / self.AO_resolution)
@@ -523,34 +599,23 @@ function lib:renderFull(scene, cam, canvases)
 	end
 	
 	--bloom
-	if canvases.postEffects and self.bloom_enabled then
+	if canvases.mode == "normal" and self.bloom_enabled then
 		--down sample
 		love.graphics.setCanvas(canvases.bloom_1)
 		love.graphics.clear()
 		
-		if canvases.averageAlpha then
-			--required different fetch
-			local shader = self:getShader("bloom_average")
-			love.graphics.setShader(shader)
-			shader:send("canvas_alpha", canvases.colorAlpha)
-			shader:send("canvas_alphaData", canvases.dataAlpha)
-			shader:send("strength", self.bloom_strength)
+		--color
+		local shader = self:getBasicShader("bloom")
+		love.graphics.setShader(shader)
+		shader:send("strength", self.bloom_strength)
+		love.graphics.setBlendMode("replace", "premultiplied")
+		love.graphics.draw(canvases.color, 0, 0, 0, self.bloom_resolution)
+		
+		--also include alpha pass
+		if canvases.colorAlpha then
+			love.graphics.setBlendMode("alpha", "premultiplied")
+			love.graphics.draw(canvases.colorAlpha, 0, 0, 0, self.bloom_resolution)
 			love.graphics.setBlendMode("replace", "premultiplied")
-			love.graphics.draw(canvases.color, 0, 0, 0, self.bloom_resolution)
-		else
-			--color
-			local shader = self:getShader("bloom")
-			love.graphics.setShader(shader)
-			shader:send("strength", self.bloom_strength)
-			love.graphics.setBlendMode("replace", "premultiplied")
-			love.graphics.draw(canvases.color, 0, 0, 0, self.bloom_resolution)
-			
-			--also include alpha pass
-			if canvases.colorAlpha then
-				love.graphics.setBlendMode("alpha", "premultiplied")
-				love.graphics.draw(canvases.colorAlpha, 0, 0, 0, self.bloom_resolution)
-				love.graphics.setBlendMode("replace", "premultiplied")
-			end
 		end
 		
 		--autochoose
@@ -560,7 +625,7 @@ function lib:renderFull(scene, cam, canvases)
 		end
 		
 		--blur
-		local shader = self:getShader("blur")
+		local shader = self:getBasicShader("blur")
 		love.graphics.setShader(shader)
 		for i = quality, 0, -1 do
 			local size = 2^i / 2^quality * self.bloom_size * canvases.width * self.bloom_resolution / 11
@@ -577,15 +642,6 @@ function lib:renderFull(scene, cam, canvases)
 		end
 	end
 	
-	--additional render instructions
-	self.delton:start("modules")
-	for d,s in pairs(self.allActiveShaderModules) do
-		if s.render then
-			s:render(self, cam, canvases, scene)
-		end
-	end
-	self.delton:stop()
-	
 	--final
 	love.graphics.pop()
 	if canvases.mode == "normal" then
@@ -593,24 +649,24 @@ function lib:renderFull(scene, cam, canvases)
 		
 		love.graphics.setShader(shader)
 		
-		if shader:hasUniform("canvas_depth") then shader:send("canvas_depth", canvases.depth) end
+		checkAndSend(shader, "canvas_depth", canvases.depth)
 		
-		if shader:hasUniform("canvas_bloom") then shader:send("canvas_bloom", canvases.bloom_1) end
-		if shader:hasUniform("canvas_ao") then shader:send("canvas_ao", canvases.AO_1) end
+		checkAndSend(shader, "canvas_bloom", canvases.bloom_1)
+		checkAndSend(shader, "canvas_ao", canvases.AO_1)
 		
-		if shader:hasUniform("canvas_alpha") then shader:send("canvas_alpha", canvases.colorAlpha) end
-		if shader:hasUniform("canvas_alphaData") then shader:send("canvas_alphaData", canvases.dataAlpha) end
+		checkAndSend(shader, "canvas_alpha", canvases.colorAlpha)
+		checkAndSend(shader, "canvas_distortion", canvases.distortion)
+		checkAndSend(shader, "canvas_alphaData", canvases.dataAlpha)
 		
-		if shader:hasUniform("canvas_exposure") then shader:send("canvas_exposure", self.canvas_exposure) end
+		checkAndSend(shader, "canvas_exposure", self.canvas_exposure)
 		
-		if shader:hasUniform("transformInverse") then shader:send("transformInverse", cam.transformProj:invert()) end
-		if shader:hasUniform("viewPos") then shader:send("viewPos", cam.pos) end
+		checkAndSend(shader, "transformInverse", cam.transformProj:invert())
+		checkAndSend(shader, "viewPos", cam.pos)
 		
-		if shader:hasUniform("gamma") then shader:send("gamma", self.gamma) end
-		if shader:hasUniform("exposure") then shader:send("exposure", self.exposure) end
+		checkAndSend(shader, "exposure", self.exposure)
 		
 		if shader:hasUniform("fog_density") then
-			self:sendFogData(shader)
+			sendFogData(shader)
 		end
 		
 		love.graphics.draw(canvases.color)
@@ -626,39 +682,46 @@ function lib:present(cam, canvases, lite)
 	
 	--extract camera position and normal
 	cam = cam or self.cam
-	local i = cam.transform:invert()
-	cam.pos = i * vec3(0.0, 0.0, 0.0)
-	cam.normal = (cam.pos - i * vec3(0.0, 0.0, 1.0)):normalize()
+	cam.pos = vec3(cam.transform[4], cam.transform[8], cam.transform[12])
+	cam.normal = vec3(-cam.transform[3], -cam.transform[7], -cam.transform[11]):normalize()
 	
 	--perspective transform
-	local n = cam.near
-	local f = cam.far
-	local fov = cam.fov
-	local scale = math.tan(fov*math.pi/360)
-	local aspect = canvases.width / canvases.height
-	local r = scale * n * aspect
-	local t = scale * n
-	local m = canvases.mode == "direct" and 1 or -1
-	local projection = mat4(
-		n / r,     0,          0,                0,
-		0,         n / t * m,  0,                0,
-		0,         0,          -(f+n) / (f-n),   -2*f*n / (f-n),
-		0,         0,          -1,               0
-	)
-	
-	--camera transformation
-	cam.transformProj = projection * cam.transform
-	local m = cam.transform
-	cam.transformProjOrigin = projection * mat4(m[1], m[2], m[3], 0.0, m[5], m[6], m[7], 0.0, m[9], m[10], m[11], 0.0, 0.0, 0.0, 0.0, 1.0)
-	cam.aspect = aspect
-	self.lastUsedCam = cam
-	
-	--generate scene
-	self.delton:start("scene")
-	-- TODO: blacklist is undefined
-	-- local scene = self:buildScene(cam, canvases, "render", blacklist)
-	local scene = self:buildScene(cam, canvases, "render", nil)
-	self.delton:stop()
+	do
+		local n = cam.near
+		local f = cam.far
+		local fov = cam.fov
+		local scale = math.tan(fov*math.pi/360)
+		local aspect = canvases.width / canvases.height
+		local r = scale * n * aspect
+		local t = scale * n
+		local m = canvases.mode == "direct" and 1 or -1
+		
+		--optimized matrix multiplication by removing constants
+		--looks like a mess, but its only the opengl projection multiplied by the camera
+		local b = cam.transform:invert()
+		local a1 = n / r
+		local a6 = n / t * m
+		local fn1 = 1 / (f-n)
+		local a11 = -(f+n) * fn1
+		local a12 = -2*f*n * fn1
+		
+		cam.transformProj = mat4(
+			a1 * b[1],   a1 * b[2],     a1 * b[3],     a1 * b[4],
+			a6 * b[5],   a6 * b[6],     a6 * b[7],     a6 * b[8],
+			a11 * b[9],  a11 * b[10],   a11 * b[11],   a11 * b[12] + a12,
+			-b[9],       -b[10],        -b[11],        -b[12]
+		)
+		
+		cam.transformProjOrigin = mat4(
+			a1 * b[1],   a1 * b[2],    a1 * b[3],    0.0,
+			a6 * b[5],   a6 * b[6],    a6 * b[7],    0.0,
+			a11 * b[9],  a11 * b[10],  a11 * b[11],  a12,
+			-b[9],       -b[10],       -b[11],       0.0
+		)
+		
+		cam.aspect = aspect
+		self.lastUsedCam = cam
+	end
 	
 	--process render jobs
 	if not lite then
@@ -669,49 +732,56 @@ function lib:present(cam, canvases, lite)
 	
 	--render
 	self.delton:start("renderFull")
-	self:renderFull(scene, cam, canvases)
+	self:renderFull(cam, canvases)
 	self.delton:stop()
 	self.delton:stop()
 	
 	--debug
-	local brightness = {
-		data_pass2 = 0.25,
-		depth = 0.1,
-	}
-	if _DEBUGMODE and love.keyboard.isDown(",") then
-		local w = 400
-		local x = 0
-		local y = 0
-		local maxHeight = 0
-		for d,s in pairs(canvases) do
-			if type(s) == "userdata" and s:isReadable() then
-				local b = brightness[d] or 1
-				local h = w / s:getWidth() * s:getHeight()
-				maxHeight = math.max(maxHeight, h)
-				
-				love.graphics.setColor(0, 0, 0)
-				love.graphics.rectangle("fill", x * w, y, w, h)
-				love.graphics.setShader(self:getShader("replaceAlpha"))
-				self:getShader("replaceAlpha"):send("alpha", b)
-				love.graphics.setBlendMode("add")
-				love.graphics.draw(s, x * w, y, 0, w / s:getWidth())
-				love.graphics.setShader()
-				love.graphics.setBlendMode("alpha")
-				love.graphics.setColor(1, 1, 1)
-				love.graphics.print(d, x * w, y)
-				
-				x = x + 1
-				if x * w + w >= love.graphics.getWidth() then
-					x = 0
-					y = y + maxHeight
-					maxHeight = 0
+	if _DEBUGMODE then
+		if love.keyboard.isDown(",") then
+			local brightness = {
+				data_pass2 = 0.25,
+				depth = 0.1,
+			}
+			
+			local w = 400
+			local x = 0
+			local y = 0
+			local maxHeight = 0
+			for d,s in pairs(canvases) do
+				if type(s) == "userdata" and s:isReadable() then
+					local b = brightness[d] or 1
+					local h = w / s:getWidth() * s:getHeight()
+					maxHeight = math.max(maxHeight, h)
+					
+					love.graphics.setColor(0, 0, 0)
+					love.graphics.rectangle("fill", x * w, y, w, h)
+					love.graphics.setShader(self:getBasicShader("replaceAlpha"))
+					self:getBasicShader("replaceAlpha"):send("alpha", b)
+					love.graphics.setBlendMode("add")
+					love.graphics.draw(s, x * w, y, 0, w / s:getWidth())
+					love.graphics.setShader()
+					love.graphics.setBlendMode("alpha")
+					love.graphics.setColor(1, 1, 1)
+					love.graphics.print(d, x * w, y)
+					
+					x = x + 1
+					if x * w + w >= love.graphics.getWidth() then
+						x = 0
+						y = y + maxHeight
+						maxHeight = 0
+					end
 				end
 			end
 		end
-	end
-	
-	self.delton:step()
-	if _DEBUGMODE and love.keyboard.isDown(".") then
-		self.delton:present()
+		
+		self.delton:step()
+		if love.keyboard.isDown(".") then
+			self.delton:present()
+		end
+		if love.keyboard.isDown(",") then
+			self.deltonLoad:step()
+			self.deltonLoad:present()
+		end
 	end
 end

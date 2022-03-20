@@ -1,6 +1,6 @@
 local delton = { }
 
-local clock = love.timer.getTime
+local clock = love.timer and love.timer.getTime or os.clock
 local minArc = 0.01
 local borderSize = 0.75
 
@@ -10,7 +10,7 @@ local mx
 local my
 local selected
 
-local bigFont = love.graphics.newFont(24)
+local bigFont = love.graphics and love.graphics.newFont(24)
 
 --return a new benchmark
 function delton:new(bufferLength)
@@ -95,6 +95,7 @@ function delton:present()
 end
 
 --render a single segment
+local size = 1
 function delton:renderSegment(segment, time, depth, height)
 	--choose
 	local children = { }
@@ -105,7 +106,9 @@ function delton:renderSegment(segment, time, depth, height)
 	end
 	
 	--text
-	local size = math.min(1, 90 / self.root.count / 4)
+	if depth == 1 then
+		size = size * 0.99 + 0.01 * math.min(1, 40 / self.root.count)
+	end
 	local w = math.min(4, 50 / self.root.depth)
 	if segment == self.root then
 		local t = string.format("%s: %0.2f ms", segment.name, segment.timeMedian * 1000)
@@ -191,11 +194,11 @@ function delton:prepareData(segment, depth)
 end
 
 --perform a step, add changes to buffer and reset counters
-function delton:step(segment)
-	assert(self.current == self.root, "more starts than stops!")
+function delton:step(noClear, segment)
+	assert(self.current == self.root, "more starts than stops! (" .. tostring(self.current.name) .. ")")
 	
 	if not segment then
-		self:step(self.root)
+		self:step(noClear, self.root)
 	else
 		--add to buffer
 		segment.timeBuffer[segment.bufferIndex] = segment.time
@@ -203,12 +206,14 @@ function delton:step(segment)
 		segment.bufferIndex = segment.bufferIndex % self.bufferLength + 1
 		
 		--reset
-		segment.time = 0
-		segment.calls = 0
+		if not noClear then
+			segment.time = 0
+			segment.calls = 0
+		end
 		
 		--children
 		for d,s in pairs(segment.children) do
-			self:step(s)
+			self:step(noClear, s)
 		end
 	end
 end

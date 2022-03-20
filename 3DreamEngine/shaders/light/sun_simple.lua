@@ -23,12 +23,7 @@ end
 
 function sh:constructPixel(dream, ID)
 	return ([[
-		light += getLight(sun_simple_color_#ID#, viewVec, sun_simple_vec_#ID#, normal, albedo.rgb, material.x, material.y);
-		
-		//backface light
-		#ifdef TRANSLUCENT_ENABLED
-			light += getLight(sun_simple_color_#ID#, viewVec, sun_simple_vec_#ID#, reflect(normal, normalRaw), albedo.rgb, material.x, material.y) * translucent;
-		#endif
+		light += getLight(sun_simple_color_#ID#, viewVec, sun_simple_vec_#ID#, normal, albedo, roughness, metallic);
 	]]):gsub("#ID#", ID)
 end
 
@@ -45,9 +40,9 @@ end
 function sh:sendUniforms(dream, shaderObject, light, ID)
 	local shader = shaderObject.shader
 	
-	shader:send("sun_simple_color_" .. ID,  {light.r * light.brightness, light.g * light.brightness, light.b * light.brightness})
+	shader:send("sun_simple_color_" .. ID,  light.color * light.brightness)
 	if shader:hasUniform("sun_simple_vec_" .. ID) then
-		shader:send("sun_simple_vec_" .. ID, {vec3(light.x, light.y, light.z):normalize():unpack()})
+		shader:send("sun_simple_vec_" .. ID, light.direction)
 	end
 end
 

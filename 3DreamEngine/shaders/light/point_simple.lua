@@ -1,7 +1,5 @@
 local sh = { }
 
-sh.type = "light"
-
 sh.batchable = true
 
 function sh:constructDefinesGlobal(dream)
@@ -10,6 +8,7 @@ function sh:constructDefinesGlobal(dream)
 		
 		extern vec3 point_simple_pos[]] .. dream.max_lights .. [[];
 		extern vec3 point_simple_color[]] .. dream.max_lights .. [[];
+		extern float point_simple_attenuation[]] .. dream.max_lights .. [[];
 	]]
 end
 
@@ -19,31 +18,26 @@ end
 
 function sh:constructPixelGlobal(dream)
 	return ([[
-		for (int i = 0; i < point_simple_count; i++) {
-			vec3 lightVecRaw = point_simple_pos[i] - vertexPos;
-			vec3 lightVec = normalize(lightVecRaw);
-			float distance = length(lightVecRaw);
-			float power = 1.0 / (0.1 + distance * distance);
-			vec3 lightColor = point_simple_color[i] * power;
-			
-			light += getLight(lightColor, viewVec, lightVec, normal, albedo.rgb, material.x, material.y);
-			
-			//backface light
-			#ifdef TRANSLUCENT_ENABLED
-				light += getLight(lightColor, viewVec, lightVec, reflect(normal, normalRaw), albedo.rgb, material.x, material.y) * translucent;
-			#endif
-		}
+	for (int i = 0; i < point_simple_count; i++) {
+		vec3 lightVec = point_simple_pos[i] - vertexPos;
+		float distance = length(lightVec) + 1.0;
+		float power = pow(distance, point_simple_attenuation[i]);
+		vec3 lightColor = point_simple_color[i] * power;
+		lightVec = normalize(lightVec);
+		
+		light += getLight(lightColor, viewVec, lightVec, normal, albedo, roughness, metallic);
+	}
 	]])
 end
 
 function sh:constructPixelBasicGlobal(dream)
 	return ([[
-		for (int i = 0; i < point_simple_count; i++) {
-			vec3 lightVecRaw = point_simple_pos[i] - vertexPos;
-			float distance = length(lightVecRaw);
-			float power = 1.0 / (0.1 + distance * distance);
-			light += point_simple_color[i] * power;
-		}
+	for (int i = 0; i < point_simple_count; i++) {
+		vec3 lightVec = point_simple_pos[i] - vertexPos;
+		float distance = length(lightVec) + 1.0;
+		float power = pow(distance, point_simple_attenuation[i]);
+		light += point_simple_color[i] * power;
+	}
 	]])
 end
 
@@ -59,17 +53,20 @@ function sh:sendGlobalUniforms(dream, shaderObject, count, lighting)
 	local shader = shaderObject.shader
 	
 	local colors = { }
-	local pos = {}
+	local pos = { }
+	local attenuation = { }
 	for d,s in ipairs(lighting) do
 		if s.light_typ == "point_simple" then
-			colors[#colors+1] = {s.r * s.brightness, s.g * s.brightness, s.b * s.brightness}
-			pos[#pos+1] = {s.x, s.y, s.z}
+			table.insert(colors, s.color * s.brightness)
+			table.insert(pos, s.pos)
+			table.insert(attenuation, -s.attenuation)
 		end
 	end
 	
 	shader:send("point_simple_count", count)
 	shader:send("point_simple_pos", unpack(pos))
 	shader:send("point_simple_color", unpack(colors))
+	shader:send("point_simple_attenuation", unpack(attenuation))
 end
 
 function sh:sendUniforms(dream, shaderObject, light, ID)

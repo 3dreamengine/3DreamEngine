@@ -5,37 +5,12 @@ functions.lua - contains library relevant functions
 
 local lib = _3DreamEngine
 
-function lib:resetLight(noDayLight)
-	self.lighting = { }
-	
-	if not noDayLight then
-		local l = self.sun:normalize()
-		local c = self.sun_color
-		
-		self.sunObject.x = l[1]
-		self.sunObject.y = l[2]
-		self.sunObject.z = l[3]
-		self.sunObject.r = c[1]
-		self.sunObject.g = c[2]
-		self.sunObject.b = c[3]
-		
-		self:addLight(self.sunObject)
-	end
-end
-
 function lib:addLight(light)
-	self.lighting[#self.lighting+1] = light
+	table.insert(self.lighting, light)
 end
 
 function lib:addNewLight(...)
 	self:addLight(self:newLight(...))
-end
-
-function lib:split(text, sep)
-	local sep, fields = sep or ":", { }
-	local pattern = string.format("([^%s]+)", sep)
-	text:gsub(pattern, function(c) fields[#fields+1] = c end)
-	return fields
 end
 
 function lib:lookAt(eye, at, up)
@@ -44,87 +19,28 @@ function lib:lookAt(eye, at, up)
 	local zaxis = (at - eye):normalize()
 	local xaxis = zaxis:cross(up):normalize()
 	local yaxis = xaxis:cross(zaxis)
-
-	zaxis = -zaxis
 	
 	return mat4(
 		xaxis.x, xaxis.y, xaxis.z, -xaxis:dot(eye),
 		yaxis.x, yaxis.y, yaxis.z, -yaxis:dot(eye),
-		zaxis.x, zaxis.y, zaxis.z, -zaxis:dot(eye),
+		-zaxis.x, -zaxis.y, -zaxis.z, zaxis:dot(eye),
 		0, 0, 0, 1
 	)
 end
 
---add tangents to a 3Dream vertex format
---x, y, z, shaderData, nx, ny, nz, materialID, u, v, tx, ty, tz, btx, bty, btz
-local empty = {0, 0, 0}
-function lib:calcTangents(o)
-	o.tangents = { }
-	for i = 1, #o.vertices do
-		o.tangents[i] = {0, 0, 0, 0}
-	end
+function lib:lookInDirection(at, up)
+	up = up or vec3(0.0, 1.0, 0.0)
 	
-	for i,f in ipairs(o.faces) do
-		--vertices
-		local v1 = o.vertices[f[1]] or empty
-		local v2 = o.vertices[f[2]] or empty
-		local v3 = o.vertices[f[3]] or empty
-		
-		--tex coords
-		local uv1 = o.texCoords[f[1]] or empty
-		local uv2 = o.texCoords[f[2]] or empty
-		local uv3 = o.texCoords[f[3]] or empty
-		
-		local tangent = { }
-		
-		local edge1 = {v2[1] - v1[1], v2[2] - v1[2], v2[3] - v1[3]}
-		local edge2 = {v3[1] - v1[1], v3[2] - v1[2], v3[3] - v1[3]}
-		local edge1uv = {uv2[1] - uv1[1], uv2[2] - uv1[2]}
-		local edge2uv = {uv3[1] - uv1[1], uv3[2] - uv1[2]}
-		
-		local cp = edge1uv[1] * edge2uv[2] - edge1uv[2] * edge2uv[1]
-		
-		if cp ~= 0.0 then
-			--handle clockwise-uvs
-			local clockwise = mat3(uv1[1], uv1[2], 1, uv2[1], uv2[2], 1, uv3[1], uv3[2], 1):det() > 0
-			
-			for i = 1, 3 do
-				tangent[i] = (edge1[i] * edge2uv[2] - edge2[i] * edge1uv[2]) / cp
-			end
-			
-			--sum up tangents to smooth across shared vertices
-			for i = 1, 3 do
-				o.tangents[f[i]][1] = o.tangents[f[i]][1] + tangent[1]
-				o.tangents[f[i]][2] = o.tangents[f[i]][2] + tangent[2]
-				o.tangents[f[i]][3] = o.tangents[f[i]][3] + tangent[3]
-				o.tangents[f[i]][4] = o.tangents[f[i]][4] + (clockwise and 1 or 0)
-			end
-		end
-	end
+	local zaxis = at:normalize()
+	local xaxis = zaxis:cross(up):normalize()
+	local yaxis = xaxis:cross(zaxis)
 	
-	--normalize
-	for i,f in ipairs(o.tangents) do
-		local l = math.sqrt(f[1]^2 + f[2]^2 + f[3]^2)
-		f[1] = f[1] / l
-		f[2] = f[2] / l
-		f[3] = f[3] / l
-	end	
-	
-	--complete smoothing step
-	for i,f in ipairs(o.tangents) do
-		local n = o.normals[i]
-		
-		--Gram-Schmidt orthogonalization
-		local dot = (f[1] * n[1] + f[2] * n[2] + f[3] * n[3])
-		f[1] = f[1] - n[1] * dot
-		f[2] = f[2] - n[2] * dot
-		f[3] = f[3] - n[3] * dot
-		
-		local l = math.sqrt(f[1]^2 + f[2]^2 + f[3]^2)
-		f[1] = f[1] / l
-		f[2] = f[2] / l
-		f[3] = f[3] / l
-	end
+	return mat4(
+		xaxis.x, xaxis.y, xaxis.z, 0.0,
+		yaxis.x, yaxis.y, yaxis.z, 0.0,
+		-zaxis.x, -zaxis.y, -zaxis.z, 0.0,
+		0, 0, 0, 1
+	)
 end
 
 function lib:HSVtoRGB(h, s, v)
@@ -183,15 +99,6 @@ function lib:RGBtoHSV(r, g, b)
 	return h, s, v
 end
 
-function lib:decodeObjectName(name)
-	if self.nameDecoder then
-		local n = string.match(name, self.nameDecoder)
-		return n or name
-	else
-		return name
-	end
-end
-
 function lib:pointToPixel(point, cam, canvases)
 	cam = cam or self.cam
 	canvases = canvases or self.canvases
@@ -226,6 +133,7 @@ function lib:pixelToPoint(point, cam, canvases)
 	return vec3(near) * (1.0 - depth) + vec3(far) * depth
 end
 
+--prepares a camera to support plane frustum checks
 function lib:getFrustumPlanes(m)
 	local planes = {vec4(), vec4(), vec4(), vec4(), vec4(), vec4()}
 	for i = 1, 4 do
@@ -239,16 +147,15 @@ function lib:getFrustumPlanes(m)
 	return planes
 end
 
-function lib:inFrustum(cam, pos, radius)
-	local dir = pos - cam.pos
-	local dist = dir:length()
 
-	--check for close range and angle threshold
-	return dist < radius or dir:dot(cam.normal) > (cam.frustumAngle - radius / (dist - radius)) * dist
-end
+--todo the frustum culling code fails for close objects, a constant factor "fix" it but it's not fixing the actual problem
+local perspectiveWarpFactor = 1.5
 
+--optimized plane frustum check
 local cache = { }
-function lib:planeInFrustum(cam, pos, radius, id)
+function lib:inFrustum(cam, pos, radius, id)
+	radius = radius * perspectiveWarpFactor
+	
 	local c = cache[id]
 	if c then
 		local plane = cam.planes[c]
@@ -259,7 +166,7 @@ function lib:planeInFrustum(cam, pos, radius, id)
 		cache[id] = nil
 	end
 	
-	for i = 1, 5 do
+	for i = 1, 4 do
 		if i ~= c then
 			local plane = cam.planes[i]
 			local dist = plane[1] * pos[1] + plane[2] * pos[2] + plane[3] * pos[3] + plane[4]
@@ -272,149 +179,320 @@ function lib:planeInFrustum(cam, pos, radius, id)
 	return true
 end
 
---get the collision data from a mesh
---it moves the collider to its bounding box center based on its initial transform
-function lib:getCollisionData(object)
-	local n = { }
-	
-	--data required by the collision extension
-	n.typ = "mesh"
-	n.boundary = 0
-	
-	--offset, a transformation will be directly applied
-	n.transform = object.boundingBox and object.boundingBox.center or vec3(0, 0, 0)
-	
-	if object.transform then
-		n.transform = object.transform * n.transform
-	end
-	
-	n.transformInverse = -n.transform
-	
-	--data
-	n.faces = { }
-	n.normals = { }
-	n.edges = { }
-	n.point = vec3(0, 0, 0)
-	
-	--transform vertices
-	local vertices = { }
-	for d,s in ipairs(object.vertices) do
-		vertices[d] = (object.transform and object.transform * vec3(s) or vec3(s)) - n.transform
-	end
-	
-	--edges
-	for d,s in ipairs(object.edges) do
-		--vertices
-		local a = vertices[s[1]]
-		local b = vertices[s[2]]
-		
-		--edge
-		table.insert(n.edges, {a, b})
-	end
-	
-	--faces
-	for d,s in ipairs(object.faces) do
-		--vertices
-		local a = vertices[s[1]]
-		local b = vertices[s[2]]
-		local c = vertices[s[3]]
-		
-		--face normal
-		local normal = (b-a):cross(c-a):normalize()
-		table.insert(n.normals, normal)
-		
-		n.point = a
-		
-		--boundary
-		n.boundary = math.max(n.boundary, a:length(), b:length(), c:length())
-		
-		--face
-		table.insert(n.faces, {a, b, c})
-	end
-	
-	return n
+function lib:getBarycentric(x, y, x1, y1, x2, y2, x3, y3)
+	local det = (y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3)
+	local w1 = ((y2 - y3) * (x - x3) + (x3 - x2) * (y - y3)) / det
+	local w2 = ((y3 - y1) * (x - x3) + (x1 - x3) * (y - y3)) / det
+	local w3 = 1 - w1 - w2
+	return w1, w2, w3
 end
 
-do
-	local blurVecs = {
-		{
-			{1.0, 0.0, 0.0},
-			{0.0, 0.0, -1.0},
-			{0.0, -1.0, 0.0},
-			{0.0, 0.0, 1.0},
-		},
-		{
-			{-1.0, 0.0, 0.0},
-			{0.0, 0.0, 1.0},
-			{0.0, -1.0, 0.0},
-			{0.0, 0.0, 1.0},
-		},
-		{
-			{0.0, 1.0, 0.0},
-			{1.0, 0.0, 0.0},
-			{0.0, 0.0, 1.0},
-			{1.0, 0.0, 0.0},
-		},
-		{
-			{0.0, -1.0, 0.0},
-			{1.0, 0.0, 0.0},
-			{0.0, 0.0, -1.0},
-			{1.0, 0.0, 0.0},
-		},
-		{
-			{0.0, 0.0, 1.0},
-			{1.0, 0.0, 0.0},
-			{0.0, -1.0, 0.0},
-			{1.0, 0.0, 0.0},
-		},
-		{
-			{0.0, 0.0, -1.0},
-			{-1.0, 0.0, 0.0},
-			{0.0, -1.0, 0.0},
-			{1.0, 0.0, 0.0},
-		},
-	}
+--4 times slower but performs correct clamping to the edge
+--code translated and adapted from www.geometrictools.com
+function lib:getBarycentricClamped(x, y, x1, y1, x2, y2, x3, y3)
+	local diffX = x1 - x
+	local diffY = y1 - y
+	local edge1X = x2 - x1
+	local edge1Y = y2 - y1
+	local edge2X = x3 - x1
+	local edge2Y = y3 - y1
+	local a00 = edge1X^2 + edge1Y^2
+	local a01 = edge1X * edge2X + edge1Y * edge2Y
+	local a11 = edge2X^2 + edge2Y^2
+	local b0 = diffX * edge1X + diffY * edge1Y
+	local b1 = diffX * edge2X + diffY * edge2Y
+	local det = a00 * a11 - a01 * a01
+	local t1 = a01 * b1 - a11 * b0
+	local t2 = a01 * b0 - a00 * b1
+
+	if t1 + t2 <= det then
+		if t1 < 0 then
+			if t2 < 0 then
+				if b0 < 0 then
+					t2 = 0
+					if -b0 >= a00 then
+						t1 = 1
+					else
+						t1 = -b0 / a00
+					end
+				else
+					t1 = 0
+					if b1 >= 0 then
+						t2 = 0
+					elseif -b1 >= a11 then
+						t2 = 1
+					else
+						t2 = -b1 / a11
+					end
+				end
+			else
+				t1 = 0
+				if b1 >= 0 then
+					t2 = 0
+				elseif -b1 >= a11 then
+					t2 = 1
+				else
+					t2 = -b1 / a11
+				end
+			end
+		elseif t2 < 0 then
+			t2 = 0
+			if b0 >= 0 then
+				t1 = 0
+			elseif -b0 >= a00 then
+				t1 = 1
+			else
+				t1 = -b0 / a00
+			end
+		else
+			local invDet = 1 / det
+			t1 = t1 * invDet
+			t2 = t2 * invDet
+		end
+	else
+		if t1 < 0 then
+			local tmp0 = a01 + b0
+			local tmp1 = a11 + b1
+			if tmp1 > tmp0 then
+				local numer = tmp1 - tmp0
+				local denom = a00 - 2 * a01 + a11
+				if numer >= denom then
+					t1 = 1
+					t2 = 0
+				else
+					t1 = numer / denom
+					t2 = 1 - t1
+				end
+			else
+				t1 = 0
+				if tmp1 <= 0 then
+					t2 = 1
+				elseif b1 >= 0 then
+					t2 = 0
+				else
+					t2 = -b1 / a11
+				end
+			end
+		elseif t2 < 0 then
+			local tmp0 = a01 + b1
+			local tmp1 = a00 + b0
+			if tmp1 > tmp0 then
+				local numer = tmp1 - tmp0
+				local denom = a00 - 2 * a01 + a11
+				if numer >= denom then
+					t2 = 1
+					t1 = 0
+				else
+					t2 = numer / denom
+					t1 = 1 - t2
+				end
+			else
+				t2 = 0
+				if tmp1 <= 0 then
+					t1 = 1
+				elseif b0 >= 0 then
+					t1 = 0
+				else
+					t1 = -b0 / a00
+				end
+			end
+		else
+			local numer = a11 + b1 - a01 - b0
+			if numer <= 0 then
+				t1 = 0
+				t2 = 1
+			else
+				local denom = a00 - 2 * a01 + a11
+				if numer >= denom then
+					t1 = 1
+					t2 = 0
+				else
+					t1 = numer / denom
+					t2 = 1 - t1
+				end
+			end
+		end
+	end
 	
-	function lib.blurCubeMap(self, cube, level)
-		local f = cube:getFormat()
-		local resolution = math.ceil(cube:getWidth() / 2)
+	return 1 - t1 - t2, t1, t2
+end
+
+function lib:newBoundaryBox(initialized)
+	return {
+		first = vec3(math.huge, math.huge, math.huge),
+		second = vec3(-math.huge, -math.huge, -math.huge),
+		center = vec3(0.0, 0.0, 0.0),
+		size = 0,
+		initialized = initialized or false
+	}
+end
+
+function lib:decodeBoundaryBox(bb)
+	return {
+		first = vec3(bb.first),
+		second = vec3(bb.second),
+		center = vec3(bb.center),
+		size = bb.size,
+		initialized = bb.initialized
+	}
+end
+
+function lib:blurCanvas(canvas, strength, iterations, mask)
+	local temp = self:getTemporaryCanvas(canvas)
+	local sh = lib:getBasicShader("blur")
+	love.graphics.push("all")
+	love.graphics.reset()
+	if mask then
+		love.graphics.setColorMask(unpack(mask))
+	end
+	love.graphics.setBlendMode("replace", "premultiplied")
+	love.graphics.setShader(sh)
+	
+	for i = iterations, 1, -1 do
+		sh:send("dir", {2^(i-1) / canvas:getWidth() * strength, 0})
+		love.graphics.setCanvas(temp)
+		love.graphics.draw(canvas)
 		
-		--create canvases if needed
-		self.cache.blurCubeMap = self.cache.blurCubeMap or { }
-		local cache = self.cache.blurCubeMap
-		cache[f] = cache[f] or { }
-		if not cache[f][resolution] then
-			cache[f][resolution] = { }
-		end
-		if not cache[f][resolution][level] then
-			local size = math.ceil(resolution / math.max(1, 2^(level-1)))
-			cache[f][resolution][level] = love.graphics.newCanvas(size, size, {format = f, readable = true, msaa = 0, type = "2d", mipmaps = "none"})
-		end
+		sh:send("dir", {0, 2^(i-1) / canvas:getHeight() * strength})
+		love.graphics.setCanvas(canvas)
+		love.graphics.draw(temp)
+	end
+	love.graphics.pop()
+end
+
+local blurVecs = {
+	{
+		{1.0, 0.0, 0.0},
+		{0.0, 0.0, -1.0},
+		{0.0, -1.0, 0.0},
+		{0.0, 0.0, 1.0},
+	},
+	{
+		{-1.0, 0.0, 0.0},
+		{0.0, 0.0, 1.0},
+		{0.0, -1.0, 0.0},
+		{0.0, 0.0, 1.0},
+	},
+	{
+		{0.0, 1.0, 0.0},
+		{1.0, 0.0, 0.0},
+		{0.0, 0.0, 1.0},
+		{1.0, 0.0, 0.0},
+	},
+	{
+		{0.0, -1.0, 0.0},
+		{1.0, 0.0, 0.0},
+		{0.0, 0.0, -1.0},
+		{1.0, 0.0, 0.0},
+	},
+	{
+		{0.0, 0.0, 1.0},
+		{1.0, 0.0, 0.0},
+		{0.0, -1.0, 0.0},
+		{1.0, 0.0, 0.0},
+	},
+	{
+		{0.0, 0.0, -1.0},
+		{-1.0, 0.0, 0.0},
+		{0.0, -1.0, 0.0},
+		{1.0, 0.0, 0.0},
+	},
+}
+
+--if the system supports 6+ multicanvas (which most modern systems do) we can use the faster variant
+function lib:getTemporaryCanvas(canvas, half)
+	local id = canvas:getWidth() .. canvas:getFormat() .. canvas:getHeight() .. (half and "H" or "F")
+	if not self.canvasCache[id] then
+		self.canvasCache[id] = love.graphics.newCanvas(canvas:getWidth() / (half and 2 or 1), canvas:getHeight() / (half and 2 or 1), {
+			format = canvas:getFormat(),
+			readable = canvas:isReadable(),
+			msaa = canvas:getMSAA(),
+			type = canvas:getTextureType(),
+			mipmaps = canvas:getMipmapMode()})
+	end
+	return self.canvasCache[id]
+end
+
+local function setMultiCubeMap(cube, level)
+	love.graphics.setCanvas({
+		{cube, face = 1, mipmap = level},
+		{cube, face = 2, mipmap = level},
+		{cube, face = 3, mipmap = level},
+		{cube, face = 4, mipmap = level},
+		{cube, face = 5, mipmap = level},
+		{cube, face = 6, mipmap = level},
+	})
+end
+
+if love.graphics and love.graphics.getSystemLimits().multicanvas >= 6 then
+	function lib:blurCubeMap(cube, layers, strength, mask, blurFirst)
+		local temp = self:getTemporaryCanvas(cube, not blurFirst)
+		local shader = self:getBasicShader("blur_cube_multi")
 		
-		--blurring
 		love.graphics.push("all")
 		love.graphics.reset()
+		if mask then
+			love.graphics.setColorMask(unpack(mask))
+		end
 		love.graphics.setBlendMode("replace", "premultiplied")
 		
-		local can = cache[f][resolution][level]
-		local res = can:getWidth()
-		local shader = self:getShader("blur_cube")
-		for side = 1, 6 do
-			love.graphics.setCanvas(can)
-			love.graphics.setShader(shader)
-			shader:send("tex", cube)
-			shader:send("strength", 0.025)
+		love.graphics.setShader(shader)
+		shader:send("strength", strength or 0.1)
+		
+		for level = blurFirst and 1 or 2, layers do
+			local res = cube:getWidth() / 2 ^ (level - 1)
+			
 			shader:send("scale", 1.0 / res)
-			shader:send("normal", blurVecs[side][1])
-			shader:send("dirX", blurVecs[side][2])
-			shader:send("dirY", blurVecs[side][3])
-			shader:send("lod", level - 2.0)
+			shader:send("lod", math.max(0, level - 2))
+			shader:send("dir", 0.0)
+			shader:send("tex", cube)
+			setMultiCubeMap(temp, level - (blurFirst and 0 or 1))
 			love.graphics.rectangle("fill", 0, 0, res, res)
 			
-			--paste
-			love.graphics.setCanvas(cube, side, level)
-			love.graphics.setShader()
-			love.graphics.draw(can, 0, 0, 0, 2)
+			shader:send("dir", 1.0)
+			shader:send("lod", level - (blurFirst and 1 or 2))
+			shader:send("tex", temp)
+			setMultiCubeMap(cube, level)
+			love.graphics.rectangle("fill", 0, 0, res, res)
+		end
+		
+		love.graphics.pop()
+	end
+else
+	function lib:blurCubeMap(cube, layers, strength, mask, blurFirst)
+		local temp = self:getTemporaryCanvas(cube, not blurFirst)
+		local shader = self:getBasicShader("blur_cube")
+		
+		love.graphics.push("all")
+		love.graphics.reset()
+		if mask then
+			love.graphics.setColorMask(unpack(mask))
+		end
+		love.graphics.setBlendMode("replace", "premultiplied")
+		
+		love.graphics.setShader(shader)
+		shader:send("strength", strength or 0.1)
+		
+		for level = blurFirst and 1 or 2, layers do
+			local res = cube:getWidth() / 2 ^ (level - 1)
+			shader:send("scale", 1.0 / res)
+			for side = 1, 6 do
+				shader:send("normal", blurVecs[side][1])
+				shader:send("dirX", blurVecs[side][2])
+				shader:send("dirY", blurVecs[side][3])
+				
+				love.graphics.setCanvas(temp, side, level - (blurFirst and 0 or 1))
+				shader:send("dir", 0.0)
+				shader:send("tex", cube)
+				shader:send("lod", math.max(0, level - 2))
+				love.graphics.rectangle("fill", 0, 0, res, res)
+				
+				love.graphics.setCanvas(cube, side, level)
+				shader:send("dir", 1.0)
+				shader:send("tex", temp)
+				shader:send("lod", level - (blurFirst and 1 or 2))
+				love.graphics.rectangle("fill", 0, 0, res, res)
+			end
 		end
 		
 		love.graphics.pop()
@@ -426,9 +504,8 @@ function lib:takeScreenshot()
 		love.system.openURL(love.filesystem.getSaveDirectory() .. "/screenshots")
 	else
 		love.filesystem.createDirectory("screenshots")
-		if not screenShotThread then
-			-- TODO: why is screenShotThread global?
-			_G.screenShotThread = love.thread.newThread([[
+		if not self.screenShotThread then
+			self.screenShotThread = love.thread.newThread([[
 				require("love.image")
 				channel = love.thread.getChannel("screenshots")
 				while true do
@@ -465,35 +542,62 @@ function lib:take3DScreenshot(pos, resolution, path)
 		love.graphics.clear()
 		
 		--render
-		local cam = self:newCam(transformations[face], self.cubeMapProjection, pos, lookNormals[face])
-		local scene = self:buildScene(cam, canvases, "render")
-		
-		lib:renderFull(scene, cam, canvases)
+		local cam = self:newCamera(transformations[face], self.cubeMapProjection, pos, lookNormals[face])
+		lib:renderFull(cam, canvases, true)
 		
 		love.graphics.pop()
 	end
 	
 	--blur cubemap
-	for level = 2, results:getMipmapCount() do
-		self:blurCubeMap(results, level)
-	end
+	self:blurCubeMap(results, results:getMipmapCount())
 	
 	--export cimg data
 	cimg:export(results, path or "results.cimg")
+	
+	return results
 end
 
---global shader modules
-lib.activeShaderModules = { }
-lib.allActiveShaderModules = { }
-function lib:activateShaderModule(name)
-	self.activeShaderModules[name] = true
+function lib:HDRItoCubemap(hdri, resolution)
+	local shader = self:getBasicShader("HDRItoCubemap")
+	local canvas = love.graphics.newCanvas(resolution * 6, resolution)
+	
+	hdri:setWrap("repeat", "mirroredrepeat")
+	
+	love.graphics.push("all")
+	love.graphics.setShader(shader)
+	love.graphics.setCanvas(canvas)
+	love.graphics.draw(hdri, 0, 0, 0, canvas:getWidth() / hdri:getWidth(), canvas:getHeight() / hdri:getHeight())
+	love.graphics.pop()
+	
+	return canvas
 end
-function lib:deactivateShaderModule(name)
-	self.activeShaderModules[name] = nil
-end
-function lib:getShaderModule(name)
-	return self.shaderLibrary.module[name]
-end
-function lib:isShaderModuleActive(name)
-	return self.activeShaderModules[name]
+
+--view normals
+lib.lookNormals = {
+	vec3(1, 0, 0),
+	vec3(-1, 0, 0),
+	vec3(0, -1, 0),
+	vec3(0, 1, 0),
+	vec3(0, 0, 1),
+	vec3(0, 0, -1),
+}
+
+--cubemap projection
+local n = 0.01
+local f = 1000.0
+local fov = 90
+local scale = math.tan(fov/2*math.pi/180)
+local r = scale * n
+local l = -r
+
+lib.cubeMapProjection = mat4(
+	2*n / (r-l),   0,              (r+l) / (r-l),     0,
+	0,             -2*n / (r - l),  (r+l) / (r-l),     0,
+	0,             0,              -(f+n) / (f-n),    -2*f*n / (f-n),
+	0,             0,              -1,                0
+)
+
+function lib:removePostfix(t)
+	local f = t:find(".", 0, true)
+	return f and t:sub(1, f - 1) or t
 end

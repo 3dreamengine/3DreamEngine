@@ -61,22 +61,57 @@ mat = {
 		})
 	end,
 
-	getScale = function(self, x, y)
+	getScale = function(self, x, y, z)
 		if type(x) == "table" then
 			x, y = x[1], x[2]
 		end
 		return mat({
 			x, 0, 0,
 			0, y or x, 0,
-			0, 0, 1
+			0, 0, z or 1
+		})
+	end,
+	
+	getRotate = function(self, u, a)
+		local l = u.x
+		local m = u.y
+		local n = u.z
+		
+		local sin = math.sin(a)
+		local cos = math.cos(a)
+		
+		return mat3{
+			l * l * (1-cos) + cos, m * l * (1-cos) - n * sin, n * l * (1-cos) + m * sin,
+			l * m * (1-cos) + n * sin, m * m * (1-cos) + cos, n * m * (1-cos) - l * sin,
+			l * n * (1-cos) - m * sin, m * n * (1-cos) + l * sin, n * n * (1-cos) + cos
+		}
+	end,
+
+	getRotateX = function(self, rx)
+		local c = math.cos(rx or 0)
+		local s = math.sin(rx or 0)
+		return mat({
+			1, 0, 0,
+			0, c, -s,
+			0, s, c
 		})
 	end,
 
-	getRotate = function(self, r)
-		local c = math.cos(r or 0)
-		local s = math.sin(r or 0)
+	getRotateY = function(self, ry)
+		local c = math.cos(ry or 0)
+		local s = math.sin(ry or 0)
 		return mat({
-			c, -s, 0,
+			c, 0, -s,
+			0, 1, 0,
+			s, 0, c
+		})
+	end,
+
+	getRotateZ = function(self, rz)
+		local c = math.cos(rz or 0)
+		local s = math.sin(rz or 0)
+		return mat({
+			c, s, 0,
 			-s, c, 0,
 			0, 0, 1
 		})
@@ -194,7 +229,6 @@ metatable = {
 				a[1] * b[1] + a[2] * b[2] + a[3] * b[3],
 				a[4] * b[1] + a[5] * b[2] + a[6] * b[3],
 				a[7] * b[1] + a[8] * b[2] + a[9] * b[3],
-				
 			})
 		elseif b.type == "vec2" then
 			return vec2({
@@ -252,8 +286,8 @@ metatable = {
 	
 	__unm = function(a)
 		return mat({
-			-a[1],	-a[2],	-a[3]
-			-a[4],	-a[5],	-a[6]
+			-a[1],	-a[2],	-a[3],
+			-a[4],	-a[5],	-a[6],
 			-a[7],	-a[8],	-a[9],
 		})
 	end,

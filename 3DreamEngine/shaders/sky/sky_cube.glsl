@@ -14,8 +14,8 @@ void effect() {
 #ifdef VERTEX
 extern mat4 transformProj;
 
-vec4 position(mat4 transform_projection, vec4 vertex_position) {
-	pos = vertex_position.xyz;
-	return transformProj * vec4(vertex_position.xyz, 1.0);
+vec4 position(mat4 transform_projection, vec4 VertexPosition) {
+	pos = VertexPosition.xyz;
+	return transformProj * vec4(VertexPosition.xyz, 1.0);
 }
 #endif

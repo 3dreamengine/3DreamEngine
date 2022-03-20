@@ -1,12 +1,9 @@
 return {
 	alpha = false,
-	extra = 0.02,
 	translucent = 1.0,
 	cullMode = "none",
-	translucent = 1.0,
 	discard = true,
-	
-	onFinish = function(mat, obj)
-		mat:activateShaderModule("wind")
-	end,
+	vertexShader = "wind",
+	windShaderGrass = true,
+	windShaderStrength = 0.25,
 }

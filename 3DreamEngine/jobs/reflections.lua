@@ -1,46 +1,33 @@
 local job = { }
 local lib = _3DreamEngine
 
-job.cost = 5
-
 function job:init()
 
 end
 
-function job:queue(times)
-	for reflection, task in pairs(lib.reflections_last) do
-		--render reflections
-		for face = 1, 6 do
-			if not reflection.static or not reflection.done[face] then
-				local id = "reflections_" .. (reflection.id + face)
-				lib:addOperation("reflections", reflection.priority / (task.dist / 10 + 1), id, reflection.frameSkip, task.obj, task.pos, face)
-			end
-		end
-		
-		--blur mipmaps
-		if reflection.roughness then
-			local time
+function job:queue()
+	for reflection, pos in pairs(lib.lastReflections) do
+		if not reflection.static or not reflection.done then
+			reflection.lastSide = reflection.lastSide or 0
+			
 			--render reflections
-			for face = 1, 6 do
-				local id = "reflections_" .. (reflection.id + face)
-				if times[id] then
-					time = math.min(time or times[id], times[id])
-				end
+			if reflection.lastSide < 6 then
+				lib:addOperation("reflections", reflection, pos)
 			end
 			
-			for level = 2, reflection.levels or lib.reflections_levels do
-				local id_blur = "cubemap_" .. (reflection.id + level)
-				if (time or 0) > (times[id_blur] or 0) then
-					lib:addOperation("cubemap", times[id_blur] and (1.0 / level) or 1.0, id_blur, false, reflection.canvas, level)
+			--blur mipmaps
+			if reflection.lastSide == 6 or not reflection.lazy then
+				reflection.lastSide = 0
+				if reflection.roughness then
+					lib:addOperation("cubemap", reflection.canvas, reflection.levels or lib.reflectionsLevels)
 				end
 			end
 		end
 	end
 end
 
-function job:execute(times, delta, obj, pos, face)
+function job:execute(reflection, pos)
 	local lookNormals = lib.lookNormals
-	
 	local transformations = {
 		lib:lookAt(pos, pos + lookNormals[1], vec3(0, -1, 0)),
 		lib:lookAt(pos, pos + lookNormals[2], vec3(0, -1, 0)),
@@ -53,24 +40,22 @@ function job:execute(times, delta, obj, pos, face)
 	--prepare
 	love.graphics.push("all")
 	love.graphics.reset()
-	local cam = lib:newCam(transformations[face], lib.cubeMapProjection, pos, lookNormals[face])
-	local canvas = obj.reflection.canvas
-	-- TODO: Why is depth_buffer global?
-	_G.depth_buffer = depth_buffer or love.graphics.newCanvas(canvas:getWidth(), canvas:getHeight(), {format = "depth16", readable = false, msaa = canvas:getMSAA()})
-	love.graphics.setCanvas({{canvas, face = face}, depthstencil = depth_buffer})
-	love.graphics.clear()
-	obj.reflection.canvas = nil
 	
-	--generate scene
-	local scene = lib:buildScene(cam, lib.canvases_reflections, "reflections", {[obj] = true})
+	local canvas = reflection.canvas
+	reflection.canvas = nil
 	
 	--render
-	lib:renderFull(scene, cam, lib.canvases_reflections)
+	reflection.lastSide = reflection.lastSide + 1
+	for face = reflection.lazy and reflection.lastSide or 1, reflection.lazy and reflection.lastSide or 6 do
+		local cam = lib:newCamera(transformations[face], lib.cubeMapProjection, pos, lookNormals[face])
+		love.graphics.setCanvas({{canvas, face = face}, depth = true})
+		love.graphics.clear()
+		lib:renderFull(cam, lib.canvases_reflections)
+	end
 	
-	obj.reflection.canvas = canvas
+	reflection.rendered = true
+	reflection.canvas = canvas
 	love.graphics.pop()
-	
-	obj.reflection.done[face] = true
 end
 
 return job

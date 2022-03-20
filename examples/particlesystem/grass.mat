@@ -1,8 +1,0 @@
-return {
-	name = "Grass",
-	cullMode = "none",
-	
-	onFinish = function(mat, obj)
-		mat:activateShaderModule("wind")
-	end,
-}

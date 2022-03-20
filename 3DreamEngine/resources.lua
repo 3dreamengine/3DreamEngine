@@ -6,26 +6,53 @@ resources.lua - resource loader
 local lib = _3DreamEngine
 
 --master resource loader
-lib.resourceJobs = { }
-lib.lastResourceJob = 0
 lib.threads = { }
 
-function lib:addResourceJob(typ, obj, priority, ...)
-	self.lastResourceJob = self.lastResourceJob + 1
-	self.resourceJobs[self.lastResourceJob] = obj
-	
-	self[priority and "channel_jobs_priority" or "channel_jobs"]:push({"3do", self.lastResourceJob, ...})
-end
+lib.texturesLoaded = { }
+lib.thumbnailsLoaded = { }
 
---start the threads
-for i = 1, math.max(1, require("love.system").getProcessorCount()-1) do
+--start the threads (all except 2 cores planned for renderer and seperate client thread)
+for i = 1, math.max(1, require("love.system").getProcessorCount()-2) do
 	lib.threads[i] = love.thread.newThread(lib.root .. "/thread.lua")
 	lib.threads[i]:start()
 end
 
-lib.channel_jobs_priority = love.thread.getChannel("3DreamEngine_channel_jobs_priority")
+--input channels and result
+lib.channel_busy = love.thread.getChannel("3DreamEngine_channel_jobs_channel_busy")
 lib.channel_jobs = love.thread.getChannel("3DreamEngine_channel_jobs")
 lib.channel_results = love.thread.getChannel("3DreamEngine_channel_results")
+
+--returns statistics of the loader threads
+function lib:getLoaderThreadUsage()
+	local todo = self.channel_jobs:getCount() + self.channel_jobs:getCount()
+	local working = self.channel_busy:getCount()
+	local done = self.channel_results:getCount()
+	return todo + working + done, todo, working, done
+end
+
+--scan for image files and adds path to image library
+local imageFormats = table.toSet({"tga", "png", "gif", "bmp", "exr", "hdr", "dds", "dxt", "pkm", "jpg", "jpe", "jpeg", "jp2"})
+local images = { }
+local priority = { }
+local function scan(path)
+	if path:sub(1, 1) ~= "." then
+		for d,s in ipairs(love.filesystem.getDirectoryItems(path)) do
+			if love.filesystem.getInfo(path .. "/" .. s, "directory") then
+				scan(path .. (#path > 0 and "/" or "") .. s)
+			else
+				local name, ext = s:match("^(.+)%.(.+)$")
+				if ext and imageFormats[ext] then
+					local p = path .. "/" .. name
+					if not images[p] or imageFormats[ext] < priority[p] then
+						images[p] = path .. "/" .. s
+						priority[p] = imageFormats[ext]
+					end
+				end
+			end
+		end
+	end
+end
+scan("")
 
 --buffer image for fastLoading
 local bufferData, buffer
@@ -33,6 +60,7 @@ local fastLoadingJob = false
 
 --updates active resource tasks (mesh loading, texture loading, ...)
 function lib:update()
+	--recreate buffer object if necessary
 	local bufferSize = self.textures_bufferSize
 	if not bufferData or bufferData:getWidth() ~= self.textures_bufferSize then
 		bufferData = love.image.newImageData(bufferSize, bufferSize)
@@ -46,7 +74,7 @@ function lib:update()
 			local s = fastLoadingJob
 			local t = love.timer.getTime()
 			
-			--prepare
+			--prepare buffer
 			bufferData:paste(s.data, 0, 0, s.x*bufferSize, s.y*bufferSize, math.min(bufferSize, s.width - bufferSize*s.x), math.min(bufferSize, s.height - bufferSize*s.y))
 			buffer:replacePixels(bufferData)
 			
@@ -72,11 +100,6 @@ function lib:update()
 						s.canvas:generateMipmaps()
 					end
 					
-					--delete thumbnail since it is no longer required
-					if self.thumbnailPaths[s.path] then
-						self.texturesLoaded[self.thumbnailPaths[s.path]] = nil
-					end
-					
 					--close job
 					fastLoadingJob = false
 				end
@@ -92,71 +115,62 @@ function lib:update()
 	--fetch new job
 	local msg = self.channel_results:pop()
 	if msg then
-		if msg[1] == "3do" then
-			--3do mesh data
-			local obj = self.resourceJobs[msg[2]]
-			local mesh
+		--image
+		local width, height = msg[3]:getDimensions()
+		if self.textures_smoothLoading and math.max(width, height) > bufferSize and not msg[4] then
+			local canvas = love.graphics.newCanvas(width, height, {mipmaps = self.textures_mipmaps and "manual" or "none"})
 			
-			for d,o in pairs(obj.objects) do
-				local index = o.obj.DO_dataOffset + o.meshDataIndex
-				if msg[3] == index then
-					if not mesh then
-						mesh = love.graphics.newMesh(o.vertexFormat, o.vertexCount, "triangles", "static")
-						mesh:setVertexMap(o.vertexMap)
-						mesh:setVertices(msg[4])
-						-- TODO: vertexMap is never used globally
-						-- vertexMap = nil
-					end
-					
-					o.mesh = mesh
-					o.loaded = true
-				end
-			end
-			self.resourceJobs[msg[2]] = nil
+			--settings
+			canvas:setWrap("repeat", "repeat")
+			
+			--prepare loading job
+			fastLoadingJob = {
+				path = msg[2],
+				canvas = canvas,
+				data = msg[3],
+				x = 0,
+				y = 0,
+				width = width,
+				height = height,
+			}
 		else
-			--image
-			local width, height = msg[3]:getDimensions()
-			if self.textures_smoothLoading and math.max(width, height) > bufferSize and not msg[4] then
-				local canvas = love.graphics.newCanvas(width, height, {mipmaps = self.textures_mipmaps and "manual" or "none"})
-				
-				--settings
-				canvas:setWrap("repeat", "repeat")
-				
-				--prepare loading job
-				fastLoadingJob = {
-					path = msg[2],
-					canvas = canvas,
-					data = msg[3],
-					x = 0,
-					y = 0,
-					width = width,
-					height = height,
-				}
-			else
-				local tex = love.graphics.newImage(msg[3], {mipmaps = self.textures_mipmaps})
-				
-				--settings
-				tex:setWrap("repeat", "repeat")
-				
-				--store
-				self.texturesLoaded[msg[2]] = tex
-				
-				--clear thumbnail
-				if self.thumbnailPaths[msg[2]] then
-					self.texturesLoaded[self.thumbnailPaths[msg[2]]] = nil
-				end
-			end
+			local tex = love.graphics.newImage(msg[3], {mipmaps = self.textures_mipmaps})
+			
+			--settings
+			tex:setWrap("repeat", "repeat")
+			
+			--store
+			self.texturesLoaded[msg[2]] = tex
 		end
+		
 		return true
+	else
+		return false
 	end
-	return false
+end
+
+function lib:clearLoadedTextures()
+	self.texturesLoaded = { }
+end
+function lib:clearLoadedCanvases()
+	for d,s in pairs(self.texturesLoaded) do
+		if type(s) == "userdata" and s:typeOf("Canvas") then
+			self.texturesLoaded[d] = nil
+		end
+	end
+end
+
+--get image path if present
+function lib:getImagePath(path)
+	return images[path]
+end
+function lib:getImagePaths()
+	return images
 end
 
 --get a texture, load it threaded if enabled and therefore may return nil first
---if a thumbnail is provided, may return the thumbnail until fully loaded
-lib.texturesLoaded = { }
-lib.thumbnailPaths = { }
-function lib:getTexture(path)
+--if a thumbnail is provided, it may return the thumbnail until fully loaded
+function lib:getImage(path, force)
 	if type(path) == "userdata" then
 		return path
 	end
@@ -165,7 +179,7 @@ function lib:getTexture(path)
 	end
 	
 	--skip threaded loading
-	if not self.textures_threaded and type(path) == "string" then
+	if force or not self.textures_threaded and type(path) == "string" then
 		if not self.texturesLoaded[path] then
 			self.texturesLoaded[path] = love.graphics.newImage(path, {mipmaps = self.textures_mipmaps})
 			self.texturesLoaded[path]:setWrap("repeat", "repeat")
@@ -173,8 +187,8 @@ function lib:getTexture(path)
 		return self.texturesLoaded[path]
 	end
 	
-	--request image load, optional a thumbnail first, table indicates a thread instruction, e.g. a RMA combine request
-	local tex = self.texturesLoaded[path] or self.thumbnailPaths[path] and self.texturesLoaded[self.thumbnailPaths[path]] or type(path) == "table" and self.texturesLoaded[path[2]]
+	--request image load, table indicates a thread instruction, e.g. a RMA combine request
+	local tex = self.texturesLoaded[path] or self.thumbnailsLoaded[path] or type(path) == "table" and self.texturesLoaded[path[2]]
 	if not tex and self.texturesLoaded[path] == nil then
 		--mark as in progress
 		self.texturesLoaded[path] = false
@@ -190,22 +204,18 @@ function lib:getTexture(path)
 			end
 		else
 			--request texture load
-			self.channel_jobs:push({"image", path, self.textures_generateThumbnails})
+			self.channel_jobs:push({"image", path})
 		end
 		
 		--try to detect thumbnails
 		if path then
-			local ext = path:match("^.+(%..+)$") or ""
-			local path_thumb = self.images[path:sub(1, #path-#ext) .. "_thumb"]
-			local path_thumb_cached = self.images["thumbs/" .. path:sub(1, #path-#ext) .. "_thumb"]
-			
-			--also request thumbnail in the priority channel
-			if path_thumb then
-				self.thumbnailPaths[path] = path_thumb
-				self.channel_jobs_priority:push({"image", path_thumb})
-			elseif path_thumb_cached then
-				self.thumbnailPaths[path] = path_thumb_cached
-				self.channel_jobs_priority:push({"image", path_thumb_cached})
+			local base = path:match("(.*)[.].*")
+			if base then
+				local path_thumb = self:getImagePath(base .. "_thumb")
+				if path_thumb then
+					self.thumbnailsLoaded[path] = love.graphics.newImage(path_thumb)
+					self.thumbnailsLoaded[path]:setWrap("repeat")
+				end
 			end
 		end
 	end
@@ -213,49 +223,16 @@ function lib:getTexture(path)
 	return tex
 end
 
---scan for image files and adds path to image library
-local imageFormats = {"tga", "png", "gif", "bmp", "exr", "hdr", "dds", "dxt", "pkm", "jpg", "jpe", "jpeg", "jp2"}
-local imageFormat = { }
-for d,s in ipairs(imageFormats) do
-	imageFormat["." .. s] = d
-end
-
-lib.images = { }
-lib.imageDirectories = { }
-local priority = { }
-local function scan(path)
-	if path:sub(1, 1) ~= "." then
-		for d,s in ipairs(love.filesystem.getDirectoryItems(path)) do
-			if love.filesystem.getInfo(path .. "/" .. s, "directory") then
-				scan(path .. (#path > 0 and "/" or "") .. s)
-			else
-				local ext = s:match("^.+(%..+)$")
-				if ext and imageFormat[ext] then
-					local name = s:sub(1, #s-#ext)
-					local p = path .. "/" .. name
-					if not lib.images[p] or imageFormat[ext] < priority[p] then
-						lib.images[p] = path .. "/" .. s
-						lib.imageDirectories[path] = lib.imageDirectories[path] or { }
-						lib.imageDirectories[path][s] = path .. "/" .. s
-						priority[p] = imageFormat[ext]
-					end
-				end
-			end
-		end
-	end
-end
-scan("")
-
 --combine 3 textures to use only one texture
-function lib:combineTextures(metallicSpecular, roughnessGlossines, AO, name)
-	local path = (metallicSpecular or roughnessGlossines or (AO .. "combined")):gsub("metallic", "combined"):gsub("roughness", "combined"):gsub("specular", "combined"):gsub("glossiness", "combined")
+function lib:combineTextures(roughness, metallic, AO)
+	local path = roughness or metallic or (AO .. "_material")
 	
-	if name then
-		local dir = path:match("(.*[/\\])")
-		path = dir and (dir .. name) or name
-	else
-		path = path:match("(.+)%..+")
-	end
+	--remove extension
+	path = path:match("(.+)%..+")
 	
-	return {"combine", path, metallicSpecular, roughnessGlossines, AO}
+	--replace typ
+	path:gsub("roughness", "material")
+	path:gsub("metallic", "material")
+	
+	return {"combine", path, roughness, metallic, AO}
 end

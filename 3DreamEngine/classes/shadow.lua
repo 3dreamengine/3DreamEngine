@@ -1,46 +1,73 @@
 local lib = _3DreamEngine
 
-function lib:newShadow(typ, static, res)
-	if typ == "point" then
-		res = res or self.shadow_cube_resolution
-	else
-		res = res or self.shadow_resolution
-	end
-	
+function lib:newShadow(typ, resolution)
 	return setmetatable({
 		typ = typ,
-		res = res,
-		static = static or false,
-		done = { },
-		priority = 1.0,
-		lastUpdate = 0,
-		lastPos = vec3(0, 0, 0)
+		
+		resolution = resolution or (typ == "sun" and 1024 or 512),
+		done = false,
+		target = false,
+		refreshStepSize = typ == "sun" and 1.0 or 0.0001,
+		
+		cascadeDistance = 8,
+		cascadeFactor = 4,
+		
+		static = false,
+		smooth = false,
+		dynamic = true,
+		lazy = false,
 	}, self.meta.shadow)
 end
 
-function lib:newShadowCanvas(typ, res)
-	if typ == "sun" then
-		local canvas = love.graphics.newCanvas(res, res,
-			{format = "depth16", readable = true, msaa = 0, type = "2d"})
-		
-		canvas:setDepthSampleMode("greater")
-		canvas:setFilter("linear", "linear")
-		
-		return canvas
-	elseif typ == "point" then
-		local canvas = love.graphics.newCanvas(res, res,
-			{format = "r16f", readable = true, msaa = 0, type = "cube"})
-		
-		canvas:setFilter("linear", "linear")
-		
-		return canvas
-	end
-end
-
-return {
+local class = {
 	link = {"shadow"},
 	
-	refresh = function(self)
-		self.done = { }
-	end,
+	setterGetter = {
+		resolution = "number",
+		
+		refreshStepSize = "number",
+		cascadeDistance = "number",
+		cascadeFactor = "number",
+		
+		static = "boolean",
+		dynamic = "boolean",
+		smooth = "boolean",
+		lazy = "boolean",
+	},
 }
+
+function class:refresh()
+	self.rendered = false
+end
+
+function class:clear()
+	self.canvases = nil
+	self.canvas = nil
+	self.lastFace = nil
+	self:refresh()
+end
+
+function class:setResolution(r)
+	self.resolution = r
+	self:clear()
+end
+
+function class:setStatic(s)
+	self.static = s
+	if s then
+		self.dynamic = false
+	end
+	self:clear()
+end
+
+function class:setDynamic(s)
+	self.dynamic = s
+	self:clear()
+end
+
+function class:setSmooth(s)
+	self.smooth = s
+	self:clear()
+end
+
+return class

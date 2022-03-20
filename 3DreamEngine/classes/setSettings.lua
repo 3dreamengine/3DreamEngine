@@ -5,34 +5,40 @@ function lib:newSetSettings()
 	return setmetatable({
 		resolution = 512,
 		format = "rgba16f",
-		postEffects = false,
 		msaa = 4,
 		fxaa = false,
 		refractions = false,
-		averageAlpha = false,
 		alphaPass = true,
 		mode = "normal",
 	}, self.meta.setSettings)
 end
 
-return {
+local class = {
 	link = {"setSettings"},
 	
 	setterGetter = {
 		resolution = "number",
 		format = "string",
-		postEffects = "boolean",
 		msaa = "number",
 		fxaa = "boolean",
 		refractions = "boolean",
-		averageAlpha = "boolean",
 		alphaPass = "boolean",
 		mode = "getter",
 	},
-	
-	setMode = function(self, mode)
-		assert(mode == "normal" or mode == "direct" or mode == "lite")
-		self.format = mode == "normal" and "rgba16f" or "rgba8"
-		self.mode = mode
-	end,
 }
+
+function class:setMode(mode)
+	assert(mode == "normal" or mode == "direct" or mode == "lite")
+	self.format = mode == "normal" and "rgba16f" or "rgba8"
+	self.mode = mode
+end
+
+function class:getRefractions()
+	return self.refractions
+end
+
+function class:getAlphaPass()
+	return self.alphaPass
+end
+
+return class

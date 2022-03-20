@@ -2,28 +2,33 @@
 <a href="https://discord.gg/hpmZxNQ"><img src="https://discordapp.com/api/guilds/561664262481641482/embed.png" alt="Discord server" /></a>
 
 # Features
-* fast rendering with z-buffer and shaders
-* PBR rendering (albedo, normal, roughness, metallic, ao, emission)
-* Phong shading (color, normal, glossiness, specular, ao, emission)
+* easy to use yet powerful 3D extension to LÖVE
+* fast forward rendering with alpha pass
+* metallness workflow (albedo, normal, roughness, metallic, ao, emission)
 * HDR with bloom
+* refractions
 * screen space ambient occlusion (ssao)
 * cubemap reflections
 * proper blurred reflections on rough surfaces
-* particle batches
-* modular and extendable shaders
-* dynamic clouds, sun, moon, stars and rainbows
+* particle batches and single sprites
+* particle/foliage systems
+* simple custom shaders
 * eye adaption effect
 * cascade shadow mapping
 * cubemap shadow mapping
 * smooth shadows
 * distance fog
-* wind animation (leaves, grass, ...)
+* godrays
+* included shaders for wind animation, water, ...
 * supports .obj, .mtl, .dae and .vox
-* threaded texture loading with automatic thumbnail generation
-* threaded object loading using 3DreamEngine specific object files (converter included)
+* threaded texture loading
+* optional high performance file format to accelerate loading times
 * included optimized vec2, vec3, vec4, mat2, mat3 and mat4 library
+* Box2D extension to support basic 3D collisions
+* dynamic clouds, sun, moon, stars and rainbows
 
 ![screenshots](https://raw.githubusercontent.com/3dreamengine/3DreamEngine/master/screenshots.jpg)
+
 
 # development
 Due to rapid changes to 3Dream I am working on a seperate branch ("beta"). While this branch is faster and offers more and improved features, I am experimenting with it and may change how things work.
@@ -43,44 +48,43 @@ dream = require("3DreamEngine")
 --optionally set settings
 dream:setBloom(3)
 
---inits (applies settings)
+--init (applies settings)
 dream:init()
 
 --loads a object
 yourObject = dream:loadObject("examples/monkey/object")
 
 --creates a light
-light = dream:newLight("point", 1, 2, 3, 1.0, 0.75, 0.2)
+light = dream:newLight("point", vec3(3, 2, 1), vec3(1.0, 0.75, 0.2), 50.0)
 
---add shadow
+--add shadow to light source
 light:addShadow()
 
 function love.draw()
-  --reset lighting to default sun
-  dream:resetLight()
+	--prepare for rendering
+	dream:prepare()
 
-  --add light
-  dream:addLight(light)  
-  
-  --prepare for rendering
-  dream:prepare()  
+	--add light
+	dream:addLight(light) 
 
-  --rotate, draw and offset
-  yourObject:rotateY(love.timer.getDelta())
-  dream:draw(yourObject, 0, 0, -5)
+	--rotate, offset and draw
+	yourObject:reset() 
+	yourObject:rotateY(love.timer.getTime())
+	yourObject:translate(0, 0, -3)
+	dream:draw(yourObject)
 
-  --render
-  dream:present()
+	--render
+	dream:present()
 end
 
 function love.update()
-  --update resource loader
-  dream:update()
+	--update resource loader
+	dream:update()
 end
 ```
 
 # Examples
-We have examples in the examples folder. The provided main.lua contains a demo selection.
+We have examples in the examples folder. The provided main.lua contains a demo selection screen.
 
 # Credits
 - [Lamborghini model](https://www.turbosquid.com/FullPreview/Index.cfm/ID/1117798)

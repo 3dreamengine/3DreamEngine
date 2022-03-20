@@ -30,7 +30,7 @@ function love.conf(t)
     t.modules.keyboard = true           -- Enable the keyboard module (boolean)
     t.modules.math = true               -- Enable the math module (boolean)
     t.modules.mouse = true              -- Enable the mouse module (boolean)
-    t.modules.physics = false           -- Enable the physics module (boolean)
+    t.modules.physics = true            -- Enable the physics module (boolean)
     t.modules.sound = true              -- Enable the sound module (boolean)
     t.modules.system = true             -- Enable the system module (boolean)
     t.modules.timer = true              -- Enable the timer module (boolean), Disabling it will result 0 delta time in love.update

@@ -2,108 +2,76 @@ local sh = { }
 
 sh.type = "light"
 
+sh.func = "sampleShadowSun"
+
 function sh:constructDefinesGlobal(dream)
 	return [[
-		extern float factor;
-		extern float shadowDistance;
-		extern float texelSize;
-	
-		vec2 sampleOffset[17] = vec2[] (
-			vec2(2, -1),
-			vec2(3, 0),
-			vec2(2, 1),
-			vec2(1, -2),
-			vec2(1, 0),
-			vec2(1, 2),
-			vec2(0, -3),
-			vec2(0, -1),
-			vec2(0, 0),
-			vec2(0, 1),
-			vec2(0, 3),
-			vec2(-1, -2),
-			vec2(-1, 0),
-			vec2(-1, 2),
-			vec2(-2, -1),
-			vec2(-3, 0),
-			vec2(-2, 1)
-		);
+	float sampleShadowSun2(Image tex, vec2 shadowUV, float depth) {
+		float ox = float(fract(love_PixelCoord.x * 0.5) > 0.25);
+		float oy = float(fract(love_PixelCoord.y * 0.5) > 0.25) + ox;
+		if (oy > 1.1) oy = 0.0;
+		float ss_texelSize = 1.0 / love_ScreenSize.x;
 		
-		float sampleShadowSun2Smooth(sampler2DShadow tex, vec3 shadowUV) {
-			float shadow = 0.0;
-			for (int i = 0; i < 17; ++i) {
-				shadow += texture(tex, shadowUV + vec3(sampleOffset[i], 0.0) * texelSize);
-			}
-			return shadow / 17.0;
-		}
+		float r0 = texture(tex, shadowUV + vec2(-1.5 + ox, 0.5 + oy) * ss_texelSize).x;
+		float r1 = texture(tex, shadowUV + vec2(0.5 + ox, 0.5 + oy) * ss_texelSize).x;
+		float r2 = texture(tex, shadowUV + vec2(-1.5 + ox, -1.5 + oy) * ss_texelSize).x;
+		float r3 = texture(tex, shadowUV + vec2(0.5 + ox, -1.5 + oy) * ss_texelSize).x;
 		
-		float sampleShadowSunSmooth(vec3 vertexPos, mat4 sun_shadow_proj_1, mat4 sun_shadow_proj_2, mat4 sun_shadow_proj_3, sampler2DShadow sun_shadow_tex_1, sampler2DShadow sun_shadow_tex_2, sampler2DShadow sun_shadow_tex_3, float bias) {
-			vec4 vertexPosShadow;
-			vec3 shadowUV;
-			float dist = distance(vertexPos, viewPos) * shadowDistance;
-			
-			if (dist < 1.0) {
-				vertexPosShadow = sun_shadow_proj_1 * vec4(vertexPos.xyz, 1.0);
-				shadowUV = vertexPosShadow.xyz - vec3(0.0, 0.0, bias);
-				return sampleShadowSun2Smooth(sun_shadow_tex_1, shadowUV * 0.5 + 0.5);
-			} else if (dist < factor) {
-				vertexPosShadow = sun_shadow_proj_2 * vec4(vertexPos.xyz, 1.0);
-				shadowUV = vertexPosShadow.xyz - vec3(0.0, 0.0, bias * factor);
-				return sampleShadowSun2Smooth(sun_shadow_tex_2, shadowUV * 0.5 + 0.5);
-			} else {
-				vertexPosShadow = sun_shadow_proj_3 * vec4(vertexPos.xyz, 1.0);
-				shadowUV = vertexPosShadow.xyz - vec3(0.0, 0.0, bias * factor * factor);
-				return sampleShadowSun2Smooth(sun_shadow_tex_3, shadowUV * 0.5 + 0.5);
-			}
-		}
+		return (r0 > depth ? 0.25 : 0.0) +
+			(r1 > depth ? 0.25 : 0.0) +
+			(r2 > depth ? 0.25 : 0.0) +
+			(r3 > depth ? 0.25 : 0.0)
+		;
+	}
+	]] .. self:constructDefinesGlobalCommon(dream)
+end
+
+function sh:constructDefinesGlobalCommon(dream)
+	return [[
+	float ]] .. self.func .. [[(vec3 vertexPos, vec3 pos, mat4 proj1, mat4 proj2, mat4 proj3, Image tex1, Image tex2, Image tex3, float factor, float shadowDistance, float fade, float bias) {
+		float dist = distance(vertexPos, pos) * shadowDistance;
 		
-		float sampleShadowSun2(sampler2DShadow tex, vec3 shadowUV) {
-			float ox = float(fract(love_PixelCoord.x * 0.5) > 0.25);
-			float oy = float(fract(love_PixelCoord.y * 0.5) > 0.25) + ox;
-			if (oy > 1.1) oy = 0.0;
-			
-			return (
-				texture(tex, shadowUV + vec3(-1.5 + ox, 0.5 + oy, 0.0) * texelSize) +
-				texture(tex, shadowUV + vec3(0.5 + ox, 0.5 + oy, 0.0) * texelSize) +
-				texture(tex, shadowUV + vec3(-1.5 + ox, -1.5 + oy, 0.0) * texelSize) +
-				texture(tex, shadowUV + vec3(0.5 + ox, -1.5 + oy, 0.0) * texelSize)
-			) * 0.25;
-		}
+		float f2 = factor * factor;
+		float v1 = clamp((1.0 - dist) * fade * f2, 0.0, 1.0);
+		float v2 = clamp((factor - dist) * fade * factor, 0.0, 1.0) - v1;
+		float v3 = clamp((f2 - dist) * fade, 0.0, 1.0) - v2 - v1;
 		
-		float sampleShadowSun(vec3 vertexPos, mat4 sun_shadow_proj_1, mat4 sun_shadow_proj_2, mat4 sun_shadow_proj_3, sampler2DShadow sun_shadow_tex_1, sampler2DShadow sun_shadow_tex_2, sampler2DShadow sun_shadow_tex_3, float bias) {
-			vec4 vertexPosShadow;
-			vec3 shadowUV;
-			float dist = distance(vertexPos, viewPos) * shadowDistance;
-			
-			if (dist < 1.0) {
-				vertexPosShadow = sun_shadow_proj_1 * vec4(vertexPos.xyz, 1.0);
-				shadowUV = vertexPosShadow.xyz - vec3(0.0, 0.0, bias);
-				return sampleShadowSun2(sun_shadow_tex_1, shadowUV * 0.5 + 0.5);
-			} else if (dist < factor) {
-				vertexPosShadow = sun_shadow_proj_2 * vec4(vertexPos.xyz, 1.0);
-				shadowUV = vertexPosShadow.xyz - vec3(0.0, 0.0, bias * 0.5 * factor);
-				return sampleShadowSun2(sun_shadow_tex_2, shadowUV * 0.5 + 0.5);
-			} else {
-				vertexPosShadow = sun_shadow_proj_3 * vec4(vertexPos.xyz, 1.0);
-				shadowUV = vertexPosShadow.xyz - vec3(0.0, 0.0, bias * factor);
-				return sampleShadowSun2(sun_shadow_tex_3, shadowUV * 0.5 + 0.5);
-			}
+		float v = 1.0 - v1 - v2 - v3;
+		if (v1 > 0.0) {
+			vec3 uvs = (proj1 * vec4(vertexPos, 1.0)).xyz;
+			v += v1 * ]] .. self.func ..[[2(tex1, uvs.xy * 0.5 + 0.5, uvs.z - bias);
 		}
+		if (v2 > 0.0) {
+			vec3 uvs = (proj2 * vec4(vertexPos, 1.0)).xyz;
+			v += v2 * ]] .. self.func ..[[2(tex2, uvs.xy * 0.5 + 0.5, uvs.z - bias * factor);
+		}
+		if (v3 > 0.0) {
+			vec3 uvs = (proj3 * vec4(vertexPos, 1.0)).xyz;
+			v += v3 * ]] .. self.func ..[[2(tex3, uvs.xy * 0.5 + 0.5, uvs.z - bias * f2);
+		}
+		return v;
+	}
 	]]
 end
 
 function sh:constructDefines(dream, ID)
 	return ([[
-		extern mat4 sun_shadow_proj_1_#ID#;
-		extern mat4 sun_shadow_proj_2_#ID#;
-		extern mat4 sun_shadow_proj_3_#ID#;
-		
-		extern sampler2DShadow sun_shadow_tex_1_#ID#;
-		extern sampler2DShadow sun_shadow_tex_2_#ID#;
-		extern sampler2DShadow sun_shadow_tex_3_#ID#;
-		
-		extern bool sun_shadow_smooth_#ID#;
-		extern vec3 sun_shadow_vec_#ID#;
-		extern vec3 sun_shadow_color_#ID#;
+	extern float ss_factor_#ID#;
+	extern float ss_distance_#ID#;
+	extern float ss_fade_#ID#;
+	
+	extern vec3 ss_pos_#ID#;
+	
+	extern mat4 ss_proj1_#ID#;
+	extern mat4 ss_proj2_#ID#;
+	extern mat4 ss_proj3_#ID#;
+	
+	extern Image ss_tex1_#ID#;
+	extern Image ss_tex2_#ID#;
+	extern Image ss_tex3_#ID#;
+	
+	extern vec3 ss_vec_#ID#;
+	extern vec3 ss_color_#ID#;
 	]]):gsub("#ID#", ID)
 end
 
@@ -117,73 +85,55 @@ end
 
 function sh:constructPixel(dream, ID)
 	return ([[
-		float shadow;
-		float bias = max(0.01 * (1.0 - dot(normal, sun_shadow_vec_#ID#)), 0.0005);
-		if (sun_shadow_smooth_#ID#) {
-			shadow = sampleShadowSunSmooth(vertexPos, sun_shadow_proj_1_#ID#, sun_shadow_proj_2_#ID#, sun_shadow_proj_3_#ID#, sun_shadow_tex_1_#ID#, sun_shadow_tex_2_#ID#, sun_shadow_tex_3_#ID#, bias);
-		} else {
-			shadow = sampleShadowSun(vertexPos, sun_shadow_proj_1_#ID#, sun_shadow_proj_2_#ID#, sun_shadow_proj_3_#ID#, sun_shadow_tex_1_#ID#, sun_shadow_tex_2_#ID#, sun_shadow_tex_3_#ID#, bias);
-		}
+	float bias = mix(1.0, 0.01, dot(normal, ss_vec_#ID#)) / 512.0;
+	float shadow = ]] .. self.func .. [[(vertexPos, ss_pos_#ID#, ss_proj1_#ID#, ss_proj2_#ID#, ss_proj3_#ID#, ss_tex1_#ID#, ss_tex2_#ID#, ss_tex3_#ID#, ss_factor_#ID#, ss_distance_#ID#, ss_fade_#ID#, bias);
+	
+	if (shadow > 0.0) {
+		vec3 lightColor = ss_color_#ID# * shadow;
 		
-		if (shadow > 0.0) {
-			vec3 lightColor = sun_shadow_color_#ID# * shadow;
-			
-			light += getLight(lightColor, viewVec, sun_shadow_vec_#ID#, normal, albedo.rgb, material.x, material.y);
-			
-			//backface light
-			#ifdef TRANSLUCENT_ENABLED
-				light += getLight(lightColor, viewVec, sun_shadow_vec_#ID#, reflect(normal, normalRaw), albedo.rgb, material.x, material.y) * translucent;
-			#endif
-		}
+		light += getLight(lightColor, viewVec, ss_vec_#ID#, normal, albedo, roughness, metallic);
+	}
 	]]):gsub("#ID#", ID)
 end
 
 function sh:constructPixelBasic(dream, ID)
 	return ([[
-		float shadow;
-		if (sun_shadow_smooth_#ID#) {
-			shadow = sampleShadowSunSmooth(vertexPos, sun_shadow_proj_1_#ID#, sun_shadow_proj_2_#ID#, sun_shadow_proj_3_#ID#, sun_shadow_tex_1_#ID#, sun_shadow_tex_2_#ID#, sun_shadow_tex_3_#ID#, 0.001);
-		} else {
-			shadow = sampleShadowSun(vertexPos, sun_shadow_proj_1_#ID#, sun_shadow_proj_2_#ID#, sun_shadow_proj_3_#ID#, sun_shadow_tex_1_#ID#, sun_shadow_tex_2_#ID#, sun_shadow_tex_3_#ID#, 0.001);
-		}
-		
-		light += sun_shadow_color_#ID# * shadow;
+	float bias = 1.0 / 512.0;
+	float shadow = ]] .. self.func .. [[(vertexPos, ss_pos_#ID#, ss_proj1_#ID#, ss_proj2_#ID#, ss_proj3_#ID#, ss_tex1_#ID#, ss_tex2_#ID#, ss_tex3_#ID#, ss_factor_#ID#, ss_distance_#ID#, ss_fade_#ID#, bias);
+	
+	light += ss_color_#ID# * shadow;
 	]]):gsub("#ID#", ID)
 end
 
 function sh:sendGlobalUniforms(dream, shaderObject)
-	local shader = shaderObject.shader
 	
-	shader:send("factor", dream.shadow_factor)
-	shader:send("shadowDistance", 2 / dream.shadow_distance)
-	shader:send("texelSize", 1.0 / dream.shadow_resolution)
 end
 
 function sh:sendUniforms(dream, shaderObject, light, ID)
 	local shader = shaderObject.shader
 	
 	if light.shadow.canvases and light.shadow.canvases[3] then
-		shader:send("sun_shadow_proj_1_" .. ID, light.shadow.transformation_1)
-		shader:send("sun_shadow_proj_2_" .. ID, light.shadow.transformation_2)
-		shader:send("sun_shadow_proj_3_" .. ID, light.shadow.transformation_3)
+		shader:send("ss_factor_" .. ID, light.shadow.cascadeFactor)
+		shader:send("ss_fade_" .. ID, 4 / light.shadow.cascadeFactor / light.shadow.cascadeFactor)
+		shader:send("ss_distance_" .. ID, 2 / light.shadow.cascadeDistance)
 		
-		shader:send("sun_shadow_tex_1_" .. ID, light.shadow.canvases[1])
-		shader:send("sun_shadow_tex_2_" .. ID, light.shadow.canvases[2])
-		shader:send("sun_shadow_tex_3_" .. ID, light.shadow.canvases[3])
+		shader:send("ss_pos_" .. ID, light.shadow.cams[1].pos)
 		
-		if light.smooth == nil then
-			shader:send("sun_shadow_smooth_" .. ID, dream.shadow_smooth)
-		else
-			shader:send("sun_shadow_smooth_" .. ID, light.smooth)
-		end
+		shader:send("ss_proj1_" .. ID, light.shadow.cams[1].transformProj)
+		shader:send("ss_proj2_" .. ID, light.shadow.cams[2].transformProj)
+		shader:send("ss_proj3_" .. ID, light.shadow.cams[3].transformProj)
 		
-		shader:send("sun_shadow_color_" .. ID,  {light.r * light.brightness, light.g * light.brightness, light.b * light.brightness})
+		shader:send("ss_tex1_" .. ID, light.shadow.canvases[1])
+		shader:send("ss_tex2_" .. ID, light.shadow.canvases[2])
+		shader:send("ss_tex3_" .. ID, light.shadow.canvases[3])
 		
-		if shader:hasUniform("sun_shadow_vec_" .. ID) then
-			shader:send("sun_shadow_vec_" .. ID, {vec3(light.x, light.y, light.z):normalize():unpack()})
+		shader:send("ss_color_" .. ID, light.color * light.brightness)
+		
+		if shader:hasUniform("ss_vec_" .. ID) then
+			shader:send("ss_vec_" .. ID, light.direction)
 		end
 	else
-		shader:send("sun_shadow_color_" .. ID, {0, 0, 0})
+		shader:send("ss_color_" .. ID, {0, 0, 0})
 	end
 end
 

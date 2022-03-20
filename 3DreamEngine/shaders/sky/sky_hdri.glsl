@@ -13,7 +13,7 @@ void effect() {
 #ifdef VERTEX
 extern highp mat4 transformProj;
 
-vec4 position(mat4 transform_projection, vec4 vertex_position) {
-	return transformProj * vec4(vertex_position.xyz, 1.0);
+vec4 position(mat4 transform_projection, vec4 VertexPosition) {
+	return transformProj * vec4(VertexPosition.xyz, 1.0);
 }
 #endif

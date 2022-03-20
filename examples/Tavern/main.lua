@@ -1,23 +1,20 @@
 --load the 3D lib
 local dream = require("3DreamEngine")
-local collision = require("3DreamEngine/collision")
+local raytrace = require("extensions/raytrace")
+
 love.window.setTitle("PBR Tavern")
 love.window.setVSync(false)
 
 --settings
 local projectDir = "examples/Tavern/"
-dream:setNameDecoder()
+dream:setSmoothLoading(false)
 
 dream.renderSet:setRefractions(true)
 
---dream:setDeferredShaderType("PBR")
-
 dream:setSky(false)
-dream:setReflection(cimg:load(projectDir .. "sky.cimg"))
+--dream:setDefaultReflection(cimg:load(projectDir .. "sky.cimg"))
 
-dream:setAutoExposure(true)
-
-dream:setFog(0.05, {0.7, 0.6, 0.5}, 0.0)
+dream:setFog(0.0025, {0.6, 0.5, 0.4}, 0.0)
 dream:setFogHeight(0.0, 2.5)
 
 --load materials
@@ -27,38 +24,24 @@ dream:loadMaterialLibrary(projectDir .. "materials")
 dream:init()
 
 --load scene
-local scene = dream:loadObject(projectDir .. "scene", "PBR")
+local tavern = dream:loadObject(projectDir .. "scene", {cleanup = false})
+local scene = dream:newScene()
+scene:addObject(tavern)
 
---create mesh collisions for all sub objects
-local colls = collision:newGroup()
-for d,s in pairs(scene.objects) do
-	local c = collision:newMesh(s)
-	
-	--the first children is the actual mesh data which will be returned in the collider, we give it a name so we can recognise it later
-	c.children[1].name = d
-	
-	colls:add(c)
-end
+--a helper class
+local cameraController = require("examples/firstpersongame/cameraController")
 
-local player = {
-	x = 4,
-	y = 1.5,
-	z = 4,
-	ax = 0,
-	ay = 0,
-	az = 0,
-}
-
---because it is easier to work with two rotations
-dream.cam.rx = 0
-dream.cam.ry = math.pi/4
+cameraController.x = 4
+cameraController.y = 1.5
+cameraController.z = 4
+cameraController.ry = -math.pi/4
 
 local texture_candle = love.graphics.newImage(projectDir .. "candle.png")
 local factor = texture_candle:getHeight() / texture_candle:getWidth()
 local quads = { }
 for y = 1, 5 do
 	for x = 1, 5 do
-		quads[#quads+1] = love.graphics.newQuad(x-1, (y-1)*factor, 1, factor, 5, 5*factor)
+		table.insert(quads, love.graphics.newQuad(x-1, (y-1)*factor, 1, factor, 5, 5*factor))
 	end
 end
 
@@ -70,13 +53,24 @@ local particleBatchDust = dream:newParticleBatch(love.graphics.newImage(projectD
 particleBatchDust:setSorting(false)
 
 local lights = { }
-for d,s in ipairs(scene.positions) do
-	if s.name == "LIGHT" then
-		lights[d] = dream:newLight("point", s.x, s.y + 0.1, s.z, 1.0, 0.75, 0.3)
-		lights[d].shadow = dream:newShadow("point", true)
-	elseif s.name == "FIRE" then
-		lights[d] = dream:newLight("point", s.x, s.y + 0.1, s.z, 1.0, 0.75, 0.2)
-		lights[d].shadow = dream:newShadow("point", true)
+for d,s in ipairs(tavern.positions) do
+	if s.name == "light" then
+		lights[d] = dream:newLight("point", vec3(s.position.x, s.position.y + 0.1, s.position.z), vec3(1.0, 0.75, 0.3))
+		lights[d]:addShadow()
+		lights[d].shadow:setStatic(true)
+		lights[d].shadow:setSmooth(true)
+		lights[d].shadow:setRefreshStepSize(1000)
+		lights[d].shadow:setLazy(true)
+		lights[d]:setAttenuation(3) --unrealistic but looks better
+	elseif s.name == "fire" then
+		lights[d] = dream:newLight("point", vec3(s.position.x, s.position.y + 0.1, s.position.z), vec3(1.0, 0.75, 0.2))
+		lights[d]:addShadow()
+		lights[d].shadow:setStatic(true)
+		lights[d].shadow:setSmooth(true)
+		lights[d].shadow:setRefreshStepSize(1000)
+		lights[d].shadow:setLazy(true)
+		lights[d]:setAttenuation(3) --unrealistic but looks better
+		lights[d]:setSize(0.1)
 	end
 end
 
@@ -86,12 +80,17 @@ local rotateCamera = true
 
 local noise = require(projectDir .. "noise").Simplex2D
 
+local function getFlickerOffset(d, f)
+	return vec3(
+		noise(love.timer.getTime(), d + 0) * f,
+		noise(love.timer.getTime(), d + 1) * f,
+		noise(love.timer.getTime(), d + 2) * f
+	)
+end
+
 function love.draw()
 	--update camera
-	dream.cam:reset()
-	dream.cam:translate(-player.x, -player.y, -player.z)
-	dream.cam:rotateY(dream.cam.ry)
-	dream.cam:rotateX(dream.cam.rx)
+	cameraController:setCamera(dream.cam)
 	
 	dream:prepare()
 	
@@ -105,33 +104,38 @@ function love.draw()
 		local x = noise(i, 1 + c) * 100 % 10.5 - 5.25
 		local y = noise(i, 2 + c) * 100 % 4.5 - 0.25
 		local z = noise(i, 3 + c) * 100 % 10.5 - 5.25
-		particleBatchDust:add(x, y, z, (i % 10 + 10) * 0.002)
+		particleBatchDust:add(x, y, z, 0, (i % 10 + 10) * 0.002)
 	end
-	
-	--update lights
-	dream:resetLight(true)
 	
 	--make the particles black so it only emits light
 	love.graphics.setColor(0, 0, 0, 1)
-	for d,s in ipairs(scene.positions) do
-		if s.name == "LIGHT" then
-			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 200.0
+	for d,s in ipairs(tavern.positions) do
+		local flicker = love.timer.getTime() / math.sqrt(s.size) * 0.2
+		if s.name == "light" then
+			local power = (0.5 + 0.2 * noise(flicker, d)) * s.size * 500.0
 			lights[d]:setBrightness(power)
+			lights[d].oPos = lights[d].oPos or lights[d].pos
+			lights[d]:setPosition(lights[d].oPos + getFlickerOffset(d, 0.02))
 			dream:addLight(lights[d])
-			particleBatch:addQuad(quads[math.ceil(d + love.timer.getTime() * 24) % 25 + 1], s.x, s.y + 0.02, s.z, power * 0.015, nil, 3.0)
-		elseif s.name == "CANDLE" then
-			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 200.0
-			particleBatch:addQuad(quads[math.ceil(d + love.timer.getTime() * 24) % 25 + 1], s.x, s.y + 0.02, s.z, power * 0.015, nil, 3.0)
-		elseif s.name == "FIRE" then
-			local power = (0.5 + 0.3 * love.math.noise(love.timer.getTime() / math.sqrt(s.size) * 0.25, d)) * s.size * 200.0
+		elseif s.name == "candle" then
+			local power = (0.5 + 0.2 * noise(flicker, d)) * s.size * 4
+			particleBatch:addQuad(quads[math.ceil(d + love.timer.getTime() * 24) % 25 + 1], s.position.x, s.position.y + 0.02, s.position.z, 0, power, nil, 2.0)
+		elseif s.name == "fire" then
+			local power = (0.5 + 0.2 * noise(flicker, d)) * s.size * 2000.0
 			lights[d]:setBrightness(power)
+			lights[d].oPos = lights[d].oPos or lights[d].pos
+			lights[d]:setPosition(lights[d].oPos + getFlickerOffset(d, 0.02))
 			dream:addLight(lights[d])
+			
+			for i = -3, 3 do
+				local power = (0.5 + 0.15 * noise(flicker, d + i)) * s.size / (1 + 0.1 * math.abs(i)) * 4
+				particleBatch:addQuad(quads[math.ceil(i * 17 + d + love.timer.getTime() * 24) % 25 + 1], s.position.x + i * 0.1, s.position.y - 0.15, s.position.z - 0.1 - math.abs(i) * 0.025, 0, power, nil, 4.0)
+			end
 		end
 	end
 	love.graphics.setColor(1, 1, 1, 1)
 	
-	scene:reset()
-	dream:draw(scene)
+	dream:drawScene(scene)
 	
 	dream:drawParticleBatch(particleBatch)
 	dream:drawParticleBatch(particleBatchDust)
@@ -140,10 +144,10 @@ function love.draw()
 	if not hideTooltips then
 		love.graphics.setColor(1, 1, 1)
 		love.graphics.print(table.concat({
-			"R to toggle rain (" .. tostring(dream:isShaderModuleActive("rain")) .. ")",
-			"U to toggle auto exposure (" .. tostring(dream.autoExposure_enabled),
-			"B to toggle smooth light (" .. tostring(dream.shadow_smooth) .. ")",
+			"U to toggle auto exposure (" .. tostring(dream.autoExposure_enabled) .. ")",
 			"F to toggle fog (" .. tostring(dream.fog_enabled) .. ")",
+			"8 to enable fast rendering",
+			"9 to enable quality rendering",
 			"L to toggle looking at check (" .. tostring(lookingAtCheck) .. ")",
 			"K to toggle relative mode (" .. tostring(rotateCamera) .. ")",
 			math.ceil(love.graphics.getStats().texturememory / 1024^2) .. " MB VRAM",
@@ -156,28 +160,20 @@ function love.draw()
 	if lookingAtCheck then
 		local t = love.timer.getTime()
 		local coll = false
-		local pos = vec3(player.x, player.y, player.z)
+		local origin = vec3(player.x, player.y, player.z)
+		local direction
 		
-		local segment
 		if rotateCamera then
-			segment = collision:newSegment(pos, pos + dream.cam.normal * 10)
+			direction = dream.cam.normal * 10
 		else
 			local x, y = love.mouse.getPosition()
 			local point = dream:pixelToPoint(vec3(x, y, 10))
-			segment = collision:newSegment(pos, point)
+			direction = point - origin
 		end
 		
 		--check
-		if collision:collide(segment, colls) then
-			--fetch the collision of the last check
-			local best = math.huge
-			for d,s in ipairs(collision:getCollisions()) do
-				local dist = (s[2] - pos):lengthSquared()
-				if dist < best then
-					best = dist
-					coll = s[3].name or "?"
-				end
-			end
+		if raytrace:raytrace(tavern, origin, direction) then
+			coll = raytrace:getObject().name
 		end
 		
 		--cursor
@@ -197,68 +193,17 @@ end
 
 function love.mousemoved(_, _, x, y)
 	if rotateCamera then
-		local speedH = 0.005
-		local speedV = 0.005
-		dream.cam.ry = dream.cam.ry - x * speedH
-		dream.cam.rx = math.max(-math.pi/2, math.min(math.pi/2, dream.cam.rx + y * speedV))
+		cameraController:mousemoved(x, y)
 	end
 end
 
 function love.update(dt)
-	local d = love.keyboard.isDown
-	local speed = 7.5*dt
-	love.mouse.setRelativeMode(rotateCamera)
-	
-	--collision
-	player.x = player.x + player.ax * dt
-	player.y = player.y + player.ay * dt
-	player.z = player.z + player.az * dt
-	
-	if d("w") then
-		player.ax = player.ax + math.cos(-dream.cam.ry-math.pi/2) * speed
-		player.az = player.az + math.sin(-dream.cam.ry-math.pi/2) * speed
-	end
-	if d("s") then
-		player.ax = player.ax + math.cos(-dream.cam.ry+math.pi-math.pi/2) * speed
-		player.az = player.az + math.sin(-dream.cam.ry+math.pi-math.pi/2) * speed
-	end
-	if d("a") then
-		player.ax = player.ax + math.cos(-dream.cam.ry-math.pi/2-math.pi/2) * speed
-		player.az = player.az + math.sin(-dream.cam.ry-math.pi/2-math.pi/2) * speed
-	end
-	if d("d") then
-		player.ax = player.ax + math.cos(-dream.cam.ry+math.pi/2-math.pi/2) * speed
-		player.az = player.az + math.sin(-dream.cam.ry+math.pi/2-math.pi/2) * speed
-	end
-	if d("space") then
-		player.ay = player.ay + speed
-	end
-	if d("lshift") then
-		player.ay = player.ay - speed
-	end
-	
-	--air resistance
-	player.ax = player.ax * (1 - dt*3)
-	player.ay = player.ay * (1 - dt*3)
-	player.az = player.az * (1 - dt*3)
-	
-	--mount cam
-	dream.cam.x = player.x
-	dream.cam.y = player.y+0.3
-	dream.cam.z = player.z
+	cameraController:update(dt)
 	
 	dream:update()
 end
 
 function love.keypressed(key)
-	if tonumber(key) then
-		if key == "9" then
-			dream:setBloom(false)
-		else
-			dream:setBloom(tonumber(key))
-		end
-	end
-	
 	--screenshots!
 	if key == "f2" then
 		dream:takeScreenshot()
@@ -274,28 +219,15 @@ function love.keypressed(key)
 		hideTooltips = not hideTooltips
 	end
 	
-	if key == "r" then
-		if dream:isShaderModuleActive("rain") then
-			dream:deactivateShaderModule("rain")
-		else
-			dream:activateShaderModule("rain")
-			dream:setWeather(1.0)
-		end
-	end
-	
 	if key == "u" then
 		local enabled = dream:getAutoExposure()
 		dream:setAutoExposure(not enabled)
 		dream:init()
 	end
 	
-	if key == "b" then
-		dream.shadow_smooth = not dream.shadow_smooth
-		dream:init()
-	end
-	
 	if key == "f" then
 		dream.fog_enabled = not dream.fog_enabled
+		dream:init()
 	end
 	
 	if key == "l" then
@@ -306,24 +238,37 @@ function love.keypressed(key)
 		rotateCamera = not rotateCamera
 	end
 	
-	if key == "11" then
+	if key == "1" then
 		dream.renderSet:setRefractions(not dream.renderSet:getRefractions())
-		dream:init()
-	end
-	
-	if key == "21" then
-		dream.renderSet:setAverageAlpha(not dream.renderSet:getAverageAlpha())
-		dream:init()
-	end
-	
-	if key == "33" then
-		local cullMode = dream:getAlphaCullMode()
 		dream:init()
 	end
 	
 	if key == "f3" then
 		dream:take3DScreenshot(vec3(player.x, player.y, player.z), 128)
 	end
+	
+	if key == "g" then
+		dream:setGamma(not dream:getGamma())
+		dream:init()
+	end
+	
+	if key == "e" then
+		dream:setExposure(not dream:getExposure() and 1.0 or false)
+		dream:init()
+	end
+	
+	if key == "8" then
+		dream.renderSet:setMode("direct")
+		dream:init()
+	end
+	
+	if key == "9" then
+		dream.renderSet:setMode("normal")
+		dream:init()
+	end
+	
+	scene = dream:newScene()
+	scene:addObject(tavern)
 end
 
 function love.resize()
