@@ -1,5 +1,7 @@
 #pragma language glsl3
 
+precision highp float;
+
 varying float VaryingEmission;
 varying float VaryingDistortion;
 varying vec3 vertexPos;
@@ -119,7 +121,7 @@ extern mat4 transformProj;
 extern vec3 up;
 extern vec3 right;
 
-vec4 position(mat4 transform_projection, vec4 VertexPosition) {
+vec4 position(highp mat4 transform_projection, highp vec4 VertexPosition) {
 #ifdef SINGLE
 	VaryingTexCoord = vec4(VertexTexCoord.x, 1.0 - VertexTexCoord.y, 0.0, 0.0);
 	

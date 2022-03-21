@@ -1,5 +1,7 @@
 #pragma language glsl3
 
+precision highp float;
+
 //camera uniforms
 extern highp mat4 transformProj;   //projective transformation
 extern highp mat4 transform;       //model transformation
@@ -137,7 +139,7 @@ attribute vec3 VertexNormal;
 attribute vec4 VertexTangent;
 #endif
 
-vec4 position(mat4 _t, vec4 _v) {
+vec4 position(highp mat4 _t, highp vec4 _v) {
 	//normal vec transformation
 	mat3 normalTransform = mat3(transform);
 	

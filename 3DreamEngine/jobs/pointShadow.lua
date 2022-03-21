@@ -47,7 +47,7 @@ function job:execute(light)
 	--create new canvases if necessary
 	if not light.shadow.canvas then
 		light.shadow.canvas = love.graphics.newCanvas(light.shadow.resolution, light.shadow.resolution,
-			{format = light.shadow.dynamic and "rg16f" or "r16f",
+			{format = light.shadow.dynamic and lib.systemSettings.rg16f or lib.systemSettings.r16f,
 			readable = true,
 			msaa = 0,
 			type = "cube",
