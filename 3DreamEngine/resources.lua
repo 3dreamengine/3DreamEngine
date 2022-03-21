@@ -31,7 +31,7 @@ function lib:getLoaderThreadUsage()
 end
 
 --scan for image files and adds path to image library
-local imageFormats = table.toSet({"tga", "png", "gif", "bmp", "exr", "hdr", "dds", "dxt", "pkm", "jpg", "jpe", "jpeg", "jp2"})
+local imageFormats = table.toSet({"dds", "dxt", "astc", "pkm", "tga", "png", "gif", "bmp", "exr", "hdr", "jpg", "jpe", "jpeg", "jp2"})
 local images = { }
 local priority = { }
 local function scan(path)

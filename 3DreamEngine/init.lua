@@ -116,6 +116,11 @@ lib.renderSet = lib:newSetSettings()
 lib.renderSet:setRefractions(true)
 lib.renderSet:setMode("normal")
 
+local name, _, _, _ = love.graphics.getRendererInfo()
+if name == "OpenGL ES" then
+	lib.renderSet:setMode("direct")
+end
+
 lib.reflectionsSet = lib:newSetSettings()
 lib.reflectionsSet:setMode("direct")
 
