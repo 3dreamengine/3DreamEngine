@@ -17,7 +17,7 @@ local scene = dream:loadScene(projectDir .. "scene")
 
 --light
 local p = scene.objects.light.positions[1]
-local light = dream:newLight("point", vec3(p.x, p.y, p.z), vec3(1.4, 1.2, 1.0), 40.0)
+local light = dream:newLight("point", p.position, vec3(1.4, 1.2, 1.0), 40.0)
 light:addShadow()
 light.shadow:setStatic(true)
 light.shadow:setSmooth(true)
