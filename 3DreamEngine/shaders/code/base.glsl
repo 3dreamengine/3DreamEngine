@@ -25,6 +25,10 @@ varying mat3 TBN;
 extern Image depthTexture;
 #endif
 
+#ifdef REFRACTIONS_ENABLED
+extern float ior;
+#endif
+
 
 
 #ifdef PIXEL

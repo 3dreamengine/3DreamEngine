@@ -13,8 +13,6 @@ function sh:buildDefines(dream, mat, shadow)
 		return [[
 			#ifdef PIXEL
 			extern Image brdfLUT;
-			
-			extern float ior;
 			#endif
 			
 			//PBR lighting
@@ -138,10 +136,7 @@ function sh:perShader(dream, shaderObject)
 end
 
 function sh:perMaterial(dream, shaderObject, material)
-	local shader = shaderObject.shader
 	
-	--ior
-	checkAndSendCached(shaderObject, "ior", 1 / material.ior)
 end
 
 function sh:perTask(dream, shaderObject, task)

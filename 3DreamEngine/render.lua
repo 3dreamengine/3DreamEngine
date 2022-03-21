@@ -257,8 +257,8 @@ function lib:render(canvases, cam)
 				
 				--alpha
 				checkAndSendCached(shaderObject, "dither", material.dither and 1 or 0)
-				
 				checkAndSendCached(shaderObject, "translucent", material.translucent)
+				checkAndSendCached(shaderObject, "ior", 1 / material.ior)
 				
 				--shader
 				shaderObject.pixelShader:perMaterial(self, shaderObject, material)
