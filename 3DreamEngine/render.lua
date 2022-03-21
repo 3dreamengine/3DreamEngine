@@ -168,8 +168,10 @@ function lib:render(canvases, cam)
 		--set correct blend mode
 		if canvases.refractions and pass == 2 then
 			love.graphics.setBlendMode("alpha", "premultiplied")
-		else
+		elseif pass == 2 then
 			love.graphics.setBlendMode("alpha", "alphamultiply")
+		else
+			love.graphics.setBlendMode("replace", "premultiplied")
 		end
 		
 		--set alpha pass canvases
