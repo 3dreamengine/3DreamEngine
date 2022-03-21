@@ -74,14 +74,16 @@ function job:execute(light)
 		
 		local shadowCam = lib:newCamera(t[1], lib.cubeMapProjection, light.pos, lib.lookNormals[face])
 		
+		local canvases = {{light.shadow.canvas, face = face}, depth = false}
+		
 		if light.shadow.dynamic then
 			if light.shadow.rendered then
 				--dynamic part
-				lib:renderShadows(shadowCam, {{light.shadow.canvas, face = face}}, light.blacklist, true, nil, false)
+				lib:renderShadows(shadowCam, canvases, light.blacklist, true, nil, false)
 			else
 				--both parts
-				lib:renderShadows(shadowCam, {{light.shadow.canvas, face = face}}, light.blacklist, false, nil, light.shadow.smooth)
-				lib:renderShadows(shadowCam, {{light.shadow.canvas, face = face}}, light.blacklist, true, nil, false)
+				lib:renderShadows(shadowCam, canvases, light.blacklist, false, nil, light.shadow.smooth)
+				lib:renderShadows(shadowCam, canvases, light.blacklist, true, nil, false)
 				light.shouldSmooth = light.shadow.smooth
 			end
 		else
@@ -91,7 +93,7 @@ function job:execute(light)
 				if light.shadow.static  then
 					pass = false
 				end
-				lib:renderShadows(shadowCam, {{light.shadow.canvas, face = face}}, light.blacklist, pass, nil, light.shadow.smooth)
+				lib:renderShadows(shadowCam, canvases, light.blacklist, pass, nil, light.shadow.smooth)
 				light.shouldSmooth = light.shadow.smooth
 			end
 		end

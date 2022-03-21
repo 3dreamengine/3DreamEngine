@@ -79,7 +79,7 @@ function job:execute(light)
 			end
 		end
 		
-		local canvases = {light.shadow.canvases[cascade]}
+		local canvases = {light.shadow.canvases[cascade], depth = false}
 		
 		--render
 		local smooth = false

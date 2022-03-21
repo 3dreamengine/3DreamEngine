@@ -178,6 +178,8 @@ function lib:getImage(path, force)
 		return false
 	end
 	
+	path = images[path] or path
+	
 	--skip threaded loading
 	if force or not self.textures_threaded and type(path) == "string" then
 		if not self.texturesLoaded[path] then
