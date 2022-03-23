@@ -5,7 +5,6 @@
 	- [Clone class](#clone)
 	- [Shader class](#shader)
 	- [Transform class](#transform)
-	- [Visibility class](#visibility)
 * Objects
 	- [Animation](#animation)
 	- [Camera](#camera)
@@ -66,50 +65,6 @@ self:setDynamic(dynamic)
 dynamic = self:isDynamic(dynamic)
 ```
 `dynamic` flag is set when calling any transformation automatically and affects how often it gets refreshed when using dynamic shadows.
-
-
-
-## Visibility class
-Sets LODs and render pass visibility.
-
-```lua
-self:setLOD(min, max)
-min, max = self:getLOD()
-```
-`min` distance before it gets rendered (or `false`)
-`max` distance before it gets out of sight (or `false`)
-
-<br />
-
-```lua
-self:setVisible(enable)
-```
-Shortcut for shadow and render pass visibility  
-`enable` enabled in all passes  
-
-<br />
-
-```lua
-self:setRenderVisibility(enable)
-enable = self:getRenderVisibility()
-```
-`enable` enabled in default render pass  
-
-<br />
-
-```lua
-self:setShadowVisibility(enable)
-enable = self:getShadowVisibility()
-```
-`enable` enabled in default shadow pass  
-
-<br />
-
-```lua
-self:setFarVisibility(enable)
-enable = self:getFarVisibility()
-```
-`enable` draw in cascade level > 1. Disable for small objects to achieve higher sun shadow performance.
 
 
 
@@ -294,7 +249,7 @@ material:cullMode(cullmode)
 ## Mesh
 A mesh is the actual renderable object containing buffers, material and render settings.
 
-Extends `clone`, `visibility`, `shader`
+Extends `clone`, `shader`
 
 ```lua
 mesh = dream:newMesh(name, material)
@@ -311,17 +266,67 @@ Returns a mesh with given name, loads it in case it's a 3do object.
 mesh:getMesh(name)
 ```
 
+<br />
+
+```lua
+self:setLOD(min, max)
+min, max = self:getLOD()
+```
+`min` distance before it gets rendered (or `false`)
+`max` distance before it gets out of sight (or `false`)
+
+<br />
+
+```lua
+self:setVisible(enable)
+```
+Shortcut for shadow and render pass visibility  
+`enable` enabled in all passes  
+
+<br />
+
+```lua
+self:setRenderVisibility(enable)
+enable = self:getRenderVisibility()
+```
+`enable` enabled in default render pass  
+
+<br />
+
+```lua
+self:setShadowVisibility(enable)
+enable = self:getShadowVisibility()
+```
+`enable` enabled in default shadow pass  
+
+<br />
+
+```lua
+self:setFarVisibility(enable)
+enable = self:getFarVisibility()
+```
+`enable` draw in cascade level > 1. Disable for small objects to achieve higher sun shadow performance.
+
 
 
 ## Object
 A container with all meshes, lights, positions, etc.  
 
-Extends `clone`, `transform`, `visibility`, `shader`
+Extends `clone`, `transform`, `shader`
 
 ```lua
 object = dream:newObject()
 ```
 
+<br />
+
+Pass visibilities down to sub objects and meshes, see Mesh for more details.
+```lua
+self:setVisible(enable)
+self:setRenderVisibility(enable)
+self:setShadowVisibility(enable)
+self:setFarVisibility(enable)
+```
 
 
 

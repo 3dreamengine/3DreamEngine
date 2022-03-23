@@ -30,10 +30,13 @@ function lib:newMesh(name, material, meshType)
 end
 
 local class = {
-	link = {"clone", "transform", "shader", "visibility", "mesh"},
+	link = {"clone", "transform", "shader", "mesh"},
 	
 	setterGetter = {
 		instancesCount = "number",
+		renderVisibility = "boolean",
+		shadowVisibility = "boolean",
+		farVisibility = "boolean",
 	}
 }
 
@@ -444,6 +447,19 @@ function class:separate()
 	end
 	
 	return meshes
+end
+
+function class:setLOD(min, max)
+	self.LOD_min = min
+	self.LOD_max = max
+end
+function class:getLOD()
+	return self.LOD_min, self.LOD_max
+end
+
+function class:setVisible(b)
+	self:setRenderVisibility(b)
+	self:setShadowVisibility(b)
 end
 
 local cached = { }

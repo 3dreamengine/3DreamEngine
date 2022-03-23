@@ -7,15 +7,14 @@ function lib:newScene()
 end
 
 local function getPos(object, transform)
-	local bb = object.boundingBox
 	if transform then
-		local a = bb.center
+		local a = object.boundingBox.center
 		return vec3(
 			transform[1] * a[1] + transform[2] * a[2] + transform[3] * a[3] + transform[4],
 			transform[5] * a[1] + transform[6] * a[2] + transform[7] * a[3] + transform[8],
 			transform[9] * a[1] + transform[10] * a[2] + transform[11] * a[3] + transform[12])
 	else
-		return bb.center
+		return object.boundingBox.center
 	end
 end
 
@@ -94,17 +93,6 @@ function class:addObject(object, parentTransform, dynamic, boneTransforms, refle
 		transform = object.transform
 	end
 	
-	--handle LOD
-	if object.LOD_min or object.LOD_max then
-		local LOD_min = object.LOD_min or -math.huge
-		local LOD_max = object.LOD_max or math.huge
-		local pos = getPos(object, transform)
-		local size = getSize(object, transform)
-		if not isWithingLOD(LOD_min, LOD_max, pos, size) then
-			return
-		end
-	end
-	
 	--children
 	for _,o in pairs(object.objects) do
 		self:addObject(o, transform, dynamic, boneTransforms, reflection)
@@ -116,7 +104,19 @@ function class:addObject(object, parentTransform, dynamic, boneTransforms, refle
 	end
 end
 
-function class:addMesh(mesh, transform, dynamic, boneTransforms, reflection)
+function class:addMesh(mesh, parentTransform, dynamic, boneTransforms, reflection)
+	--apply transformation
+	local transform
+	if parentTransform then
+		if mesh.transform then
+			transform = parentTransform * mesh.transform
+		else
+			transform = parentTransform
+		end
+	else
+		transform = mesh.transform
+	end
+	
 	local pos = getPos(mesh, transform)
 	local size = getSize(mesh, transform)
 	

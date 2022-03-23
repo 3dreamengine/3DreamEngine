@@ -16,7 +16,7 @@ monkey.meshes.Suzanne.material.color = {0.4, 0.15, 0.05, 1}
 monkeyForBaking.meshes.Suzanne.material.color = {0.4, 0.15, 0.05, 1}
 
 function getPos()
-	return vec3(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * 5
+	return vec3(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * 15
 end
 
 function createSlow(n)
@@ -52,7 +52,7 @@ function createMerged(n)
 	return newMonkey
 end
 
-count = 128
+count = 1024
 mode = "slow"
 
 function rebuild()
@@ -77,7 +77,7 @@ function love.draw()
 	--add (draw) objects, apply transformations
 	object:resetTransform()
 	object:rotateY(love.timer.getTime())
-	object:translate(0, 0, -5)
+	object:translate(0, 0, -15)
 	dream:draw(object)
 	
 	--render
@@ -87,7 +87,7 @@ function love.draw()
 	love.graphics.printf("This demo contains 3 ways of rendering the same object. The first approach is the straight forward one, with incredible high CPU load. The second one uses instances, which are usually much faster for many objects (grass, foliage, or 500 monkeys), the third methode merges the objects. While not faster than instancing with a far greater initial build time, this approach allows you to merge different shapes too, as long as they share the same material and shader.", 0, 5, love.graphics.getWidth(), "center")
 	
 	--instructions
-	love.graphics.print("FPS: " .. love.timer.getFPS() .. "\n\nUse number keys to switch mode, use arrow keys to change number of monkeys.\n1) Slow\n2)Instances\n3)Merged\n\ncount: " .. count, 5, love.graphics.getHeight() - 150)
+	love.graphics.print("FPS: " .. love.timer.getFPS() .. "\n\nUse number keys to switch mode, use arrow keys to change number of monkeys.\n1) Slow\n2)Instances\n3)Merged (will require build time)\n\ncount: " .. count, 5, love.graphics.getHeight() - 150)
 end
 
 function love.keypressed(key)

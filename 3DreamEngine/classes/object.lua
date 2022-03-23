@@ -31,7 +31,7 @@ function lib:newObject(name)
 end
 
 local class = {
-	link = {"clone", "transform", "shader", "visibility", "object"},
+	link = {"clone", "transform", "shader", "object"},
 }
  
 function class:tostring()
@@ -382,6 +382,38 @@ function class:createMeshes()
 		for d,o in pairs(self.objects) do
 			o:createMeshes()
 		end
+	end
+end
+
+function class:setVisible(b)
+	self:setRenderVisibility(b)
+	self:setShadowVisibility(b)
+end
+
+function class:setRenderVisibility(b)
+	for d,s in pairs(self.objects) do
+		s:setRenderVisibility(b)
+	end
+	for d,s in pairs(self.meshes) do
+		s:setRenderVisibility(b)
+	end
+end
+
+function class:setShadowVisibility(b)
+	for d,s in pairs(self.objects) do
+		s:setShadowVisibility(b)
+	end
+	for d,s in pairs(self.meshes) do
+		s:setShadowVisibility(b)
+	end
+end
+
+function class:setFarVisibility(b)
+	for d,s in pairs(self.objects) do
+		s:setFarVisibility(b)
+	end
+	for d,s in pairs(self.meshes) do
+		s:setFarVisibility(b)
 	end
 end
 

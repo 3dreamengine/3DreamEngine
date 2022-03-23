@@ -21,7 +21,7 @@ function love.draw()
 	dream:addLight(sun)
 	
 	--add (draw) objects, apply transformations
-	monkey:reset()
+	monkey:resetTransform()
 	monkey:rotateY(love.timer.getTime())
 	dream:draw(monkey, 0, 0, -2.25)
 	

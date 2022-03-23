@@ -142,7 +142,7 @@ function love.keypressed(key)
 	
 	if key == "b" then
 		for d,s in pairs(lights) do
-			s.shadow:setSmooth(not s.shadow:getSmooth())
+			s.shadow:setSmooth(not s.shadow:isSmooth())
 		end
 	end
 	
