@@ -390,7 +390,7 @@ function lib:processObject(obj)
 				
 				--2.5D physics
 				if mesh.tags.physics then
-					for i,m in ipairs(self:separateMesh(mesh)) do
+					for i,m in ipairs(mesh:separate()) do
 						obj.physics[id .. "_" .. i] = self:newCollider(m)
 					end
 				end

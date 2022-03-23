@@ -207,6 +207,22 @@ function class:getMesh(name)
 	end
 end
 
+function class:applyTransform()
+	local transform = self:getTransform()
+	self:resetTransform()
+	
+	--normal transforation
+	local subm = transform:subm()
+	
+	for i = 1, #s.vertices do
+		--transform vertices
+		s.vertices[i] = transform * vec3(s.vertices[i])
+		
+		--transform normals
+		s.normals[i] = subm * vec3(s.normals[i])
+	end
+end
+
 --apply joints to mesh data directly
 function class:applyBones(skeleton)
 	if self.joints then
@@ -349,7 +365,8 @@ end
 function class:addInstance(rotation, position, index)
 	if not index then
 		self.instancesCount = self.instancesCount + 1
-		index = instancesCount
+		index = self.instancesCount
+		assert(index <= self.instanceMesh:getVertexCount(), "Instance mesh too small!")
 	end
 	self.instanceMesh:setVertex(index, {
 		rotation[1], rotation[2], rotation[3],
@@ -367,6 +384,66 @@ function class:addInstances(instances)
 	self:createInstances(#instances)
 	self.instanceMesh:setVertices(instances)
 	self.instancesCount = #instances
+end
+
+--seperates by loose parts and returns a list of new meshes
+function class:separate()
+	--initilize group indices
+	local groupIndices = { }
+	for d,s in ipairs(self.vertices) do
+		groupIndices[s] = d
+	end
+	
+	--group vertices via floodfill
+	local active
+	local found = true
+	while found do
+		found = false
+		for _,face in ipairs(self.faces) do
+			local a = self.vertices[face[1]]
+			local b = self.vertices[face[2]]
+			local c = self.vertices[face[3]]
+			
+			local ga = groupIndices[a]
+			local gb = groupIndices[b]
+			local gc = groupIndices[c]
+			
+			local min = math.min(ga, gb, gc)
+			local max = math.max(ga, gb, gc)
+			
+			if min ~= max then
+				groupIndices[a] = min
+				groupIndices[b] = min
+				groupIndices[c] = min
+				found = true
+			end
+		end
+	end
+	
+	--get a set of remaining lists
+	local active = { }
+	for _,face in ipairs(self.faces) do
+		local a = self.vertices[face[1]]
+		local ga = groupIndices[a]
+		active[ga] = true
+	end
+	
+	--split into groups
+	local meshes = { }
+	local ID = 0
+	for group,_ in pairs(active) do
+		ID = ID + 1
+		meshes[ID] = self:clone()
+		meshes[ID].faces = { }
+		for _,face in ipairs(self.faces) do
+			local a = self.vertices[face[1]]
+			if groupIndices[a] == group then
+				table.insert(meshes[ID].faces, face)
+			end
+		end
+	end
+	
+	return meshes
 end
 
 local cached = { }

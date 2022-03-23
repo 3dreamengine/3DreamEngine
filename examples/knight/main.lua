@@ -24,7 +24,7 @@ function love.draw()
 	dream:prepare()
 	dream:addLight(sun)
 
-	knight:reset()
+	knight:resetTransform()
 	knight:translate(-16, -30, -20)
 	knight:rotateY(love.timer.getTime())
 	knight:translate(0, 0, 4)

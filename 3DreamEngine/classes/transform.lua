@@ -1,12 +1,10 @@
 local lib = _3DreamEngine
 
-local notInitError = "Transform not initialized, call reset() at least once."
-
 local I = mat4:getIdentity()
 
 local class = { }
-function class:reset()
-	self.transform = I
+function class:resetTransform()
+	self.transform = false
 	return self
 end
 
@@ -17,7 +15,7 @@ function class:setTransform(t)
 	return self
 end
 function class:getTransform()
-	return self.transform
+	return self.transform or I
 end
 
 function class:translate(x, y, z)

@@ -68,7 +68,7 @@ function love.draw()
 	dream:addLight(light) 
 
 	--rotate, offset and draw
-	yourObject:reset() 
+	yourObject:resetTransform() 
 	yourObject:rotateY(love.timer.getTime())
 	yourObject:translate(0, 0, -3)
 	dream:draw(yourObject)

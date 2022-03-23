@@ -49,7 +49,7 @@ self:setWorldShader(shader)
 Sets the transformation of an object.
 
 ```lua
-self:reset()
+self:resetTransform()
 self:setTransform(mat4)
 self:translate(x, y, z)
 self:scale(x, y, z)

@@ -84,7 +84,7 @@ function love.draw()
 	dream:drawParticleBatch(particleBatch)
 	
 	--torches
-	torch:reset()
+	torch:resetTransform()
 	torch:rotateY(-math.pi/2)
 	dream:draw(torch, 0, 0, -1.9, 0.075)
 	torch:rotateY(-math.pi)

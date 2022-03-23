@@ -23,7 +23,7 @@ function love.draw()
 	dream:addLight(sun)
 	
 	--draw the car
-	car:reset()
+	car:resetTransform()
 	car:scale(0.1)
 	car:rotateY(love.mouse.isDown(1) and (-2.25-(love.mouse.getX()/love.graphics.getWidth()-0.5)*4.0) or love.timer.getTime()*0.5)
 	car:translate(0, -1.1225, -3.5)

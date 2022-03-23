@@ -45,7 +45,6 @@ lib.root = (...)
 
 --load sub modules
 require((...) .. "/functions")
-require((...) .. "/bufferFunctions")
 require((...) .. "/settings")
 require((...) .. "/classes")
 require((...) .. "/shader")

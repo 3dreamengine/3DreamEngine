@@ -109,11 +109,118 @@ end
 
 function class:meshesToPhysics()
 	for id,mesh in pairs(self.meshes) do
-		for idx,m in ipairs(lib:separateMesh(mesh)) do
+		for idx,m in ipairs(mesh:separate()) do
 			self.physics[id .. "_" .. idx] = lib:getPhysicsData(m)
 		end
 	end
 	self.meshes = { }
+end
+
+--merge all meshes of an object and concatenate all buffer together
+--it uses a material of one random mesh and therefore requires only identical materials
+--it returns a cloned object with only one mesh
+function class:merge()
+	local s = self.meshes[next(self.meshes)]
+	
+	local final = self:clone()
+	local o = lib:newMesh("merged", s.material, final.args.meshType)
+	final.meshes = {merged = o}
+	
+	--objects with skinning information should not get transformed
+	if o.joints then
+		o.transform = s.transform
+	end
+	
+	--get valid objects
+	local meshes = { }
+	for d,s in pairs(self.meshes) do
+		if not s.LOD_max or s.LOD_max >= math.huge then
+			if s.tags.merge ~= false then
+				meshes[d] = s
+			end
+		end
+	end
+	
+	--check which buffers are necessary
+	--todo
+	local buffers = {
+		"vertices",
+		"normals",
+		"texCoords",
+		"colors",
+		"weights",
+		"joints",
+	}
+	local found = { }
+	for d,s in pairs(meshes) do
+		for _,buffer in pairs(buffers) do
+			if s[buffer] then
+				found[buffer] = true
+			end
+		end
+	end
+	
+	assert(found.vertices, "object has been cleaned up!")
+	
+	local defaults = {
+		vertices = vec3(0, 0, 0),
+		normals = vec3(0, 0, 0),
+		texCoords = vec2(0, 0),
+	}
+	
+	--merge buffers
+	local startIndices = { }
+	for d,s in pairs(meshes) do
+		local index = #o.vertices
+		startIndices[d] = index
+		
+		local transform, transformNormal
+		if not s.joints then
+			transform = s.transform
+			transformNormal = transform and transform:subm()
+		end
+		
+		for buffer,_ in pairs(found) do
+			o[buffer] = o[buffer] or { }
+			for i = 1, #s.vertices do
+				local v = s[buffer] and s[buffer][i] or defaults[buffer] or false
+				
+				if transform then
+					if buffer == "vertices" then
+						v = transform * vec3(v)
+					elseif buffer == "normals" then
+						v = transformNormal * vec3(v)
+					end
+				end
+				
+				o[buffer][index + i] = v
+			end
+		end
+	end
+	
+	--merge faces
+	for d,s in pairs(meshes) do
+		for _,face in ipairs(s.faces) do
+			local i = startIndices[d]
+			table.insert(o.faces, {face[1] + i, face[2] + i, face[3] + i})
+		end
+	end
+	
+	final:updateBoundingBox()
+	
+	return final
+end
+
+function class:applyTransform()
+	for _,s in ipairs(s.objects) do
+		s:setTransform(self:getTransform() * s:getTransform())
+		s:applyTransform()
+	end
+	for _,s in ipairs(s.meshes) do
+		s:setTransform(self:getTransform() * s:getTransform())
+		s:applyTransform()
+	end
+	s:resetTransform()
 end
 
 --create and apply pose (wrapper)

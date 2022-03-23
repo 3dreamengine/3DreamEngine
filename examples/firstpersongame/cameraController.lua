@@ -49,7 +49,7 @@ function c:update(dt)
 end
 
 function c:setCamera(cam)
-	cam:reset()
+	cam:resetTransform()
 	cam:rotateX(self.rx)
 	cam:rotateY(self.ry)
 	cam:translate(self.x, self.y, self.z)
