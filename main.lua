@@ -25,6 +25,7 @@ local descriptions = {
 	["particlesystem"] = "Small particle system example.",
 	["game"] = "Unfinished collision demo.",
 	["knight"] = "MagicaVoxel demo.",
+	["manyMonkeys"] = "Demo on how to use instancing and object merging to achieve higher performance.",
 }
 
 local mousereleased = false
