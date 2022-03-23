@@ -24,7 +24,7 @@ function lib:newObject(name)
 		
 		name = name,
 		
-		boundingBox = self:newBoundaryBox(),
+		boundingBox = self:newEmptyBoundingBox(),
 		
 		loaded = true,
 	}, self.meta.object)
@@ -59,7 +59,8 @@ function class:updateBoundingBox()
 	end
 	
 	--calculate total bounding box
-	self.boundingBox = lib:newBoundaryBox(true)
+	self.boundingBox = lib:newEmptyBoundingBox()
+	self.boundingBox:setInitialized(true)
 	for d,s in pairs(self.objects) do
 		local sz = vec3(s.boundingBox.size, s.boundingBox.size, s.boundingBox.size)
 		
@@ -327,7 +328,7 @@ function class:decode(meshData)
 	end
 	
 	--recreate vecs and mats
-	lib:decodeBoundaryBox(self.boundingBox)
+	self.boundingBox:decode()
 	
 	--recreate objects
 	for d,s in pairs(self.objects) do

@@ -168,10 +168,8 @@ function lib:render(canvases, cam)
 		--set correct blend mode
 		if canvases.refractions and pass == 2 then
 			love.graphics.setBlendMode("alpha", "premultiplied")
-		elseif pass == 2 then
-			love.graphics.setBlendMode("alpha", "alphamultiply")
 		else
-			love.graphics.setBlendMode("replace", "premultiplied")
+			love.graphics.setBlendMode("alpha", "alphamultiply")
 		end
 		
 		--set alpha pass canvases
@@ -259,8 +257,8 @@ function lib:render(canvases, cam)
 				
 				--alpha
 				checkAndSendCached(shaderObject, "dither", material.dither and 1 or 0)
+				
 				checkAndSendCached(shaderObject, "translucent", material.translucent)
-				checkAndSendCached(shaderObject, "ior", 1 / material.ior)
 				
 				--shader
 				shaderObject.pixelShader:perMaterial(self, shaderObject, material)
@@ -316,7 +314,7 @@ function lib:render(canvases, cam)
 				objectMesh:attachAttribute("InstanceRotation1", instanceMesh, "perinstance")
 				objectMesh:attachAttribute("InstanceRotation2", instanceMesh, "perinstance")
 				objectMesh:attachAttribute("InstancePosition", instanceMesh, "perinstance")
-				love.graphics.drawInstanced(objectMesh, instanceMesh:getVertexCount())
+				love.graphics.drawInstanced(objectMesh, mesh:getInstancesCount())
 			else
 				love.graphics.draw(objectMesh)
 			end
@@ -358,10 +356,9 @@ function lib:render(canvases, cam)
 				
 				--render particle batches
 				for batch,_ in pairs(batches) do
-					local i = cam:getInvertedTransform()
 					local v = 1.0 - batch.vertical
-					local right = vec3(i[1], i[2] * v, i[3]):normalize()
-					local up = vec3(i[5] * v, i[6], i[7] * v)
+					local right = vec3(cam.transform[1], cam.transform[2] * v, cam.transform[3]):normalize()
+					local up = vec3(cam.transform[5] * v, cam.transform[6], cam.transform[7] * v)
 					shader:send("up", up)
 					shader:send("right", right)
 					
@@ -404,10 +401,9 @@ function lib:render(canvases, cam)
 				
 				--render particles
 				for d,s in ipairs(p) do
-					local i = cam:getInvertedTransform()
 					local v = 1 - s.vertical
-					local right = vec3(i[1], i[2] * v, i[3]):normalize()
-					local up = vec3(i[5] * v, i[6], i[7] * v)
+					local right = vec3(cam.transform[1], cam.transform[2] * v, cam.transform[3]):normalize()
+					local up = vec3(cam.transform[5] * v, cam.transform[6], cam.transform[7] * v)
 					
 					shader:send("up", up)
 					shader:send("right", right)

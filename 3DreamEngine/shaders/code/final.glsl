@@ -1,5 +1,3 @@
-precision highp float;
-
 extern Image canvas_depth;
 
 extern Image canvas_bloom;
@@ -82,7 +80,7 @@ vec4 fxaa(Image tex, vec2 tc) {
 #endif
 
 #ifdef PIXEL
-vec4 effect(mediump vec4 _, Image canvas_color, mediump vec2 tc, mediump vec2 sc) {
+vec4 effect(vec4 _, Image canvas_color, vec2 tc, vec2 sc) {
 	//distortion
 	vec2 tcd = tc;
 #ifdef REFRACTIONS_ENABLED
@@ -162,7 +160,7 @@ vec4 effect(mediump vec4 _, Image canvas_color, mediump vec2 tc, mediump vec2 sc
 #endif
 
 #ifdef VERTEX
-	vec4 position(highp mat4 transform_projection, highp vec4 VertexPosition) {
+	vec4 position(mat4 transform_projection, vec4 VertexPosition) {
 #ifdef AUTOEXPOSURE_ENABLED
 		eyeAdaption = Texel(canvas_exposure, vec2(0.5, 0.5)).r;
 #endif

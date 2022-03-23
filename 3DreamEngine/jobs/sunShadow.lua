@@ -72,14 +72,14 @@ function job:execute(light)
 			--generate canvas
 			if not light.shadow.canvases[cascade] then
 				light.shadow.canvases[cascade] = love.graphics.newCanvas(light.shadow.resolution, light.shadow.resolution,
-					{format = light.shadow.dynamic and lib.systemSettings.rg16f or lib.systemSettings.r16f,
+					{format = light.shadow.dynamic and "rg16f" or "r16f",
 					readable = true,
 					msaa = 0,
 					type = "2d"})
 			end
 		end
 		
-		local canvases = {light.shadow.canvases[cascade], depth = false}
+		local canvases = {light.shadow.canvases[cascade]}
 		
 		--render
 		local smooth = false

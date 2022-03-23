@@ -67,7 +67,7 @@ local function getInput(input, o, f)
 end
 
 --add particle system objects
---for every mesh (which is not a particle mesh itself) with a material with an attached particle systems create a new mesh (the particles)
+--for every mesh (which is not a particle mesh itself) with a material with attached particle systems create a new mesh (the particles)
 function lib:addParticlesystems(obj)
 	local meshes = { }
 	for oName, o in pairs(obj.meshes) do
@@ -242,20 +242,9 @@ function lib:addParticlesystems(obj)
 								local sz = particle.boundingBox.size * t.maxScale
 								local margin = vec3(sz, sz, sz)
 								
-								po.boundingBox = self:newBoundaryBox(true)
-								po.boundingBox.first = vec3(x, y, z) - margin
-								po.boundingBox.second = po.boundingBox.first + delta + margin * 2
-								po.boundingBox.center = (po.boundingBox.second + po.boundingBox.first) / 2
-								po.boundingBox.size = (po.boundingBox.center - po.boundingBox.first):length() * math.sqrt(3)
+								po:addInstances(transforms)
 								
-								po.instanceMesh = love.graphics.newMesh({
-									{"InstanceRotation0", "float", 3},
-									{"InstanceRotation1", "float", 3},
-									{"InstanceRotation2", "float", 3},
-									{"InstancePosition", "float", 3},
-								}, #transforms)
-								
-								po.instanceMesh:setVertices(transforms)
+								po.boundingBox = self:newBoundingBox(vec3(x, y, z) - margin, po.boundingBox.first + delta + margin * 2)
 							end
 						end
 					end

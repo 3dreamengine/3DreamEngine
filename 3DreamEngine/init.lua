@@ -70,13 +70,6 @@ end
 --supported canvas formats
 lib.canvasFormats = love.graphics and love.graphics.getCanvasFormats() or { }
 
-lib.systemSettings = {
-	supportsHDR = lib.canvasFormats["hdr"],
-	r16f = lib.canvasFormats["r16f"] and "r16f" or "rgba16f",
-	rg16f = lib.canvasFormats["rg16f"] and "rg16f" or "rgba16f",
-	r8 = lib.canvasFormats["r8"] and "r8" or "rgba8",
-}
-
 --default material library
 lib.materialLibrary = { }
 lib.objectLibrary = { }
@@ -116,13 +109,11 @@ lib.renderSet = lib:newSetSettings()
 lib.renderSet:setRefractions(true)
 lib.renderSet:setMode("normal")
 
-local name, _, _, _ = love.graphics.getRendererInfo()
-if name == "OpenGL ES" then
-	lib.renderSet:setMode("direct")
-end
-
 lib.reflectionsSet = lib:newSetSettings()
 lib.reflectionsSet:setMode("direct")
+
+lib.mirrorSet = lib:newSetSettings()
+lib.mirrorSet:setMode("lite")
 
 lib.shadowSet = lib:newSetSettings()
 
@@ -182,12 +173,6 @@ function lib:newCanvasSet(settings, w, h)
 	w = w or settings.resolution
 	h = h or settings.resolution
 	
-	--check if device can run features
-	if settings.mode == "normal" and not lib.systemSettings.supportsHDR then
-		settings.mode = "direct"
-		print("No hdr support, switched to direct rendering")
-	end
-	
 	--settings
 	set.width = w
 	set.height = h
@@ -207,18 +192,18 @@ function lib:newCanvasSet(settings, w, h)
 		--additional color if using refractions
 		if set.refractions then
 			set.colorAlpha = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = set.msaa})
-			set.distortion = love.graphics.newCanvas(w, h, {format = lib.systemSettings.rg16f, readable = true, msaa = set.msaa})
+			set.distortion = love.graphics.newCanvas(w, h, {format = "rg16f", readable = true, msaa = set.msaa})
 		end
 		
 		--depth
-		set.depth = love.graphics.newCanvas(w, h, {format = lib.systemSettings.r16f, readable = true, msaa = set.msaa})
+		set.depth = love.graphics.newCanvas(w, h, {format = "r16f", readable = true, msaa = set.msaa})
 	end
 	
 	--screen space ambient occlusion blurring canvases
 	if self.AO_enabled and settings.mode ~= "direct" then
-		set.AO_1 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = lib.systemSettings.r8, readable = true, msaa = 0})
+		set.AO_1 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
 		if self.AO_blur then
-			set.AO_2 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = lib.systemSettings.r8, readable = true, msaa = 0})
+			set.AO_2 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
 		end
 	end
 	
@@ -258,6 +243,7 @@ function lib:resize(w, h)
 	--canvases sets
 	self.canvases = self:newCanvasSet(self.renderSet, w, h)
 	self.canvases_reflections = self:newCanvasSet(self.reflectionsSet)
+	self.canvases_mirror = self:newCanvasSet(self.mirrorSet, w, h)
 end
 
 --applies settings and load canvases

@@ -85,7 +85,7 @@ end
 
 function sh:constructPixel(dream, ID)
 	return ([[
-	float bias = mix(1.0, 0.03, dot(normal, ss_vec_#ID#)) / 512.0;
+	float bias = mix(1.0, 0.01, dot(normal, ss_vec_#ID#)) / 512.0;
 	float shadow = ]] .. self.func .. [[(vertexPos, ss_pos_#ID#, ss_proj1_#ID#, ss_proj2_#ID#, ss_proj3_#ID#, ss_tex1_#ID#, ss_tex2_#ID#, ss_tex3_#ID#, ss_factor_#ID#, ss_distance_#ID#, ss_fade_#ID#, bias);
 	
 	if (shadow > 0.0) {

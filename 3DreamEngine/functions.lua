@@ -317,26 +317,6 @@ function lib:getBarycentricClamped(x, y, x1, y1, x2, y2, x3, y3)
 	return 1 - t1 - t2, t1, t2
 end
 
-function lib:newBoundaryBox(initialized)
-	return {
-		first = vec3(math.huge, math.huge, math.huge),
-		second = vec3(-math.huge, -math.huge, -math.huge),
-		center = vec3(0.0, 0.0, 0.0),
-		size = 0,
-		initialized = initialized or false
-	}
-end
-
-function lib:decodeBoundaryBox(bb)
-	return {
-		first = vec3(bb.first),
-		second = vec3(bb.second),
-		center = vec3(bb.center),
-		size = bb.size,
-		initialized = bb.initialized
-	}
-end
-
 function lib:blurCanvas(canvas, strength, iterations, mask)
 	local temp = self:getTemporaryCanvas(canvas)
 	local sh = lib:getBasicShader("blur")

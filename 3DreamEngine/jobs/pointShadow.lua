@@ -47,7 +47,7 @@ function job:execute(light)
 	--create new canvases if necessary
 	if not light.shadow.canvas then
 		light.shadow.canvas = love.graphics.newCanvas(light.shadow.resolution, light.shadow.resolution,
-			{format = light.shadow.dynamic and lib.systemSettings.rg16f or lib.systemSettings.r16f,
+			{format = light.shadow.dynamic and "rg16f" or "r16f",
 			readable = true,
 			msaa = 0,
 			type = "cube",
@@ -74,16 +74,14 @@ function job:execute(light)
 		
 		local shadowCam = lib:newCamera(t[1], lib.cubeMapProjection, light.pos, lib.lookNormals[face])
 		
-		local canvases = {{light.shadow.canvas, face = face}, depth = false}
-		
 		if light.shadow.dynamic then
 			if light.shadow.rendered then
 				--dynamic part
-				lib:renderShadows(shadowCam, canvases, light.blacklist, true, nil, false)
+				lib:renderShadows(shadowCam, {{light.shadow.canvas, face = face}}, light.blacklist, true, nil, false)
 			else
 				--both parts
-				lib:renderShadows(shadowCam, canvases, light.blacklist, false, nil, light.shadow.smooth)
-				lib:renderShadows(shadowCam, canvases, light.blacklist, true, nil, false)
+				lib:renderShadows(shadowCam, {{light.shadow.canvas, face = face}}, light.blacklist, false, nil, light.shadow.smooth)
+				lib:renderShadows(shadowCam, {{light.shadow.canvas, face = face}}, light.blacklist, true, nil, false)
 				light.shouldSmooth = light.shadow.smooth
 			end
 		else
@@ -93,7 +91,7 @@ function job:execute(light)
 				if light.shadow.static  then
 					pass = false
 				end
-				lib:renderShadows(shadowCam, canvases, light.blacklist, pass, nil, light.shadow.smooth)
+				lib:renderShadows(shadowCam, {{light.shadow.canvas, face = face}}, light.blacklist, pass, nil, light.shadow.smooth)
 				light.shouldSmooth = light.shadow.smooth
 			end
 		end
