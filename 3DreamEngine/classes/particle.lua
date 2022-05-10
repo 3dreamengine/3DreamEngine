@@ -33,7 +33,7 @@ local class = {
 	
 function class:setEmissionTexture(tex)
 	self.emission = tex and 1 or 0
-	emissionTexture = tex
+	self.emissionTexture = tex
 end
 
 function class:clone()

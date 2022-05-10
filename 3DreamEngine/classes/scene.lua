@@ -152,13 +152,13 @@ function class:addMesh(mesh, parentTransform, dynamic, boneTransforms, reflectio
 	
 	--render pass
 	if mesh.renderVisibility then
-		local shaderID = lib:getRenderShaderID(task, pass, false)
+		local shaderID = lib:getRenderShaderID(task, false)
 		self:addTo(task, self.tasks.render[dyn][alpha], shaderID, mesh.material)
 	end
 	
 	--shadow pass
 	if alpha == 2 and mesh.shadowVisibility and mesh.material.shadow ~= false then
-		local shaderID = lib:getRenderShaderID(task, pass, true)
+		local shaderID = lib:getRenderShaderID(task, true)
 		self:addTo(task, self.tasks.shadows[dyn][alpha], shaderID, mesh.material)
 	end
 end

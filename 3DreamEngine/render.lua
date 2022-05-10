@@ -93,7 +93,7 @@ local function sendFogData(shader)
 end
 
 --improve speed of uniform check
-function hasUniform(shaderObject, name)
+local function hasUniform(shaderObject, name)
 	local uniforms = shaderObject.uniforms
 	if uniforms[name] == nil then
 		uniforms[name] = shaderObject.shader:hasUniform(name)
@@ -109,7 +109,7 @@ local function checkAndSend(shader, name, value)
 end
 
 --checks if this uniform exists and sends if not already cached
-function checkAndSendCached(shaderObject, name, value)
+local function checkAndSendCached(shaderObject, name, value)
 	if hasUniform(shaderObject, name) and shaderObject.cache[name] ~= value then
 		shaderObject.shader:send(name, value)
 		shaderObject.cache[name] = value
@@ -117,7 +117,7 @@ function checkAndSendCached(shaderObject, name, value)
 end
 
 --render the scene onto a canvas set using a specific view camera
-function lib:render(canvases, cam)
+function lib:render(canvases, cam, dynamic)
 	self.delton:start("prepare")
 	
 	--and set canvases
@@ -216,11 +216,6 @@ function lib:render(canvases, cam)
 					
 					--light setup
 					self:sendLightUniforms(light, shaderObject)
-					
-					--output settings
-					if hasUniform(shaderObject, "dataAlpha") then
-						shader:send("dataAlpha", dataAlpha)
-					end
 					
 					--shader
 					shaderObject.pixelShader:perShader(self, shaderObject)
@@ -437,7 +432,7 @@ function lib:render(canvases, cam)
 	end
 	
 	--godrays
-	if dynamics ~= false and self.godrays_enabled and canvases.depth then
+	if dynamic ~= false and self.godrays_enabled and canvases.depth then
 		self:renderGodrays(light, canvases, cam)
 	end
 	
@@ -487,9 +482,8 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects, smoo
 		if lastShader ~= shaderID then
 			lastShader = shaderID
 			lastMaterial = false
-			lastReflection = false
 			
-			shaderObject = self:getRenderShader(shaderID, mesh, pass, { }, nil, true, cam.sun)
+			shaderObject = self:getRenderShader(shaderID, mesh, nil, { }, nil, true, cam.sun)
 			shader = shaderObject.shader
 			shaderObject.session = { }
 			love.graphics.setShader(shader)
@@ -656,7 +650,6 @@ function lib:renderFull(cam, canvases)
 		
 		checkAndSend(shader, "canvas_alpha", canvases.colorAlpha)
 		checkAndSend(shader, "canvas_distortion", canvases.distortion)
-		checkAndSend(shader, "canvas_alphaData", canvases.dataAlpha)
 		
 		checkAndSend(shader, "canvas_exposure", self.canvas_exposure)
 		

@@ -53,7 +53,7 @@ function sky:setSunOffset(offset, rotation)
 	self.sun_offset = offset
 	self.sun_rotation = rotation
 end
-function sky:setSunOffset()
+function sky:getSunOffset()
 	return self.sun_offset, self.sun_rotation
 end
 

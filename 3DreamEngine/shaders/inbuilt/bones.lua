@@ -88,13 +88,13 @@ function sh:perTask(dream, shaderObject, task)
 			end
 		end
 		for i = #mesh.jointNames + 1, self.maxJoints do
-			matrices[i] = I
+			matrices[i] = i
 		end
 		if #matrices > self.maxJoints and not mesh._jointExceededWarning then
 			mesh._jointExceededWarning = true
 			print(string.format("mesh %s has %d joints, but the shader is limited to %d", mesh.name, #matrices, self.maxJoints))
 		end
-		shaderObject.shader:send("jointTransforms", unpack(matrices))
+		shaderObject.shader:send("jointTransforms", table.unpack(matrices))
 	end
 end
 

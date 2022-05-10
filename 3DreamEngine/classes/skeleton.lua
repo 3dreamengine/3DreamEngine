@@ -14,7 +14,7 @@ function lib:newSkeleton(bones)
 	local function count(n)
 		c = c + 1
 		if n.children then
-			for _,s in pairs(t.children) do
+			for _,s in pairs(n.children) do
 				count(s)
 			end
 		end

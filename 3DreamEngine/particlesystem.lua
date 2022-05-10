@@ -193,7 +193,7 @@ function lib:addParticlesystems(obj)
 				local size = t.max - t.min
 				local vertices = #particle.vertices * #t.particles
 				while vertices / (splits[1] * splits[2] * splits[3]) > (ps.maxCellVertexCount or 10000) do
-					local max = math.max(unpack(size / splits))
+					local max = math.max(table.unpack(size / splits))
 					for i = 1, 3 do
 						if size[i] / splits[i] == max then
 							splits[i] = splits[i] + 1
@@ -252,5 +252,4 @@ function lib:addParticlesystems(obj)
 			end
 		end
 	end
-	imageDataCache = { }
 end

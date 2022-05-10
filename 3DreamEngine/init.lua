@@ -26,6 +26,8 @@ _G.cimg = require((...) .. "/libs/cimg")
 _G.utils = require((...) .. "/libs/utils")
 _G.packTable = require((...) .. "/libs/packTable")
 
+table.unpack = table.unpack or unpack
+
 --delton, disabled when not in debug mode
 lib.delton = require((...) .. "/libs/delton"):new(512)
 lib.deltonLoad = require((...) .. "/libs/delton"):new(1)

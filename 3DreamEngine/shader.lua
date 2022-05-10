@@ -153,7 +153,7 @@ function lib.loadShader(self)
 			local d = (0.5 + i % 4) / 4
 			f[#f+1] = {math.cos(r)*d*range / love.graphics.getWidth(), math.sin(r)*d*range / love.graphics.getHeight(), (1-d)^2 / self.AO_quality}
 		end
-		self.shaders.SSAO:send("samples", unpack(f))
+		self.shaders.SSAO:send("samples", table.unpack(f))
 	end
 end
 
@@ -185,7 +185,7 @@ function lib.getFinalShader(self, canvases)
 	return self.finalShaders[ID]
 end
 
-function lib:getRenderShaderID(task, pass, shadows)
+function lib:getRenderShaderID(task, shadows)
 	local mesh = task:getMesh()
 	local mat = mesh.material
 	
@@ -250,7 +250,6 @@ function lib:getRenderShader(ID, mesh, pass, canvases, light, shadows, sun)
 		local info = {
 			reflection = reflection,
 			material = mat,
-			modules = m,
 			shadows = shadows,
 			uniforms = { },
 			

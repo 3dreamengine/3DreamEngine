@@ -5,7 +5,6 @@ extern Image canvas_ao;
 
 extern Image canvas_alpha;
 extern Image canvas_distortion;
-extern Image canvas_alphaData;
 
 extern Image canvas_exposure;
 

@@ -160,7 +160,7 @@ function love.draw()
 	if lookingAtCheck then
 		local t = love.timer.getTime()
 		local coll = false
-		local origin = vec3(player.x, player.y, player.z)
+		local origin = vec3(cameraController.x, cameraController.y, cameraController.z)
 		local direction
 		
 		if rotateCamera then
@@ -244,7 +244,7 @@ function love.keypressed(key)
 	end
 	
 	if key == "f3" then
-		dream:take3DScreenshot(vec3(player.x, player.y, player.z), 128)
+		dream:take3DScreenshot(vec3(cameraController.x, cameraController.y, cameraController.z), 128)
 	end
 	
 	if key == "g" then

@@ -140,8 +140,9 @@ end
 function sh:perMaterial(dream, shaderObject, material)
 	local shader = shaderObject.shader
 	
-	--ior
-	checkAndSendCached(shaderObject, "ior", 1 / material.ior)
+	if shader:hasUniform("ior") then
+		shader:send("ior", 1 / material.ior)
+	end
 end
 
 function sh:perTask(dream, shaderObject, task)

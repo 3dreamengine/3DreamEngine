@@ -45,7 +45,7 @@ function class:setName(name)
 	self.name = lib:removePostfix(name)
 end
 function class:getName()
-	return name
+	return self.name
 end
 
 function class:tostring()
@@ -217,12 +217,12 @@ function class:applyTransform()
 	--normal transforation
 	local subm = transform:subm()
 	
-	for i = 1, #s.vertices do
+	for i = 1, #self.vertices do
 		--transform vertices
-		s.vertices[i] = transform * vec3(s.vertices[i])
+		self.vertices[i] = transform * vec3(self.vertices[i])
 		
 		--transform normals
-		s.normals[i] = subm * vec3(s.normals[i])
+		self.normals[i] = subm * vec3(self.normals[i])
 	end
 end
 
@@ -523,7 +523,7 @@ function class:encode(meshCache, dataStrings)
 					end
 					
 					--compress and store vertex map
-					local c = love.data.compress("string", "lz4", vertexMapData:getString(), compressedLevel)
+					local c = love.data.compress("string", "lz4", vertexMapData:getString(), -1)
 					table.insert(dataStrings, c)
 					m.vertexMap = #dataStrings
 				end

@@ -152,12 +152,12 @@ function sh:perMaterial(dream, shaderObject, material)
 	
 	shader:send("emissionColor", material.emission)
 	
-	shader:send("waterScale", material.waterScale or 1 / 16)
+	shader:send("waterScale", material.waterScale or (1 / 16))
 	shader:send("waterSpeed", material.waterSpeed or 1)
 	shader:send("waterHeight", 1 / (material.waterHeight or 2))
 	shader:send("surfaceDistortion", material.surfaceDistortion or 1.0)
 	
-	shader:send("foamScale", material.foamScale or 1 / 8)
+	shader:send("foamScale", material.foamScale or (1 / 8))
 	shader:send("foamSpeed", material.foamSpeed or 0.1)
 	
 	shader:send("liquidAlbedo", material.liquidAlbedo or {0.5, 0.75, 1.0})
