@@ -88,7 +88,7 @@ function sh:perTask(dream, shaderObject, task)
 			end
 		end
 		for i = #mesh.jointNames + 1, self.maxJoints do
-			matrices[i] = i
+			matrices[i] = ID
 		end
 		if #matrices > self.maxJoints and not mesh._jointExceededWarning then
 			mesh._jointExceededWarning = true

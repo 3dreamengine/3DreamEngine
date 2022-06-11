@@ -589,6 +589,7 @@ function class:encode(meshCache, dataStrings)
 end
 
 function class:decode(meshData)
+	setmetatable(self.boundingBox, lib.meta.boundingBox)
 	self.boundingBox:decode()
 	
 	--look for meshes and link

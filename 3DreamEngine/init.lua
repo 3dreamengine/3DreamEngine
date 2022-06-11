@@ -44,6 +44,9 @@ end
 
 _3DreamEngine = lib
 lib.root = (...)
+if lib.root:find(".", 0, true) then
+	error("Ambiguous dots in require('" .. lib.root .. "'). Use slashes and avoid dots in file paths!")
+end
 
 --load sub modules
 require((...) .. "/functions")
