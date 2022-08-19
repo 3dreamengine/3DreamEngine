@@ -26,7 +26,8 @@ object.skeleton:applyPose(pose)
 
 <br />
 
-Apply the skeleton to the mesh directly on the CPU and therefore slow.
+Apply the skeleton to the mesh (or all objects meshes) directly on the CPU and therefore slow.
 ```lua
-dream:applyBones()
+mesh:applyBones()
+object:applyBones()
 ```
