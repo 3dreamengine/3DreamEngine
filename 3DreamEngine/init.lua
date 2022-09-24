@@ -67,7 +67,7 @@ require((...) .. "/3doExport")
 
 --file loader
 lib.loader = { }
-for d,s in pairs(love.filesystem.getDirectoryItems((...) .. "/loader")) do
+for _,s in pairs(love.filesystem.getDirectoryItems((...) .. "/loader")) do
 	lib.loader[s:sub(1, #s-4)] = require((...) .. "/loader/" .. s:sub(1, #s-4))
 end
 
@@ -226,9 +226,9 @@ end
 --release set and free memory
 function lib:unloadCanvasSet(set)
 	if set then
-		for d,s in pairs(set) do
-			if type(set) == "userdata" and set.release then
-				set:release()
+		for _,s in pairs(set) do
+			if type(s) == "userdata" and s.release then
+				s:release()
 			end
 		end
 	end
@@ -353,7 +353,7 @@ end
 --draw a particle
 function lib:drawParticle(particle, quad, x, y, z, ...)
 	assert(particle.class == "particle", "create a particle object and pass it here")
-	local particle = particle:clone()
+	particle = particle:clone()
 	
 	if type(quad) == "userdata" then
 		particle.quad = quad

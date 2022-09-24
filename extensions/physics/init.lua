@@ -244,7 +244,7 @@ function p:newMesh(obj, transform)
 	end
 	
 	for d,s in pairs(obj.objects) do
-		local t = (s.transform or transform) and (s.transform or mat4:getIdentity()) * (transform or mat4:getIdentity())
+		local t = (s.transform or transform) and (s.transform or mat4.getIdentity()) * (transform or mat4.getIdentity())
 		local g = self:newMesh(s, t)
 		if #g.objects > 0 then
 			table.insert(n.objects, g)

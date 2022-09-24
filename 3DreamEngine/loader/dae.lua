@@ -182,7 +182,6 @@ return function(self, obj, path)
 	
 	xml2lua.parser(handler):parse(file)
 	
-	local correction = mat4:getRotateX(-math.pi/2)
 	local root = handler.root.COLLADA[1]
 	
 	--get id indices
@@ -336,7 +335,7 @@ return function(self, obj, path)
 	
 	--todo only matrix is supported
 	local function getTransform(s)
-		return s.matrix and mat4(loadFloatArray(s.matrix[1][1])) or mat4:getIdentity()
+		return s.matrix and mat4(loadFloatArray(s.matrix[1][1])) or mat4.getIdentity()
 	end
 	
 	local function skeletonLoader(nodes)

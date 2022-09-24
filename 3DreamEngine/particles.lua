@@ -105,7 +105,7 @@ local meta = {
 	
 	--sets texture for diffuse lighting
 	setTexture = function(self, tex)
-		assert(tex, "expected texture, got nil")
+		assert(tex, "Expected texture, got nil")
 		self.texture = tex
 	end,
 	getTexture = function(self)
@@ -114,7 +114,7 @@ local meta = {
 	
 	--sets texture for emission
 	setEmissionTexture = function(self, tex)
-		assert(tex, "expected texture, got nil")
+		assert(tex, "Expected texture, got nil")
 		self.emissionTexture = tex
 	end,
 	getEmissionTexture = function(self)
@@ -123,7 +123,7 @@ local meta = {
 	
 	--sets texture for emission
 	setDistortionTexture = function(self, tex)
-		assert(tex, "expected texture, got nil")
+		assert(tex, "Expected texture, got nil")
 		self.distortionTexture = tex
 	end,
 	getDistortionTexture = function(self)

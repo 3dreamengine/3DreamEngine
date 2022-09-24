@@ -157,13 +157,13 @@ function lib:addParticlesystems(obj)
 							local top = vec3(0, 1, 0)
 							local vec = top:cross(normal)
 							local angle = -math.acos(top:dot(normal))
-							local transform = math.abs(angle) < 0.00001 and mat3:getIdentity() or mat3:getRotate(vec, angle) * sc
+							local transform = math.abs(angle) < 0.00001 and mat3.getIdentity() or mat3.getRotate(vec, angle) * sc
 							
 							t.maxScale = math.max(t.maxScale, sc)
 							
 							--tilt
 							if ps.tilt then
-								transform = transform * mat3:getRotate(normal, (math.random() - 0.5) * math.pi * 2)
+								transform = transform * mat3.getRotate(normal, (math.random() - 0.5) * math.pi * 2)
 							end
 							
 							--apply particle transform

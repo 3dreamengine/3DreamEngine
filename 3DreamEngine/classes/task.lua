@@ -1,4 +1,4 @@
-local identityMatrix = mat4:getIdentity()
+local identityMatrix = mat4.getIdentity()
 
 local class = {
 	link = {"task"}

@@ -414,7 +414,7 @@ function lib:getParticlesShader(pass, canvases, light, emissive, distortion, sin
 			table.insert(defines, "#define EMISSION_TEXTURE")
 		end
 		if distortion and pass == 2 then
-			table.insert(defines, "#define DISORTION_TEXTURE")
+			table.insert(defines, "#define DISTORTION_TEXTURE")
 		end
 		if self.fog_enabled and canvases.mode ~= "normal" then
 			table.insert(defines, "#define FOG_ENABLED")

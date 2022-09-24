@@ -3,12 +3,8 @@ local dream = require("3DreamEngine")
 love.window.setTitle("Knight Example")
 
 --settings
-local projectDir = ""
-
 dream:setAO(false)
-
 dream:setSky(vec3(128/255, 218/255, 235/255) * 0.4)
-
 dream:init()
 
 --load voxel object using a custom mesh type
@@ -25,9 +21,9 @@ function love.draw()
 	dream:addLight(sun)
 
 	knight:resetTransform()
-	knight:translate(-16, -30, -20)
-	knight:rotateY(love.timer.getTime())
 	knight:translate(0, 0, 4)
+	knight:rotateY(love.timer.getTime())
+	knight:translate(-16, -30, -20)
 	
 	dream:draw(knight, 0, 0, -8, 0.25)
 

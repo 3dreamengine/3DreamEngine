@@ -6,7 +6,7 @@ local lib = _3DreamEngine
 
 function lib:renderSky(transformProj, camTransform, transformScale)
 	if transformScale then
-		transformProj = transformProj * mat4:getScale(transformScale)
+		transformProj = transformProj * mat4.getScale(transformScale)
 	end
 	
 	love.graphics.push("all")

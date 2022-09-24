@@ -50,9 +50,9 @@ end
 
 function c:setCamera(cam)
 	cam:resetTransform()
-	cam:rotateX(self.rx)
-	cam:rotateY(self.ry)
 	cam:translate(self.x, self.y, self.z)
+	cam:rotateY(self.ry)
+	cam:rotateX(self.rx)
 end
 
 function c:mousemoved(x, y)

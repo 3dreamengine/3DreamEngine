@@ -4,6 +4,7 @@ local raytrace = require("extensions/raytrace")
 
 love.window.setTitle("PBR Tavern")
 love.window.setVSync(false)
+love.mouse.setRelativeMode(true)
 
 --settings
 local projectDir = "examples/Tavern/"
@@ -12,7 +13,7 @@ dream:setSmoothLoading(false)
 dream.renderSet:setRefractions(true)
 
 dream:setSky(false)
---dream:setDefaultReflection(cimg:load(projectDir .. "sky.cimg"))
+dream:setDefaultReflection(cimg:load(projectDir .. "sky.cimg"))
 
 dream:setFog(0.0025, {0.6, 0.5, 0.4}, 0.0)
 dream:setFogHeight(0.0, 2.5)
@@ -20,7 +21,7 @@ dream:setFogHeight(0.0, 2.5)
 --load materials
 dream:loadMaterialLibrary(projectDir .. "materials")
 
---initilize engine
+--initialize engine
 dream:init()
 
 --load scene
@@ -52,6 +53,7 @@ particleBatch:setVertical(0.75)
 local particleBatchDust = dream:newParticleBatch(love.graphics.newImage(projectDir .. "dust.png"))
 particleBatchDust:setSorting(false)
 
+--setup light sources
 local lights = { }
 for d,s in ipairs(tavern.positions) do
 	if s.name == "light" then
@@ -81,10 +83,11 @@ local rotateCamera = true
 local noise = require(projectDir .. "noise").Simplex2D
 
 local function getFlickerOffset(d, f)
+	local t = love.timer.getTime()
 	return vec3(
-		noise(love.timer.getTime(), d + 0) * f,
-		noise(love.timer.getTime(), d + 1) * f,
-		noise(love.timer.getTime(), d + 2) * f
+		noise(t, d + 0) * f,
+		noise(t, d + 1) * f,
+		noise(t, d + 2) * f
 	)
 end
 
@@ -128,19 +131,24 @@ function love.draw()
 			dream:addLight(lights[d])
 			
 			for i = -3, 3 do
-				local power = (0.5 + 0.15 * noise(flicker, d + i)) * s.size / (1 + 0.1 * math.abs(i)) * 4
-				particleBatch:addQuad(quads[math.ceil(i * 17 + d + love.timer.getTime() * 24) % 25 + 1], s.position.x + i * 0.1, s.position.y - 0.15, s.position.z - 0.1 - math.abs(i) * 0.025, 0, power, nil, 4.0)
+				local flamePower = (0.5 + 0.15 * noise(flicker, d + i)) * s.size / (1 + 0.1 * math.abs(i)) * 4
+				particleBatch:addQuad(quads[math.ceil(i * 17 + d + love.timer.getTime() * 24) % 25 + 1], s.position.x + i * 0.1, s.position.y - 0.15, s.position.z - 0.1 - math.abs(i) * 0.025, 0, flamePower, nil, 4.0)
 			end
 		end
 	end
 	love.graphics.setColor(1, 1, 1, 1)
 	
+	--draw the scene
 	dream:drawScene(scene)
 	
+	--draw the particles
 	dream:drawParticleBatch(particleBatch)
 	dream:drawParticleBatch(particleBatchDust)
 
+	--render
 	dream:present()
+	
+	--hints
 	if not hideTooltips then
 		love.graphics.setColor(1, 1, 1)
 		love.graphics.print(table.concat({
@@ -160,7 +168,7 @@ function love.draw()
 	if lookingAtCheck then
 		local t = love.timer.getTime()
 		local coll = false
-		local origin = vec3(cameraController.x, cameraController.y, cameraController.z)
+		local origin = dream.cam.pos
 		local direction
 		
 		if rotateCamera then
@@ -236,6 +244,7 @@ function love.keypressed(key)
 	
 	if key == "k" then
 		rotateCamera = not rotateCamera
+		love.mouse.setRelativeMode(rotateCamera)
 	end
 	
 	if key == "1" then
@@ -244,7 +253,7 @@ function love.keypressed(key)
 	end
 	
 	if key == "f3" then
-		dream:take3DScreenshot(vec3(cameraController.x, cameraController.y, cameraController.z), 128)
+		dream:take3DScreenshot(vec3(player.x, player.y, player.z), 128)
 	end
 	
 	if key == "g" then

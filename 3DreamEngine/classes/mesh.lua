@@ -264,7 +264,7 @@ function class:calcTangents()
 		self.tangents[i] = {0, 0, 0, 0}
 	end
 	
-	for i,f in ipairs(self.faces) do
+	for _,f in ipairs(self.faces) do
 		--vertices
 		local v1 = self.vertices[f[1]] or empty
 		local v2 = self.vertices[f[2]] or empty
@@ -308,7 +308,7 @@ function class:calcTangents()
 		f[1] = f[1] / l
 		f[2] = f[2] / l
 		f[3] = f[3] / l
-	end	
+	end
 	
 	--complete smoothing step
 	for i,f in ipairs(self.tangents) do

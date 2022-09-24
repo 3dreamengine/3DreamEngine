@@ -69,7 +69,7 @@ function sky:setDaytime(sun, time)
 	self.day = time % c
 	
 	--position
-	sun.direction = mat4:getRotateY(self.sun_rotation) * mat4:getRotateZ(self.sun_offset) * vec3(
+	sun.direction = mat4.getRotateY(self.sun_rotation) * mat4.getRotateZ(self.sun_offset) * vec3(
 		0,
 		math.sin(self.time * math.pi * 2),
 		-math.cos(self.time * math.pi * 2)
@@ -130,7 +130,7 @@ function sky.render(dream, transformProj, camTransform)
 	
 	self.shaders.sky:send("stars", self.textures.stars)
 	self.shaders.sky:send("starsStrength", -math.sin(self.time * math.pi * 2))
-	self.shaders.sky:send("starsTransform", mat4:getRotateX(love.timer.getTime() * 0.0025):subm())
+	self.shaders.sky:send("starsTransform", mat4.getRotateX(love.timer.getTime() * 0.0025):subm())
 	
 	self.shaders.sky:send("rainbow", self.textures.rainbow)
 	self.shaders.sky:send("rainbowStrength", self.rainbow_strength * (sun and sun.brightness or 0))
@@ -198,7 +198,7 @@ function sky.render(dream, transformProj, camTransform)
 		
 		for _,cloud in ipairs(self.clouds) do
 			self.shaders.clouds:send("clouds", cloud.texture)
-			self.shaders.clouds:send("cloudsTransform", mat4:getRotateY((cloud.roration or 0) + love.timer.getTime() * (cloud.rotationDelta)):subm())
+			self.shaders.clouds:send("cloudsTransform", mat4.getRotateY((cloud.roration or 0) + love.timer.getTime() * (cloud.rotationDelta)):subm())
 			
 			love.graphics.setColor(cloud.color or {1, 1, 1})
 			local mesh = dream.cubeObject.meshes.Cube.mesh

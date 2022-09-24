@@ -60,7 +60,7 @@ function lib:buildScene(typ, dynamic, alpha, cam, blacklist, frustumCheck, noSma
 	--sort tables for materials requiring sorting
 	if alpha then
 		self.delton:start("sort")
-		for d,task in ipairs(scene) do
+		for _,task in ipairs(scene) do
 			local dist = (task:getPos() - cam.pos):lengthSquared()
 			task:setDistance(dist)
 		end
@@ -186,7 +186,7 @@ function lib:render(canvases, cam, dynamic)
 		
 		--start rendering
 		self.delton:start("render")
-		for d,task in ipairs(scene) do
+		for _,task in ipairs(scene) do
 			local mesh = task:getMesh()
 			local shaderID = task:getShaderID()
 			
@@ -352,8 +352,8 @@ function lib:render(canvases, cam, dynamic)
 				--render particle batches
 				for batch,_ in pairs(batches) do
 					local v = 1.0 - batch.vertical
-					local right = vec3(cam.transform[1], cam.transform[2] * v, cam.transform[3]):normalize()
-					local up = vec3(cam.transform[5] * v, cam.transform[6], cam.transform[7] * v)
+					local right = vec3(cam.transform[1], cam.transform[5] * v, cam.transform[9]):normalize()
+					local up = vec3(cam.transform[2] * v, cam.transform[6], cam.transform[10] * v):normalize()
 					shader:send("up", up)
 					shader:send("right", right)
 					
@@ -395,10 +395,10 @@ function lib:render(canvases, cam, dynamic)
 				end
 				
 				--render particles
-				for d,s in ipairs(p) do
+				for _,s in ipairs(p) do
 					local v = 1 - s.vertical
-					local right = vec3(cam.transform[1], cam.transform[2] * v, cam.transform[3]):normalize()
-					local up = vec3(cam.transform[5] * v, cam.transform[6], cam.transform[7] * v)
+					local right = vec3(cam.transform[1], cam.transform[5] * v, cam.transform[9]):normalize()
+					local up = vec3(cam.transform[2] * v, cam.transform[6], cam.transform[10] * v):normalize()
 					
 					shader:send("up", up)
 					shader:send("right", right)
@@ -474,7 +474,7 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects, smoo
 	love.graphics.clear(255, 255, 255, 255)
 	
 	--start rendering
-	for d,task in ipairs(scene) do
+	for _,task in ipairs(scene) do
 		local mesh = task:getMesh()
 		local shaderID = task:getShaderID()
 		

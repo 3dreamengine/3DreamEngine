@@ -1,7 +1,7 @@
 local lib = _3DreamEngine
 
 function lib:newCamera(transform, transformProj, pos, normal)
-	local m = transform or pos and mat4:getIdentity():translate(pos) or mat4:getIdentity()
+	local m = transform or pos and mat4.getIdentity():translate(pos) or mat4.getIdentity()
 	return setmetatable({
 		transform = m,
 		transformProj = transformProj and (transformProj * m),

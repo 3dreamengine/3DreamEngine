@@ -71,7 +71,7 @@ function sh:perMaterial(dream, shaderObject, material)
 	
 end
 
-local ID = mat4:getIdentity()
+local ID = mat4.getIdentity()
 function sh:perTask(dream, shaderObject, task)
 	local bt = task:getBoneTransforms()
 	assert(bt, "missing bone transforms")

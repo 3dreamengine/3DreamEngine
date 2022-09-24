@@ -11,9 +11,9 @@ dream:init()
 
 --load our object (since merging is destructive we load a separate one here)
 local monkey = dream:loadObject("examples/monkey/object")
-local monkeyForBaking = dream:loadObject("examples/monkey/object", {cleanup=false, mesh=false})
-monkey.meshes.Suzanne.material.color = {0.4, 0.15, 0.05, 1}
-monkeyForBaking.meshes.Suzanne.material.color = {0.4, 0.15, 0.05, 1}
+local monkeyForBaking = dream:loadObject("examples/monkey/object", { cleanup = false, mesh = false })
+monkey.meshes.Suzanne.material.color = { 0.4, 0.15, 0.05, 1 }
+monkeyForBaking.meshes.Suzanne.material.color = { 0.4, 0.15, 0.05, 1 }
 
 local function getPos()
 	return vec3(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * 15
@@ -34,7 +34,7 @@ local function createInstanced(n)
 	math.randomseed(1)
 	local newMonkey = monkey:clone()
 	newMonkey.meshes.Suzanne:createInstances(n)
-	for i = 1, n do
+	for _ = 1, n do
 		newMonkey.meshes.Suzanne:addInstance(mat3:getIdentity(), getPos())
 	end
 	return newMonkey
@@ -77,18 +77,18 @@ function love.draw()
 	
 	--add (draw) objects, apply transformations
 	object:resetTransform()
-	object:rotateY(love.timer.getTime())
 	object:translate(0, 0, -15)
+	object:rotateY(love.timer.getTime())
 	dream:draw(object)
 	
 	--render
 	dream:present()
 	
 	--explanation
-	love.graphics.printf("This demo contains 3 ways of rendering the same object. The first approach is the straight forward one, with high CPU load. The second one uses instances, which are usually much faster for many objects (grass, foliage, or 500 monkeys), the third methode merges the objects. While not faster than instancing with a far greater initial build time, this approach allows you to merge different shapes too, as long as they share the same material and shader.", 0, 5, love.graphics.getWidth(), "center")
+	love.graphics.printf("This demo contains 3 ways of rendering the same object. The first approach is the straight forward one, with high CPU load. The second one uses instances, which are usually much faster for many objects (grass, foliage, or 500 monkeys), the third methode merges the objects. While not faster than instancing with a far greater initial build time, this approach allows you to merge different shapes too, as long as they share the same material and shader.", 100, 5, love.graphics.getWidth() - 200, "center")
 	
 	--instructions
-	love.graphics.print("FPS: " .. love.timer.getFPS() .. "\n\nUse number keys to switch mode, use arrow keys to change number of monkeys.\n1) Slow\n2) Instances\n3) Merged (will require build time)\n\ncount: " .. count, 5, love.graphics.getHeight() - 150)
+	love.graphics.print("FPS: " .. love.timer.getFPS() .. "\n\nUse number keys to switch mode, use arrow keys to change number of monkeys.\n1) Slow\n2) Instances\n3) Merged (will require build time)\n\nCount: " .. count, 5, love.graphics.getHeight() - 150)
 end
 
 function love.keypressed(key)
