@@ -68,7 +68,7 @@ end
 
 --add particle system objects
 --for every mesh (which is not a particle mesh itself) with a material with attached particle systems create a new mesh (the particles)
-function lib:addParticlesystems(obj)
+function lib:addParticleSystems(obj)
 	local meshes = { }
 	for oName, o in pairs(obj.meshes) do
 		local particleSystems = o.material.particleSystems

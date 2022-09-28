@@ -24,7 +24,7 @@ lib.defaultArgs = {
 	mesh = true,
 	export3do = false,
 	skip3do = false,
-	particlesystems = true,
+	particleSystems = true,
 	scene = false,
 	decodeBlenderNames = true,
 }
@@ -71,7 +71,6 @@ function lib:loadLibrary(path, args, prefix)
 	local obj = self:loadScene(path, args)
 	
 	--insert into library
-	local changed = { }
 	for d,o in pairs(obj.objects) do
 		local id = (prefix or "") .. d
 		self.objectLibrary[id] = o
@@ -132,7 +131,7 @@ function lib:loadObject(path, args)
 			local failed = self.loader[typ](self, obj, path .. "." .. typ)
 			self.deltonLoad:stop()
 			
-			--skip furhter modifying and exporting if already packed as 3do
+			--skip further modifying and exporting if already packed as 3do
 			--also skips mesh loading since it is done manually
 			if typ == "3do" and not failed then
 				goto skipWhen3do
@@ -248,7 +247,7 @@ function lib:loadObject(path, args)
 	if obj.args.export3do then
 		self:export3do(obj)
 		
-		--doing that enforces loadng the exported 3do object instead, making sure the first load behaves the same as the other ones
+		--doing that enforces loading the exported 3do object instead, making sure the first load behaves the same as the other ones
 		args.skip3do = false
 		return self:loadObject(path, args)
 	end
@@ -261,7 +260,7 @@ function lib:processObject(obj)
 		if m.tags.pos then
 			--average position
 			local pos = vec3()
-			for i,v in ipairs(m.vertices) do
+			for _,v in ipairs(m.vertices) do
 				pos = pos + v
 			end
 			local c = #m.vertices
@@ -269,7 +268,7 @@ function lib:processObject(obj)
 			
 			--average size
 			local r = 0
-			for i,v in ipairs(m.vertices) do
+			for _,v in ipairs(m.vertices) do
 				r = r + (pos - v):length()
 			end
 			r = r / c
@@ -296,7 +295,7 @@ function lib:processObject(obj)
 			local h = math.huge
 			local min = vec3(h, h, h)
 			local max = vec3(-h, -h, -h)
-			for i,v in ipairs(o.vertices) do
+			for _,v in ipairs(o.vertices) do
 				min = min:min(vec3(v))
 				max = max:max(vec3(v))
 			end
@@ -343,7 +342,7 @@ function lib:processObject(obj)
 	--LOD detection
 	for _,typ in ipairs({"renderVisibility", "shadowVisibility"}) do
 		local max = { }
-		for d,o in pairs(obj.meshes) do
+		for _,o in pairs(obj.meshes) do
 			if o[typ] and o.tags.lod then
 				local nr = tonumber(o.tags.lod)
 				assert(nr, "LOD nr malformed: " .. o.name .. " (use 'LOD:integer')")
@@ -352,7 +351,7 @@ function lib:processObject(obj)
 		end
 		
 		--apply LOD level
-		for d,o in pairs(obj.meshes) do
+		for _,o in pairs(obj.meshes) do
 			if o[typ] and max[o.name] then
 				local nr = tonumber(o.tags.lod) or 0
 				o:setLOD(nr, max[o.name] == nr and math.huge or nr+1)
@@ -362,7 +361,7 @@ function lib:processObject(obj)
 	
 	
 	--raytrace objects are usually not meant to be rendered
-	for d,o in pairs(obj.meshes) do
+	for _,o in pairs(obj.meshes) do
 		if o.tags.raytrace then
 			o:setVisible(false)
 		end
@@ -370,7 +369,7 @@ function lib:processObject(obj)
 	
 	
 	--raytrace objects are usually not meant to be rendered
-	for d,o in pairs(obj.meshes) do
+	for _,o in pairs(obj.meshes) do
 		if o.tags.shadow == "false" then
 			o:setShadowVisibility(false)
 		elseif o.tags.shadow then
@@ -391,7 +390,7 @@ function lib:processObject(obj)
 				--2.5D physics
 				if mesh.tags.physics then
 					for i,m in ipairs(mesh:separate()) do
-						obj.physics[id .. "_" .. i] = self:newCollider(m)
+						obj.physics[id .. "_" .. i] = self:newCollider(m, type(mesh.tags.physics) == "string" and mesh.tags.physics)
 					end
 				end
 			end
@@ -405,8 +404,8 @@ function lib:processObject(obj)
 	
 	
 	--create particle systems
-	if obj.args.particlesystems then
-		self:addParticlesystems(obj)
+	if obj.args.particleSystems then
+		self:addParticleSystems(obj)
 	end
 	
 	

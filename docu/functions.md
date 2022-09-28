@@ -36,7 +36,7 @@ yourObject = dream:loadObject(path, args)
 
 
 * `mesh (true)` create a mesh after loading
-* `particlesystems (true)` generate particlesystems as defined in the material
+* `particleSystems (true)` generate particleSystems as defined in the material
 * `cleanup (true)` deloads raw buffers (positions, normals, ...) after finishing loading
 * `export3do (false)`loads the object as usual, then export the entire object as a 3DO file
 * `animations (nil)` when using COLLADA format, split the animation into `{key = {from, to}}`, where `from` and `to` are timestamps in seconds
