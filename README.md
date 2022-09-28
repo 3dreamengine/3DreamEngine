@@ -2,36 +2,36 @@
 <a href="https://discord.gg/hpmZxNQ"><img src="https://discordapp.com/api/guilds/561664262481641482/embed.png" alt="Discord server" /></a>
 
 # Features
-* easy to use yet powerful 3D extension to LÖVE
-* fast forward rendering with alpha pass
-* metallness workflow (albedo, normal, roughness, metallic, ao, emission)
+* Easy to use yet powerful 3D extension to LÖVE
+* Fast forward rendering with alpha pass
+* Metalness workflow (albedo, normal, roughness, metallic, ao, emission)
 * HDR with bloom
-* refractions
-* screen space ambient occlusion (ssao)
-* cubemap reflections
-* proper blurred reflections on rough surfaces
-* particle batches and single sprites
-* particle/foliage systems
-* simple custom shaders
-* eye adaption effect
-* cascade shadow mapping
-* cubemap shadow mapping
-* smooth shadows
-* distance fog
-* godrays
-* included shaders for wind animation, water, ...
-* supports .obj, .mtl, .dae and .vox
-* threaded texture loading
-* optional high performance file format to accelerate loading times
-* included optimized vec2, vec3, vec4, mat2, mat3 and mat4 library
+* Refractions
+* Screen space ambient occlusion (ssao)
+* Cubemap reflections
+* Proper blurred reflections on rough surfaces
+* Particle batches and single sprites
+* Particle/foliage systems
+* Simple custom shaders
+* Eye adaption effect
+* Cascade shadow mapping
+* Cubemap shadow mapping
+* Smooth shadows
+* Distance fog
+* Godrays
+* Included shaders for wind animation, water, ...
+* Supports .obj, .mtl, .dae and .vox
+* Threaded texture loading
+* Optional high performance file format to accelerate loading times
+* Included optimized vec2, vec3, vec4, mat2, mat3 and mat4 library
 * Box2D extension to support basic 3D collisions
-* dynamic clouds, sun, moon, stars and rainbows
+* Dynamic clouds, sun, moon, stars and rainbows
 
 ![screenshots](https://raw.githubusercontent.com/3dreamengine/3DreamEngine/master/screenshots.jpg)
 
 
 # development
-Due to rapid changes to 3Dream I am working on a seperate branch ("beta"). While this branch is faster and offers more and improved features, I am experimenting with it and may change how things work.
+Due to rapid changes to 3Dream I am working on a separate branch ("beta"). While this branch is faster and offers more and improved features, I am experimenting with it and may change how things work.
 
 
 # documentation
@@ -84,7 +84,7 @@ end
 ```
 
 # Examples
-We have examples in the examples folder. The provided main.lua contains a demo selection screen.
+We have examples in the `examples` folder. The provided main.lua contains a demo selection screen.
 
 # Credits
 - [Lamborghini model](https://www.turbosquid.com/FullPreview/Index.cfm/ID/1117798)
