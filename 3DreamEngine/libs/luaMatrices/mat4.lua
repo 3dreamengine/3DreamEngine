@@ -61,11 +61,15 @@ end
 function matrix.getTranslate(x, y, z)
 	if type(x) == "table" then
 		x, y, z = x[1], x[2], x[3]
+	else
+		x = x or 0
+		y = y or 0
+		z = z or 0
 	end
 	local c = matrix({
-		1, 0, 0, x or 0,
-		0, 1, 0, y or 0,
-		0, 0, 1, z or 0,
+		1, 0, 0, x,
+		0, 1, 0, y,
+		0, 0, 1, z,
 		0, 0, 0, 1,
 	})
 	return c
@@ -74,11 +78,15 @@ end
 function matrix.getScale(x, y, z)
 	if type(x) == "table" then
 		x, y, z = x[1], x[2], x[3]
+	else
+		x = x or 1
+		y = y or x
+		z = z or x
 	end
 	local c = matrix({
 		x, 0, 0, 0,
-		0, y or x, 0, 0,
-		0, 0, z or x, 0,
+		0, y, 0, 0,
+		0, 0, z, 0,
 		0, 0, 0, 1,
 	})
 	return c
@@ -283,9 +291,13 @@ function methods:invert()
 end
 
 function methods:translate(x, y, z)
-	x = x or 0
-	y = y or 0
-	z = z or 0
+	if type(x) == "table" then
+		x, y, z = x[1], x[2], x[3]
+	else
+		x = x or 0
+		y = y or 0
+		z = z or 0
+	end
 	
 	local m = matrix({
 		self[1],
@@ -309,9 +321,13 @@ function methods:translate(x, y, z)
 end
 
 function methods:scale(x, y, z)
-	x = x or 1
-	y = y or x
-	z = z or x
+	if type(x) == "table" then
+		x, y, z = x[1], x[2], x[3]
+	else
+		x = x or 1
+		y = y or x
+		z = z or x
+	end
 	
 	local m = matrix({
 		self[1] * x, self[2] * y, self[3] * z, self[4],

@@ -1,10 +1,10 @@
 local lib = _3DreamEngine
 
-local function verfiyBones(bones)
+local function verifyBones(bones)
 	for _, bone in pairs(bones) do
 		bone.transform = bone.transform and mat4(bone.transform)
 		if bone.children then
-			verfiyBones(bone.children)
+			verifyBones(bone.children)
 		end
 	end
 end
@@ -14,13 +14,13 @@ function lib:newSkeleton(bones)
 	local function count(n)
 		c = c + 1
 		if n.children then
-			for _,s in pairs(n.children) do
+			for _, s in pairs(n.children) do
 				count(s)
 			end
 		end
 	end
 	
-	verfiyBones(bones)
+	verifyBones(bones)
 	
 	return setmetatable({
 		bones = bones,
@@ -30,20 +30,20 @@ function lib:newSkeleton(bones)
 end
 
 local class = {
-	link = {"clone", "skeleton"},
+	link = { "clone", "skeleton" },
 	
 	setterGetter = {
 		bonesCount = "getter",
 	},
 }
- 
+
 function class:tostring()
 	return string.format("skeleton (%d bones)", self:getBonesCount())
 end
 
 --apply the pose to the joints
 function class:applyPoseToNode(nodes, pose, parentTransform)
-	for name,joint in pairs(nodes) do
+	for name, joint in pairs(nodes) do
 		if pose[name] then
 			local poseTransform = pose[name].rotation:toMatrix()
 			local pos = pose[name].position

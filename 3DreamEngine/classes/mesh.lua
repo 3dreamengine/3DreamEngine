@@ -327,7 +327,7 @@ function class:calcTangents()
 	end
 end
 
---creates a renderable mesh
+--creates a render-able mesh
 function class:create()
 	assert(self.faces, "face array is required")
 	

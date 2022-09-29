@@ -9,12 +9,12 @@ function lib:newAnimation()
 end
 
 local class = {
-	link = {"clone", "animation"}
+	link = { "clone", "animation" }
 }
 
 function class:finish()
 	local maxTime = 0
-	for joint, frames in pairs(self.frames) do
+	for _, frames in pairs(self.frames) do
 		maxTime = math.max(maxTime, frames[#frames].time)
 	end
 	
@@ -37,7 +37,7 @@ function class:finish()
 	self.length = maxTime
 end
 
---linear interpolation of position and rotatation between two frames
+--linear interpolation of position and rotation between two frames
 function class.interpolateFrames(f1, f2, factor)
 	return {
 		position = f1.position * (1.0 - factor) + f2.position * factor,
@@ -50,7 +50,7 @@ function class:getPose(time)
 	assert(self, "animation is nil, is the name correct?")
 	local pose = lib:newPose()
 	
-	for joint,frames in pairs(self.frames) do
+	for joint, frames in pairs(self.frames) do
 		if #frames == 0 then
 			self.frames[joint] = nil
 		elseif #frames == 1 then
@@ -64,7 +64,7 @@ function class:getPose(time)
 			local lu = self.lookup[joint]
 			for f = lu and lu[math.ceil(t / self.length * #lu)] or 2, #frames do
 				if frames[f].time >= t then
-					f1 = frames[f-1]
+					f1 = frames[f - 1]
 					f2 = frames[f]
 					break
 				end
@@ -81,8 +81,8 @@ function class:getPose(time)
 end
 
 function class:decode()
-	for _,frames in pairs(self.frames) do
-		for _,frame in ipairs(frames) do
+	for _, frames in pairs(self.frames) do
+		for _, frame in ipairs(frames) do
 			frame.position = vec3(frame.position)
 			frame.rotation = quat(frame.rotation)
 		end

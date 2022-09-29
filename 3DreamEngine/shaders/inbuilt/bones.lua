@@ -12,7 +12,7 @@ function sh:initMesh(dream, mesh)
 	if mesh:getMesh("mesh") then
 		if not mesh:getMesh("boneMesh") then
 			assert(mesh.joints and mesh.weights, "GPU bones require a joint and weight buffer")
-			mesh.boneMesh = love.graphics.newMesh({{"VertexJoint", "float", 4}, {"VertexWeight", "float", 4}}, #mesh.joints, "triangles", "static")
+			mesh.boneMesh = love.graphics.newMesh({ { "VertexJoint", "float", 4 }, { "VertexWeight", "float", 4 } }, #mesh.joints, "triangles", "static")
 			
 			--create mesh
 			for index = 1, #mesh.joints do
@@ -56,19 +56,18 @@ function sh:buildVertex(dream, mat)
 		jointTransforms[int(VertexJoint[3]*255.0)] * VertexWeight[3]
 	);
 	
-	vertexPos = (boneTransform * vec4(VertexPosition.xyz, 1.0)).xyz;
-	vertexPos = (transform * vec4(vertexPos.xyz, 1.0)).xyz;
+	vertexPos = (transform * (boneTransform * vec4(VertexPosition.xyz, 1.0))).xyz;
 	
 	normalTransform = normalTransform * mat3(boneTransform);
 	]]
 end
 
 function sh:perShader(dream, shaderObject)
-	
+
 end
 
 function sh:perMaterial(dream, shaderObject, material)
-	
+
 end
 
 local ID = mat4.getIdentity()

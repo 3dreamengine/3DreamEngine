@@ -2,6 +2,10 @@
 
 A list of upcoming changes and features.
 
+# GLTF
+
+COLLADA is a mess. The current import does its job half of the time and I will probably leave it there, but GLTF might be more suitable and stable.
+
 # Buffer builder
 
 * Create Meshes from several meshes
