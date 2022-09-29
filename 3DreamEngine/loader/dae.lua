@@ -51,7 +51,7 @@ end
 --load entire tree and index all IDs
 local indices
 local function indexTree(node)
-	for key,child in pairs(node) do
+	for key, child in pairs(node) do
 		if type(child) == "table" and key ~= "_attr" then
 			indexTree(child)
 		end
@@ -84,18 +84,18 @@ end
 
 --loads an array of inputs
 local function loadInputs(s, idxs)
-	local idxs = idxs or (s.p or s.v) and loadFloatArray((s.p or s.v)[1][1])
+	idxs = idxs or (s.p or s.v) and loadFloatArray((s.p or s.v)[1][1])
 	
 	--use the max offset to determine data width
 	local fields = 0
-	for _,input in ipairs(s.input) do
+	for _, input in ipairs(s.input) do
 		local offset = 1 + (tonumber(input._attr.offset) or 0)
 		fields = math.max(fields, offset)
 	end
 	
 	local data = { }
 	local vertexMapping = { }
-	for _,input in ipairs(s.input) do
+	for _, input in ipairs(s.input) do
 		local set = 1 + tonumber(input._attr.set or "0")
 		local typ = input._attr.semantic
 		local array = getInput(input._attr.source)
@@ -117,7 +117,7 @@ local function loadInputs(s, idxs)
 	return data, vertexMapping
 end
 
-local function addMesh(self, obj, mat, id, inputs, vertexMapping, meshData, vcount)
+local function addMesh(self, mat, id, inputs, vertexMapping, meshData, vcount)
 	--create mesh
 	local material = mat and self.materialLibrary[mat.name] or mat or self:newMaterial()
 	local m = self:newMesh(id, material)
@@ -128,9 +128,9 @@ local function addMesh(self, obj, mat, id, inputs, vertexMapping, meshData, vcou
 	table.insert(meshData[id], m)
 	
 	--flip UV
-	for _,array in pairs(inputs["TEXCOORD"] or {}) do
-		for i,v in ipairs(array) do
-			array[i] = {v[1], 1.0 - v[2]}
+	for _, array in pairs(inputs["TEXCOORD"] or {}) do
+		for i, v in ipairs(array) do
+			array[i] = { v[1], 1.0 - v[2] }
 		end
 	end
 	
@@ -156,11 +156,11 @@ local function addMesh(self, obj, mat, id, inputs, vertexMapping, meshData, vcou
 		local verts = type(vcount) == "number" and 3 or vcount[face]
 		if verts == 3 then
 			--tris
-			table.insert(m.faces, {i, i+1, i+2})
+			table.insert(m.faces, { i, i + 1, i + 2 })
 		else
 			--triangulates, fan style
-			for f = 1, verts-2 do
-				table.insert(m.faces, {i, i+f, i+f+1})
+			for f = 1, verts - 2 do
+				table.insert(m.faces, { i, i + f, i + f + 1 })
 			end
 		end
 		i = i + verts
@@ -175,7 +175,7 @@ return function(self, obj, path)
 	local file = love.filesystem.read(path)
 	
 	--compressed (50 4B 03 04 magic number)
-	local magic = {string.byte(file, 1, 4)}
+	local magic = { string.byte(file, 1, 4) }
 	if magic[1] == 80 and magic[2] == 75 and magic[3] == 3 and magic[4] == 4 then
 		error("PKZIP not supported, please unzip the .dae first")
 	end
@@ -192,13 +192,14 @@ return function(self, obj, path)
 	--load skin controller
 	local controllers = { }
 	for _, library in ipairs(root.library_controllers or { }) do
-		for _,controller in ipairs(library.controller or { }) do
+		for _, controller in ipairs(library.controller or { }) do
 			local skin = controller.skin[1]
 			if skin then
 				local c = {
 					weights = { },
 					joints = { },
-					mesh = skin._attr.source:sub(2)
+					mesh = skin._attr.source:sub(2),
+					bindShape = skin.bind_shape_matrix and mat4(loadFloatArray(skin.bind_shape_matrix[1][1]))
 				}
 				controllers[controller._attr.id] = c
 				
@@ -214,7 +215,7 @@ return function(self, obj, path)
 				local vertex = 0
 				c.weights = { }
 				c.joints = { }
-				for i,vertexCount in ipairs(vcounts) do
+				for i, vertexCount in ipairs(vcounts) do
 					c.weights[i] = { }
 					c.joints[i] = { }
 					for i2 = 1, vertexCount do
@@ -228,24 +229,24 @@ return function(self, obj, path)
 				for idx, w in ipairs(c.weights) do
 					local n = #w
 					repeat
-						local newn = 0
+						local newN = 0
 						for i = 2, n do
 							if w[i - 1] < w[i] then
 								w[i - 1], w[i] = w[i], w[i - 1]
 								c.joints[idx][i - 1], c.joints[idx][i] = c.joints[idx][i], c.joints[idx][i - 1]
-								newn = i
+								newN = i
 							end
 						end
-						n = newn
+						n = newN
 					until n < 1
 				end
 				
 				--map joints to integers for easier processing
 				local mapping = { }
-				for i,v in ipairs(c.jointNames) do
+				for i, v in ipairs(c.jointNames) do
 					mapping[v] = i - 1
 				end
-				for _,joints in ipairs(c.joints) do
+				for _, joints in ipairs(c.joints) do
 					for i, j in ipairs(joints) do
 						joints[i] = mapping[j]
 					end
@@ -253,12 +254,12 @@ return function(self, obj, path)
 			end
 		end
 	end
-
+	
 	
 	--load materials
 	local materials = { }
-	for _,library in ipairs(root.library_materials or { }) do
-		for _,mat in ipairs(library.material) do
+	for _, library in ipairs(root.library_materials or { }) do
+		for _, mat in ipairs(library.material) do
 			local name = mat._attr.name or mat._attr.id
 			local material = self:newMaterial(name)
 			materials[mat._attr.id] = material
@@ -268,47 +269,47 @@ return function(self, obj, path)
 	
 	--load geometry
 	local meshData = { }
-	for _,library in ipairs(root.library_geometries or { }) do
-		for _,geometry in ipairs(library.geometry) do
+	for _, library in ipairs(root.library_geometries or { }) do
+		for _, geometry in ipairs(library.geometry) do
 			if geometry.mesh then
 				local mesh = geometry.mesh[1]
 				local id = geometry._attr.id
 				
 				--load all the buffers
 				if mesh.triangles then
-					for _,t in ipairs(mesh.triangles) do
+					for _, t in ipairs(mesh.triangles) do
 						local inputs, vertexMapping = loadInputs(t)
 						local matId = t._attr.material
-						addMesh(self, obj, matId and materials[matId], id, inputs, vertexMapping, meshData, tonumber(t._attr.count))
+						addMesh(self, matId and materials[matId], id, inputs, vertexMapping, meshData, tonumber(t._attr.count))
 					end
 				end
 				
 				if mesh.polylist then
-					for _,p in ipairs(mesh.polylist) do
+					for _, p in ipairs(mesh.polylist) do
 						local inputs, vertexMapping = loadInputs(p)
 						local vcount = loadFloatArray(p.vcount[1][1])
 						local matId = p._attr.material
-						addMesh(self, obj, matId and materials[matId], id, inputs, vertexMapping, meshData, vcount)
+						addMesh(self, matId and materials[matId], id, inputs, vertexMapping, meshData, vcount)
 					end
 				end
 				
 				if mesh.polygons then
-					for _,p in ipairs(mesh.polygons) do
+					for _, p in ipairs(mesh.polygons) do
 						local idxs = { }
 						local vcount = { }
 						local matId = p._attr.material
 						
 						--combine polygons
-						for _,p in ipairs(mesh.polygons.p) do
+						for _, p in ipairs(mesh.polygons.p) do
 							local a = loadFloatArray(p[1])
-							for _,v in ipairs(a) do
+							for _, v in ipairs(a) do
 								table.insert(idxs, v)
 							end
 							table.insert(vcount, #a)
 						end
 						
 						local inputs, _, vertexMapping = loadInputs(mesh.polygons[1], idxs)
-						addMesh(self, obj, matId and materials[matId], id, inputs, vertexMapping, meshData, vcount)
+						addMesh(self, matId and materials[matId], id, inputs, vertexMapping, meshData, vcount)
 					end
 				end
 			end
@@ -318,8 +319,8 @@ return function(self, obj, path)
 	
 	--load light
 	local lightIDs = { }
-	for _,library in ipairs(root.library_lights or { }) do
-		for d,light in ipairs(library.light) do
+	for _, library in ipairs(root.library_lights or { }) do
+		for _, light in ipairs(library.light) do
 			local l = self:newLight()
 			l:setName(light._attr.name)
 			lightIDs[light._attr.id] = l
@@ -340,7 +341,7 @@ return function(self, obj, path)
 	
 	local function skeletonLoader(nodes)
 		local skel = { }
-		for d,s in ipairs(nodes) do
+		for _, s in ipairs(nodes) do
 			if s._attr.type == "JOINT" then
 				local name = s._attr.sid
 				
@@ -360,28 +361,42 @@ return function(self, obj, path)
 	local function addMeshesToObject(name, obj, meshes, transform, controller)
 		for i, mesh in ipairs(meshes or {}) do
 			local n = i == 1 and name or name .. "." .. i
-			obj.meshes[n] = mesh:clone()
-			obj.meshes[n]:setName(n)
-			obj.meshes[n].transform = transform
+			local newMesh = mesh:clone()
+			obj.meshes[n] = newMesh
+			newMesh:setName(n)
+			newMesh.transform = transform
 			
 			if controller then
-				obj.meshes[n].weights = { }
-				obj.meshes[n].joints = { }
+				newMesh.weights = { }
+				newMesh.joints = { }
 				
-				for d,s in ipairs(mesh.vertexMapping) do
-					obj.meshes[n].weights[d] = controller.weights[s]
-					obj.meshes[n].joints[d] = controller.joints[s]
+				for d, s in ipairs(mesh.vertexMapping) do
+					newMesh.weights[d] = controller.weights[s]
+					newMesh.joints[d] = controller.joints[s]
 				end
 				
-				obj.meshes[n].jointNames = controller.jointNames
-				obj.meshes[n].inverseBindMatrices = controller.inverseBindMatrices
+				--it is common to apply the bind shape to the mesh directly
+				if controller.bindShape then
+					local vertices = newMesh.vertices
+					local normals = newMesh.normals
+					newMesh.vertices = { }
+					newMesh.normals = { }
+					local normalMatrix = controller.bindShape:subm()
+					for index = 1, #vertices do
+						newMesh.vertices[index] = controller.bindShape * vertices[index]
+						newMesh.normals[index] = normalMatrix * normals[index]
+					end
+				end
+				
+				newMesh.jointNames = controller.jointNames
+				newMesh.inverseBindMatrices = controller.inverseBindMatrices
 			end
 		end
 	end
 	
 	--travers the scene graph
 	local function loadNodes(nodes, parentTransform)
-		for _,s in ipairs(nodes) do
+		for _, s in ipairs(nodes) do
 			local name = s._attr.name or s._attr.id
 			local transform = getTransform(s)
 			transform = parentTransform and parentTransform * transform or transform
@@ -423,25 +438,24 @@ return function(self, obj, path)
 	
 	
 	--cleanup
-	for d,s in pairs(obj.meshes) do
+	for _, s in pairs(obj.meshes) do
 		s.vertexMapping = nil
 	end
 	
 	
 	--load scenes, scenes are flattened into one object
-	for _,scene in ipairs(root.library_visual_scenes or { }) do
-		for _,visual_scene in ipairs(scene.visual_scene or { }) do
+	for _, scene in ipairs(root.library_visual_scenes or { }) do
+		for _, visual_scene in ipairs(scene.visual_scene or { }) do
 			loadNodes(visual_scene.node)
 		end
 	end
 	
 	
 	--load animations
-	local animations = { }
 	local function loadAnimation(anim)
 		local animation = self:newAnimation()
 		
-		for _,a in ipairs(anim.animation) do
+		for _, a in ipairs(anim.animation) do
 			if a.animation and a.channel then
 				print("WARNING: dae file contains too complex animations, see docu for more information.")
 			end
@@ -450,10 +464,10 @@ return function(self, obj, path)
 			elseif a.channel then
 				--parse sources
 				local sources = { }
-				for d,s in ipairs(a.source) do
+				for _, s in ipairs(a.source) do
 					sources[s._attr.id] = s.float_array and loadFloatArray(s.float_array[1][1])
 				end
-				for d,s in ipairs(a.sampler[1].input) do
+				for _, s in ipairs(a.sampler[1].input) do
 					sources[s._attr.semantic] = sources[s._attr.source:sub(2)]
 				end
 				
@@ -465,7 +479,7 @@ return function(self, obj, path)
 				assert(name, "animation output channel refers to unknown id " .. id)
 				animation.frames[name] = { }
 				for i = 1, #sources.OUTPUT / 16 do
-					local m = mat4(unpack(sources.OUTPUT, i*16-15, i*16))
+					local m = mat4(unpack(sources.OUTPUT, i * 16 - 15, i * 16))
 					table.insert(animation.frames[name], {
 						time = sources.INPUT[i],
 						rotation = quat.fromMatrix(m:subm()),
@@ -483,7 +497,7 @@ return function(self, obj, path)
 	end
 	
 	--load animations
-	for _,animations in ipairs(root.library_animations or { }) do
+	for _, animations in ipairs(root.library_animations or { }) do
 		loadAnimation(animations)
 	end
 end
