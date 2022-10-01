@@ -16,6 +16,7 @@ end
 _G.mat2 = require((...) .. "/libs/luaMatrices/mat2")
 _G.mat3 = require((...) .. "/libs/luaMatrices/mat3")
 _G.mat4 = require((...) .. "/libs/luaMatrices/mat4")
+require((...) .. "/libs/luaMatrices/mat4Extended")
 
 _G.vec2 = require((...) .. "/libs/luaVectors/vec2")
 _G.vec3 = require((...) .. "/libs/luaVectors/vec3")

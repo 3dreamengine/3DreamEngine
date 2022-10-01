@@ -54,8 +54,65 @@ function class:rotateZ(rz)
 	return self
 end
 
-function class:setDirection(normal, up)
-	self.transform = lib:lookInDirection(normal, up):invert()
+--todo optimize world transforms
+function class:translateWorld(x, y, z)
+	self.transform = self.transform and (mat4.getTranslate(x, y, z) * self.transform) or mat4.getTranslate(x, y, z)
+	self.inverseTransform = false
+	self.dynamic = true
+	return self
+end
+
+function class:scaleWorld(x, y, z)
+	self.transform = self.transform and (mat4.getScale(x, y, z) * self.transform) or mat4.getScale(x, y, z)
+	self.inverseTransform = false
+	self.dynamic = true
+	return self
+end
+
+function class:rotateXWorld(rx)
+	self.transform = self.transform and (mat4.getRotateX(rx) * self.transform) or mat4.getRotateX(rx)
+	self.inverseTransform = false
+	self.dynamic = true
+	return self
+end
+
+function class:rotateYWorld(ry)
+	self.transform = self.transform and (mat4.getRotateY(ry) * self.transform) or mat4.getRotateY(ry)
+	self.inverseTransform = false
+	self.dynamic = true
+	return self
+end
+
+function class:rotateZWorld(rz)
+	self.transform = self.transform and (mat4.getRotateZ(rz) * self.transform) or mat4.getRotateZ(rz)
+	self.inverseTransform = false
+	self.dynamic = true
+	return self
+end
+
+function class:lookAt(position, up)
+	position = self:getInvertedTransform() * position
+	up = self:getInvertedTransform():subm() * (up or vec3(0.0, 1.0, 0.0))
+	self:lookTowards(position, up)
+end
+
+function class:lookTowards(direction, up)
+	up = up or vec3(0.0, 1.0, 0.0)
+	
+	local zaxis = direction:normalize()
+	local xaxis = zaxis:cross(up):normalize()
+	local yaxis = xaxis:cross(zaxis)
+	
+	local rotate = mat4({
+		xaxis.x, xaxis.y, xaxis.z, 0.0,
+		yaxis.x, yaxis.y, yaxis.z, 0.0,
+		-zaxis.x, -zaxis.y, -zaxis.z, 0.0,
+		0, 0, 0, 1
+	})
+	
+	--todo someone with better math skills should take a look at this mess
+	self.transform = self:getTransform() * rotate:invert()
+	
 	self.inverseTransform = false
 	self.dynamic = true
 	return self
