@@ -1,10 +1,5 @@
 local lib = _3DreamEngine
 
-local function removePostfix(t)
-	local v = t:match("(.*)%.[^.]+")
-	return v or t
-end
-
 function lib:newLinkedObject(original, source)
 	return setmetatable({
 		linked = source
@@ -212,13 +207,12 @@ function class:merge()
 end
 
 function class:applyTransform()
-	for _,s in ipairs(s.objects) do
-		s:setTransform(self:getTransform() * s:getTransform())
-		s:applyTransform()
+	for _, o in ipairs(self.objects) do
+		o:setTransform(self:getTransform() * o:getTransform())
+		o:applyTransform()
 	end
-	for _,s in ipairs(s.meshes) do
-		s:setTransform(self:getTransform() * s:getTransform())
-		s:applyTransform()
+	for _, mesh in ipairs(self.meshes) do
+		mesh:applyTransform(self:getTransform())
 	end
 	s:resetTransform()
 end
@@ -279,7 +273,7 @@ end
 function class:print()
 	local width = 48
 	
-	--general innformation
+	--general information
 	if self.linked then
 		push(self.name .. " (linked)")
 	else
