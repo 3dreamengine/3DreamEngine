@@ -358,13 +358,17 @@ return function(self, obj, path)
 		return skel
 	end
 	
-	local function addMeshesToObject(name, obj, meshes, transform, controller)
+	local function addNewObject(name, meshes, transform, controller)
+		local o = self:newObject(name)
+		o:setTransform(transform)
+		
+		--todo names are not unique as per specification
+		obj.objects[name] = o
+		
 		for i, mesh in ipairs(meshes or {}) do
 			local n = i == 1 and name or name .. "." .. i
 			local newMesh = mesh:clone()
-			obj.meshes[n] = newMesh
-			newMesh:setName(n)
-			newMesh.transform = transform
+			o.meshes[n] = newMesh
 			
 			if controller then
 				newMesh.weights = { }
@@ -404,12 +408,12 @@ return function(self, obj, path)
 				--object
 				local id = s.instance_geometry[1]._attr.url:sub(2)
 				local mesh = meshData[id]
-				addMeshesToObject(name, obj, mesh, transform)
+				addNewObject(name, mesh, transform)
 			elseif s.instance_controller then
 				local id = s.instance_controller[1]._attr.url:sub(2)
 				local controller = controllers[id]
 				local mesh = meshData[controller.mesh]
-				addMeshesToObject(name, obj, mesh, transform, controller)
+				addNewObject(name, mesh, transform, controller)
 			elseif s.instance_light then
 				--light source
 				local id = s.instance_light[1]._attr.url:sub(2)

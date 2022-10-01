@@ -2,7 +2,7 @@ local lib = _3DreamEngine
 
 function lib:newMesh(name, material, meshType)
 	local o = {
-		name = self:removePostfix(name),
+		name = name,
 		material = material,
 		tags = { },
 		
@@ -30,7 +30,7 @@ function lib:newMesh(name, material, meshType)
 end
 
 local class = {
-	link = {"clone", "transform", "shader", "mesh"},
+	link = {"clone", "shader", "mesh"},
 	
 	setterGetter = {
 		instancesCount = "number",
@@ -41,8 +41,7 @@ local class = {
 }
 
 function class:setName(name)
-	assert(type(name) == "string", "name has to be a string")
-	self.name = lib:removePostfix(name)
+	self.name = name
 end
 function class:getName()
 	return self.name
@@ -51,7 +50,7 @@ end
 function class:tostring()
 	local tags = { }
 	
-	--vertexcount
+	--vertex count
 	if self.mesh and self.mesh.getVertexCount then
 		table.insert(tags, self.mesh:getVertexCount() .. " vertices")
 	end
@@ -210,11 +209,8 @@ function class:getMesh(name)
 	end
 end
 
-function class:applyTransform()
-	local transform = self:getTransform()
-	self:resetTransform()
-	
-	--normal transforation
+function class:applyTransform(transform)
+	--normal transformation
 	local subm = transform:subm()
 	
 	for i = 1, #self.vertices do
@@ -389,7 +385,7 @@ function class:addInstances(instances)
 	self.instancesCount = #instances
 end
 
---seperates by loose parts and returns a list of new meshes
+--separates by loose parts and returns a list of new meshes
 function class:separate()
 	--initilize group indices
 	local groupIndices = { }

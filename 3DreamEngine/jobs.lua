@@ -41,7 +41,7 @@ function lib:executeJobs()
 		end
 	end
 	
-	--execute continous operations
+	--execute continuous operations
 	for _,o in ipairs(operations) do
 		self.delton:start(o[1])
 		

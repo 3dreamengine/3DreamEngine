@@ -104,19 +104,7 @@ function class:addObject(object, parentTransform, dynamic, boneTransforms, refle
 	end
 end
 
-function class:addMesh(mesh, parentTransform, dynamic, boneTransforms, reflection)
-	--apply transformation
-	local transform
-	if parentTransform then
-		if mesh.transform then
-			transform = parentTransform * mesh.transform
-		else
-			transform = parentTransform
-		end
-	else
-		transform = mesh.transform
-	end
-	
+function class:addMesh(mesh, transform, dynamic, boneTransforms, reflection)
 	local pos = getPos(mesh, transform)
 	local size = getSize(mesh, transform)
 	
