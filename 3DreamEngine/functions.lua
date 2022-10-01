@@ -28,21 +28,6 @@ function lib:lookAt(eye, at, up)
 	)
 end
 
-function lib:lookInDirection(at, up)
-	up = up or vec3(0.0, 1.0, 0.0)
-	
-	local zaxis = at:normalize()
-	local xaxis = zaxis:cross(up):normalize()
-	local yaxis = xaxis:cross(zaxis)
-	
-	return mat4(
-		xaxis.x, xaxis.y, xaxis.z, 0.0,
-		yaxis.x, yaxis.y, yaxis.z, 0.0,
-		-zaxis.x, -zaxis.y, -zaxis.z, 0.0,
-		0, 0, 0, 1
-	)
-end
-
 function lib:HSVtoRGB(h, s, v)
 	local i = math.floor(h * 6)
 	local f = h * 6 - i
@@ -70,7 +55,7 @@ function lib:RGBtoHSV(r, g, b)
 	local min = math.min(r, g, b)
 	local max = math.max(r, g, b)
 
-	local v = max
+	v = max
 	local delta = max - min
 	if max ~= 0 then
 		s = delta / max
@@ -122,7 +107,7 @@ function lib:pixelToPoint(point, cam, canvases)
 	local near = inv * vec4(x, y, -1, 1)
 	local far = inv * vec4(x, y, 1, 1)
 	
-	--perspective divice
+	--perspective divide
 	near = near / near.w
 	far = far / far.w
 	
@@ -563,19 +548,21 @@ lib.lookNormals = {
 }
 
 --cubemap projection
-local n = 0.01
-local f = 1000.0
-local fov = 90
-local scale = math.tan(fov/2*math.pi/180)
-local r = scale * n
-local l = -r
-
-lib.cubeMapProjection = mat4(
-	2*n / (r-l),   0,              (r+l) / (r-l),     0,
-	0,             -2*n / (r - l),  (r+l) / (r-l),     0,
-	0,             0,              -(f+n) / (f-n),    -2*f*n / (f-n),
-	0,             0,              -1,                0
-)
+do
+	local n = 0.01
+	local f = 1000.0
+	local fov = 90
+	local scale = math.tan(fov/2*math.pi/180)
+	local r = scale * n
+	local l = -r
+	
+	lib.cubeMapProjection = mat4(
+			2*n / (r-l),   0,              (r+l) / (r-l),     0,
+			0,             -2*n / (r - l),  (r+l) / (r-l),     0,
+			0,             0,              -(f+n) / (f-n),    -2*f*n / (f-n),
+			0,             0,              -1,                0
+	)
+end
 
 function lib:removePostfix(t)
 	local f = t:find(".", 0, true)
