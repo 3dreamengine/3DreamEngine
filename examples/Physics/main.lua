@@ -3,6 +3,15 @@ local dream = require("3DreamEngine")
 love.window.setTitle("Physics Demo")
 love.mouse.setRelativeMode(true)
 
+--sun
+local sun = dream:newLight("sun")
+sun:addShadow()
+
+--load extensions
+local sky = require("extensions/sky")
+dream:setSky(sky.render)
+sky:setDaytime(sun, 0.4)
+
 --settings
 local projectDir = "examples/Physics/"
 
@@ -40,33 +49,42 @@ local function addObject(model, x, y, z, collider)
 	return o
 end
 
-local crate = dream:loadObject(projectDir .. "objects/crate")
-crate:resetTransform()
-
-for i = 1, 100 do
-	addObject(crate, 0, 15, 0)
-end
-
 local chicken = dream:loadObject(projectDir .. "objects/chicken", { callback = function(model)
 	model:setVertexShader("bones")
 end })
-addObject(chicken, 0, 10, 0, physics:newCylinder(0.25, 0.5))
+local player = addObject(chicken, 0, 10, 0, physics:newCylinder(0.175, 0.5))
+
+local crate = dream:loadObject(projectDir .. "objects/crate")
+crate:resetTransform()
+
+for i = 1, 30 do
+	addObject(crate, 0, 15, 0)
+end
 
 function love.draw()
 	--update camera
-	cameraController:setCamera(dream.cam)
+	cameraController:lookAt(dream.cam, player.collider:getPosition() + vec3(0, 0.4, 0), 1)
 	
 	dream:prepare()
+	
+	dream:addLight(sun)
 	
 	dream:draw(scene)
 	
 	for _, o in ipairs(objects) do
 		o.model:resetTransform()
-		o.model:translate((o.collider[1] or o.collider):getPosition()) --TODO
+		local c = (o.collider[1] or o.collider)
+		o.model:translate(c:getPosition()) --TODO
 		if o.model == chicken then
-			chicken:applyPose(chicken.animations.Armature:getPose(love.timer.getTime()))
+			local v = o.collider:getVelocity()
+			o.walkingAnim = (o.walkingAnim or 0) + love.timer.getDelta() * vec3(v.x, 0, v.z):length()
+			o.avgVelocity = (o.avgVelocity or v) * (1 - love.timer.getDelta() * 5) + v * love.timer.getDelta() * 5
+			chicken:applyPose(chicken.animations.Armature:getPose(o.walkingAnim))
+			chicken:rotateY(math.atan2(o.avgVelocity.z, o.avgVelocity.x) - math.pi / 2)
 			chicken:rotateX(-math.pi / 2)
-			chicken:scale(1 / 30)
+			chicken:scale(1 / 20)
+		else
+			o.model:rotateY(c:getBody():getAngle())
 		end
 		dream:draw(o.model)
 	end
@@ -95,6 +113,36 @@ function love.update(dt)
 	
 	--update the physics
 	world:update(dt)
+	
+	--accelerate
+	local d = love.keyboard.isDown
+	local ax, az = 0, 0
+	if d("w") then
+		ax = ax + math.cos(cameraController.ry - math.pi / 2)
+		az = az + math.sin(cameraController.ry - math.pi / 2)
+	end
+	if d("s") then
+		ax = ax + math.cos(cameraController.ry + math.pi - math.pi / 2)
+		az = az + math.sin(cameraController.ry + math.pi - math.pi / 2)
+	end
+	if d("a") then
+		ax = ax + math.cos(cameraController.ry - math.pi / 2 - math.pi / 2)
+		az = az + math.sin(cameraController.ry - math.pi / 2 - math.pi / 2)
+	end
+	if d("d") then
+		ax = ax + math.cos(cameraController.ry + math.pi / 2 - math.pi / 2)
+		az = az + math.sin(cameraController.ry + math.pi / 2 - math.pi / 2)
+	end
+	local a = math.sqrt(ax ^ 2 + az ^ 2)
+	if a > 0 then
+		local maxSpeed = 3
+		local accel = 0.03 * math.max(0, 1 - player.collider:getVelocity():length() / maxSpeed) / a
+		player.collider:applyForce(ax * accel, az * accel)
+	end
+	
+	if player.collider.touchedFloor and love.keyboard.isDown("space") then
+		player.collider.ay = 5
+	end
 end
 
 function love.keypressed(key)

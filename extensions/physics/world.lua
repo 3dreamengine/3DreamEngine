@@ -39,6 +39,8 @@ function methods:update(dt)
 			c.groundNormal = false
 			
 			c.collided = false
+			c.touchedFloor = false
+			c.touchedCeiling = false
 		end
 	end
 	
@@ -133,6 +135,7 @@ local function attemptSolve(a, b)
 		local diff = (colliderA.y + colliderA.shape.top) - topHeight
 		if diff > 0 and diff < stepSize then
 			colliderA.newY = math.min(colliderA.newY or colliderA.y, topHeight - colliderA.shape.top)
+			colliderA.touchedCeiling = true
 		elseif diff > 0 then
 			colliderA.collided = true
 			return true
@@ -148,6 +151,7 @@ local function attemptSolve(a, b)
 			local n = colliderB.shape.normals[index]
 			local normal = (n[1] * w1 + n[2] * w2 + n[3] * w3):normalize()
 			colliderA.groundNormal = colliderA.groundNormal and colliderA.groundNormal + normal or normal
+			colliderA.touchedFloor = true
 		elseif diff > 0 then
 			colliderA.collided = true
 			return true

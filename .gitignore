@@ -5,7 +5,6 @@
 /default
 /todo.txt
 /examples/shadowTest
-/examples/Physics
 /examples/camera
 /examples/HolyPoly
 /examples/archer
@@ -17,3 +16,5 @@
 /lfs.dll
 /extensions/weather
 /.idea/
+*.blend
+*.blend1

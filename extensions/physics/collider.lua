@@ -5,8 +5,8 @@ function methods:getPosition()
 	return vec3(x, self.y, y)
 end
 
-function methods:getAngle()
-	return self.body:getAngle()
+function methods:getBody()
+	return self.body
 end
 
 function methods:getVelocity()

@@ -55,6 +55,18 @@ function c:setCamera(cam)
 	cam:rotateX(self.rx)
 end
 
+function c:lookAt(cam, position, distance)
+	self.x = position.x
+	self.y = position.y
+	self.z = position.z
+	
+	cam:resetTransform()
+	cam:translate(position)
+	cam:rotateY(self.ry)
+	cam:rotateX(self.rx)
+	cam:translate(0, 0, distance)
+end
+
 function c:mousemoved(x, y)
 	local speedH = 0.005
 	local speedV = 0.005
