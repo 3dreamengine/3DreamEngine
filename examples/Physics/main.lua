@@ -36,8 +36,6 @@ local world = physics:newWorld()
 scene:rotateX(-math.pi / 2)
 world:add(physics:newObject(scene))
 
-local mapMesh = utils.map.createFromWorld(world)
-
 --our objects, a composition of a model and a collider
 local objects = {  }
 local function addObject(model, x, y, z, collider)
@@ -56,10 +54,13 @@ local player = addObject(chicken, 0, 10, 0, physics:newCylinder(0.175, 0.5))
 
 local crate = dream:loadObject(projectDir .. "objects/crate")
 crate:resetTransform()
+crate:print()
 
 for i = 1, 30 do
-	addObject(crate, 0, 15, 0)
+	addObject(crate, (math.random() - 0.5) * 10, 15, (math.random() - 0.5) * 10)
 end
+
+local mapMesh = utils.map.createFromWorld(world)
 
 function love.draw()
 	--update camera
@@ -135,8 +136,9 @@ function love.update(dt)
 	end
 	local a = math.sqrt(ax ^ 2 + az ^ 2)
 	if a > 0 then
+		local v = player.collider:getVelocity()
 		local maxSpeed = 3
-		local accel = 0.03 * math.max(0, 1 - player.collider:getVelocity():length() / maxSpeed) / a
+		local accel = 3 * math.max(0, 1 - vec3(v.x, 0, v.z):length() / maxSpeed) / a
 		player.collider:applyForce(ax * accel, az * accel)
 	end
 	

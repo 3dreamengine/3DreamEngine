@@ -20,7 +20,7 @@ end
 
 local colliderMeta = { __index = methods }
 
-return function(physics, world, shape, bodyType, y)
+return function(physics, world, shape, bodyType, x, y, z)
 	local c = { }
 	c.shape = shape
 	c.ay = 0

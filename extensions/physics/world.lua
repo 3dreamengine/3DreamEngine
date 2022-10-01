@@ -5,7 +5,7 @@ local methods = { }
 --world metatable
 function methods:add(shape, bodyType, x, y, z)
 	if shape.typ then
-		local c = self.physics:newCollider(self, shape, bodyType, y)
+		local c = self.physics:newCollider(self, shape, bodyType, x, y, z)
 		table.insert(self.colliders, c)
 		return c
 	else
@@ -21,6 +21,7 @@ function methods:update(dt)
 	for _, s in ipairs(self.world:getBodies()) do
 		if s:getType() == "dynamic" then
 			local c = s:getUserData()
+			
 			--store old pos for emergency reset
 			c.oldX, c.oldZ = c.pre_oldX, c.pre_oldZ
 			c.pre_oldX, c.pre_oldZ = c.body:getPosition()
@@ -49,6 +50,7 @@ function methods:update(dt)
 	for _, s in ipairs(self.world:getBodies()) do
 		if s:getType() == "dynamic" then
 			local c = s:getUserData()
+			
 			--stuck between roof and floor -> reset position
 			--todo why does this happen
 			if c.bottomY and c.topY and c.topY - c.bottomY < c.shape.top - c.shape.bottom then
@@ -195,6 +197,8 @@ return function(physics)
 	w.colliders = { }
 	
 	w.world = love.physics.newWorld(0, 0, false)
+	
+	love.physics.setMeter(1)
 	
 	w.world:setCallbacks(nil, nil, preSolve, nil)
 	
