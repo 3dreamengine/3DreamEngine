@@ -58,7 +58,7 @@ function sh:sendGlobalUniforms(dream, shaderObject, count, lighting)
 	for d,s in ipairs(lighting) do
 		if s.light_typ == "point_simple" then
 			table.insert(colors, s.color * s.brightness)
-			table.insert(pos, s.pos)
+			table.insert(pos, s.position)
 			table.insert(attenuation, -s.attenuation)
 		end
 	end

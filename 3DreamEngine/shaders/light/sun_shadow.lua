@@ -117,7 +117,7 @@ function sh:sendUniforms(dream, shaderObject, light, ID)
 		shader:send("ss_fade_" .. ID, 4 / light.shadow.cascadeFactor / light.shadow.cascadeFactor)
 		shader:send("ss_distance_" .. ID, 2 / light.shadow.cascadeDistance)
 		
-		shader:send("ss_pos_" .. ID, light.shadow.cams[1].pos)
+		shader:send("ss_pos_" .. ID, light.shadow.cams[1].position)
 		
 		shader:send("ss_proj1_" .. ID, light.shadow.cams[1].transformProj)
 		shader:send("ss_proj2_" .. ID, light.shadow.cams[2].transformProj)

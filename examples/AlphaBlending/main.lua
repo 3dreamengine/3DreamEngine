@@ -13,11 +13,13 @@ dream:init()
 
 --scene
 dream:loadMaterialLibrary(projectDir .. "materials")
-local scene = dream:loadScene(projectDir .. "scene")
+local scene = dream:loadObject(projectDir .. "scene")
+
+scene:print()
 
 --light
-local p = scene.objects.light.positions[1]
-local light = dream:newLight("point", vec3(p.x, p.y, p.z), vec3(1.4, 1.2, 1.0), 40.0)
+local p = scene.positions.POS_light:getPosition()
+local light = dream:newLight("point", p, vec3(1.4, 1.2, 1.0), 40.0)
 light:addShadow()
 light.shadow:setStatic(true)
 light.shadow:setSmooth(true)

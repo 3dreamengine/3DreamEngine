@@ -4,7 +4,6 @@ function lib:newMesh(name, material, meshType)
 	local o = {
 		name = name,
 		material = material,
-		tags = { },
 		
 		--common data arrays
 		vertices = { },
@@ -20,6 +19,8 @@ function lib:newMesh(name, material, meshType)
 		
 		meshType = meshType or (material.pixelShader or self.defaultPixelShader).meshType,
 		
+		preventCleanup = false,
+		
 		renderVisibility = true,
 		shadowVisibility = true,
 		
@@ -30,7 +31,7 @@ function lib:newMesh(name, material, meshType)
 end
 
 local class = {
-	link = {"clone", "shader", "mesh"},
+	link = { "clone", "shader", "mesh" },
 	
 	setterGetter = {
 		instancesCount = "number",
@@ -41,7 +42,7 @@ local class = {
 }
 
 function class:setName(name)
-	self.name = name
+	self.name = lib:removePostfix(name)
 end
 function class:getName()
 	return self.name
@@ -55,12 +56,6 @@ function class:tostring()
 		table.insert(tags, self.mesh:getVertexCount() .. " vertices")
 	end
 	
-	--lod
-	local min, max = self:getLOD()
-	if min then
-		table.insert(tags, math.floor(min) .. "-" .. math.floor(max))
-	end
-	
 	--visibility
 	if not self.renderVisibility and not self.shadowVisibility then
 		table.insert(tags, "invisible")
@@ -70,16 +65,7 @@ function class:tostring()
 		table.insert(tags, "shadow caster")
 	end
 	
-	--tags
-	for d,s in pairs(self.tags) do
-		table.insert(tags, tostring(d))
-	end
-	
-	if #tags > 0 then
-		return self.name .. " (" .. table.concat(tags, ", ") .. ")"
-	else
-		return self.name
-	end
+	return self.name .. (#tags > 0 and (" (" .. table.concat(tags, ", ") .. ")") or "")
 end
 
 function class:updateBoundingBox()
@@ -91,7 +77,7 @@ function class:updateBoundingBox()
 	self.boundingBox:setInitialized(true)
 	
 	--get aabb
-	for i,v in ipairs(self.vertices) do
+	for i, v in ipairs(self.vertices) do
 		local pos = vec3(v)
 		self.boundingBox.first = self.boundingBox.first:min(pos)
 		self.boundingBox.second = self.boundingBox.second:max(pos)
@@ -101,7 +87,7 @@ function class:updateBoundingBox()
 	--get size
 	local max = 0
 	local c = self.boundingBox.center
-	for i,v in ipairs(self.vertices) do
+	for i, v in ipairs(self.vertices) do
 		local pos = vec3(v) - c
 		max = math.max(max, pos:lengthSquared())
 	end
@@ -139,7 +125,7 @@ end
 
 --clean most primary buffers
 function class:cleanup()
-	if not self.tags.raytrace then
+	if not self.preventCleanup then
 		self.vertices = nil
 		self.faces = nil
 		self.normals = nil
@@ -198,7 +184,7 @@ function class:getMesh(name)
 			newMesh:setVertices(mesh.vertices)
 			
 			--cache it for later, in case it is a shared mesh
-			for d,s in pairs(mesh) do
+			for d, s in pairs(mesh) do
 				mesh[d] = nil
 			end
 			mesh.mesh = newMesh
@@ -234,7 +220,7 @@ function class:applyBones(skeleton)
 		end
 		
 		--apply joint transforms
-		for i,v in ipairs(self.verticesOld) do
+		for i, v in ipairs(self.verticesOld) do
 			local m = self:getJointMat(skeleton, i)
 			self.vertices[i] = m * vec3(v)
 			self.normals[i] = m:subm() * vec3(self.normalsOld[i])
@@ -247,20 +233,20 @@ function class:getJointMat(skeleton, i)
 	assert(skeleton.transforms, "No pose has been applied to skeleton!")
 	local m = mat4()
 	for jointNr = 1, #self.joints[i] do
-		m = m + skeleton.transforms[ self.joints[i][jointNr] ] * self.weights[i][jointNr]
+		m = m + skeleton.transforms[self.joints[i][jointNr]] * self.weights[i][jointNr]
 	end
 	return m
 end
 
 --add tangents buffer
-local empty = {0, 0, 0}
+local empty = { 0, 0, 0 }
 function class:calcTangents()
 	self.tangents = { }
 	for i = 1, #self.vertices do
-		self.tangents[i] = {0, 0, 0, 0}
+		self.tangents[i] = { 0, 0, 0, 0 }
 	end
 	
-	for _,f in ipairs(self.faces) do
+	for _, f in ipairs(self.faces) do
 		--vertices
 		local v1 = self.vertices[f[1]] or empty
 		local v2 = self.vertices[f[2]] or empty
@@ -273,10 +259,10 @@ function class:calcTangents()
 		
 		local tangent = { }
 		
-		local edge1 = {v2[1] - v1[1], v2[2] - v1[2], v2[3] - v1[3]}
-		local edge2 = {v3[1] - v1[1], v3[2] - v1[2], v3[3] - v1[3]}
-		local edge1uv = {uv2[1] - uv1[1], uv2[2] - uv1[2]}
-		local edge2uv = {uv3[1] - uv1[1], uv3[2] - uv1[2]}
+		local edge1 = { v2[1] - v1[1], v2[2] - v1[2], v2[3] - v1[3] }
+		local edge2 = { v3[1] - v1[1], v3[2] - v1[2], v3[3] - v1[3] }
+		local edge1uv = { uv2[1] - uv1[1], uv2[2] - uv1[2] }
+		local edge2uv = { uv3[1] - uv1[1], uv3[2] - uv1[2] }
 		
 		local cp = edge1uv[1] * edge2uv[2] - edge1uv[2] * edge2uv[1]
 		
@@ -299,15 +285,15 @@ function class:calcTangents()
 	end
 	
 	--normalize
-	for i,f in ipairs(self.tangents) do
-		local l = math.sqrt(f[1]^2 + f[2]^2 + f[3]^2)
+	for i, f in ipairs(self.tangents) do
+		local l = math.sqrt(f[1] ^ 2 + f[2] ^ 2 + f[3] ^ 2)
 		f[1] = f[1] / l
 		f[2] = f[2] / l
 		f[3] = f[3] / l
 	end
 	
 	--complete smoothing step
-	for i,f in ipairs(self.tangents) do
+	for i, f in ipairs(self.tangents) do
 		local n = self.normals[i]
 		
 		--Gram-Schmidt orthogonalization
@@ -316,7 +302,7 @@ function class:calcTangents()
 		f[2] = f[2] - n[2] * dot
 		f[3] = f[3] - n[3] * dot
 		
-		local l = math.sqrt(f[1]^2 + f[2]^2 + f[3]^2)
+		local l = math.sqrt(f[1] ^ 2 + f[2] ^ 2 + f[3] ^ 2)
 		f[1] = f[1] / l
 		f[2] = f[2] / l
 		f[3] = f[3] / l
@@ -329,7 +315,7 @@ function class:create()
 	
 	--set up vertex map
 	local vertexMap = { }
-	for d,f in ipairs(self.faces) do
+	for d, f in ipairs(self.faces) do
 		table.insert(vertexMap, f[1])
 		table.insert(vertexMap, f[2])
 		table.insert(vertexMap, f[3])
@@ -352,12 +338,12 @@ function class:createInstances(count)
 	
 	--create mesh containing the transforms
 	self.instanceMesh = love.graphics.newMesh({
-		{"InstanceRotation0", "float", 3},
-		{"InstanceRotation1", "float", 3},
-		{"InstanceRotation2", "float", 3},
-		{"InstancePosition", "float", 3},
+		{ "InstanceRotation0", "float", 3 },
+		{ "InstanceRotation1", "float", 3 },
+		{ "InstanceRotation2", "float", 3 },
+		{ "InstancePosition", "float", 3 },
 	}, count)
-
+	
 	self.instancesCount = 0
 end
 
@@ -374,8 +360,8 @@ function class:addInstance(rotation, position, index)
 		position[1], position[2], position[3]
 	})
 	self.boundingBox = self.boundingBox:merge(lib:newBoundingBox(
-		rotation * self.originalBoundingBox.first + position,
-		rotation * self.originalBoundingBox.second + position
+			rotation * self.originalBoundingBox.first + position,
+			rotation * self.originalBoundingBox.second + position
 	))
 end
 
@@ -387,9 +373,9 @@ end
 
 --separates by loose parts and returns a list of new meshes
 function class:separate()
-	--initilize group indices
+	--initialize group indices
 	local groupIndices = { }
-	for d,s in ipairs(self.vertices) do
+	for d, s in ipairs(self.vertices) do
 		groupIndices[s] = d
 	end
 	
@@ -398,7 +384,7 @@ function class:separate()
 	local found = true
 	while found do
 		found = false
-		for _,face in ipairs(self.faces) do
+		for _, face in ipairs(self.faces) do
 			local a = self.vertices[face[1]]
 			local b = self.vertices[face[2]]
 			local c = self.vertices[face[3]]
@@ -421,7 +407,7 @@ function class:separate()
 	
 	--get a set of remaining lists
 	local active = { }
-	for _,face in ipairs(self.faces) do
+	for _, face in ipairs(self.faces) do
 		local a = self.vertices[face[1]]
 		local ga = groupIndices[a]
 		active[ga] = true
@@ -430,11 +416,11 @@ function class:separate()
 	--split into groups
 	local meshes = { }
 	local ID = 0
-	for group,_ in pairs(active) do
+	for group, _ in pairs(active) do
 		ID = ID + 1
 		meshes[ID] = self:clone()
 		meshes[ID].faces = { }
-		for _,face in ipairs(self.faces) do
+		for _, face in ipairs(self.faces) do
 			local a = self.vertices[face[1]]
 			if groupIndices[a] == group then
 				table.insert(meshes[ID].faces, face)
@@ -443,14 +429,6 @@ function class:separate()
 	end
 	
 	return meshes
-end
-
-function class:setLOD(min, max)
-	self.LOD_min = min
-	self.LOD_max = max
-end
-function class:getLOD()
-	return self.LOD_min, self.LOD_max
 end
 
 function class:setVisible(b)
@@ -466,12 +444,9 @@ function class:encode(meshCache, dataStrings)
 	local data = {
 		["name"] = self.name,
 		["meshType"] = self.meshType,
-		["tags"] = self.tags,
+		["preventCleanup"] = self.preventCleanup,
 		
 		["boundingBox"] = self.boundingBox,
-		
-		["LOD_min"] = self.LOD_min,
-		["LOD_max"] = self.LOD_max,
 		
 		["renderVisibility"] = self.renderVisibility,
 		["shadowVisibility"] = self.shadowVisibility,
@@ -514,8 +489,8 @@ function class:encode(meshCache, dataStrings)
 				if map then
 					local vertexMapData = love.data.newByteData(#map * 4)
 					local vertexMap = ffi.cast("uint32_t*", vertexMapData:getPointer())
-					for d,s in ipairs(map) do
-						vertexMap[d-1] = s-1
+					for d, s in ipairs(map) do
+						vertexMap[d - 1] = s - 1
 					end
 					
 					--compress and store vertex map
@@ -536,7 +511,7 @@ function class:encode(meshCache, dataStrings)
 					types = cached[hash].types
 				else
 					local str = "typedef struct {" .. "\n"
-					for _,ff in ipairs(f) do
+					for _, ff in ipairs(f) do
 						if ff[2] == "float" then
 							str = str .. "float "
 						elseif ff[2] == "byte" then
@@ -567,9 +542,9 @@ function class:encode(meshCache, dataStrings)
 				
 				--fill data
 				for i = 1, mesh:getVertexCount() do
-					local v = {mesh:getVertex(i)}
+					local v = { mesh:getVertex(i) }
 					for i2 = 1, attrCount do
-						meshData[i-1]["x" .. i2] = (types[i2] == "byte" and math.floor(v[i2]*255) or v[i2])
+						meshData[i - 1]["x" .. i2] = (types[i2] == "byte" and math.floor(v[i2] * 255) or v[i2])
 					end
 				end
 				
@@ -589,7 +564,7 @@ function class:decode(meshData)
 	self.boundingBox:decode()
 	
 	--look for meshes and link
-	for _,s in pairs(self) do
+	for _, s in pairs(self) do
 		if type(s) == "table" and type(s.vertices) == "number" then
 			s.vertexMap = s.vertexMap and meshData[s.vertexMap]
 			s.vertices = meshData[s.vertices]
@@ -598,7 +573,7 @@ function class:decode(meshData)
 	
 	--restore matrices
 	if self.inverseBindMatrices then
-		for i,v in ipairs(self.inverseBindMatrices) do
+		for i, v in ipairs(self.inverseBindMatrices) do
 			self.inverseBindMatrices[i] = mat4(v)
 		end
 	end

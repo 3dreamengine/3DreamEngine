@@ -33,7 +33,7 @@ function lib:getLightOverview(cam)
 		s.active = false
 		s.priority = s.brightness * (s.shadow and 2.0 or 1.0)
 		if s.typ ~= "sun" then
-			s.priority = s.priority / (1.0 + (cam.pos - vec3(s.x, s.y, s.z)):length())
+			s.priority = s.priority / (1.0 + (cam.position - vec3(s.x, s.y, s.z)):length())
 		end
 	end
 	table.sort(self.lighting, sortPriority)

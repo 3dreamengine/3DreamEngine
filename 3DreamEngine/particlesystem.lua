@@ -67,12 +67,12 @@ local function getInput(input, o, f)
 end
 
 --add particle system objects
---for every mesh (which is not a particle mesh itself) with a material with attached particle systems create a new mesh (the particles)
+--for every mesh (which is not a particle mesh itself) with a material with attached particle systems create a new object (the particles)
 function lib:addParticleSystems(obj)
 	local meshes = { }
 	for oName, o in pairs(obj.meshes) do
 		local particleSystems = o.material.particleSystems
-		if particleSystems and not o.tags.particle then
+		if particleSystems and not o.isParticle then
 			meshes[oName] = o
 		end
 	end
@@ -231,20 +231,21 @@ function lib:addParticleSystems(obj)
 								
 								--prepare new mesh
 								local pname = oName .. "_ps_" .. psID .. "_" .. pID .. "_" .. ID
-								local po = particle:clone()
-								obj.meshes[pname] = po
-								po.name = o.name
-								po.obj = o.obj
+								local po = lib:newObject(pname)
+								local pm = particle:clone()
+								po.meshes[pname] = pm
+								obj.objects[pname] = po
+								
 								po.transform = o.transform
-								po.tags.particle = true
-								po:setLOD(0, 1)
+								pm.isParticle = true
 								
 								local sz = particle.boundingBox.size * t.maxScale
 								local margin = vec3(sz, sz, sz)
 								
-								po:addInstances(transforms)
+								pm:addInstances(transforms)
 								
-								po.boundingBox = self:newBoundingBox(vec3(x, y, z) - margin, po.boundingBox.first + delta + margin * 2)
+								pm.boundingBox = self:newBoundingBox(vec3(x, y, z) - margin, po.boundingBox.first + delta + margin * 2)
+								po:updateBoundingBox()
 							end
 						end
 					end

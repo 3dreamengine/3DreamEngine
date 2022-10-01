@@ -5,8 +5,8 @@
 /default
 /todo.txt
 /examples/shadowTest
+/examples/Physics
 /examples/camera
-/examples/FrustumAndLoDs
 /examples/HolyPoly
 /examples/archer
 /examples/game
@@ -15,6 +15,7 @@
 /TextureTool
 /imgui.dll
 /lfs.dll
-/examples/CSGO
 /extensions/weather
 /.idea/
+/extensions/physics/
+/extensions/physics/shapes/

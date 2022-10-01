@@ -9,7 +9,7 @@ return function(self, obj, path)
 	local typ = file:read(4)
 	
 	--check if up to date
-	if typ ~= "3DO5" then
+	if typ ~= "3DO" .. self.version_3DO then
 		print("3DO file " .. path .. " seems to be outdated and will be skipped")
 		file:close()
 		return true

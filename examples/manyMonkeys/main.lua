@@ -24,8 +24,8 @@ local function createSlow(n)
 	math.randomseed(1)
 	local newMonkey = dream:newObject("merged")
 	for i = 1, n do
-		newMonkey.meshes[i] = monkey.meshes.Suzanne:clone()
-		newMonkey.meshes[i]:translate(getPos())
+		newMonkey.objects[i] = monkey:clone()
+		newMonkey.objects[i]:translate(getPos())
 	end
 	return newMonkey
 end
@@ -44,8 +44,8 @@ local function createMerged(n)
 	math.randomseed(1)
 	local newMonkey = dream:newObject("merged")
 	for i = 1, n do
-		newMonkey.meshes[i] = monkeyForBaking.meshes.Suzanne:clone()
-		newMonkey.meshes[i]:translate(getPos())
+		newMonkey.objects[i] = monkeyForBaking:clone()
+		newMonkey.objects[i]:translate(getPos())
 	end
 	newMonkey = newMonkey:merge()
 	newMonkey:createMeshes()

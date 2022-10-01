@@ -147,8 +147,8 @@ end
 local function raytraceTree(origin, direction, node)
 	if node.pos then
 		--on which side is the line
-		local a = node.normal:dot(vec3(0, 0, 0) - node.pos) > 0
-		local b = node.normal:dot(origin, direction - node.pos) > 0
+		local a = node.normal:dot(vec3(0, 0, 0) - node.position) > 0
+		local b = node.normal:dot(origin, direction - node.position) > 0
 		if a == b then
 			if a then
 				raytraceTree(origin, direction, node.left)

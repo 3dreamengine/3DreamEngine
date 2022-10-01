@@ -32,7 +32,7 @@ function lib:buildScene(typ, dynamic, alpha, cam, blacklist, frustumCheck, noSma
 					if groups[shaderID][materialID] then
 						table.insert(groups[shaderID][materialID], materialGroup)
 					else
-						groups[shaderID][materialID] = {materialGroup}
+						groups[shaderID][materialID] = { materialGroup }
 					end
 				end
 			end
@@ -47,7 +47,7 @@ function lib:buildScene(typ, dynamic, alpha, cam, blacklist, frustumCheck, noSma
 				for _, task in pairs(materialGroup) do
 					local mesh = task:getMesh()
 					if mesh.mesh and (not blacklist or not blacklist[mesh]) and (not noSmallObjects or mesh.farVisibility ~= false) then
-						if not frustumCheck or not mesh.boundingBox.initialized or self:inFrustum(cam, task:getPos(), task:getSize(), mesh.rID) then
+						if not frustumCheck or not mesh.boundingBox.initialized or self:inFrustum(cam, task:getPosition(), task:getSize(), mesh.rID) then
 							task:setShaderID(shaderID)
 							table.insert(scene, task)
 						end
@@ -60,8 +60,8 @@ function lib:buildScene(typ, dynamic, alpha, cam, blacklist, frustumCheck, noSma
 	--sort tables for materials requiring sorting
 	if alpha then
 		self.delton:start("sort")
-		for _,task in ipairs(scene) do
-			local dist = (task:getPos() - cam.pos):lengthSquared()
+		for _, task in ipairs(scene) do
+			local dist = (task:getPosition() - cam.position):lengthSquared()
 			task:setDistance(dist)
 		end
 		table.sort(scene, sortFunction)
@@ -76,7 +76,7 @@ end
 local function sendFogData(shader)
 	local direction = vec3()
 	local color = vec3()
-	for _,light in ipairs(lib.lighting) do
+	for _, light in ipairs(lib.lighting) do
 		if light.typ == "sun" then
 			direction = light.direction
 			color = light.color
@@ -128,7 +128,7 @@ function lib:render(canvases, cam, dynamic)
 	
 	--clear depth
 	if canvases.mode ~= "direct" then
-		love.graphics.setCanvas({canvases.color, canvases.depth, depthstencil = canvases.depth_buffer})
+		love.graphics.setCanvas({ canvases.color, canvases.depth, depthstencil = canvases.depth_buffer })
 		
 		love.graphics.setDepthMode()
 		love.graphics.clear(false, false, true)
@@ -176,24 +176,24 @@ function lib:render(canvases, cam, dynamic)
 		if canvases.mode ~= "direct" and pass == 2 then
 			if canvases.refractions then
 				--refractions only
-				love.graphics.setCanvas({canvases.colorAlpha, canvases.distortion, depthstencil = canvases.depth_buffer})
+				love.graphics.setCanvas({ canvases.colorAlpha, canvases.distortion, depthstencil = canvases.depth_buffer })
 				love.graphics.clear(true, false, false)
 			else
 				--disable depth
-				love.graphics.setCanvas({canvases.color, depthstencil = canvases.depth_buffer})
+				love.graphics.setCanvas({ canvases.color, depthstencil = canvases.depth_buffer })
 			end
 		end
 		
 		--start rendering
 		self.delton:start("render")
-		for _,task in ipairs(scene) do
+		for _, task in ipairs(scene) do
 			local mesh = task:getMesh()
 			local shaderID = task:getShaderID()
 			
 			--reflections
 			local ref = task:getReflection()
 			if ref and ref.canvas then
-				self.reflections[ref] = ref.pos or task:getPos(mesh)
+				self.reflections[ref] = ref.position or task:getPosition(mesh)
 			end
 			
 			--set active shader
@@ -236,7 +236,7 @@ function lib:render(canvases, cam, dynamic)
 					
 					--camera
 					shader:send("transformProj", cam.transformProj)
-					checkAndSendCached(shaderObject, "viewPos", cam.pos)
+					checkAndSendCached(shaderObject, "viewPos", cam.position)
 					
 					checkAndSendCached(shaderObject, "ambient", self.sun_ambient)
 				end
@@ -279,7 +279,7 @@ function lib:render(canvases, cam, dynamic)
 					--box for local cubemaps
 					if ref and ref.first then
 						shader:send("reflectionsBoxed", true)
-						shader:send("reflectionsPos", ref.pos)
+						shader:send("reflectionsCenter", ref.center)
 						shader:send("reflectionsFirst", ref.first)
 						shader:send("reflectionsSecond", ref.second)
 					else
@@ -337,7 +337,7 @@ function lib:render(canvases, cam, dynamic)
 				love.graphics.setShader(shader)
 				
 				shader:send("transformProj", cam.transformProj)
-				if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", cam.pos) end
+				if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", cam.position) end
 				checkAndSendCached(shaderObject, "exposure", self.exposure)
 				checkAndSendCached(shaderObject, "ambient", self.sun_ambient)
 				
@@ -350,7 +350,7 @@ function lib:render(canvases, cam, dynamic)
 				end
 				
 				--render particle batches
-				for batch,_ in pairs(batches) do
+				for batch, _ in pairs(batches) do
 					local v = 1.0 - batch.vertical
 					local right = vec3(cam.transform[1], cam.transform[5] * v, cam.transform[9]):normalize()
 					local up = vec3(cam.transform[2] * v, cam.transform[6], cam.transform[10] * v):normalize()
@@ -367,7 +367,7 @@ function lib:render(canvases, cam, dynamic)
 						shader:send("distortionTexture", batch.distortionTexture)
 					end
 					
-					batch:present(cam.pos)
+					batch:present(cam.position)
 				end
 			end
 			
@@ -382,7 +382,7 @@ function lib:render(canvases, cam, dynamic)
 				love.graphics.setShader(shader)
 				
 				shader:send("transformProj", cam.transformProj)
-				if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", cam.pos) end
+				if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", cam.position) end
 				checkAndSendCached(shaderObject, "exposure", self.exposure)
 				checkAndSendCached(shaderObject, "ambient", self.sun_ambient)
 				
@@ -395,7 +395,7 @@ function lib:render(canvases, cam, dynamic)
 				end
 				
 				--render particles
-				for _,s in ipairs(p) do
+				for _, s in ipairs(p) do
 					local v = 1 - s.vertical
 					local right = vec3(cam.transform[1], cam.transform[5] * v, cam.transform[9]):normalize()
 					local up = vec3(cam.transform[2] * v, cam.transform[6], cam.transform[10] * v):normalize()
@@ -474,7 +474,7 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects, smoo
 	love.graphics.clear(255, 255, 255, 255)
 	
 	--start rendering
-	for _,task in ipairs(scene) do
+	for _, task in ipairs(scene) do
 		local mesh = task:getMesh()
 		local shaderID = task:getShaderID()
 		
@@ -491,7 +491,7 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects, smoo
 			--camera
 			shader:send("transformProj", cam.transformProj)
 			if hasUniform(shaderObject, "viewPos") then
-				shader:send("viewPos", cam.pos)
+				shader:send("viewPos", cam.position)
 			end
 			
 			shaderObject.pixelShader:perShader(self, shaderObject)
@@ -566,12 +566,12 @@ function lib:renderFull(cam, canvases)
 		--blur
 		if self.AO_blur then
 			love.graphics.setShader(self:getBasicShader("blur"))
-			self:getBasicShader("blur"):send("dir", {1.0 / canvases.AO_1:getWidth(), 0.0})
+			self:getBasicShader("blur"):send("dir", { 1.0 / canvases.AO_1:getWidth(), 0.0 })
 			love.graphics.setCanvas(canvases.AO_2)
 			love.graphics.clear()
 			love.graphics.draw(canvases.AO_1)
 			
-			self:getBasicShader("blur"):send("dir", {0.0, 1.0 / canvases.AO_1:getHeight()})
+			self:getBasicShader("blur"):send("dir", { 0.0, 1.0 / canvases.AO_1:getHeight() })
 			
 			--without final, draw directly on color
 			if canvases.mode == "normal" then
@@ -615,21 +615,21 @@ function lib:renderFull(cam, canvases)
 		--autochoose
 		local quality = self.bloom_quality
 		if quality < 0 then
-			quality = math.floor(math.log(self.bloom_resolution * self.bloom_size * canvases.width)-1.4)
+			quality = math.floor(math.log(self.bloom_resolution * self.bloom_size * canvases.width) - 1.4)
 		end
 		
 		--blur
 		local shader = self:getBasicShader("blur")
 		love.graphics.setShader(shader)
 		for i = quality, 0, -1 do
-			local size = 2^i / 2^quality * self.bloom_size * canvases.width * self.bloom_resolution / 11
+			local size = 2 ^ i / 2 ^ quality * self.bloom_size * canvases.width * self.bloom_resolution / 11
 			
-			shader:send("dir", {size / canvases.bloom_1:getWidth(), 0})
+			shader:send("dir", { size / canvases.bloom_1:getWidth(), 0 })
 			love.graphics.setCanvas(canvases.bloom_2)
 			love.graphics.clear()
 			love.graphics.draw(canvases.bloom_1)
 			
-			shader:send("dir", {0, size / canvases.bloom_1:getHeight()})
+			shader:send("dir", { 0, size / canvases.bloom_1:getHeight() })
 			love.graphics.setCanvas(canvases.bloom_1)
 			love.graphics.clear()
 			love.graphics.draw(canvases.bloom_2)
@@ -654,7 +654,7 @@ function lib:renderFull(cam, canvases)
 		checkAndSend(shader, "canvas_exposure", self.canvas_exposure)
 		
 		checkAndSend(shader, "transformInverse", cam.transformProj:invert())
-		checkAndSend(shader, "viewPos", cam.pos)
+		checkAndSend(shader, "viewPos", cam.position)
 		
 		checkAndSend(shader, "exposure", self.exposure)
 		
@@ -675,7 +675,7 @@ function lib:present(cam, canvases, lite)
 	
 	--extract camera position and normal
 	cam = cam or self.cam
-	cam.pos = vec3(cam.transform[4], cam.transform[8], cam.transform[12])
+	cam.position = vec3(cam.transform[4], cam.transform[8], cam.transform[12])
 	cam.normal = vec3(-cam.transform[3], -cam.transform[7], -cam.transform[11]):normalize()
 	
 	--perspective transform
@@ -683,7 +683,7 @@ function lib:present(cam, canvases, lite)
 		local n = cam.near
 		local f = cam.far
 		local fov = cam.fov
-		local scale = math.tan(fov*math.pi/360)
+		local scale = math.tan(fov * math.pi / 360)
 		local aspect = canvases.width / canvases.height
 		local r = scale * n * aspect
 		local t = scale * n
@@ -694,22 +694,22 @@ function lib:present(cam, canvases, lite)
 		local b = cam.transform:invert()
 		local a1 = n / r
 		local a6 = n / t * m
-		local fn1 = 1 / (f-n)
-		local a11 = -(f+n) * fn1
-		local a12 = -2*f*n * fn1
+		local fn1 = 1 / (f - n)
+		local a11 = -(f + n) * fn1
+		local a12 = -2 * f * n * fn1
 		
 		cam.transformProj = mat4(
-			a1 * b[1],   a1 * b[2],     a1 * b[3],     a1 * b[4],
-			a6 * b[5],   a6 * b[6],     a6 * b[7],     a6 * b[8],
-			a11 * b[9],  a11 * b[10],   a11 * b[11],   a11 * b[12] + a12,
-			-b[9],       -b[10],        -b[11],        -b[12]
+				a1 * b[1], a1 * b[2], a1 * b[3], a1 * b[4],
+				a6 * b[5], a6 * b[6], a6 * b[7], a6 * b[8],
+				a11 * b[9], a11 * b[10], a11 * b[11], a11 * b[12] + a12,
+				-b[9], -b[10], -b[11], -b[12]
 		)
 		
 		cam.transformProjOrigin = mat4(
-			a1 * b[1],   a1 * b[2],    a1 * b[3],    0.0,
-			a6 * b[5],   a6 * b[6],    a6 * b[7],    0.0,
-			a11 * b[9],  a11 * b[10],  a11 * b[11],  a12,
-			-b[9],       -b[10],       -b[11],       0.0
+				a1 * b[1], a1 * b[2], a1 * b[3], 0.0,
+				a6 * b[5], a6 * b[6], a6 * b[7], 0.0,
+				a11 * b[9], a11 * b[10], a11 * b[11], a12,
+				-b[9], -b[10], -b[11], 0.0
 		)
 		
 		cam.aspect = aspect
@@ -741,7 +741,7 @@ function lib:present(cam, canvases, lite)
 			local x = 0
 			local y = 0
 			local maxHeight = 0
-			for d,s in pairs(canvases) do
+			for d, s in pairs(canvases) do
 				if type(s) == "userdata" and s:isReadable() then
 					local b = brightness[d] or 1
 					local h = w / s:getWidth() * s:getHeight()

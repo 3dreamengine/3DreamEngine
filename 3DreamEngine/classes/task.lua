@@ -12,7 +12,7 @@ function class:getTransform()
 	return self[2] or identityMatrix
 end
 
-function class:getPos()
+function class:getPosition()
 	return self[3]
 end
 

@@ -1,10 +1,10 @@
 local lib = _3DreamEngine
 
-function lib:newLight(typ, pos, color, brightness)
+function lib:newLight(typ, position, color, brightness)
 	local l = {
 		typ = typ or "point",
 		name = "unnamed",
-		pos = pos or vec3(0, 0, 0),
+		position = position or vec3(0, 0, 0),
 		size = 0.05,
 		color = color and color:normalize() or vec3(1, 1, 1),
 		direction = vec3(1, 1, 1):normalize(),
@@ -39,6 +39,13 @@ function class:setName(name)
 	self.name = lib:removePostfix(name)
 end
 
+function class:setPosition(position)
+	self.position = position
+end
+function class:getPosition()
+	return self.position
+end
+
 function class:setGodrays(e)
 	self.godrays = e
 end
@@ -61,10 +68,10 @@ function class:getColor()
 end
 
 function class:setPosition(x, y, z)
-	self.pos = vec3(x, y, z)
+	self.position = vec3(x, y, z)
 end
 function class:getPosition()
-	return self.pos
+	return self.position
 end
 
 function class:setDirection(x, y, z)
@@ -92,7 +99,7 @@ function class:getShadow()
 end
 
 function class:decode()
-	self.pos = vec3(self.pos)
+	self.position = vec3(self.position)
 	self.direction = vec3(self.direction)
 	self.color = vec3(self.color)
 end

@@ -17,13 +17,12 @@ function lib:newReflection(static, resolution, roughness, lazy)
 			{format = self.reflections_format, readable = true, msaa = 0, type = "cube", mipmaps = roughness and "manual" or "none"})
 	end
 	
-	local priority, pos
 	return setmetatable({
 		canvas = canvas,
 		image = image,
 		static = static or false,
 		rendered = false,
-		pos = false,
+		center = false,
 		first = false,
 		second = false,
 		levels = false,
@@ -45,17 +44,17 @@ function class:refresh()
 	self.done = false
 end
 
-function class:setLocal(pos, first, second)
-	self.pos = pos
+function class:setLocal(center, first, second)
+	self.center = center
 	self.first = first
 	self.second = second
 end
 function class:getLocal()
-	return self.pos, self.first, self.second
+	return self.center, self.first, self.second
 end
 
 function class:decode()
-	self.pos = vec3(self.pos)
+	self.center = vec3(self.center)
 	self.first = vec3(self.first)
 	self.second = vec3(self.second)
 end

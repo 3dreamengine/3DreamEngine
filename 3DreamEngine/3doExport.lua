@@ -4,7 +4,6 @@
 --]]
 
 local lib = _3DreamEngine
-local ffi = require("ffi")
 
 function lib:export3do(obj)
 	local meshCache = { }
@@ -15,7 +14,7 @@ function lib:export3do(obj)
 	
 	--save the length of each data segment
 	data.dataStringsLengths = { }
-	for d,s in pairs(dataStrings) do
+	for d, s in pairs(dataStrings) do
 		table.insert(data.dataStringsLengths, #s)
 	end
 	
@@ -24,9 +23,9 @@ function lib:export3do(obj)
 	local headerLength = #headerData
 	local l1 = math.floor(headerLength) % 256
 	local l2 = math.floor(headerLength / 256) % 256
-	local l3 = math.floor(headerLength / 256^2) % 256
-	local l4 = math.floor(headerLength / 256^3) % 256
-	local final = "3DO5    " .. string.char(l1, l2, l3, l4) .. headerData .. table.concat(dataStrings, "")
+	local l3 = math.floor(headerLength / 256 ^ 2) % 256
+	local l4 = math.floor(headerLength / 256 ^ 3) % 256
+	local final = "3DO" .. lib.version_3DO .. "    " .. string.char(l1, l2, l3, l4) .. headerData .. table.concat(dataStrings, "")
 	love.filesystem.createDirectory(obj.dir)
 	love.filesystem.write(obj.dir .. "/" .. obj.name .. ".3do", final)
 end

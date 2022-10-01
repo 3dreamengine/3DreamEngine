@@ -14,7 +14,7 @@ lib.meshTags = {
 	["ID"] = true,
 	["RAYTRACE"] = true,
 	["REFLECTION"] = true,
-	["REMOVE"] = true,
+	["HIDE"] = true,
 	["SHADOW"] = true,
 }
 
@@ -37,7 +37,7 @@ local function prepareArgs(args)
 	
 	args = table.copy(args or { })
 	
-	for d,s in pairs(lib.defaultArgs) do
+	for d, s in pairs(lib.defaultArgs) do
 		if args[d] == nil then
 			args[d] = s
 		end
@@ -48,8 +48,8 @@ end
 
 --remove objects without vertices
 local function cleanEmpties(obj)
-	for d,m in pairs(obj.meshes) do
-		if m.vertices and #m.vertices == 0 or m.tags.remove then
+	for d, m in pairs(obj.meshes) do
+		if m.vertices and #m.vertices == 0 then
 			obj.meshes[d] = nil
 		end
 	end
@@ -71,7 +71,7 @@ function lib:loadLibrary(path, args, prefix)
 	local obj = self:loadScene(path, args)
 	
 	--insert into library
-	for d,o in pairs(obj.objects) do
+	for d, o in pairs(obj.objects) do
 		local id = (prefix or "") .. d
 		self.objectLibrary[id] = o
 	end
@@ -96,10 +96,9 @@ function lib:loadObject(path, args)
 	--set default args
 	args = prepareArgs(args)
 	
-	
 	local n = string.split(path, "/")
 	local name = self:removePostfix(n[#n] or path)
-	local dir = #n > 1 and table.concat(n, "/", 1, #n-1) or ""
+	local dir = #n > 1 and table.concat(n, "/", 1, #n - 1) or ""
 	
 	local obj = self:newObject(name)
 	obj.args = args
@@ -110,7 +109,7 @@ function lib:loadObject(path, args)
 	--test for existing files
 	local found = { }
 	local newest = 0
-	for _,typ in ipairs(lib.supportedFiles) do
+	for _, typ in ipairs(lib.supportedFiles) do
 		local info = love.filesystem.getInfo(path .. "." .. typ)
 		if info then
 			found[typ] = info.modtime or 0
@@ -124,7 +123,7 @@ function lib:loadObject(path, args)
 	end
 	
 	--load files
-	for _,typ in ipairs(lib.supportedFiles) do
+	for _, typ in ipairs(lib.supportedFiles) do
 		if found[typ] then
 			--load object
 			self.deltonLoad:start("parser")
@@ -145,101 +144,17 @@ function lib:loadObject(path, args)
 	end
 	
 	
-	--parse tags
-	for _,m in pairs(obj.meshes) do
-		m.tags = { }
-		local possibles = string.split(m.name, "_")
-		
-		--in case the object consists of tags only, it is considered as a root object
-		m.name = "root"
-		
-		for index,tag in ipairs(possibles) do
-			local key, value = unpack(string.split(tag, ":"))
-			if lib.meshTags[key] then
-				--tag found
-				m.tags[key:lower()] = value or true
-			else
-				--cancel, the rest is the name
-				if key:upper() == key and key:lower() ~= key then
-					print(string.format("unknown tag '%s' of object '%s' in '%s'", key, m.name, path))
-				end
-				m.name = table.concat(possibles, "_", index)
-				break
-			end
-		end
-	end
-	
-	
-	--remove empty meshes
-	cleanEmpties(obj)
-	
-	
-	--restructure into tree, the root node contains no data
-	if obj.args.scene then
-		for id,mesh in pairs(obj.meshes) do
-			if not mesh.tags.link and not mesh.tags.reflection then
-				local o = obj.objects[mesh.name]
-				if not o then
-					o = self:newObject(mesh.name)
-					o.name = mesh.name
-					o.args = obj.args
-					o.transform = mesh.transform
-					mesh.transform = nil
-					obj.objects[mesh.name] = o
-				else
-					--make sure to transform accordingly
-					local difference = 0
-					if mesh.transform then
-						for i = 1, 16 do
-							difference = difference + math.abs(mesh.transform[i] - o.transform[i])
-						end
-					end
-					if difference > 10^-10 then
-						print(string.format("Warning: two meshes (%s and %s) within the same object (%s) have different transforms!", id, next(o.meshes), mesh.name))
-						mesh.transform = o:getInvertedTransform() * mesh.transform
-					else
-						mesh.transform = nil
-					end
-				end
-				
-				obj.meshes[id] = nil
-				o.meshes[id] = mesh
-			end
-		end
-		
-		--same for light
-		for id,m in pairs(obj.lights) do
-			if m.name ~= "root" then
-				local o = obj.objects[m.name]
-				if o then
-					--make sure to transform accordingly
-					m.pos = o.transform:invert() * m.pos
-					
-					obj.lights[id] = nil
-					o.lights[id] = m
-				end
-				
-			end
-		end
-	end
-	
-	
 	--extract positions, physics, ...
-	for _,o in pairs(obj.objects) do
-		self:processObject(o)
-	end
 	self:processObject(obj)
 	
-	
-	::skipWhen3do::
+	:: skipWhen3do ::
 	
 	
 	--create meshes, link library entries, ...
-	for _,o in pairs(obj.objects) do
+	for _, o in pairs(obj.objects) do
 		self:finishObject(o)
 	end
 	self:finishObject(obj)
-	
 	
 	self.deltonLoad:stop()
 	
@@ -254,150 +169,132 @@ function lib:loadObject(path, args)
 	return obj
 end
 
-function lib:processObject(obj)
-	--extract positions
-	for d,m in pairs(obj.meshes) do
-		if m.tags.pos then
-			--average position
-			local pos = vec3()
-			for _,v in ipairs(m.vertices) do
-				pos = pos + v
-			end
-			local c = #m.vertices
-			pos = pos / c
-			
-			--average size
-			local r = 0
-			for _,v in ipairs(m.vertices) do
-				r = r + (pos - v):length()
-			end
-			r = r / c
-			
-			if m.transform then
-				pos = m.transform * pos
-			end
-			
-			--add position
-			table.insert(obj.positions, {
-				name = type(m.tags.pos) == "string" and m.tags.pos or m.name,
-				size = r,
-				position = pos,
-			})
-			obj.meshes[d] = nil
-		end
-	end
-	
-	
-	--extract reflections
-	for d,o in pairs(obj.meshes) do
-		if o.tags.reflection then
-			--average position
-			local h = math.huge
-			local min = vec3(h, h, h)
-			local max = vec3(-h, -h, -h)
-			for _,v in ipairs(o.vertices) do
-				min = min:min(vec3(v))
-				max = max:max(vec3(v))
-			end
-			
-			--new reflection object
-			local r = self:newReflection(self.textures.skyFallback)
-			r.ID = d
-			
-			if o.transform then
-				min = o.transform * min
-				max = o.transform * max
-				r.first = min:min(max)
-				r.second = max:max(min)
-				r.pos = vec3(o.transform[4], o.transform[8], o.transform[12])
+---@param name string @ the full object or mesh identifier
+---@return string, table @ the actual name and the extracted tags
+function lib:parseTags(name)
+	name = self:removePostfix(name)
+	if type(name) == "string" then
+		local possibles = string.split(name, "_")
+		local tags = { }
+		for index, tag in ipairs(possibles) do
+			local key, value = unpack(string.split(tag, ":"))
+			if self.meshTags[key] then
+				--tag found
+				tags[key:lower()] = value or true
+			elseif key:upper() == key and key:lower() ~= key then
+				--this looks like a tag, but is invalid
+				print(string.format("Unknown tag '%s' of object/mesh '%s'", key, name))
 			else
-				r.first = min
-				r.second = max
-				r.pos = (r.first + r.second) / 2
+				--cancel, the rest is the name
+				return table.concat(possibles, "_", index), tags
 			end
-			
-			--remove as object
-			table.insert(obj.reflections, r)
-			obj.meshes[d] = nil
 		end
+		return "root", tags
+	else
+		return name, { }
 	end
-	
-	
-	--detect links
-	for d,o in pairs(obj.meshes) do
-		if o.tags.link then
+end
+
+function lib:processObject(obj)
+	for id, object in pairs(obj.objects) do
+		--pase tags
+		local name, tags = self:parseTags(id)
+		object.name = name
+		object.tags = tags
+		
+		--recursive
+		self:processObject(object)
+		
+		--detect links
+		if object.tags.link then
 			--remove original
-			obj.meshes[d] = nil
+			obj.objects[id] = nil
 			
 			--store link
-			obj.linkedObjects = obj.linkedObjects or { }
-			table.insert(obj.linkedObjects, {
-				source = type(o.tags.link) == "string" and o.tags.link or o.name,
-				transform = o.transform
+			table.insert(obj.links, {
+				source = type(object.tags.link) == "string" and object.tags.link or object.name,
+				transform = object.transform
 			})
 		end
-	end
-	
-	
-	--LOD detection
-	for _,typ in ipairs({"renderVisibility", "shadowVisibility"}) do
-		local max = { }
-		for _,o in pairs(obj.meshes) do
-			if o[typ] and o.tags.lod then
-				local nr = tonumber(o.tags.lod)
-				assert(nr, "LOD nr malformed: " .. o.name .. " (use 'LOD:integer')")
-				max[o.name] = math.max(max[o.name] or 0, nr)
-			end
+		
+		--extract positions
+		if object.tags.pos then
+			obj.positions[id] = self:newPosition(
+					object:getPosition(),
+					object:getTransform():getLossySize(),
+					type(object.tags.pos) == "string" and object.tags.pos or object.name
+			)
+			obj.objects[id] = nil
 		end
 		
-		--apply LOD level
-		for _,o in pairs(obj.meshes) do
-			if o[typ] and max[o.name] then
-				local nr = tonumber(o.tags.lod) or 0
-				o:setLOD(nr, max[o.name] == nr and math.huge or nr+1)
-			end
+		
+		--extract reflections
+		if object.tags.reflection then
+			local r = self:newReflection(self.textures.skyFallback)
+			r.ID = id
+			
+			--todo temporary disabled
+			r.first = vec3(-0.5, -0.5, -0.5)
+			r.second = vec3(0.5, 0.5, 0.5)
+			r.center = vec3(0, 0, 0)
+			
+			obj.reflections[id] = r
+			obj.objects[id] = nil
 		end
-	end
-	
-	
-	--raytrace objects are usually not meant to be rendered
-	for _,o in pairs(obj.meshes) do
-		if o.tags.raytrace then
-			o:setVisible(false)
-		end
-	end
-	
-	
-	--raytrace objects are usually not meant to be rendered
-	for _,o in pairs(obj.meshes) do
-		if o.tags.shadow == "false" then
-			o:setShadowVisibility(false)
-		elseif o.tags.shadow then
-			o:setRenderVisibility(false)
-		end
-	end
-	
-	
-	--extract physics
-	for id,mesh in pairs(obj.meshes) do
-		if mesh.tags.physics then
-			if mesh.vertices then
-				--leave at origin for library entries
-				if obj.args.loadAsLibrary then
-					mesh.transform = nil
-				end
-				
-				--2.5D physics
-				if mesh.tags.physics then
-					for i,m in ipairs(mesh:separate()) do
-						obj.physics[id .. "_" .. i] = self:newCollider(m, type(mesh.tags.physics) == "string" and mesh.tags.physics)
-					end
+		
+		
+		--LOD detection
+		if object.tags.lod then
+			local level = tonumber(object.tags.lod)
+			assert(level, "Malformed LoD tag!")
+			
+			local nextLevel = math.huge
+			for _, o in ipairs(obj.objects) do
+				local l = tonumber(o.tags.lod)
+				if l and l > level and l < nextLevel then
+					nextLevel = l
 				end
 			end
 			
-			--remove if no longer used
-			if not mesh.tags.lod then
-				obj.meshes[id] = nil
+			--apply LOD level
+			object:setLOD(level, nextLevel)
+		end
+		
+		
+		--raytrace objects are usually not meant to be rendered
+		if object.tags.raytrace then
+			object:preventCleanup()
+			object:setVisible(false)
+		end
+		
+		
+		--hide
+		if object.tags.hide then
+			object:setVisible(false)
+		end
+		
+		
+		--visibility in the shadow pass
+		if object.tags.shadow == "false" then
+			object:setShadowVisibility(false)
+		elseif object.tags.shadow then
+			object:setRenderVisibility(false)
+		end
+		
+		
+		--extract physics
+		if object.tags.physics then
+			local shapeMode = type(object.tags.physics) == "string" and object.tags.physics
+			for meshId, mesh in pairs(object.meshes) do
+				--2.5D physics
+				for i, m in ipairs(mesh:separate()) do
+					obj.physics[meshId .. "_" .. i] = self:newCollider(m, shapeMode)
+				end
+				
+				--remove if no longer used
+				if not object.tags.lod then
+					obj.meshes[meshId] = nil
+				end
 			end
 		end
 	end
@@ -411,6 +308,47 @@ function lib:processObject(obj)
 	
 	--remove empty objects (second pass)
 	cleanEmpties(obj)
+	
+	
+	--merge objects with the same name (e.g. different level of detail, collisions, light sources of a coherent object)
+	if obj.args.scene then
+		for _, typ in ipairs({ "objects", "meshes", "positions", "lights", "physics", "reflections", "animations" }) do
+			local old = obj[typ]
+			obj[typ] = { }
+			
+			for id, object in pairs(old) do
+				--create new object
+				local parent = obj.objects[object.name]
+				if not parent then
+					parent = self:newObject(object.name)
+					obj.objects[object.name] = parent
+				end
+				
+				--make sure to transform accordingly
+				local difference = 0
+				if object.transform then
+					parent.transform = parent.transform or mat4.getIdentity()
+					for i = 1, 16 do
+						difference = math.max(difference, math.abs(object.transform[i] - parent.transform[i]))
+					end
+					
+					if difference > 10 ^ -10 then
+						print(string.format("Warning: %s (%s) has a different transform than the rest!", id, object))
+						object.transform = parent:getInvertedTransform() * object.transform
+					else
+						object.transform = nil
+					end
+				end
+				
+				if object.position then
+					object.position = parent:getInvertedTransform() * object.position
+				end
+				
+				--add to new object
+				parent[typ][id] = object
+			end
+		end
+	end
 	
 	
 	--calculate bounding box
@@ -442,16 +380,14 @@ function lib:processObject(obj)
 	end
 end
 
-function lib:finishObject(obj)	
+function lib:finishObject(obj)
 	--link objects
-	if obj.linkedObjects then
-		for id, link in ipairs(obj.linkedObjects) do
-			local lo = self.objectLibrary[link.source]
-			assert(lo, "linked object " .. link.source .. " is not in the object library!")
-			local o = self:newLinkedObject(lo, link.source)
-			o.transform = link.transform
-			obj.objects["link_" .. id] = o
-		end
+	for index, link in ipairs(obj.links) do
+		local lo = self.objectLibrary[link.source]
+		assert(lo, "Linked object " .. link.source .. " is not in the object library!")
+		local o = self:newLinkedObject(lo, link.source)
+		o.transform = link.transform
+		obj.objects["link_" .. index] = o
 	end
 	
 	

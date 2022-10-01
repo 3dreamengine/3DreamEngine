@@ -360,7 +360,7 @@ return function(self, obj, path)
 	
 	local function addNewObject(name, meshes, transform, controller)
 		local o = self:newObject(name)
-		o:setTransform(transform)
+		o.transform = transform
 		
 		--todo names are not unique as per specification
 		obj.objects[name] = o

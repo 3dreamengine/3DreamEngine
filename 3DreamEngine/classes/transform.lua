@@ -90,6 +90,11 @@ function class:rotateZWorld(rz)
 	return self
 end
 
+function class:getPosition()
+	local t = self:getTransform()
+	return vec3(t[4], t[8], t[12])
+end
+
 function class:lookAt(position, up)
 	position = self:getInvertedTransform() * position
 	up = self:getInvertedTransform():subm() * (up or vec3(0.0, 1.0, 0.0))
@@ -120,7 +125,11 @@ end
 
 function class:getInvertedTransform()
 	if not self.inverseTransform then
-		self.inverseTransform = self.transform:invert()
+		if self.transform then
+			self.inverseTransform = self.transform:invert()
+		else
+			return I
+		end
 	end
 	return self.inverseTransform
 end

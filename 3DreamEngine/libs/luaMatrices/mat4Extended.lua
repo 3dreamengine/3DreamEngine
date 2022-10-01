@@ -169,3 +169,11 @@ function methods:transform(x, y, angle, sx, sy, ox, oy, kx, ky)
 	
 	return m
 end
+
+function methods:getLossySize()
+	return math.sqrt(math.max(
+			(self[1] ^ 2 + self[5] ^ 2 + self[9] ^ 2),
+			(self[2] ^ 2 + self[6] ^ 2 + self[10] ^ 2),
+			(self[3] ^ 2 + self[7] ^ 2 + self[11] ^ 2)
+	))
+end

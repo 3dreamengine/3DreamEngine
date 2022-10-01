@@ -68,8 +68,8 @@ require((...) .. "/3doExport")
 
 --file loader
 lib.loader = { }
-for _,s in pairs(love.filesystem.getDirectoryItems((...) .. "/loader")) do
-	lib.loader[s:sub(1, #s-4)] = require((...) .. "/loader/" .. s:sub(1, #s-4))
+for _, s in pairs(love.filesystem.getDirectoryItems((...) .. "/loader")) do
+	lib.loader[s:sub(1, #s - 4)] = require((...) .. "/loader/" .. s:sub(1, #s - 4))
 end
 
 --supported canvas formats
@@ -103,7 +103,7 @@ lib:setMipmaps(true)
 
 --sky
 lib:setDefaultReflection("sky")
-lib:setSky({0.5, 0.5, 0.5})
+lib:setSky({ 0.5, 0.5, 0.5 })
 lib:setSkyReflectionFormat(256, "rgba16f", false)
 
 --auto exposure
@@ -131,6 +131,8 @@ lib.scene = lib:newScene()
 --hardcoded mipmap count, do not change
 lib.reflectionsLevels = 6
 
+lib.version_3DO = 6
+
 --default meshFormats
 lib.meshFormats = { }
 lib:registerMeshFormat("textured", require(lib.root .. "/meshFormats/textured"))
@@ -145,23 +147,23 @@ if love.graphics then
 	lib.skyObject = lib:loadObject(lib.root .. "/objects/sky")
 	lib.cubeObject = lib:loadObject(lib.root .. "/objects/cube")
 	lib.planeObject = lib:loadObject(lib.root .. "/objects/plane")
-
+	
 	--default textures
 	local pix = love.image.newImageData(2, 2)
 	lib.textures = {
 		default = love.graphics.newImage(lib.root .. "/res/default.png"),
 		godray = love.graphics.newImage(lib.root .. "/res/godray.png"),
 		defaultNormal = love.graphics.newImage(lib.root .. "/res/defaultNormal.png"),
-		skyFallback = love.graphics.newCubeImage({pix, pix, pix, pix, pix, pix}),
+		skyFallback = love.graphics.newCubeImage({ pix, pix, pix, pix, pix, pix }),
 	}
 	lib.textures.godray:setWrap("repeat", "repeat")
-
+	
 	lib.textures.noise = love.graphics.newImage(lib.root .. "/res/noise.png")
 	lib.textures.noise:setWrap("repeat")
-
+	
 	lib.textures.foam = love.graphics.newImage(lib.root .. "/res/foam.png")
 	lib.textures.foam:setWrap("repeat")
-
+	
 	--load textures once actually needed
 	lib.initTextures = { }
 	function lib.initTextures:PBR()
@@ -189,26 +191,26 @@ function lib:newCanvasSet(settings, w, h)
 	
 	if settings.mode ~= "direct" then
 		--depth
-		set.depth_buffer = love.graphics.newCanvas(w, h, {format = self.canvasFormats["depth32f"] and "depth32f" or self.canvasFormats["depth24"] and "depth24" or "depth16", readable = false, msaa = set.msaa})
+		set.depth_buffer = love.graphics.newCanvas(w, h, { format = self.canvasFormats["depth32f"] and "depth32f" or self.canvasFormats["depth24"] and "depth24" or "depth16", readable = false, msaa = set.msaa })
 		
 		--temporary HDR color
-		set.color = love.graphics.newCanvas(w, h, {format = settings.format, readable = true, msaa = set.msaa})
+		set.color = love.graphics.newCanvas(w, h, { format = settings.format, readable = true, msaa = set.msaa })
 		
 		--additional color if using refractions
 		if set.refractions then
-			set.colorAlpha = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = set.msaa})
-			set.distortion = love.graphics.newCanvas(w, h, {format = "rg16f", readable = true, msaa = set.msaa})
+			set.colorAlpha = love.graphics.newCanvas(w, h, { format = "rgba16f", readable = true, msaa = set.msaa })
+			set.distortion = love.graphics.newCanvas(w, h, { format = "rg16f", readable = true, msaa = set.msaa })
 		end
 		
 		--depth
-		set.depth = love.graphics.newCanvas(w, h, {format = "r16f", readable = true, msaa = set.msaa})
+		set.depth = love.graphics.newCanvas(w, h, { format = "r16f", readable = true, msaa = set.msaa })
 	end
 	
 	--screen space ambient occlusion blurring canvases
 	if self.AO_enabled and settings.mode ~= "direct" then
-		set.AO_1 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
+		set.AO_1 = love.graphics.newCanvas(w * self.AO_resolution, h * self.AO_resolution, { format = "r8", readable = true, msaa = 0 })
 		if self.AO_blur then
-			set.AO_2 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
+			set.AO_2 = love.graphics.newCanvas(w * self.AO_resolution, h * self.AO_resolution, { format = "r8", readable = true, msaa = 0 })
 		end
 	end
 	
@@ -216,8 +218,8 @@ function lib:newCanvasSet(settings, w, h)
 	if settings.mode == "normal" then
 		--bloom blurring canvases
 		if self.bloom_enabled then
-			set.bloom_1 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = settings.format, readable = true, msaa = 0})
-			set.bloom_2 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = settings.format, readable = true, msaa = 0})
+			set.bloom_1 = love.graphics.newCanvas(w * self.bloom_resolution, h * self.bloom_resolution, { format = settings.format, readable = true, msaa = 0 })
+			set.bloom_2 = love.graphics.newCanvas(w * self.bloom_resolution, h * self.bloom_resolution, { format = settings.format, readable = true, msaa = 0 })
 		end
 	end
 	
@@ -227,7 +229,7 @@ end
 --release set and free memory
 function lib:unloadCanvasSet(set)
 	if set then
-		for _,s in pairs(set) do
+		for _, s in pairs(set) do
 			if type(s) == "userdata" and s.release then
 				s:release()
 			end
@@ -257,7 +259,7 @@ function lib:init(w, h)
 		local width, height, flags = love.window.getMode()
 		if flags.depth == 0 then
 			print("Direct render is enabled, but there is no depth buffer! Using 16-bit depth from now on.")
-			love.window.updateMode(width, height, {depth = 16})
+			love.window.updateMode(width, height, { depth = 16 })
 		end
 	end
 	
@@ -276,7 +278,7 @@ function lib:init(w, h)
 	self:loadShader()
 	
 	--reset lighting
-	for _,l in pairs(self.lighting or { }) do
+	for _, l in pairs(self.lighting or { }) do
 		if l.shadow then
 			l.shadow:clear()
 		end
@@ -285,7 +287,7 @@ function lib:init(w, h)
 	
 	--sky box
 	if self.defaultReflection == "sky" then
-		self.defaultReflectionCanvas = love.graphics.newCanvas(self.sky_resolution, self.sky_resolution, {format = self.sky_format, readable = true, msaa = 0, type = "cube", mipmaps = "manual"})
+		self.defaultReflectionCanvas = love.graphics.newCanvas(self.sky_resolution, self.sky_resolution, { format = self.sky_format, readable = true, msaa = 0, type = "cube", mipmaps = "manual" })
 	else
 		self.defaultReflectionCanvas = false
 	end
@@ -302,8 +304,8 @@ function lib:prepare()
 	lib:drawScene(self.scene)
 	self.scene:clear()
 	
-	self.particleBatches = {{}, {}}
-	self.particles = {{}, {}}
+	self.particleBatches = { {}, {} }
+	self.particles = { {}, {} }
 	
 	--keep track of reflections
 	self.lastReflections = self.reflections or { }
@@ -328,7 +330,7 @@ function lib:draw(object, x, y, z, sx, sy, sz)
 			0, sy or sx or 1, 0, y,
 			0, 0, sz or sx or 1, z,
 			0, 0, 0, 1
-		}) 
+		})
 		dynamic = true
 	end
 	
@@ -358,14 +360,14 @@ function lib:drawParticle(particle, quad, x, y, z, ...)
 	
 	if type(quad) == "userdata" then
 		particle.quad = quad
-		particle.position = {x or 0, y or 0, z or 0}
-		particle.transform = {...}
+		particle.position = { x or 0, y or 0, z or 0 }
+		particle.transform = { ... }
 	else
 		particle.quad = nil
-		particle.position = {quad or 0, x or 0, y or 0}
-		particle.transform = {z, ...}
+		particle.position = { quad or 0, x or 0, y or 0 }
+		particle.transform = { z, ... }
 	end
-	particle.color = {love.graphics.getColor()}
+	particle.color = { love.graphics.getColor() }
 	
 	local p = self.particles[particle.alpha and 2 or 1]
 	local id = particle:getID()

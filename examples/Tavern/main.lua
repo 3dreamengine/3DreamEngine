@@ -15,7 +15,7 @@ dream.renderSet:setRefractions(true)
 dream:setSky(false)
 dream:setDefaultReflection(cimg:load(projectDir .. "sky.cimg"))
 
-dream:setFog(0.0025, {0.6, 0.5, 0.4}, 0.0)
+dream:setFog(0.0025, { 0.6, 0.5, 0.4 }, 0.0)
 dream:setFogHeight(0.0, 2.5)
 
 --load materials
@@ -25,7 +25,7 @@ dream:loadMaterialLibrary(projectDir .. "materials")
 dream:init()
 
 --load scene
-local tavern = dream:loadObject(projectDir .. "scene", {cleanup = false})
+local tavern = dream:loadObject(projectDir .. "scene", { cleanup = false })
 local scene = dream:newScene()
 scene:addObject(tavern)
 
@@ -35,14 +35,14 @@ local cameraController = require("examples/firstpersongame/cameraController")
 cameraController.x = 4
 cameraController.y = 1.5
 cameraController.z = 4
-cameraController.ry = -math.pi/4
+cameraController.ry = -math.pi / 4
 
 local texture_candle = love.graphics.newImage(projectDir .. "candle.png")
 local factor = texture_candle:getHeight() / texture_candle:getWidth()
 local quads = { }
 for y = 1, 5 do
 	for x = 1, 5 do
-		table.insert(quads, love.graphics.newQuad(x-1, (y-1)*factor, 1, factor, 5, 5*factor))
+		table.insert(quads, love.graphics.newQuad(x - 1, (y - 1) * factor, 1, factor, 5, 5 * factor))
 	end
 end
 
@@ -55,17 +55,18 @@ particleBatchDust:setSorting(false)
 
 --setup light sources
 local lights = { }
-for d,s in ipairs(tavern.positions) do
-	if s.name == "light" then
-		lights[d] = dream:newLight("point", vec3(s.position.x, s.position.y + 0.1, s.position.z), vec3(1.0, 0.75, 0.3))
+for d, l in pairs(tavern.positions) do
+	l.r = math.random()
+	if l:getValue() == "light" then
+		lights[d] = dream:newLight("point", l:getPosition() + vec3(0, 0.1, 0), vec3(1.0, 0.75, 0.3))
 		lights[d]:addShadow()
 		lights[d].shadow:setStatic(true)
 		lights[d].shadow:setSmooth(true)
 		lights[d].shadow:setRefreshStepSize(1000)
 		lights[d].shadow:setLazy(true)
 		lights[d]:setAttenuation(3) --unrealistic but looks better
-	elseif s.name == "fire" then
-		lights[d] = dream:newLight("point", vec3(s.position.x, s.position.y + 0.1, s.position.z), vec3(1.0, 0.75, 0.2))
+	elseif l:getValue() == "fire" then
+		lights[d] = dream:newLight("point", l:getPosition() + vec3(0, 0.1, 0), vec3(1.0, 0.75, 0.2))
 		lights[d]:addShadow()
 		lights[d].shadow:setStatic(true)
 		lights[d].shadow:setSmooth(true)
@@ -85,9 +86,9 @@ local noise = require(projectDir .. "noise").Simplex2D
 local function getFlickerOffset(d, f)
 	local t = love.timer.getTime()
 	return vec3(
-		noise(t, d + 0) * f,
-		noise(t, d + 1) * f,
-		noise(t, d + 2) * f
+			noise(t, d + 0) * f,
+			noise(t, d + 1) * f,
+			noise(t, d + 2) * f
 	)
 end
 
@@ -112,27 +113,27 @@ function love.draw()
 	
 	--make the particles black so it only emits light
 	love.graphics.setColor(0, 0, 0, 1)
-	for d,s in ipairs(tavern.positions) do
-		local flicker = love.timer.getTime() / math.sqrt(s.size) * 0.2
-		if s.name == "light" then
-			local power = (0.5 + 0.2 * noise(flicker, d)) * s.size * 500.0
+	for d, l in pairs(tavern.positions) do
+		local flicker = love.timer.getTime() / math.sqrt(l:getSize()) * 0.2
+		if l:getValue() == "light" then
+			local power = (0.5 + 0.2 * noise(flicker, l.r)) * l:getSize() * 500.0
 			lights[d]:setBrightness(power)
-			lights[d].oPos = lights[d].oPos or lights[d].pos
-			lights[d]:setPosition(lights[d].oPos + getFlickerOffset(d, 0.02))
+			lights[d].originalPosition = lights[d].originalPosition or lights[d]:getPosition()
+			lights[d]:setPosition(lights[d].originalPosition + getFlickerOffset(l.r, 0.02))
 			dream:addLight(lights[d])
-		elseif s.name == "candle" then
-			local power = (0.5 + 0.2 * noise(flicker, d)) * s.size * 4
-			particleBatch:addQuad(quads[math.ceil(d + love.timer.getTime() * 24) % 25 + 1], s.position.x, s.position.y + 0.02, s.position.z, 0, power, nil, 2.0)
-		elseif s.name == "fire" then
-			local power = (0.5 + 0.2 * noise(flicker, d)) * s.size * 2000.0
+		elseif l:getValue() == "candle" then
+			local power = (0.5 + 0.2 * noise(flicker, l.r)) * l:getSize() * 4
+			particleBatch:addQuad(quads[math.ceil(l.r + love.timer.getTime() * 24) % 25 + 1], l.position.x, l.position.y + 0.02, l.position.z, 0, power, nil, 2.0)
+		elseif l:getValue() == "fire" then
+			local power = (0.5 + 0.2 * noise(flicker, l.r)) * l:getSize() * 2000.0
 			lights[d]:setBrightness(power)
-			lights[d].oPos = lights[d].oPos or lights[d].pos
-			lights[d]:setPosition(lights[d].oPos + getFlickerOffset(d, 0.02))
+			lights[d].originalPosition = lights[d].originalPosition or lights[d]:getPosition()
+			lights[d]:setPosition(lights[d].originalPosition + getFlickerOffset(l.r, 0.02))
 			dream:addLight(lights[d])
 			
 			for i = -3, 3 do
-				local flamePower = (0.5 + 0.15 * noise(flicker, d + i)) * s.size / (1 + 0.1 * math.abs(i)) * 4
-				particleBatch:addQuad(quads[math.ceil(i * 17 + d + love.timer.getTime() * 24) % 25 + 1], s.position.x + i * 0.1, s.position.y - 0.15, s.position.z - 0.1 - math.abs(i) * 0.025, 0, flamePower, nil, 4.0)
+				local flamePower = (0.5 + 0.15 * noise(flicker, l.r + i)) * l:getSize() / (1 + 0.1 * math.abs(i)) * 4
+				particleBatch:addQuad(quads[math.ceil(i * 17 + l.r + love.timer.getTime() * 24) % 25 + 1], l.position.x + i * 0.1, l.position.y - 0.15, l.position.z - 0.1 - math.abs(i) * 0.025, 0, flamePower, nil, 4.0)
 			end
 		end
 	end
@@ -144,7 +145,7 @@ function love.draw()
 	--draw the particles
 	dream:drawParticleBatch(particleBatch)
 	dream:drawParticleBatch(particleBatchDust)
-
+	
 	--render
 	dream:present()
 	
@@ -158,10 +159,10 @@ function love.draw()
 			"9 to enable quality rendering",
 			"L to toggle looking at check (" .. tostring(lookingAtCheck) .. ")",
 			"K to toggle relative mode (" .. tostring(rotateCamera) .. ")",
-			math.ceil(love.graphics.getStats().texturememory / 1024^2) .. " MB VRAM",
+			math.ceil(love.graphics.getStats().texturememory / 1024 ^ 2) .. " MB VRAM",
 			love.timer.getFPS() .. " FPS",
 			dream.mainShaderCount .. " shaders loaded"
-			}, "\n"), 10, 10)
+		}, "\n"), 10, 10)
 	end
 	
 	--check which object you are looking at
@@ -187,15 +188,15 @@ function love.draw()
 		--cursor
 		if rotateCamera then
 			local size = 8
-			love.graphics.line(love.graphics.getWidth()/2, love.graphics.getHeight()/2-size, love.graphics.getWidth()/2, love.graphics.getHeight()/2+size)
-			love.graphics.line(love.graphics.getWidth()/2-size, love.graphics.getHeight()/2, love.graphics.getWidth()/2+size, love.graphics.getHeight()/2)
+			love.graphics.line(love.graphics.getWidth() / 2, love.graphics.getHeight() / 2 - size, love.graphics.getWidth() / 2, love.graphics.getHeight() / 2 + size)
+			love.graphics.line(love.graphics.getWidth() / 2 - size, love.graphics.getHeight() / 2, love.graphics.getWidth() / 2 + size, love.graphics.getHeight() / 2)
 		end
 		
 		--debug
 		if coll then
 			love.graphics.printf("you are looking at " .. coll, 0, love.graphics.getHeight() - 20, love.graphics.getWidth(), "center")
 		end
-		love.graphics.printf(math.floor((love.timer.getTime() - t)*1000*10)/10 .. " ms", 0, love.graphics.getHeight() - 50, love.graphics.getWidth(), "center")
+		love.graphics.printf(math.floor((love.timer.getTime() - t) * 1000 * 10) / 10 .. " ms", 0, love.graphics.getHeight() - 50, love.graphics.getWidth(), "center")
 	end
 end
 
@@ -216,7 +217,7 @@ function love.keypressed(key)
 	if key == "f2" then
 		dream:takeScreenshot()
 	end
-
+	
 	--fullscreen
 	if key == "f11" then
 		love.window.setFullscreen(not love.window.getFullscreen())
