@@ -48,6 +48,10 @@ function class:getName()
 	return self.name
 end
 
+function class:setPreventCleanup(t)
+	self.preventCleanup = t
+end
+
 function class:tostring()
 	local tags = { }
 	

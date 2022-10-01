@@ -219,11 +219,13 @@ function lib:processObject(obj)
 		
 		--extract positions
 		if object.tags.pos then
-			obj.positions[id] = self:newPosition(
+			local p = self:newPosition(
 					object:getPosition(),
 					object:getTransform():getLossySize(),
 					type(object.tags.pos) == "string" and object.tags.pos or object.name
 			)
+			p:setName(object.name)
+			obj.positions[id] = p
 			obj.objects[id] = nil
 		end
 		
@@ -263,7 +265,9 @@ function lib:processObject(obj)
 		
 		--raytrace objects are usually not meant to be rendered
 		if object.tags.raytrace then
-			object:preventCleanup()
+			for _,mesh in pairs(object.meshes) do
+				mesh:setPreventCleanup()
+			end
 			object:setVisible(false)
 		end
 		

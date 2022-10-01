@@ -44,10 +44,12 @@ function utils.createFromWorld(world)
 	for _, collider in ipairs(world.colliders) do
 		for fixtureIndex, fixture in ipairs(collider.body:getFixtures()) do
 			local shape = fixture:getShape()
-			local x1, y1, x2, y2, x3, y3 = collider.body:getWorldPoints(shape:getPoints())
-			table.insert(vertices, { x1, y1, collider.shape.lowest[fixtureIndex][1], collider.shape.highest[fixtureIndex][1] })
-			table.insert(vertices, { x2, y2, collider.shape.lowest[fixtureIndex][2], collider.shape.highest[fixtureIndex][2] })
-			table.insert(vertices, { x3, y3, collider.shape.lowest[fixtureIndex][3], collider.shape.highest[fixtureIndex][3] })
+			if shape.getPoints then
+				local x1, y1, x2, y2, x3, y3 = collider.body:getWorldPoints(shape:getPoints())
+				table.insert(vertices, { x1, y1, collider.shape.lowest[fixtureIndex][1], collider.shape.highest[fixtureIndex][1] })
+				table.insert(vertices, { x2, y2, collider.shape.lowest[fixtureIndex][2], collider.shape.highest[fixtureIndex][2] })
+				table.insert(vertices, { x3, y3, collider.shape.lowest[fixtureIndex][3], collider.shape.highest[fixtureIndex][3] })
+			end
 		end
 	end
 	assert(#vertices > 0, "Map empty!")
@@ -64,7 +66,7 @@ function utils.draw(position, mapMesh, x, y, w, h, zoom)
 	love.graphics.push()
 	love.graphics.translate(x + w / 2, y + h / 2)
 	love.graphics.scale(zoom)
-	love.graphics.translate( - position.x,  - position.z)
+	love.graphics.translate(-position.x, -position.z)
 	love.graphics.draw(mapMesh)
 	love.graphics.setScissor()
 	love.graphics.setShader()

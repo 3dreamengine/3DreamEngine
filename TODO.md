@@ -2,6 +2,14 @@
 
 A list of upcoming changes and features.
 
+# Scene Graph
+
+Currently, the graph (scene) is loosely connected.
+This has no real benefits, but a few downsides instead.
+
+* If each object (instance) is unique, the local transformation and everything around it can be cached.
+* The local transformation is known before/independent on the last scene render
+
 # GLTF
 
 COLLADA is a mess. The current import does its job half of the time and I will probably leave it there, but GLTF might be more suitable and stable.
@@ -21,7 +29,7 @@ COLLADA is a mess. The current import does its job half of the time and I will p
 
 * Non axis aligned box reflections
 * Easier to use reflection globes
-* Custom reflection shader
+* Globe blending and proper multi globe
 
 # Text
 

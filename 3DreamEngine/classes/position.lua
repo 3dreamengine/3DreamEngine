@@ -2,6 +2,7 @@ local lib = _3DreamEngine
 
 function lib:newPosition(position, size, value)
 	local l = {
+		name = "unnamed",
 		position = position,
 		size = size,
 		value = value,
@@ -15,7 +16,15 @@ local class = {
 }
 
 function class:tostring()
-	return string.format("%s (%.3f size) at %s", self.value, self.size, self.position)
+	return string.format("%s with value %s (%.3f size) at %s", self.name, self.value, self.size, self.position)
+end
+
+function class:setName(name)
+	self.name = lib:removePostfix(name)
+end
+
+function class:getName()
+	return self.name
 end
 
 function class:setPosition(position)
