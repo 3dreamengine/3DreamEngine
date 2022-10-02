@@ -50,7 +50,7 @@ end
 local chicken = dream:loadObject(projectDir .. "objects/chicken", { callback = function(model)
 	model:setVertexShader("bones")
 end })
-local player = addObject(chicken, 0, 10, 0, physics:newCylinder(0.175, 0.5))
+local player = addObject(chicken, 0, 10, 0, physics:newCapsule(0.175, 0.5))
 
 local crate = dream:loadObject(projectDir .. "objects/crate")
 crate:resetTransform()
@@ -137,8 +137,8 @@ function love.update(dt)
 	local a = math.sqrt(ax ^ 2 + az ^ 2)
 	if a > 0 then
 		local v = player.collider:getVelocity()
-		local maxSpeed = 3
-		local accel = 3 * math.max(0, 1 - vec3(v.x, 0, v.z):length() / maxSpeed) / a
+		local maxSpeed = love.keyboard.isDown("lshift") and 15 or 3
+		local accel = 10 * math.max(0, 1 - vec3(v.x, 0, v.z):length() / maxSpeed) / a
 		player.collider:applyForce(ax * accel, az * accel)
 	end
 	

@@ -2,7 +2,7 @@ local function inner(physics, obj, transform, loveShapes)
 	assert(obj.class == "object", "Object Expected")
 	
 	if obj.transform then
-		transform = transform and obj.transform * transform or obj.transform
+		transform = transform and transform * obj.transform or obj.transform
 	end
 	
 	if obj.physics then

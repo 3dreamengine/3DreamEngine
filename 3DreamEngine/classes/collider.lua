@@ -12,11 +12,11 @@ function lib:newCollider(mesh, shapeMode)
 	assert(shapeModes[shapeMode], "Unknown collider shape mode " .. tostring(shapeMode))
 	
 	local c = {
+		name = mesh.name,
+		shapeMode = shapeMode,
 		faces = mesh.faces,
 		vertices = mesh.vertices,
 		normals = mesh.normals,
-		name = mesh.name,
-		shapeMode = shapeMode,
 	}
 	
 	return setmetatable(c, self.meta.collider)

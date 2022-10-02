@@ -23,9 +23,9 @@ function methods:update(dt)
 			local c = s:getUserData()
 			
 			--store old pos for emergency reset
-			c.oldX, c.oldZ = c.pre_oldX, c.pre_oldZ
-			c.pre_oldX, c.pre_oldZ = c.body:getPosition()
-			c.oldY = c.y
+			c.dx = 0
+			c.dy = 0
+			c.colls = 0
 			
 			--gravity
 			c.ay = c.ay - dt * 10
@@ -33,13 +33,10 @@ function methods:update(dt)
 			--update vertical position
 			c.y = c.y + c.ay * dt
 			
-			--clear collision data
-			c.newY = false
-			c.topY = false
-			c.bottomY = false
-			c.groundNormal = false
+			--remember the available space
+			c.topY = math.huge
+			c.bottomY = -math.huge
 			
-			c.collided = false
 			c.touchedFloor = false
 			c.touchedCeiling = false
 		end
@@ -49,36 +46,42 @@ function methods:update(dt)
 	
 	for _, s in ipairs(self.world:getBodies()) do
 		if s:getType() == "dynamic" then
-			local c = s:getUserData()
+			local collider = s:getUserData()
 			
-			--stuck between roof and floor -> reset position
-			--todo why does this happen
-			if c.bottomY and c.topY and c.topY - c.bottomY < c.shape.top - c.shape.bottom then
-				c.y = c.oldY
+			--resolve acceleration
+			if collider.colls > 0 then
+				collider.dx = collider.dx / collider.colls
+				collider.dy = collider.dy / collider.colls
+				
+				local loss = 1 - collider.dx ^ 2 - collider.dy ^ 2
+				
+				local f = -loss * collider.ay ^ 2 * collider.body:getMass()
+				collider.body:applyLinearImpulse(collider.dx * f, collider.dy * f)
+				
+				collider.ay = collider.ay * (1 - loss)
+			end
+			
+			--[[
+			if (collider.bottomY - collider.floorY) < (collider.shape.top - collider.shape.bottom) then
+				--stuck, shit happens
+								c.y = c.oldY
 				c.ay = 0
 				c.body:setPosition(c.oldX or 0, c.oldZ or 0)
 				c.body:setLinearVelocity(0, 0)
 				c.pre_oldX, c.pre_oldZ = c.oldX, c.oldZ
-				c.newY = nil
-				c.groundNormal = nil
+				print("stuck af")
 			end
-			
-			--perform step
-			if c.newY then
-				c.y = c.newY
-				c.ay = 0
-			end
+			--]]
 		end
 	end
 end
-
 
 --gets the gradient of a triangle (normalized derivatives x and y from the barycentric transformation)
 local function getDirection(w, x1, y1, x2, y2, x3, y3)
 	local det = (x1 * y2 - x1 * y3 - x2 * y1 + x2 * y3 + x3 * y1 - x3 * y2)
 	local x = (w[1] * y2 - w[1] * y3 - w[2] * y1 + w[2] * y3 + w[3] * y1 - w[3] * y2) / det
 	local y = (-w[1] * x2 + w[1] * x3 + w[2] * x1 - w[2] * x3 - w[3] * x1 + w[3] * x2) / det
-	local l = math.sqrt(x ^ 2 + y ^ 2)
+	local l = 1--math.sqrt(x ^ 2 + y ^ 2) --todo move that to the radius management
 	if l > 0 then
 		return x / l, y / l
 	else
@@ -102,10 +105,10 @@ local function attemptSolve(a, b)
 	--extend x,y to outer radius
 	local radius = colliderA.shape.radius
 	local tx, ty
+	local floorDx, floorDy = getDirection(highest, x1, y1, x2, y2, x3, y3)
 	if radius then
-		local dx, dy = getDirection(highest, x1, y1, x2, y2, x3, y3)
-		tx = x + dx * radius * 2.0
-		ty = y + dy * radius * 2.0
+		tx = x + floorDx * radius
+		ty = y + floorDy * radius
 	else
 		tx = x
 		ty = y
@@ -113,14 +116,16 @@ local function attemptSolve(a, b)
 	
 	--interpolate height
 	local w1, w2, w3 = lib:getBarycentricClamped(tx, ty, x1, y1, x2, y2, x3, y3)
-	local bottomHeight = colliderB.y + highest[1] * w1 + highest[2] * w2 + highest[3] * w3
+	local topY = colliderB.y + highest[1] * w1 + highest[2] * w2 + highest[3] * w3
 	
 	--extend head
 	local w1l, w2l, w3l
+	local ceilingDx, ceilingDy = getDirection(lowest, x1, y1, x2, y2, x3, y3)
+	ceilingDx = -ceilingDx
+	ceilingDy = -ceilingDy
 	if radius then
-		local dx, dy = getDirection(lowest, x1, y1, x2, y2, x3, y3)
-		tx = x - dx * radius * 2.0
-		ty = y - dy * radius * 2.0
+		tx = x + ceilingDx * radius
+		ty = y + ceilingDy * radius
 		
 		w1l, w2l, w3l = lib:getBarycentricClamped(tx, ty, x1, y1, x2, y2, x3, y3)
 	else
@@ -128,42 +133,48 @@ local function attemptSolve(a, b)
 	end
 	
 	--interpolate height of head
-	local topHeight = colliderB.y + lowest[1] * w1l + lowest[2] * w2l + lowest[3] * w3l
+	local bottomY = colliderB.y + lowest[1] * w1l + lowest[2] * w2l + lowest[3] * w3l
 	
-	--mark top and bottom
-	local stepSize = 0.5 --todo variable!
-	if bottomHeight + topHeight > colliderA.y * 2 + colliderA.shape.top + colliderA.shape.bottom then
-		--the center of collision is above center of collider
-		local diff = (colliderA.y + colliderA.shape.top) - topHeight
-		if diff > 0 and diff < stepSize then
-			colliderA.newY = math.min(colliderA.newY or colliderA.y, topHeight - colliderA.shape.top)
-			colliderA.touchedCeiling = true
-		elseif diff > 0 then
-			colliderA.collided = true
-			return true
-		end
-		
-		--top
-		colliderA.topY = math.min(colliderA.topY or topHeight, topHeight)
-	else
-		local diff = bottomHeight - (colliderA.y + colliderA.shape.bottom)
-		if diff > 0 and diff < stepSize and colliderA.ay <= 0 then
-			colliderA.newY = math.max(colliderA.newY or colliderA.y, bottomHeight - colliderA.shape.bottom)
-			
-			local n = colliderB.shape.normals[index]
-			local normal = (n[1] * w1 + n[2] * w2 + n[3] * w3):normalize()
-			colliderA.groundNormal = colliderA.groundNormal and colliderA.groundNormal + normal or normal
-			colliderA.touchedFloor = true
-		elseif diff > 0 then
-			colliderA.collided = true
-			return true
-		end
-		
-		--bottom
-		colliderA.bottomY = math.max(colliderA.bottomY or bottomHeight, bottomHeight)
+	--check if colliding
+	if colliderA.y + colliderA.shape.bottom > topY or colliderA.y + colliderA.shape.top < bottomY then
+		return false
 	end
 	
-	return false
+	--mark top and bottom
+	local floorDiff = topY - (colliderA.y + colliderA.shape.bottom)
+	local ceilingDiff = (colliderA.y + colliderA.shape.top) - bottomY
+	
+	local stepSize = 0.25 --todo variable!
+	if ceilingDiff >= 0 and ceilingDiff < floorDiff then
+		--hit the ceiling
+		local possibleHeight = math.min(colliderA.topY, bottomY)
+		ceilingDiff = (colliderA.y + colliderA.shape.top) - possibleHeight
+		if ceilingDiff < stepSize then
+			colliderA.topY = possibleHeight
+			colliderA.y = colliderA.y - ceilingDiff
+			colliderA.dx = colliderA.dx + ceilingDx
+			colliderA.dy = colliderA.dy + ceilingDy
+			colliderA.colls = colliderA.colls + 1
+			colliderA.touchedCeiling = true
+			return false
+		end
+	elseif floorDiff >= 0 then
+		--hit the floor
+		local possibleHeight = math.max(colliderA.bottomY, topY)
+		floorDiff = possibleHeight - (colliderA.y + colliderA.shape.bottom)
+		
+		if floorDiff < stepSize then
+			colliderA.bottomY = possibleHeight
+			colliderA.y = colliderA.y + floorDiff
+			colliderA.dx = colliderA.dx + floorDx
+			colliderA.dy = colliderA.dy + floorDy
+			colliderA.colls = colliderA.colls + 1
+			colliderA.touchedFloor = true
+			return false
+		end
+	end
+	
+	return true
 end
 
 --preSolve event to decide weather a collision happens
