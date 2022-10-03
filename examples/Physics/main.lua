@@ -144,8 +144,12 @@ function love.update(dt)
 	local a = math.sqrt(ax ^ 2 + az ^ 2)
 	if a > 0 then
 		local v = player.collider:getVelocity()
+		ax = ax / a
+		az = az / a
+		local speed = vec3(v.x, 0, v.z):length()
 		local maxSpeed = love.keyboard.isDown("lshift") and 6 or 3
-		local accel = 1000 * math.max(0, 1 - vec3(v.x, 0, v.z):length() / maxSpeed) / a
+		local dot = speed > 0 and (ax * v.x / speed + az * v.z / speed) or 0
+		local accel = 1000 * math.max(0, 1 - speed / maxSpeed * math.abs(dot))
 		player.collider:applyForce(ax * accel, 0, az * accel)
 	end
 	
