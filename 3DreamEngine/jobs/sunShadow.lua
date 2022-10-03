@@ -27,7 +27,7 @@ function job:execute(light)
 	end
 	
 	local normal = light.direction
-	local position = lib.cam.position
+	local position = lib.camera.position
 	
 	light.lastCascade = light.lastCascade % #lazyMapping + 1
 	

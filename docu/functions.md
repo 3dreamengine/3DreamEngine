@@ -157,7 +157,7 @@ Finish render session, it is possible to render several times per frame but then
 ```lua
 dream:present(cam, canvases, lite)
 ```
-`cam (dream.cam)` custom cam  
+`cam (dream.camera)` custom cam  
 `canvases (dream.canvases)` custom canvas set  
 `lite (false)` do not perform job updating, set this to true when using present several times per frame  
 
@@ -166,7 +166,7 @@ dream:present(cam, canvases, lite)
 This is a collection of helpful utils.
 ```lua
 local m = dream:lookAt(eye, at, up)               --returns a transformation matrix at point 'eye' looking at 'at' with upwards vector 'up' (default vec3(0, 1, 0))
-dream:pointToPixel(point, cam, canvases)          --converts a 3D point with given camera (default dream.cam) and canvas set (default dream.canvases) to a vec3 2D screen coord + depth
+dream:pointToPixel(point, cam, canvases)          --converts a 3D point with given camera (default dream.camera) and canvas set (default dream.canvases) to a vec3 2D screen coord + depth
 dream:pixelToPoint(point, cam, canvases)          --converts a 2D screen coord + depth to a 3D point
 
 local r, g, b = dream:HSVtoRGB(h, s, v)           --converts hsv to rgb

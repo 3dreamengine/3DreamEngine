@@ -3,7 +3,7 @@ love.window.setTitle("Lamborghini Example")
 
 --settings
 dream:setSky(love.graphics.newImage("examples/Lamborghini/garage.hdr"))
-dream.cam.fov = 70
+dream.camera.fov = 70
 dream:init()
 
 --materials

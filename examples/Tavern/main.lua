@@ -94,7 +94,7 @@ end
 
 function love.draw()
 	--update camera
-	cameraController:setCamera(dream.cam)
+	cameraController:setCamera(dream.camera)
 	
 	dream:prepare()
 	
@@ -169,11 +169,11 @@ function love.draw()
 	if lookingAtCheck then
 		local t = love.timer.getTime()
 		local coll = false
-		local origin = dream.cam.pos
+		local origin = dream.camera.pos
 		local direction
 		
 		if rotateCamera then
-			direction = dream.cam.normal * 10
+			direction = dream.camera.normal * 10
 		else
 			local x, y = love.mouse.getPosition()
 			local point = dream:pixelToPoint(vec3(x, y, 10))

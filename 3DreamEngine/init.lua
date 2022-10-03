@@ -123,7 +123,7 @@ lib.mirrorSet:setMode("lite")
 lib.shadowSet = lib:newSetSettings()
 
 --default camera
-lib.cam = lib:newCamera()
+lib.camera = lib:newCamera()
 
 --default scene
 lib.scene = lib:newScene()

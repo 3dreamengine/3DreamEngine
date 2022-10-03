@@ -85,7 +85,7 @@ function lib:RGBtoHSV(r, g, b)
 end
 
 function lib:pointToPixel(point, cam, canvases)
-	cam = cam or self.cam
+	cam = cam or self.camera
 	canvases = canvases or self.canvases
 	
 	local p = cam.transformProj * vec4(point[1], point[2], point[3], 1.0)
@@ -94,7 +94,7 @@ function lib:pointToPixel(point, cam, canvases)
 end
 
 function lib:pixelToPoint(point, cam, canvases)
-	cam = cam or self.cam
+	cam = cam or self.camera
 	canvases = canvases or self.canvases
 	
 	local inv = cam.transformProj:invert()

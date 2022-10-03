@@ -674,7 +674,7 @@ function lib:present(cam, canvases, lite)
 	canvases = canvases or self.canvases
 	
 	--extract camera position and normal
-	cam = cam or self.cam
+	cam = cam or self.camera
 	cam.position = vec3(cam.transform[4], cam.transform[8], cam.transform[12])
 	cam.normal = vec3(-cam.transform[3], -cam.transform[7], -cam.transform[11]):normalize()
 	

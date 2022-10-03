@@ -28,14 +28,15 @@ light.blacklist = {[scene.objects.chandelier_glass.meshes.chandelier_glass] = tr
 --a helper class
 local cameraController = require("extensions/utils/cameraController")
 
-cameraController.x = 0.95
+cameraController.x = -1
 cameraController.y = 0.75
-cameraController.z = 0.95
-dream.cam.fov = 65
+cameraController.z = -1
+cameraController.ry = math.pi * 0.75
+dream.camera.fov = 65
 
 function love.draw()
 	--update camera
-	cameraController:setCamera(dream.cam)
+	cameraController:setCamera(dream.camera)
 	
 	dream:prepare()
 	dream:addLight(light)

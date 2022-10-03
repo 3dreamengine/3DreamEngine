@@ -51,7 +51,7 @@ local hideTooltips = false
 
 function love.draw()
 	--update camera
-	cameraController:setCamera(dream.cam)
+	cameraController:setCamera(dream.camera)
 	
 	dream:prepare()
 	

@@ -66,7 +66,7 @@ function sh:perTask(dream, shaderObject, task)
 	local shader = shaderObject.shader
 	local LOD_max = (task:getMesh().LOD_max or 1) * dream.LODDistance
 	local width = task:getMesh().material.windShaderFadeWidth or self.fadeWidth
-	local dist = (task:getPosition() - dream.cam.position):length() - task:getSize()
+	local dist = (task:getPosition() - dream.camera.position):length() - task:getSize()
 	local fade = math.max(0, math.min(1, (LOD_max - dist) / width))
 	shader:send("windShaderFade", fade)
 end

@@ -24,6 +24,11 @@ function methods:applyForce(fx, fy, fz)
 	self.fz = self.fz + fz
 end
 
+function methods:applyLinearImpulse(fx, fy, fz)
+	self.ay = self.ay + fy
+	self.body:applyLinearImpulse(fx, fz)
+end
+
 function methods:applyTorque(torque)
 	self.torque = self.torque + torque
 end
