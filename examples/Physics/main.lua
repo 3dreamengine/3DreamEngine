@@ -64,7 +64,7 @@ crate:print()
 
 for _ = 1, 30 do
 	local collider = addObject(crate, (math.random() - 0.5) * 10, 15, (math.random() - 0.5) * 10)
-	collider.collider[1]:getBody():setMass(10)
+	collider.collider:getBody():setMass(10)
 end
 
 local mapMesh = utils.map.createFromWorld(world)
@@ -81,8 +81,7 @@ function love.draw()
 	
 	for _, o in ipairs(objects) do
 		o.model:resetTransform()
-		local c = (o.collider[1] or o.collider)
-		o.model:translate(c:getPosition()) --TODO
+		o.model:translate(o.collider:getPosition())
 		if o.model == chicken then
 			local v = o.collider:getVelocity()
 			o.walkingAnim = (o.walkingAnim or 0) + love.timer.getDelta() * vec3(v.x, 0, v.z):length()
@@ -92,7 +91,7 @@ function love.draw()
 			chicken:rotateX(-math.pi / 2)
 			chicken:scale(1 / 20)
 		else
-			o.model:rotateY(c:getBody():getAngle())
+			o.model:rotateY(o.collider:getBody():getAngle())
 		end
 		dream:draw(o.model)
 	end
