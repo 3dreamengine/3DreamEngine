@@ -30,7 +30,8 @@ local hideTooltips = false
 
 local utils = require("extensions/utils")
 
-local physics = require("extensions/physics")
+---@type PhysicsExtension
+local physics = require("extensions/physics/init")
 local world = physics:newWorld()
 
 scene:rotateX(-math.pi / 2)
@@ -41,7 +42,7 @@ local objects = {  }
 local function addObject(model, x, y, z, collider)
 	local o = {
 		model = model,
-		collider = world:add(collider or physics:newObject(model), "dynamic", x, y, z) --TODO
+		collider = world:add(collider or physics:newObject(model), "dynamic", x, y, z)
 	}
 	table.insert(objects, o)
 	return o

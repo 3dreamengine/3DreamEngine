@@ -1,4 +1,7 @@
-return function(physics, radius, height, bottom)
+---@type PhysicsExtension
+local physicsExtension = _G._PhysicsExtension
+
+function physicsExtension:newCylinder(radius, height, bottom)
 	local n = { }
 	
 	n.typ = "cylinder"

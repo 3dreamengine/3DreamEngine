@@ -1,4 +1,8 @@
-return function(physics, radius, height, bottom)
+---@type PhysicsExtension
+local physicsExtension = _G._PhysicsExtension
+
+function physicsExtension:newCapsule(radius, height, bottom)
+	---@type Collider
 	local n = { }
 	
 	n.typ = "capsule"

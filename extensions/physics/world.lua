@@ -1,5 +1,8 @@
 local lib = _3DreamEngine
 
+---@type PhysicsExtension
+local physicsExtension = _G._PhysicsExtension
+
 --the threshold used to determine when a collision becomes "crowded".
 --If a player gets stuck, it will teleport back to the last non-crowded position,.
 local safeZoneHeight = 0.1
@@ -161,12 +164,11 @@ local function attemptSolve(a, b)
 	local floorDiff = topY - (colliderA.y + colliderA.shape.bottom)
 	local ceilingDiff = (colliderA.y + colliderA.shape.top) - bottomY
 	
-	local stepSize = 0.25 --todo variable!
 	if ceilingDiff >= 0 and ceilingDiff < floorDiff then
 		--hit the ceiling
 		local possibleHeight = math.min(colliderA.topY, bottomY)
 		ceilingDiff = (colliderA.y + colliderA.shape.top) - possibleHeight
-		if ceilingDiff < stepSize then
+		if ceilingDiff < colliderA.stepHeight then
 			colliderA.topY = possibleHeight
 			colliderA.y = colliderA.y - ceilingDiff
 			colliderA.dx = colliderA.dx + ceilingDx
@@ -180,7 +182,7 @@ local function attemptSolve(a, b)
 		local possibleHeight = math.max(colliderA.bottomY, topY)
 		floorDiff = possibleHeight - (colliderA.y + colliderA.shape.bottom)
 		
-		if floorDiff < stepSize then
+		if floorDiff < colliderA.stepHeight then
 			colliderA.bottomY = possibleHeight
 			colliderA.y = colliderA.y + floorDiff
 			colliderA.dx = colliderA.dx + floorDx
@@ -216,11 +218,10 @@ end
 
 local worldMeta = { __index = methods }
 
---creates a new world
-return function(physics)
+function physicsExtension:newWorld()
 	local w = { }
 	
-	w.physics = physics
+	w.physics = self
 	
 	w.colliders = { }
 	

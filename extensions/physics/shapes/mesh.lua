@@ -23,7 +23,10 @@ local function smallest(x, y, x1, y1, x2, y2, x3, y3)
 	return d1 == min and 1 or d2 == min and 2 or 3
 end
 
-return function(physics, phy, transform)
+---@type PhysicsExtension
+local physicsExtension = _G._PhysicsExtension
+
+function physicsExtension:newMesh(phy, transform)
 	assert(phy.class == "collider", "Requires a valid collider.")
 	
 	local shape = { }

@@ -1,3 +1,7 @@
+---@type PhysicsExtension
+local physicsExtension = _G._PhysicsExtension
+
+---@class Collider
 local methods = { }
 
 function methods:getPosition()
@@ -18,11 +22,23 @@ function methods:applyForce(fx, fy)
 	return self.body:applyForce(fx, fy)
 end
 
+function methods:setStepHeight(h)
+	self.stepHeight = h
+end
+
+function methods:getStepHeight(h)
+	return self.stepHeight
+end
+
 local colliderMeta = { __index = methods }
 
-return function(physics, world, shape, bodyType, x, y, z)
+function physicsExtension:newCollider(world, shape, bodyType, x, y, z)
+	---@type Collider
 	local c = { }
+	
 	c.shape = shape
+	c.stepHeight = 0.25
+	
 	c.ay = 0
 	c.y = y or 0
 	
@@ -36,11 +52,13 @@ return function(physics, world, shape, bodyType, x, y, z)
 	c.lastSaveVz = 0
 	c.lastSafeAngleVelocity = 0
 	
+	--physics body
 	c.body = love.physics.newBody(world.world, x or 0, z or 0, bodyType or "static")
 	c.body:setUserData(c)
 	c.body:setLinearDamping(10)
 	c.body:setActive(true)
 	
+	--add the shapes
 	for index, loveShape in ipairs(shape.loveShapes) do
 		love.physics.newFixture(c.body, loveShape):setUserData(index)
 	end

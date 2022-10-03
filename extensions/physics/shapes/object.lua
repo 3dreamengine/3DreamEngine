@@ -16,8 +16,12 @@ local function inner(physics, obj, transform, loveShapes)
 	end
 end
 
-return function(physics, obj)
+---@type PhysicsExtension
+local physicsExtension = _G._PhysicsExtension
+
+function physicsExtension:newObject(obj)
+	---@type Collider[]
 	local loveShapes = { }
-	inner(physics, obj, false, loveShapes)
+	inner(self, obj, false, loveShapes)
 	return loveShapes
 end
