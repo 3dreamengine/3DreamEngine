@@ -3,71 +3,71 @@ local dream = require("3DreamEngine")
 love.window.setTitle("Physics Demo")
 love.mouse.setRelativeMode(true)
 
---sun
+--sun and environment
 local sun = dream:newLight("sun")
 sun:addShadow()
 
---load extensions
 local sky = require("extensions/sky")
 dream:setSky(sky.render)
 sky:setDaytime(sun, 0.4)
 
---settings
-local projectDir = "examples/Physics/"
-
 dream:init()
 
-dream:loadMaterialLibrary(projectDir .. "materials")
-
-local scene = dream:loadScene(projectDir .. "objects/scene")
-scene:print()
+--load objects
+local objects = {
+	scene = dream:loadScene("examples/Physics/objects/scene"),
+	chicken = dream:loadObject("examples/Physics/objects/chicken", {
+		callback = function(object)
+			--we set the shader in the callback so it is initialized before cleanup
+			--alternatively you could disable cleanup, then apply the shader
+			object:setVertexShader("bones")
+		end
+	}),
+	crate = dream:loadObject("examples/Physics/objects/crate")
+}
 
 --a helper class
 --todo
 local cameraController = require("examples/firstpersongame/cameraController")
 
-local hideTooltips = false
-
+--some additional utils
 local utils = require("extensions/utils")
 
 ---@type PhysicsExtension
 local physics = require("extensions/physics/init")
+
+--create a new world
 local world = physics:newWorld()
 
-scene:rotateX(-math.pi / 2)
-world:add(physics:newObject(scene))
+--rotate into our space (blender is YZ flipped), create an object shape and add to the world
+objects.scene:rotateX(-math.pi / 2)
+world:add(physics:newObject(objects.scene))
 
---our objects, a composition of a model and a collider
-local objects = {  }
-local function addObject(model, x, y, z, shape)
+--we use this util to render the map
+local mapMesh = utils.map.createFromWorld(world)
+
+--our objects, a composition of a object, a collider and it's initial transform
+local gameObject = {  }
+local function addObject(object, x, y, z, shape)
 	local o = {
-		model = model,
-		collider = world:add(shape or physics:newObject(model), "dynamic", x, y, z)
+		object = object,
+		collider = world:add(shape or physics:newObject(object), "dynamic", x, y, z), --newObject is slow, but required since our crates are random in size
+		transform = object:getTransform()
 	}
-	table.insert(objects, o)
-	if not shape then
-		for _, c in ipairs(o.collider) do
-			c:setDensity(25)
-		end
-	end
+	table.insert(gameObject, o)
 	return o
 end
 
-local chicken = dream:loadObject(projectDir .. "objects/chicken", { callback = function(model)
-	model:setVertexShader("bones")
-end })
-local player = addObject(chicken, 0, 10, 0, physics:newCapsule(0.175, 0.5))
+--create a chicken as our player
+local player = addObject(objects.chicken, 0, 10, 0, physics:newCapsule(0.175, 0.5))
 
-local crate = dream:loadObject(projectDir .. "objects/crate")
-crate:resetTransform()
-crate:print()
-
+--add some crates
 for _ = 1, 30 do
-	local collider = addObject(crate, (math.random() - 0.5) * 10, 15, (math.random() - 0.5) * 10)
-	collider.collider:getBody():setMass(10)
+	objects.crate:resetTransform()
+	objects.crate:scale(math.random() * 0.5 + 0.5)
+	local collider = addObject(objects.crate, (math.random() - 0.5) * 10, 15, (math.random() - 0.5) * 10)
+	collider.collider:setDensity(10)
 end
-
-local mapMesh = utils.map.createFromWorld(world)
 
 function love.draw()
 	--update camera
@@ -77,23 +77,26 @@ function love.draw()
 	
 	dream:addLight(sun)
 	
-	dream:draw(scene)
+	dream:draw(objects.scene)
 	
-	for _, o in ipairs(objects) do
-		o.model:resetTransform()
-		o.model:translate(o.collider:getPosition())
-		if o.model == chicken then
+	for _, o in ipairs(gameObject) do
+		o.object:setTransform(o.transform)
+		o.object:translateWorld(o.collider:getPosition())
+		
+		--if this is a chicken, animate it
+		if o.object == objects.chicken then
 			local v = o.collider:getVelocity()
 			o.walkingAnim = (o.walkingAnim or 0) + love.timer.getDelta() * vec3(v.x, 0, v.z):length()
 			o.avgVelocity = (o.avgVelocity or v) * (1 - love.timer.getDelta() * 5) + v * love.timer.getDelta() * 5
-			chicken:applyPose(chicken.animations.Armature:getPose(o.walkingAnim))
-			chicken:rotateY(math.atan2(o.avgVelocity.z, o.avgVelocity.x) - math.pi / 2)
-			chicken:rotateX(-math.pi / 2)
-			chicken:scale(1 / 20)
+			o.object:applyPose(o.object.animations.Armature:getPose(o.walkingAnim))
+			o.object:rotateY(math.atan2(o.avgVelocity.z, o.avgVelocity.x) - math.pi / 2)
+			o.object:rotateX(-math.pi / 2) --blender space
+			o.object:scale(1 / 20)
 		else
-			o.model:rotateY(o.collider:getBody():getAngle())
+			o.object:rotateY(o.collider:getBody():getAngle())
 		end
-		dream:draw(o.model)
+		
+		dream:draw(o.object)
 	end
 	
 	dream:present()
@@ -102,10 +105,8 @@ function love.draw()
 	utils.map.draw(vec3(cameraController.x, cameraController.y, cameraController.z), mapMesh, love.graphics.getWidth() - 10 - 200, 10, 200, 200, 10)
 	
 	--stats
-	if not hideTooltips then
-		love.graphics.setColor(1, 1, 1)
-		love.graphics.print(love.timer.getFPS(), 10, 10)
-	end
+	love.graphics.setColor(1, 1, 1)
+	love.graphics.print(love.timer.getFPS(), 10, 10)
 end
 
 function love.mousemoved(_, _, x, y)
@@ -142,6 +143,7 @@ function love.update(dt)
 	end
 	local a = math.sqrt(ax ^ 2 + az ^ 2)
 	if a > 0 then
+		--accelerate, but gradually slows down when reaching max speed
 		local v = player.collider:getVelocity()
 		ax = ax / a
 		az = az / a
@@ -152,8 +154,14 @@ function love.update(dt)
 		player.collider:applyForce(ax * accel, 0, az * accel)
 	end
 	
+	--jump
 	if player.collider.touchedFloor and love.keyboard.isDown("space") then
 		player.collider.ay = 5
+	end
+	
+	--update map (slow)
+	if love.keyboard.isDown("m") then
+		mapMesh = utils.map.createFromWorld(world)
 	end
 end
 
@@ -166,14 +174,6 @@ function love.keypressed(key)
 	--fullscreen
 	if key == "f11" then
 		love.window.setFullscreen(not love.window.getFullscreen())
-	end
-	
-	if key == "f1" then
-		hideTooltips = not hideTooltips
-	end
-	
-	if key == "m" then
-		mapMesh = utils.map.createFromWorld(world)
 	end
 end
 
