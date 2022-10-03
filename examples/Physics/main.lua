@@ -26,7 +26,8 @@ local objects = {
 			object:setVertexShader("bones")
 		end
 	}),
-	crate = dream:loadObject("examples/Physics/objects/crate")
+	crate = dream:loadObject("examples/Physics/objects/crate"),
+	sphere = dream:loadObject("examples/Physics/objects/sphere"),
 }
 
 --a helper class
@@ -56,12 +57,16 @@ local function addObject(object, x, y, z, shape)
 		collider = world:add(shape or physics:newObject(object), "dynamic", x, y, z), --newObject is slow, but required since our crates are random in size
 		transform = object:getTransform()
 	}
+	
+	o.collider:getBody():setLinearDamping(1)
+	o.collider:getBody():setAngularDamping(1)
+	
 	table.insert(gameObject, o)
 	return o
 end
 
 --create a chicken as our player
-local player = addObject(objects.chicken, 0, 10, 0, physics:newCapsule(0.175, 0.5))
+local player = addObject(objects.chicken, 0, 10, 0, physics:newCylinder(0.175, 0.5))
 
 --add some crates
 for _ = 1, 30 do
@@ -73,7 +78,7 @@ end
 
 function love.draw()
 	--update camera
-	cameraController:lookAt(dream.cam, player.collider:getPosition() + vec3(0, 0.4, 0), 1)
+	cameraController:lookAt(dream.camera, player.collider:getPosition() + vec3(0, 0.4, 0), 1)
 	
 	dream:prepare()
 	
@@ -177,6 +182,17 @@ function love.keypressed(key)
 	if key == "f11" then
 		love.window.setFullscreen(not love.window.getFullscreen())
 	end
+end
+
+function love.mousepressed()
+	local p = player.collider:getPosition() + vec3(dream.camera.normal.x, 0, dream.camera.normal.z):normalize() * 0.5 + vec3(0, 0.4, 0)
+	local n = (dream.camera.normal * vec3(1, 0.5, 1) + vec3(0, 0.25, 0)):normalize() * 20
+	
+	objects.sphere:resetTransform()
+	objects.sphere:scale(1 / 9)
+	local o = addObject(objects.sphere, p.x, p.y, p.z, physics:newCapsule(0.1, 0.2, -0.1))
+	o.collider:applyLinearImpulse(n.x, n.y, n.z)
+	o.collider:setFriction(0.01)
 end
 
 function love.resize()
