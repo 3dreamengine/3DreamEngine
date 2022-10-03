@@ -36,7 +36,7 @@ local particleBatch = dream:newParticleBatch(texture_candle)
 particleBatch:setVertical(0.75)
 
 --a helper class
-local cameraController = require("examples/firstpersongame/cameraController")
+local cameraController = require("extensions/utils/cameraController")
 
 --create three light sources and assign shadows
 local lights = { }

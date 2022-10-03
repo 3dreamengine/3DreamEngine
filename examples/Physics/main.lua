@@ -30,8 +30,7 @@ local objects = {
 }
 
 --a helper class
---todo
-local cameraController = require("examples/firstpersongame/cameraController")
+local cameraController = require("extensions/utils/cameraController")
 
 --some additional utils
 local utils = require("extensions/utils")

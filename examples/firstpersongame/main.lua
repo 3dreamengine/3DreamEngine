@@ -22,7 +22,7 @@ dream:loadMaterialLibrary("examples/firstpersongame/materials")
 local scene = dream:loadObject("examples/firstpersongame/objects/scene")
 
 --a helper class
-local cameraController = require("examples/firstpersongame/cameraController")
+local cameraController = require("extensions/utils/cameraController")
 
 cameraController.x = 8
 cameraController.y = 10

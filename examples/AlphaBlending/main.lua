@@ -26,7 +26,7 @@ light.shadow:setSmooth(true)
 light.blacklist = {[scene.objects.chandelier_glass.meshes.chandelier_glass] = true, [scene.objects.chandelier.meshes.chandelier] = true}
 
 --a helper class
-local cameraController = require("examples/firstpersongame/cameraController")
+local cameraController = require("extensions/utils/cameraController")
 
 cameraController.x = 0.95
 cameraController.y = 0.75

@@ -30,7 +30,7 @@ local scene = dream:newScene()
 scene:addObject(tavern)
 
 --a helper class
-local cameraController = require("examples/firstpersongame/cameraController")
+local cameraController = require("extensions/utils/cameraController")
 
 cameraController.x = 4
 cameraController.y = 1.5
