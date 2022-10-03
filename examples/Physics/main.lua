@@ -13,6 +13,9 @@ sky:setDaytime(sun, 0.4)
 
 dream:init()
 
+--load materials
+require("examples/Physics/materials")
+
 --load objects
 local objects = {
 	scene = dream:loadScene("examples/Physics/objects/scene"),

@@ -5,13 +5,13 @@
       <author>Blender User</author>
       <authoring_tool>Blender 3.2.2 commit date:2022-08-02, commit time:18:15, hash:bcfdb14560e7</authoring_tool>
     </contributor>
-    <created>2022-09-28T13:33:49</created>
-    <modified>2022-09-28T13:33:49</modified>
+    <created>2022-10-03T19:31:43</created>
+    <modified>2022-10-03T19:31:43</modified>
     <unit name="meter" meter="1"/>
     <up_axis>Z_UP</up_axis>
   </asset>
   <library_effects>
-    <effect id="Material-effect">
+    <effect id="Crate-effect">
       <profile_COMMON>
         <technique sid="common">
           <lambert>
@@ -31,8 +31,8 @@
   </library_effects>
   <library_images/>
   <library_materials>
-    <material id="Material-material" name="Material">
-      <instance_effect url="#Material-effect"/>
+    <material id="Crate-material" name="Crate">
+      <instance_effect url="#Crate-effect"/>
     </material>
   </library_materials>
   <library_geometries>
@@ -112,7 +112,7 @@
         <vertices id="Cube-mesh-vertices">
           <input semantic="POSITION" source="#Cube-mesh-positions"/>
         </vertices>
-        <triangles material="Material-material" count="188">
+        <triangles material="Crate-material" count="188">
           <input semantic="VERTEX" source="#Cube-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Cube-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Cube-mesh-map-0" offset="2" set="0"/>
@@ -132,7 +132,7 @@
         <instance_geometry url="#Cube-mesh" name="LOD:0_Cube">
           <bind_material>
             <technique_common>
-              <instance_material symbol="Material-material" target="#Material-material">
+              <instance_material symbol="Crate-material" target="#Crate-material">
                 <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
               </instance_material>
             </technique_common>
