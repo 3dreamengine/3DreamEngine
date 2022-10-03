@@ -41,7 +41,8 @@ utils.shader = love.graphics.newShader(pixelCode, vertexCode)
 
 function utils.createFromWorld(world)
 	local vertices = { }
-	for _, collider in ipairs(world.colliders) do
+	for _, body in ipairs(world.world:getBodies()) do
+		local collider = body:getUserData()
 		for fixtureIndex, fixture in ipairs(collider.body:getFixtures()) do
 			local shape = fixture:getShape()
 			if shape.getPoints then

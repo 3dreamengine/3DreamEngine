@@ -17,19 +17,14 @@ function methods:getGravity()
 	return self.gravity
 end
 
+---@return World
+function methods:getWorld()
+	return self.world
+end
+
 --world metatable
 function methods:add(shape, bodyType, x, y, z)
-	if shape.typ then
-		local c = self.physics:newCollider(self, shape, bodyType, x, y, z)
-		table.insert(self.colliders, c)
-		return c
-	else
-		local g = { }
-		for _, s in ipairs(shape) do
-			table.insert(g, self:add(s, bodyType, x, y, z))
-		end
-		return g
-	end
+	return self.physics:newCollider(self, shape, bodyType, x, y, z)
 end
 
 function methods:update(dt)
@@ -266,8 +261,6 @@ function physicsExtension:newWorld()
 	local w = { }
 	
 	w.physics = self
-	
-	w.colliders = { }
 	
 	w.gravity = 9.8
 	

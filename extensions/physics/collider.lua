@@ -53,8 +53,11 @@ function methods:setDensity(density)
 	for _, fixture in ipairs(self.fixtures) do
 		fixture:setDensity(density)
 	end
-	local c = self
-	c.body:resetMassData()
+	self.body:resetMassData()
+end
+
+function methods:destroy()
+	self.body:destroy()
 end
 
 local colliderMeta = { __index = methods }
@@ -64,6 +67,7 @@ function physicsExtension:newCollider(world, shape, bodyType, x, y, z)
 	local c = setmetatable({ }, colliderMeta)
 	
 	c.shape = shape
+	c.world = world
 	c.stepHeight = 0.25
 	
 	--force applied

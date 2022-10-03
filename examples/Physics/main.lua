@@ -50,7 +50,7 @@ world:add(physics:newObject(objects.scene))
 local mapMesh = utils.map.createFromWorld(world)
 
 --our objects, a composition of a object, a collider and it's initial transform
-local gameObject = {  }
+local gameObjects = {  }
 local function addObject(object, x, y, z, shape)
 	local o = {
 		object = object,
@@ -61,7 +61,7 @@ local function addObject(object, x, y, z, shape)
 	o.collider:getBody():setLinearDamping(1)
 	o.collider:getBody():setAngularDamping(1)
 	
-	table.insert(gameObject, o)
+	table.insert(gameObjects, o)
 	return o
 end
 
@@ -86,9 +86,11 @@ function love.draw()
 	
 	dream:draw(objects.scene)
 	
-	for _, o in ipairs(gameObject) do
+	for i = #gameObjects, 1, -1 do
+		local o = gameObjects[i]
+		local pos = o.collider:getPosition()
 		o.object:setTransform(o.transform)
-		o.object:translateWorld(o.collider:getPosition())
+		o.object:translateWorld(pos)
 		
 		--if this is a chicken, animate it
 		if o.object == objects.chicken then
@@ -101,6 +103,11 @@ function love.draw()
 			o.object:scale(1 / 20)
 		else
 			o.object:rotateY(o.collider:getBody():getAngle())
+			
+			if pos.y < -10 then
+				o.collider:destroy()
+				table.remove(gameObjects, i)
+			end
 		end
 		
 		dream:draw(o.object)
@@ -109,7 +116,8 @@ function love.draw()
 	dream:present()
 	
 	--map
-	utils.map.draw(vec3(cameraController.x, cameraController.y, cameraController.z), mapMesh, love.graphics.getWidth() - 10 - 200, 10, 200, 200, 10)
+	--todo not reliable
+	--utils.map.draw(vec3(cameraController.x, cameraController.y, cameraController.z), mapMesh, love.graphics.getWidth() - 10 - 200, 10, 200, 200, 10)
 	
 	--stats
 	love.graphics.setColor(1, 1, 1)
