@@ -91,9 +91,9 @@ local function getDirection(w, x1, y1, x2, y2, x3, y3)
 	local det = (x1 * y2 - x1 * y3 - x2 * y1 + x2 * y3 + x3 * y1 - x3 * y2)
 	local x = (w[1] * y2 - w[1] * y3 - w[2] * y1 + w[2] * y3 + w[3] * y1 - w[3] * y2) / det
 	local y = (-w[1] * x2 + w[1] * x3 + w[2] * x1 - w[2] * x3 - w[3] * x1 + w[3] * x2) / det
-	local l = 1--math.sqrt(x ^ 2 + y ^ 2) --todo move that to the radius management
+	local l = 1
 	if l > 0 then
-		return x / l, y / l
+		return x, y
 	else
 		return 0, 0
 	end
@@ -117,8 +117,9 @@ local function attemptSolve(a, b)
 	local tx, ty
 	local floorDx, floorDy = getDirection(highest, x1, y1, x2, y2, x3, y3)
 	if radius then
-		tx = x + floorDx * radius
-		ty = y + floorDy * radius
+		local l = math.sqrt(floorDx ^ 2 + floorDy ^ 2)
+		tx = x + floorDx * radius / l
+		ty = y + floorDy * radius / l
 	else
 		tx = x
 		ty = y
@@ -134,8 +135,9 @@ local function attemptSolve(a, b)
 	ceilingDx = -ceilingDx
 	ceilingDy = -ceilingDy
 	if radius then
-		tx = x + ceilingDx * radius
-		ty = y + ceilingDy * radius
+		local l = math.sqrt(ceilingDx ^ 2 + ceilingDy ^ 2)
+		tx = x + ceilingDx * radius / l
+		ty = y + ceilingDy * radius / l
 		
 		w1l, w2l, w3l = lib:getBarycentricClamped(tx, ty, x1, y1, x2, y2, x3, y3)
 	else
