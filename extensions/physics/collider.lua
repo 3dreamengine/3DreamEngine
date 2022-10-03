@@ -18,8 +18,14 @@ function methods:getVelocity()
 	return vec3(cx, self.ay, cy)
 end
 
-function methods:applyForce(fx, fy)
-	return self.body:applyForce(fx, fy)
+function methods:applyForce(fx, fy, fz)
+	self.fx = self.fx + fx
+	self.fy = self.fy + fy
+	self.fz = self.fz + fz
+end
+
+function methods:applyTorque(torque)
+	self.torque = self.torque + torque
 end
 
 function methods:setStepHeight(h)
@@ -30,17 +36,42 @@ function methods:getStepHeight(h)
 	return self.stepHeight
 end
 
+function methods:setFriction(f)
+	self.staticFriction = f
+	self.slidingFriction = f
+	for _, fixture in ipairs(self.fixtures) do
+		fixture:setFriction(f)
+	end
+end
+
+function methods:setDensity(density)
+	for _, fixture in ipairs(self.fixtures) do
+		fixture:setDensity(density)
+	end
+	local c = self
+	c.body:resetMassData()
+end
+
 local colliderMeta = { __index = methods }
 
 function physicsExtension:newCollider(world, shape, bodyType, x, y, z)
 	---@type Collider
-	local c = { }
+	local c = setmetatable({ }, colliderMeta)
 	
 	c.shape = shape
 	c.stepHeight = 0.25
 	
+	--force applied
+	c.fx = 0
+	c.fy = 0
+	c.fz = 0
+	c.torque = 0
+	
 	c.ay = 0
 	c.y = y or 0
+	
+	c.staticFriction = 0
+	c.slidingFriction = 0
 	
 	--anti-stuck
 	c.lastSafeX = x or 0
@@ -55,13 +86,19 @@ function physicsExtension:newCollider(world, shape, bodyType, x, y, z)
 	--physics body
 	c.body = love.physics.newBody(world.world, x or 0, z or 0, bodyType or "static")
 	c.body:setUserData(c)
-	c.body:setLinearDamping(10)
 	c.body:setActive(true)
+	
+	c.fixtures = { }
 	
 	--add the shapes
 	for index, loveShape in ipairs(shape.loveShapes) do
-		love.physics.newFixture(c.body, loveShape):setUserData(index)
+		local fixture = love.physics.newFixture(c.body, loveShape)
+		fixture:setUserData(index)
+		table.insert(c.fixtures, fixture)
 	end
 	
-	return setmetatable(c, colliderMeta)
+	c:setFriction(0.25)
+	c:setDensity(100)
+	
+	return c
 end

@@ -9,6 +9,14 @@ local safeZoneHeight = 0.1
 
 local methods = { }
 
+function methods:setGravity(gravity)
+	self.gravity = gravity
+end
+
+function methods:getGravity()
+	return self.gravity
+end
+
 --world metatable
 function methods:add(shape, bodyType, x, y, z)
 	if shape.typ then
@@ -29,13 +37,47 @@ function methods:update(dt)
 		if s:getType() == "dynamic" then
 			local c = s:getUserData()
 			
+			--apply forces
+			local mass = c.body:getMass()
+			local vx, vz = c.body:getLinearVelocity()
+			local va = c.body:getAngularVelocity()
+			local static = vx == 0 and vz == 0
+			
+			--apply forces
+			vx = vx + c.fx / mass * dt
+			vz = vz + c.fz / mass * dt
+			va = va + c.torque / mass * dt
+			
+			--friction
+			if c.touchedFloor then
+				local force = mass * self:getGravity() * (static and c.staticFriction or c.slidingFriction) * dt
+				local speed = math.sqrt(vx ^ 2 + vz ^ 2)
+				if speed > 0 then
+					local linearForce = math.min(speed, force)
+					vx = vx - vx / speed * linearForce
+					vz = vz - vz / speed * linearForce
+				end
+				va = va - (va > 0 and 1 or -1) * math.min(math.abs(va), force)
+			end
+			
+			--apply new speed
+			c.body:setLinearVelocity(vx, vz)
+			c.body:setAngularVelocity(va)
+			c.ay = c.ay + c.fy * dt
+			
+			--reset forces
+			c.fx = 0
+			c.fy = 0
+			c.fz = 0
+			c.torque = 0
+			
 			--store old pos for emergency reset
 			c.dx = 0
 			c.dy = 0
 			c.colls = 0
 			
 			--gravity
-			c.ay = c.ay - dt * 10
+			c.ay = c.ay - dt * self.gravity
 			
 			--update vertical position
 			c.y = c.y + c.ay * dt
@@ -44,6 +86,7 @@ function methods:update(dt)
 			c.topY = math.huge
 			c.bottomY = -math.huge
 			
+			--reset collision flags
 			c.touchedFloor = false
 			c.touchedCeiling = false
 		end
@@ -70,7 +113,7 @@ function methods:update(dt)
 			
 			local diff = (collider.topY - collider.bottomY) - (collider.shape.top - collider.shape.bottom)
 			if diff < 0 then
-				--stuck, shit happens
+				--stuck, reset to last safe position
 				collider.y = collider.lastSafeY
 				collider.ay = collider.lastSafeVy
 				collider.body:setPosition(collider.lastSafeX, collider.lastSafeZ)
@@ -78,6 +121,7 @@ function methods:update(dt)
 				collider.body:setAngle(collider.lastSafeAngle)
 				collider.body:setAngularVelocity(-collider.lastSafeAngleVelocity)
 			elseif diff > safeZoneHeight then
+				--remember safe position
 				collider.lastSafeY = collider.y
 				collider.lastSafeX, collider.lastSafeZ = collider.body:getPosition()
 				collider.lastSafeVy = collider.ay
@@ -224,6 +268,8 @@ function physicsExtension:newWorld()
 	w.physics = self
 	
 	w.colliders = { }
+	
+	w.gravity = 9.8
 	
 	w.world = love.physics.newWorld(0, 0, false)
 	

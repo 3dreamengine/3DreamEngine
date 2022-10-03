@@ -39,12 +39,17 @@ world:add(physics:newObject(scene))
 
 --our objects, a composition of a model and a collider
 local objects = {  }
-local function addObject(model, x, y, z, collider)
+local function addObject(model, x, y, z, shape)
 	local o = {
 		model = model,
-		collider = world:add(collider or physics:newObject(model), "dynamic", x, y, z)
+		collider = world:add(shape or physics:newObject(model), "dynamic", x, y, z)
 	}
 	table.insert(objects, o)
+	if not shape then
+		for _, c in ipairs(o.collider) do
+			c:setDensity(25)
+		end
+	end
 	return o
 end
 
@@ -57,8 +62,9 @@ local crate = dream:loadObject(projectDir .. "objects/crate")
 crate:resetTransform()
 crate:print()
 
-for i = 1, 30 do
-	addObject(crate, (math.random() - 0.5) * 10, 15, (math.random() - 0.5) * 10)
+for _ = 1, 30 do
+	local collider = addObject(crate, (math.random() - 0.5) * 10, 15, (math.random() - 0.5) * 10)
+	collider.collider[1]:getBody():setMass(10)
 end
 
 local mapMesh = utils.map.createFromWorld(world)
@@ -138,9 +144,9 @@ function love.update(dt)
 	local a = math.sqrt(ax ^ 2 + az ^ 2)
 	if a > 0 then
 		local v = player.collider:getVelocity()
-		local maxSpeed = love.keyboard.isDown("lshift") and 15 or 3
-		local accel = 10 * math.max(0, 1 - vec3(v.x, 0, v.z):length() / maxSpeed) / a
-		player.collider:applyForce(ax * accel, az * accel)
+		local maxSpeed = love.keyboard.isDown("lshift") and 6 or 3
+		local accel = 1000 * math.max(0, 1 - vec3(v.x, 0, v.z):length() / maxSpeed) / a
+		player.collider:applyForce(ax * accel, 0, az * accel)
 	end
 	
 	if player.collider.touchedFloor and love.keyboard.isDown("space") then
