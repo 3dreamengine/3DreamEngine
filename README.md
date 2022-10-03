@@ -2,45 +2,44 @@
 <a href="https://discord.gg/hpmZxNQ"><img src="https://discordapp.com/api/guilds/561664262481641482/embed.png" alt="Discord server" /></a>
 
 # Features
+
 * Easy to use yet powerful 3D extension to LÖVE
 * Fast forward rendering with alpha pass
 * Metalness workflow (albedo, normal, roughness, metallic, ao, emission)
 * HDR with bloom
-* Refractions
+* Refractions, specular and diffuse reflections
 * Screen space ambient occlusion (ssao)
-* Cubemap reflections
-* Proper blurred reflections on rough surfaces
-* Particle batches and single sprites
+* Particle batches and sprites
 * Particle/foliage systems
 * Simple custom shaders
 * Eye adaption effect
-* Cascade shadow mapping
-* Cubemap shadow mapping
+* Cascade directional shadow mapping
+* Point shadow mapping
 * Smooth shadows
 * Distance fog
 * Godrays
 * Included shaders for wind animation, water, ...
 * Supports .obj, .mtl, .dae and .vox
 * Threaded texture loading
-* Optional high performance file format to accelerate loading times
+* Optional high performance file format to minimize loading times
 * Included optimized vec2, vec3, vec4, mat2, mat3 and mat4 library
-* Box2D extension to support basic 3D collisions
+* Box2D extension to support basic 3D physics
 * Dynamic clouds, sun, moon, stars and rainbows
 
 ![screenshots](https://raw.githubusercontent.com/3dreamengine/3DreamEngine/master/screenshots.jpg)
 
+# Development
 
-# development
-Due to rapid changes to 3Dream I am working on a separate branch ("beta"). While this branch is faster and offers more and improved features, I am experimenting with it and may change how things work.
+Due to rapid changes to 3Dream I am working on a separate beta branch.
 
+# Documentation
 
-# documentation
 Undocumented features are subject to change. They will receive proper documentation once finished.
 
 [Documentation hosted on GitHub](https://3dreamengine.github.io/3DreamEngine/)
 
-
 # How to use?
+
 ```lua
 --load 3DreamEngine
 dream = require("3DreamEngine")
@@ -63,16 +62,16 @@ light:addShadow()
 function love.draw()
 	--prepare for rendering
 	dream:prepare()
-
+	
 	--add light
-	dream:addLight(light) 
-
+	dream:addLight(light)
+	
 	--rotate, offset and draw
-	yourObject:resetTransform() 
+	yourObject:resetTransform()
 	yourObject:rotateY(love.timer.getTime())
 	yourObject:translate(0, 0, -3)
 	dream:draw(yourObject)
-
+	
 	--render
 	dream:present()
 end
@@ -84,9 +83,11 @@ end
 ```
 
 # Examples
+
 We have examples in the `examples` folder. The provided main.lua contains a demo selection screen.
 
 # Credits
+
 - [Lamborghini model](https://www.turbosquid.com/FullPreview/Index.cfm/ID/1117798)
 - cc0textures.com
 - texturehaven.com
@@ -95,6 +96,7 @@ We have examples in the `examples` folder. The provided main.lua contains a demo
 - [Stars and Moon by Solar Textures](https://www.solarsystemscope.com/textures/)
 
 # License (MIT/EXPAT LICENSE)
+
 Copyright 2020 Luke100000
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
