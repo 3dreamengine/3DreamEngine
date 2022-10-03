@@ -1,5 +1,9 @@
 local lib = _3DreamEngine
 
+--the threshold used to determine when a collision becomes "crowded".
+--If a player gets stuck, it will teleport back to the last non-crowded position,.
+local safeZoneHeight = 0.1
+
 local methods = { }
 
 --world metatable
@@ -61,17 +65,23 @@ function methods:update(dt)
 				collider.ay = collider.ay * (1 - loss)
 			end
 			
-			--[[
-			if (collider.bottomY - collider.floorY) < (collider.shape.top - collider.shape.bottom) then
+			local diff = (collider.topY - collider.bottomY) - (collider.shape.top - collider.shape.bottom)
+			if diff < 0 then
 				--stuck, shit happens
-								c.y = c.oldY
-				c.ay = 0
-				c.body:setPosition(c.oldX or 0, c.oldZ or 0)
-				c.body:setLinearVelocity(0, 0)
-				c.pre_oldX, c.pre_oldZ = c.oldX, c.oldZ
-				print("stuck af")
+				collider.y = collider.lastSafeY
+				collider.ay = collider.lastSafeVy
+				collider.body:setPosition(collider.lastSafeX, collider.lastSafeZ)
+				collider.body:setAngularVelocity(-collider.lastSafeVx, -collider.lastSafeVz)
+				collider.body:setAngle(collider.lastSafeAngle)
+				collider.body:setAngularVelocity(-collider.lastSafeAngleVelocity)
+			elseif diff > safeZoneHeight then
+				collider.lastSafeY = collider.y
+				collider.lastSafeX, collider.lastSafeZ = collider.body:getPosition()
+				collider.lastSafeVy = collider.ay
+				collider.lastSafeVx, collider.lastSafeVz = collider.body:getLinearVelocity()
+				collider.lastSafeAngle = collider.body:getAngle()
+				collider.lastSafeAngleVelocity = collider.body:getAngularVelocity()
 			end
-			--]]
 		end
 	end
 end
@@ -136,7 +146,12 @@ local function attemptSolve(a, b)
 	local bottomY = colliderB.y + lowest[1] * w1l + lowest[2] * w2l + lowest[3] * w3l
 	
 	--check if colliding
-	if colliderA.y + colliderA.shape.bottom > topY or colliderA.y + colliderA.shape.top < bottomY then
+	if colliderA.y + colliderA.shape.bottom > topY then
+		colliderA.bottomY = math.max(colliderA.bottomY, topY)
+		return false
+	end
+	if colliderA.y + colliderA.shape.top < bottomY then
+		colliderA.topY = math.min(colliderA.topY, bottomY)
 		return false
 	end
 	

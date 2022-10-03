@@ -26,6 +26,16 @@ return function(physics, world, shape, bodyType, x, y, z)
 	c.ay = 0
 	c.y = y or 0
 	
+	--anti-stuck
+	c.lastSafeX = x or 0
+	c.lastSafeY = y or 0
+	c.lastSafeZ = z or 0
+	c.lastSafeAngle = 0
+	c.lastSaveVx = 0
+	c.lastSaveVy = 0
+	c.lastSaveVz = 0
+	c.lastSafeAngleVelocity = 0
+	
 	c.body = love.physics.newBody(world.world, x or 0, z or 0, bodyType or "static")
 	c.body:setUserData(c)
 	c.body:setLinearDamping(10)
