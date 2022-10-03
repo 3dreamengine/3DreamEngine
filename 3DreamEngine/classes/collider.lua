@@ -1,10 +1,10 @@
 local lib = _3DreamEngine
 
 local shapeModes = {
-	height = true, --extend the depth to inf
-	simple = true, --allows every shape towards the top, e.g. vertices on the bottom side may not fully reflect the actual shape
-	complex = true, --allows every shape
-	wall = true --extend both top and bottom to inf
+	height = true,
+	simple = true,
+	complex = true,
+	wall = true
 }
 
 function lib:newCollider(mesh, shapeMode)

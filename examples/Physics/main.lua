@@ -27,24 +27,26 @@ local objects = {
 		end
 	}),
 	crate = dream:loadObject("examples/Physics/objects/crate"),
-	sphere = dream:loadObject("examples/Physics/objects/sphere"),
+	sphere = dream:loadObject("examples/Physics/objects/sphere", { cleanup = false }),
 }
 
---a helper class
 local cameraController = require("extensions/utils/cameraController")
-
---some additional utils
 local utils = require("extensions/utils")
-
----@type PhysicsExtension
 local physics = require("extensions/physics/init")
 
 --create a new world
 local world = physics:newWorld()
 
 --rotate into our space (blender is YZ flipped), create an object shape and add to the world
+--the scene has correctly tagged their meshes, e.g. "PHYSICS:simple_LOD:0_scene" to use as a physics object as well as to render
 objects.scene:rotateX(-math.pi / 2)
-world:add(physics:newObject(objects.scene))
+world:add(physics:newPhysicsObject(objects.scene))
+
+--alternatively one can create a mesh directly
+objects.sphere:resetTransform()
+objects.sphere:translate(3, 0, 3)
+objects.sphere:scale(3)
+world:add(physics:newObject(objects.sphere, "simple"))
 
 --we use this util to render the map
 local mapMesh = utils.map.createFromWorld(world)
@@ -54,7 +56,7 @@ local gameObjects = {  }
 local function addObject(object, x, y, z, shape)
 	local o = {
 		object = object,
-		collider = world:add(shape or physics:newObject(object), "dynamic", x, y, z), --newObject is slow, but required since our crates are random in size
+		collider = world:add(shape or physics:newPhysicsObject(object), "dynamic", x, y, z), --newObject is slow, but required since our crates are random in size
 		transform = object:getTransform()
 	}
 	
@@ -85,6 +87,11 @@ function love.draw()
 	dream:addLight(sun)
 	
 	dream:draw(objects.scene)
+	
+	objects.sphere:resetTransform()
+	objects.sphere:translate(3, 0, 3)
+	objects.sphere:scale(3)
+	dream:draw(objects.sphere)
 	
 	for i = #gameObjects, 1, -1 do
 		local o = gameObjects[i]
