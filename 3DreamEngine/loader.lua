@@ -325,6 +325,7 @@ function lib:processObject(obj)
 				local parent = obj.objects[object.name]
 				if not parent then
 					parent = self:newObject(object.name)
+					parent.transform = object.transform
 					obj.objects[object.name] = parent
 				end
 				
