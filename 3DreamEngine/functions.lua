@@ -517,7 +517,7 @@ function lib:take3DScreenshot(pos, resolution, path)
 	self:blurCubeMap(results, results:getMipmapCount())
 	
 	--export cimg data
-	cimg:export(results, path or "results.cimg")
+	self.cimg:export(results, path or "results.cimg")
 	
 	return results
 end

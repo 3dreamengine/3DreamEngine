@@ -504,7 +504,7 @@ function class:encode(meshCache, dataStrings)
 				end
 				
 				--give a unique hash for the vertex format
-				local md5 = love.data.hash("md5", packTable.pack(f))
+				local md5 = love.data.hash("md5", lib.packTable.pack(f))
 				local hash = love.data.encode("string", "hex", md5)
 				
 				--build a C struct to make sure data match

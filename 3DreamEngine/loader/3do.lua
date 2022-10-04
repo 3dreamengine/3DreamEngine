@@ -24,7 +24,7 @@ return function(self, obj, path)
 	local headerData = file:read(headerLength)
 	
 	--object lua data
-	local header = packTable.unpack(love.data.decompress("string", "lz4", headerData))
+	local header = self.packTable.unpack(love.data.decompress("string", "lz4", headerData))
 	table.merge(obj, header)
 	
 	--additional mesh data

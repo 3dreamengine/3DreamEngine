@@ -7,7 +7,7 @@ love.mouse.setRelativeMode(true)
 local projectDir = "examples/blacksmith/"
 
 --set reflection cubemap with local corrections
-local r = dream:newReflection(cimg:load(projectDir .. "sky.cimg"))
+local r = dream:newReflection(dream.cimg:load(projectDir .. "sky.cimg"))
 r:setLocal(vec3(0, 0, 0), vec3(-2, -1, -2), vec3(2, 1, 2))
 dream:setDefaultReflection(r)
 

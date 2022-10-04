@@ -168,8 +168,7 @@ local function addMesh(self, mat, id, inputs, vertexMapping, meshData, vcount)
 end
 
 return function(self, obj, path)
-	local xml2lua = require(self.root .. "/libs/xml2lua/xml2lua")
-	local handler = require(self.root .. "/libs/xml2lua/tree"):new()
+	local handler = self.xmlTreeHandler:new()
 	
 	--parse
 	local file = love.filesystem.read(path)
@@ -180,8 +179,7 @@ return function(self, obj, path)
 		error("PKZIP not supported, please unzip the .dae first")
 	end
 	
-	xml2lua.parser(handler):parse(file)
-	
+	self.xml2lua.parser(handler):parse(file)
 	local root = handler.root.COLLADA[1]
 	
 	--get id indices

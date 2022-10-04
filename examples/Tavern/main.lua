@@ -13,7 +13,7 @@ dream:setSmoothLoading(false)
 dream.renderSet:setRefractions(true)
 
 dream:setSky(false)
-dream:setDefaultReflection(cimg:load(projectDir .. "sky.cimg"))
+dream:setDefaultReflection(dream.cimg:load(projectDir .. "sky.cimg"))
 
 dream:setFog(0.0025, { 0.6, 0.5, 0.4 }, 0.0)
 dream:setFogHeight(0.0, 2.5)

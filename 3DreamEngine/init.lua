@@ -23,9 +23,13 @@ _G.vec3 = require((...) .. "/libs/luaVectors/vec3")
 _G.vec4 = require((...) .. "/libs/luaVectors/vec4")
 
 _G.quat = require((...) .. "/libs/quat")
-_G.cimg = require((...) .. "/libs/cimg")
-_G.utils = require((...) .. "/libs/utils")
-_G.packTable = require((...) .. "/libs/packTable")
+
+lib.utils = require((...) .. "/libs/utils")
+lib.cimg = require((...) .. "/libs/cimg")
+lib.packTable = require((...) .. "/libs/packTable")
+lib.xml2lua = require((...) .. "/libs/xml2lua/xml2lua")
+lib.xmlTreeHandler = require((...) .. "/libs/xml2lua/tree")
+lib.inspect = require((...) .. "/libs/inspect")
 
 table.unpack = table.unpack or unpack
 

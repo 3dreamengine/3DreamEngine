@@ -178,13 +178,15 @@ dream:getCollisionData(object)                    --returns a raw collision obje
 dream:take3DScreenshot(pos, resolution, path)     --takes a rgba16f screenshot and saves it using the (custom) CIMG lib. Can be used to capture a static reflection cubemap. Performs blurring automatically. See Tavern demo for usage example.
 
 --CIMG (Complex Image) can export and load canvases, cubemaps, volume images and array images with any format and including mipmaps. Fast.
-cimg:load(path)
-cimg:export(drawable, path)
+dream.cimg:load(path)
+dream.cimg:export(drawable, path)
 ```
 
 There are a few libraries included you can use. Check their files for supported functions
 * vec2, vec3, vec4 with common functions and metatables
 * mat2, mat3, mat4
 * quaternions
-* a XML parser
-* utils.lua which expands luas table, string and math libraries by common functions
+* a XML parser by Paul Chakravarti (`dream.xml2lua` and `dream.xmlTreeHandler`)
+* a JSON parser by rxi (`dream.json`)
+* utils.lua which expands luas table, string and math libraries by common functions (`dream.utils`)
+* inspect by Enrique García Cota (`dream.inspect`)

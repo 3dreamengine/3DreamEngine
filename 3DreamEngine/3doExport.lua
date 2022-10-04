@@ -19,7 +19,7 @@ function lib:export3do(obj)
 	end
 	
 	--export
-	local headerData = love.data.compress("string", "lz4", packTable.pack(data), 9)
+	local headerData = love.data.compress("string", "lz4", lib.packTable.pack(data), 9)
 	local headerLength = #headerData
 	local l1 = math.floor(headerLength) % 256
 	local l2 = math.floor(headerLength / 256) % 256
