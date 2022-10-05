@@ -18,7 +18,7 @@ require("examples/Physics/materials")
 
 --load objects
 local objects = {
-	scene = dream:loadScene("examples/Physics/objects/scene"),
+	scene = dream:loadObject("examples/Physics/objects/scene"),
 	chicken = dream:loadObject("examples/Physics/objects/chicken", {
 		callback = function(object)
 			--we set the shader in the callback so it is initialized before cleanup
@@ -29,6 +29,8 @@ local objects = {
 	crate = dream:loadObject("examples/Physics/objects/crate"),
 	sphere = dream:loadObject("examples/Physics/objects/sphere", { cleanup = false }),
 }
+
+objects.scene:print()
 
 local cameraController = require("extensions/utils/cameraController")
 local utils = require("extensions/utils")

@@ -5,16 +5,6 @@ function lib:newMesh(name, material, meshType)
 		name = name,
 		material = material,
 		
-		--common data arrays
-		vertices = { },
-		normals = { },
-		texCoords = { },
-		colors = { },
-		roughnesses = { },
-		metallics = { },
-		emissions = { },
-		faces = { },
-		
 		boundingBox = self:newEmptyBoundingBox(),
 		
 		meshType = meshType or (material.pixelShader or self.defaultPixelShader).meshType,
@@ -81,8 +71,8 @@ function class:updateBoundingBox()
 	self.boundingBox:setInitialized(true)
 	
 	--get aabb
-	for i, v in ipairs(self.vertices) do
-		local pos = vec3(v)
+	for i = 1, self.vertices:getSize() do
+		local pos = self.vertices:getVector(i)
 		self.boundingBox.first = self.boundingBox.first:min(pos)
 		self.boundingBox.second = self.boundingBox.second:max(pos)
 	end
@@ -91,8 +81,8 @@ function class:updateBoundingBox()
 	--get size
 	local max = 0
 	local c = self.boundingBox.center
-	for i, v in ipairs(self.vertices) do
-		local pos = vec3(v) - c
+	for i = 1, self.vertices:getSize() do
+		local pos = self.vertices:getVector(i)
 		max = math.max(max, pos:lengthSquared())
 	end
 	self.boundingBox.size = math.max(math.sqrt(max), self.boundingBox.size)
@@ -200,15 +190,10 @@ function class:getMesh(name)
 end
 
 function class:applyTransform(transform)
-	--normal transformation
 	local subm = transform:subm()
-	
-	for i = 1, #self.vertices do
-		--transform vertices
-		self.vertices[i] = transform * vec3(self.vertices[i])
-		
-		--transform normals
-		self.normals[i] = subm * vec3(self.normals[i])
+	for i = 1, self.vertices:getSize() do
+		self.vertices:set(i, transform * self.vertices:getVector(i))
+		self.normals:set(i, subm * self.normals:getVector(i))
 	end
 end
 
@@ -216,18 +201,18 @@ end
 function class:applyBones(skeleton)
 	if self.joints then
 		--make a copy of vertices
-		if not self.verticesOld then
-			self.verticesOld = self.vertices
-			self.normalsOld = self.normals
-			self.vertices = { }
-			self.normals = { }
+		if not self.oldVertices then
+			self.oldVertices = self.vertices
+			self.oldNormals = self.normals
+			self.vertices = lib:newDynamicBuffer() --todo optimize
+			self.normals = lib:newStaticBuffer()
 		end
 		
 		--apply joint transforms
-		for i, v in ipairs(self.verticesOld) do
-			local m = self:getJointMat(skeleton, i)
-			self.vertices[i] = m * vec3(v)
-			self.normals[i] = m:subm() * vec3(self.normalsOld[i])
+		for i = 1, self.vertices:getSize() do
+			local transform = self:getJointMat(skeleton, i)
+			self.vertices:set(i, transform * self.oldVertices:getVector(i))
+			self.normals:set(i, transform:subm() * self.oldNormals:getVector(i))
 		end
 	end
 end
@@ -243,73 +228,71 @@ function class:getJointMat(skeleton, i)
 end
 
 --add tangents buffer
-local empty = { 0, 0, 0 }
+local empty = { 0, 0 }
 function class:calcTangents()
-	self.tangents = { }
-	for i = 1, #self.vertices do
-		self.tangents[i] = { 0, 0, 0, 0 }
-	end
+	self.tangents = lib:newBuffer("vec4", "float", self.vertices:getSize())
 	
 	for _, f in ipairs(self.faces) do
 		--vertices
-		local v1 = self.vertices[f[1]] or empty
-		local v2 = self.vertices[f[2]] or empty
-		local v3 = self.vertices[f[3]] or empty
+		local v1 = self.vertices:get(f.x)
+		local v2 = self.vertices:get(f.y)
+		local v3 = self.vertices:get(f.z)
 		
 		--tex coords
-		local uv1 = self.texCoords[f[1]] or empty
-		local uv2 = self.texCoords[f[2]] or empty
-		local uv3 = self.texCoords[f[3]] or empty
+		local uv1 = self.texCoords:getOrDefault(f.x, empty)
+		local uv2 = self.texCoords:getOrDefault(f.y, empty)
+		local uv3 = self.texCoords:getOrDefault(f.z, empty)
 		
 		local tangent = { }
 		
-		local edge1 = { v2[1] - v1[1], v2[2] - v1[2], v2[3] - v1[3] }
-		local edge2 = { v3[1] - v1[1], v3[2] - v1[2], v3[3] - v1[3] }
-		local edge1uv = { uv2[1] - uv1[1], uv2[2] - uv1[2] }
-		local edge2uv = { uv3[1] - uv1[1], uv3[2] - uv1[2] }
+		local edge1 = { v2.x - v1.x, v2.y - v1.y, v2.z - v1.z }
+		local edge2 = { v3.x - v1.x, v3.y - v1.y, v3.z - v1.z }
+		local edge1uv = { uv2.x - uv1.x, uv2.y - uv1.y }
+		local edge2uv = { uv3.x - uv1.x, uv3.y - uv1.y }
 		
-		local cp = edge1uv[1] * edge2uv[2] - edge1uv[2] * edge2uv[1]
+		local cp = edge1uv.x * edge2uv.y - edge1uv.y * edge2uv.x
 		
 		if cp ~= 0.0 then
 			--handle clockwise-uvs
-			local clockwise = mat3(uv1[1], uv1[2], 1, uv2[1], uv2[2], 1, uv3[1], uv3[2], 1):det() > 0
+			local clockwise = mat3(uv1.x, uv1.y, 1, uv2.x, uv2.y, 1, uv3.x, uv3.y, 1):det() > 0
 			
-			for i = 1, 3 do
-				tangent[i] = (edge1[i] * edge2uv[2] - edge2[i] * edge1uv[2]) / cp
-			end
+			tangent.x = (edge1[1] * edge2uv.y - edge2[1] * edge1uv.y) / cp
+			tangent.y = (edge1[2] * edge2uv.y - edge2[2] * edge1uv.y) / cp
+			tangent.z = (edge1[3] * edge2uv.y - edge2[3] * edge1uv.y) / cp
 			
 			--sum up tangents to smooth across shared vertices
 			for i = 1, 3 do
-				self.tangents[f[i]][1] = self.tangents[f[i]][1] + tangent[1]
-				self.tangents[f[i]][2] = self.tangents[f[i]][2] + tangent[2]
-				self.tangents[f[i]][3] = self.tangents[f[i]][3] + tangent[3]
-				self.tangents[f[i]][4] = self.tangents[f[i]][4] + (clockwise and 1 or 0)
+				local t = self.tangents:get(f[i])
+				t.x = t.x + tangent.x
+				t.y = t.y + tangent.y
+				t.z = t.z + tangent.z
+				t.w = clockwise and 1 or 0
 			end
 		end
 	end
 	
-	--normalize
-	for i, f in ipairs(self.tangents) do
-		local l = math.sqrt(f[1] ^ 2 + f[2] ^ 2 + f[3] ^ 2)
-		f[1] = f[1] / l
-		f[2] = f[2] / l
-		f[3] = f[3] / l
-	end
-	
-	--complete smoothing step
-	for i, f in ipairs(self.tangents) do
-		local n = self.normals[i]
+	for i = 1, self.tangents:getSize() do
+		--normalize
+		local t = self.tangents:get(i)
+		local l = math.sqrt(t.x ^ 2 + t.y ^ 2 + t.z ^ 2)
+		t.x = t.x / l
+		t.y = t.y / l
+		t.z = t.z / l
 		
-		--Gram-Schmidt orthogonalization
-		local dot = (f[1] * n[1] + f[2] * n[2] + f[3] * n[3])
-		f[1] = f[1] - n[1] * dot
-		f[2] = f[2] - n[2] * dot
-		f[3] = f[3] - n[3] * dot
+		--complete smoothing step
+		local n = self.normals:get(i)
 		
-		local l = math.sqrt(f[1] ^ 2 + f[2] ^ 2 + f[3] ^ 2)
-		f[1] = f[1] / l
-		f[2] = f[2] / l
-		f[3] = f[3] / l
+		--Gram-Schmidt orthogonality
+		local dot = (t.x * n.x + t.y * n.y + t.z * n.z)
+		t.x = t.x - n.x * dot
+		t.y = t.y - n.y * dot
+		t.z = t.z - n.z * dot
+		
+		--normalize
+		l = math.sqrt(t.x ^ 2 + t.y ^ 2 + t.z ^ 2)
+		t.x = t.x / l
+		t.y = t.y / l
+		t.z = t.z / l
 	end
 end
 
@@ -319,16 +302,18 @@ function class:create()
 	
 	--set up vertex map
 	local vertexMap = { }
-	for d, f in ipairs(self.faces) do
-		table.insert(vertexMap, f[1])
-		table.insert(vertexMap, f[2])
-		table.insert(vertexMap, f[3])
+	--todo can also be encoded as vec3 buffer, which is then casted to an int buffer
+	for i = 1, self.faces:getSize() do
+		local f = self.faces:get(i)
+		table.insert(vertexMap, f.x)
+		table.insert(vertexMap, f.y)
+		table.insert(vertexMap, f.z)
 	end
 	
 	--create mesh
 	local meshFormat = lib.meshFormats[self.meshType]
 	local meshLayout = meshFormat.meshLayout
-	self.mesh = love.graphics.newMesh(meshLayout, #self.vertices, "triangles", "static")
+	self.mesh = love.graphics.newMesh(meshLayout, self.vertices:getSize(), "triangles", "static")
 	
 	--vertex map
 	self.mesh:setVertexMap(vertexMap)
@@ -375,23 +360,27 @@ function class:addInstances(instances)
 	self.instancesCount = #instances
 end
 
+local function hash(v)
+	return tostring(v.x) .. tostring(v.y) .. tostring(v.z)
+end
+
 --separates by loose parts and returns a list of new meshes
 function class:separate()
 	--initialize group indices
 	local groupIndices = { }
-	for d, s in ipairs(self.vertices) do
-		groupIndices[s] = d
+	for i = 1, self.vertices:getSize() do
+		local v = self.vertices:get(i)
+		groupIndices[hash(v)] = i
 	end
 	
 	--group vertices via floodfill
-	local active
 	local found = true
 	while found do
 		found = false
-		for _, face in ipairs(self.faces) do
-			local a = self.vertices[face[1]]
-			local b = self.vertices[face[2]]
-			local c = self.vertices[face[3]]
+		for _, face in self.faces:ipairs() do
+			local a = hash(self.vertices:get(face.x))
+			local b = hash(self.vertices:get(face.y))
+			local c = hash(self.vertices:get(face.z))
 			
 			local ga = groupIndices[a]
 			local gb = groupIndices[b]
@@ -411,8 +400,8 @@ function class:separate()
 	
 	--get a set of remaining lists
 	local active = { }
-	for _, face in ipairs(self.faces) do
-		local a = self.vertices[face[1]]
+	for _, face in self.faces:ipairs() do
+		local a = hash(self.vertices:get(face.x))
 		local ga = groupIndices[a]
 		active[ga] = true
 	end
@@ -423,11 +412,11 @@ function class:separate()
 	for group, _ in pairs(active) do
 		ID = ID + 1
 		meshes[ID] = self:clone()
-		meshes[ID].faces = { }
-		for _, face in ipairs(self.faces) do
-			local a = self.vertices[face[1]]
+		meshes[ID].faces = lib:newDynamicBuffer()
+		for _, face in self.faces:ipairs() do
+			local a = hash(self.vertices:get(face.x))
 			if groupIndices[a] == group then
-				table.insert(meshes[ID].faces, face)
+				meshes[ID].faces:append(face)
 			end
 		end
 	end
@@ -438,6 +427,15 @@ end
 function class:setVisible(b)
 	self:setRenderVisibility(b)
 	self:setShadowVisibility(b)
+end
+
+---Gets or creates an dynamic, typeless buffer
+---@param name string @ name of buffer
+function class:getOrCreateBuffer(name)
+	if not self[name] then
+		self[name] = lib:newDynamicBuffer()
+	end
+	return self[name]
 end
 
 local cached = { }

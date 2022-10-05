@@ -140,15 +140,15 @@ end
 --it returns a cloned object with only one mesh
 function class:merge()
 	error("temporary disabled")
-	local mesh = self.meshes[next(self.meshes)]
+	local sourceMesh = self.meshes[next(self.meshes)]
 	
 	local final = self:clone()
-	local o = lib:newMesh("merged", mesh.material, final.args.meshType)
-	final.meshes = { merged = o }
+	local mesh = lib:newMesh("merged", sourceMesh.material, final.args.meshType)
+	final.meshes = { merged = mesh }
 	
 	--objects with skinning information should not get transformed
-	if o.joints then
-		o.transform = mesh.transform
+	if mesh.joints then
+		mesh.transform = sourceMesh.transform
 	end
 	
 	--get valid objects
@@ -162,19 +162,10 @@ function class:merge()
 	end
 	
 	--check which buffers are necessary
-	--todo
-	local buffers = {
-		"vertices",
-		"normals",
-		"texCoords",
-		"colors",
-		"weights",
-		"joints",
-	}
 	local found = { }
 	for _, s in pairs(meshes) do
-		for _, buffer in pairs(buffers) do
-			if s[buffer] then
+		for _, buffer in pairs(s) do
+			if buffer.class == "buffer" or buffer.class == "dynamicBuffer" then
 				found[buffer] = true
 			end
 		end
@@ -191,7 +182,7 @@ function class:merge()
 	--merge buffers
 	local startIndices = { }
 	for d, s in pairs(meshes) do
-		local index = #o.vertices
+		local index = #mesh.vertices
 		startIndices[d] = index
 		
 		local transform, transformNormal
@@ -201,19 +192,19 @@ function class:merge()
 		end
 		
 		for buffer, _ in pairs(found) do
-			o[buffer] = o[buffer] or { }
-			for i = 1, #s.vertices do
-				local v = s[buffer] and s[buffer][i] or defaults[buffer] or false
+			mesh[buffer] = mesh[buffer] or { }
+			for i = 1, s.vertices:getSize() do
+				local v = s[buffer] and s[buffer]:getVector(i) or defaults[buffer] or false
 				
 				if transform then
 					if buffer == "vertices" then
-						v = transform * vec3(v)
+						v = transform * v
 					elseif buffer == "normals" then
-						v = transformNormal * vec3(v)
+						v = transformNormal * v
 					end
 				end
 				
-				o[buffer][index + i] = v
+				mesh[buffer][index + i] = v
 			end
 		end
 	end
@@ -222,7 +213,7 @@ function class:merge()
 	for d, s in pairs(meshes) do
 		for _, face in ipairs(s.faces) do
 			local i = startIndices[d]
-			table.insert(o.faces, { face[1] + i, face[2] + i, face[3] + i })
+			table.insert(mesh.faces, { face[1] + i, face[2] + i, face[3] + i })
 		end
 	end
 	
@@ -391,7 +382,7 @@ end
 function class:createMeshes()
 	if not self.linked then
 		for _, mesh in pairs(self.meshes) do
-			if not mesh.mesh then
+			if not mesh.mesh and mesh.faces then
 				mesh:create()
 			end
 		end

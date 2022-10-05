@@ -1,25 +1,25 @@
 local f = { }
 
 f.meshLayout = {
-	{"VertexPosition", "float", 4},     -- x, y, z
-	{"VertexNormal", "byte", 4},        -- normal
-	{"VertexMaterial", "float", 3},     -- roughness, metallic, emissive
-	{"VertexColor", "byte", 4},         -- color
+	{ "VertexPosition", "float", 4 }, -- x, y, z
+	{ "VertexNormal", "byte", 4 }, -- normal
+	{ "VertexMaterial", "float", 3 }, -- roughness, metallic, emissive
+	{ "VertexColor", "byte", 4 }, -- color
 }
 
-local empty = {1, 0, 1, 1}
+local empty = vec4(1, 0, 1, 1)
 function f:create(mesh)
-	for i = 1, #mesh.vertices do
-		local vertex = mesh.vertices[i] or empty
-		local normal = mesh.normals[i] or empty
-		local color = mesh.colors[i] or empty
-		local emission = mesh.emissions[i] or empty
+	for i = 1, mesh.vertices:getSize() do
+		local vertex = mesh.vertices:getOrDefault(i, empty)
+		local normal = mesh.normals:getOrDefault(i, empty)
+		local color = mesh.colors:getOrDefault(i, empty)
+		local emission = mesh.emissions:getOrDefault(i, empty)
 		
 		mesh.mesh:setVertex(i,
-			vertex[1], vertex[2], vertex[3], 1,
-			normal[1]*0.5+0.5, normal[2]*0.5+0.5, normal[3]*0.5+0.5, 0.0,
-			mesh.roughnesses[i] or 0.5, mesh.metallics[i] or 0, emission[1] * 0.299 + emission[2] * 0.587 + emission[3] * 0.114,
-			color[1], color[2], color[3], color[4]
+				vertex.x, vertex.y, vertex.z, 1,
+				normal.x * 0.5 + 0.5, normal.y * 0.5 + 0.5, normal.z * 0.5 + 0.5, 0.0,
+				mesh.roughnesses[i] or 0.5, mesh.metallics[i] or 0, emission.x * 0.299 + emission.y * 0.587 + emission.z * 0.114,
+				color.x, color.y, color.z, color.w
 		)
 	end
 end

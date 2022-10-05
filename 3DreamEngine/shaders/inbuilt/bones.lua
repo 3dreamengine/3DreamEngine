@@ -8,18 +8,25 @@ function sh:getId(dream, mat, shadow)
 	return 0
 end
 
+local meshFormat = {
+	{ "VertexJoint", "float", 4 },
+	{ "VertexWeight", "float", 4 }
+}
+
 function sh:initMesh(dream, mesh)
 	if mesh:getMesh("mesh") then
 		if not mesh:getMesh("boneMesh") then
 			assert(mesh.joints and mesh.weights, "GPU bones require a joint and weight buffer")
-			mesh.boneMesh = love.graphics.newMesh({ { "VertexJoint", "float", 4 }, { "VertexWeight", "float", 4 } }, #mesh.joints, "triangles", "static")
+			mesh.boneMesh = love.graphics.newMesh(meshFormat, mesh.joints:getSize(), "triangles", "static")
 			
 			--create mesh
-			for index = 1, #mesh.joints do
-				local w = mesh.weights[index]
-				local j = mesh.joints[index]
-				local sum = (w[1] or 0) + (w[2] or 0) + (w[3] or 0) + (w[4] or 0)
-				mesh.boneMesh:setVertex(index, (j[1] or 0) / 255, (j[2] or 0) / 255, (j[3] or 0) / 255, (j[4] or 0) / 255, (w[1] or 0) / sum, (w[2] or 0) / sum, (w[3] or 0) / sum, (w[4] or 0) / sum)
+			for index = 1, mesh.joints:getSize() do
+				local w = mesh.weights:get(index)
+				local j = mesh.joints:get(index)
+				local sum = (w.x or 0) + (w.y or 0) + (w.z or 0) + (w.w or 0)
+				mesh.boneMesh:setVertex(index,
+						(j.x or 0) / 255, (j.y or 0) / 255, (j.z or 0) / 255, (j.w or 0) / 255,
+						(w.x or 0) / sum, (w.y or 0) / sum, (w.z or 0) / sum, (w.w or 0) / sum)
 			end
 		end
 		

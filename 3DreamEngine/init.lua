@@ -29,6 +29,7 @@ lib.cimg = require((...) .. "/libs/cimg")
 lib.packTable = require((...) .. "/libs/packTable")
 lib.xml2lua = require((...) .. "/libs/xml2lua/xml2lua")
 lib.xmlTreeHandler = require((...) .. "/libs/xml2lua/tree")
+lib.json = require((...) .. "/libs/json")
 lib.inspect = require((...) .. "/libs/inspect")
 
 table.unpack = table.unpack or unpack

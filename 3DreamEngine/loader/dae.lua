@@ -145,25 +145,26 @@ local function addMesh(self, mat, id, inputs, vertexMapping, meshData, vcount)
 	}
 	for from, to in pairs(translate) do
 		for set, array in pairs(inputs[from] or { }) do
-			m[set == 1 and to or (to .. set)] = array
+			m[set == 1 and to or (to .. set)] = self:newBufferFromArray(array)
 		end
 	end
 	
 	--construct faces
 	local i = 1
+	local meshFaces = m:getOrCreateBuffer("faces")
 	for face = 1, type(vcount) == "number" and vcount or #vcount do
-		assert(i < #m.vertices, #m.vertices)
-		local verts = type(vcount) == "number" and 3 or vcount[face]
-		if verts == 3 then
+		assert(i < m.vertices:getSize(), "Index out of bounds!")
+		local vertexCount = type(vcount) == "number" and 3 or vcount[face]
+		if vertexCount == 3 then
 			--tris
-			table.insert(m.faces, { i, i + 1, i + 2 })
+			meshFaces:append({ i, i + 1, i + 2 })
 		else
 			--triangulates, fan style
-			for f = 1, verts - 2 do
-				table.insert(m.faces, { i, i + f, i + f + 1 })
+			for f = 1, vertexCount - 2 do
+				meshFaces:append({ i, i + f, i + f + 1 })
 			end
 		end
-		i = i + verts
+		i = i + vertexCount
 	end
 end
 
@@ -369,25 +370,18 @@ return function(self, obj, path)
 			o.meshes[n] = newMesh
 			
 			if controller then
-				newMesh.weights = { }
-				newMesh.joints = { }
+				newMesh.weights = self:newBuffer("vec4", "float", #mesh.vertexMapping)
+				newMesh.joints = self:newBuffer("vec4", "float", #mesh.vertexMapping)
 				
 				for d, s in ipairs(mesh.vertexMapping) do
-					newMesh.weights[d] = controller.weights[s]
-					newMesh.joints[d] = controller.joints[s]
+					newMesh.weights:set(d, controller.weights[s])
+					newMesh.joints:set(d, controller.joints[s])
 				end
 				
 				--it is common to apply the bind shape to the mesh directly
 				if controller.bindShape then
-					local vertices = newMesh.vertices
-					local normals = newMesh.normals
-					newMesh.vertices = { }
-					newMesh.normals = { }
-					local normalMatrix = controller.bindShape:subm()
-					for index = 1, #vertices do
-						newMesh.vertices[index] = controller.bindShape * vertices[index]
-						newMesh.normals[index] = normalMatrix * normals[index]
-					end
+					--todo clone buffer first
+					newMesh:applyTransform(controller.bindShape)
 				end
 				
 				newMesh.jointNames = controller.jointNames

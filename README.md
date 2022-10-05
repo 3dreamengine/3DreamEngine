@@ -19,7 +19,7 @@
 * Distance fog
 * Godrays
 * Included shaders for wind animation, water, ...
-* Supports .obj, .mtl, .dae and .vox
+* Supports .obj, .glb, .gltf, .dae and .vox
 * Threaded texture loading
 * Optional high performance file format to minimize loading times
 * Included optimized vec2, vec3, vec4, mat2, mat3 and mat4 library

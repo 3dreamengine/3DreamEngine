@@ -49,7 +49,7 @@ end
 --remove objects without vertices
 local function cleanEmpties(obj)
 	for d, m in pairs(obj.meshes) do
-		if m.vertices and #m.vertices == 0 then
+		if m.vertices and m.vertices:getSize() == 0 then
 			obj.meshes[d] = nil
 		end
 	end
@@ -57,6 +57,8 @@ end
 
 lib.supportedFiles = {
 	"3do", --3DreamEngine object file - way faster than obj but does not keep vertex information
+	"gltf", --glTF embedded or separate
+	"glb", --glTF binary format
 	"vox", --magicka voxel
 	"obj", --obj file
 	"dae", --dae file

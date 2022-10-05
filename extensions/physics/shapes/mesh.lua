@@ -50,24 +50,13 @@ function physicsExtension:newMultiMesh(colliders)
 		lib.deltonLoad:start("transform")
 		local vertices = { }
 		local normals = { }
-		do
-			local normalTransform = transform and transform:subm()
-			local transformed = { }
-			for _, f in ipairs(collider.faces) do
-				for i = 1, 3 do
-					local d = f[i]
-					local pos = collider.vertices[d]
-					if not transformed[pos] then
-						transformed[pos] = transform and transform * pos or pos
-					end
-					vertices[d] = transformed[pos]
-					
-					local normal = collider.normals[d]
-					if not transformed[normal] then
-						transformed[normal] = normalTransform and normalTransform * normal or normal
-					end
-					normals[d] = transformed[normal]
-				end
+		local normalTransform = transform and transform:subm()
+		for _, face in collider.faces:ipairs() do
+			for _, d in ipairs({ face.x, face.y, face.z }) do
+				local pos = collider.vertices:getVector(d)
+				local normal = collider.normals:getVector(d)
+				vertices[d] = transform and transform * pos or pos
+				normals[d] = normalTransform and normalTransform * normal or normal
 			end
 		end
 		
@@ -87,11 +76,11 @@ function physicsExtension:newMultiMesh(colliders)
 		local sides = { }
 		local lowest = math.huge
 		
-		for faceID, face in ipairs(collider.faces) do
+		for faceID, face in collider.faces:ipairs() do
 			--store all vertices in a threshold sized 2D grid for fast lookups
-			local a = vertices[face[1]]
-			local b = vertices[face[2]]
-			local c = vertices[face[3]]
+			local a = vertices[face.x]
+			local b = vertices[face.y]
+			local c = vertices[face.z]
 			insert(a, grid)
 			insert(b, grid)
 			insert(c, grid)
@@ -104,14 +93,14 @@ function physicsExtension:newMultiMesh(colliders)
 			
 			--add either to the top or bottom list, instead of remembering the side for each vertex
 			if n > normalThreshold then
-				topVertices[face[1]] = a
-				topVertices[face[2]] = b
-				topVertices[face[3]] = c
+				topVertices[face.x] = a
+				topVertices[face.y] = b
+				topVertices[face.z] = c
 				sides[faceID] = true
 			elseif collider.shapeMode == "complex" and n < -normalThreshold then
-				bottomVertices[face[1]] = a
-				bottomVertices[face[2]] = b
-				bottomVertices[face[3]] = c
+				bottomVertices[face.x] = a
+				bottomVertices[face.y] = b
+				bottomVertices[face.z] = c
 				sides[faceID] = false
 			end
 		end
@@ -144,9 +133,9 @@ function physicsExtension:newMultiMesh(colliders)
 						if math.abs(opposite[i] - vertex.y) == 0 then
 							for _, face in ipairs(collider.faces) do
 								--vertices
-								local a = vertices[face[1]]
-								local b = vertices[face[2]]
-								local c = vertices[face[3]]
+								local a = vertices[face.x]
+								local b = vertices[face.y]
+								local c = vertices[face.z]
 								
 								local w1, w2, w3 = lib:getBarycentric(vertex.x, vertex.z, a.x, a.z, b.x, b.z, c.x, c.z)
 								local inside = w1 >= 0 and w2 >= 0 and w3 >= 0 and w1 <= 1 and w2 <= 1 and w3 <= 1
@@ -172,14 +161,14 @@ function physicsExtension:newMultiMesh(colliders)
 		--create polygons
 		lib.deltonLoad:start("triangles")
 		local cache = { }
-		for faceID, face in ipairs(collider.faces) do
+		for faceID, face in collider.faces:ipairs() do
 			--verify
 			local side = sides[faceID]
 			if side ~= nil then
 				--vertices
-				local a = vertices[face[1]]
-				local b = vertices[face[2]]
-				local c = vertices[face[3]]
+				local a = vertices[face.x]
+				local b = vertices[face.y]
+				local c = vertices[face.z]
 				
 				--create physics shape
 				local ok, loveShape = pcall(love.physics.newPolygonShape, a.x, a.z, b.x, b.z, c.x, c.z)
@@ -188,9 +177,9 @@ function physicsExtension:newMultiMesh(colliders)
 					--reconstruct the order, since the polygon might have restructured itself
 					local x1, y1, x2, y2, x3, y3 = loveShape:getPoints()
 					local translation = {
-						[smallest(a.x, a.z, x1, y1, x2, y2, x3, y3)] = face[1],
-						[smallest(b.x, b.z, x1, y1, x2, y2, x3, y3)] = face[2],
-						[smallest(c.x, c.z, x1, y1, x2, y2, x3, y3)] = face[3],
+						[smallest(a.x, a.z, x1, y1, x2, y2, x3, y3)] = face.x,
+						[smallest(b.x, b.z, x1, y1, x2, y2, x3, y3)] = face.y,
+						[smallest(c.x, c.z, x1, y1, x2, y2, x3, y3)] = face.z,
 					}
 					
 					--avoid duplicates
