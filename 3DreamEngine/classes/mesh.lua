@@ -80,7 +80,6 @@ function class:updateBoundingBox()
 	
 	--get size
 	local max = 0
-	local c = self.boundingBox.center
 	for i = 1, self.vertices:getSize() do
 		local pos = self.vertices:getVector(i)
 		max = math.max(max, pos:lengthSquared())

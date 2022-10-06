@@ -209,12 +209,6 @@ function class:merge()
 		end
 	end
 	
-	local defaults = {
-		vertices = vec3(0, 0, 0),
-		normals = vec3(0, 0, 0),
-		texCoords = vec2(0, 0),
-	}
-	
 	--merge buffers
 	local startIndices = { }
 	local index = 0
@@ -222,10 +216,7 @@ function class:merge()
 		startIndices[d] = index
 		
 		for _, name in ipairs(found) do
-			for i = 1, source.vertices:getSize() do
-				local v = source[name] and source[name]:getVector(i) or defaults[name] or false
-				mesh[name]:set(index + i, v)
-			end
+			mesh[name]:copyFrom(source[name], index)
 		end
 		
 		index = index + source.vertices:getSize()
@@ -246,7 +237,10 @@ function class:merge()
 	
 	final.meshes = { merged = mesh }
 	
+	--todo the bounding box should remain unchanged?
+	local t = love.timer.getTime()
 	final:updateBoundingBox()
+	print(love.timer.getTime() - t, "bb")
 	
 	return final
 end

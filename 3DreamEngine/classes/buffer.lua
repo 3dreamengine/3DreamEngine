@@ -10,6 +10,13 @@ local types = {
 	vec4 = { "x", "y", "z", "w" },
 }
 
+local sizes = {
+	scalar = 1,
+	vec2 = 2,
+	vec3 = 3,
+	vec4 = 4,
+}
+
 local sizeLookup = {
 	[2] = "vec2",
 	[3] = "vec3",
@@ -94,6 +101,23 @@ end
 
 function class:getOrDefault(index, default)
 	return index > 0 and index <= self.length and self.buffer[index - 1] or default
+end
+
+function class:copyFrom(source, dstOffset, srcOffset, srcLength)
+	dstOffset = dstOffset or 0
+	srcOffset = srcOffset or 0
+	srcLength = srcLength or (source:getSize() - srcOffset)
+	if source.class == "buffer" and self.class == "buffer" and self:getDataType() == source:getDataType() then
+		ffi.copy(self.buffer + dstOffset, source.buffer + srcOffset, ffi.sizeof(self:getDataType()) * sizes[self:getType()] * srcLength)
+	elseif self:getType() == "scalar" then
+		for i = 1, source:getSize() do
+			self:set(i + dstOffset, source:getVector(i + srcOffset))
+		end
+	else
+		for i = 1, source:getSize() do
+			self:set(i + dstOffset, source:getVector(i + srcOffset):clone())
+		end
+	end
 end
 
 function class:getSize()
