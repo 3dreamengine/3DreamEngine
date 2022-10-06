@@ -6,13 +6,7 @@ materials.lua - load and process materials
 local lib = _3DreamEngine
 
 function lib:registerMaterial(material, name)
-	name = name or material.name
-	if material.registeredAs then
-		error("This material already have been registered with the name '" .. material.registeredAs .. "', clone it first.")
-	end
-	material.name = name
-	material.registeredAs = name
-	self.materialLibrary[name] = material
+	self.materialLibrary[name or material.name] = material
 end
 
 --looks for mat files or directories with an albedo texture
@@ -33,7 +27,7 @@ function lib:loadMaterialLibrary(path, prefix)
 		return
 	end
 	
-	for d,s in ipairs(love.filesystem.getDirectoryItems(path)) do
+	for d, s in ipairs(love.filesystem.getDirectoryItems(path)) do
 		local p = path .. "/" .. s
 		if s:sub(#s - 3) == ".mat" then
 			--custom material
@@ -72,7 +66,7 @@ local function texSetter(mat, typ, tex)
 end
 
 function lib:lookForTextures(mat, directory, filter)
-	for _,typ in ipairs({"albedo", "normal", "roughness", "metallic", "emission", "ao", "material"}) do
+	for _, typ in ipairs({ "albedo", "normal", "roughness", "metallic", "emission", "ao", "material" }) do
 		local custom = mat[typ .. "Texture"]
 		mat[typ .. "Texture"] = nil
 		
@@ -82,9 +76,9 @@ function lib:lookForTextures(mat, directory, filter)
 		elseif type(custom) == "string" then
 			--path or name specified
 			local path = self:getImagePath(custom) or
-				self:getImagePath(directory .. "/" .. custom) or
-				(love.filesystem.getInfo(custom, "file")) and custom or
-				(love.filesystem.getInfo(directory .. "/" .. custom, "file")) and (directory .. "/" .. custom)
+					self:getImagePath(directory .. "/" .. custom) or
+					(love.filesystem.getInfo(custom, "file")) and custom or
+					(love.filesystem.getInfo(directory .. "/" .. custom, "file")) and (directory .. "/" .. custom)
 			
 			if path then
 				texSetter(mat, typ, path)

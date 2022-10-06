@@ -34,6 +34,10 @@ function lib:newBufferFromArray(array)
 	return buffer
 end
 
+function lib:newBufferLike(buffer)
+	return self:newBuffer(buffer:getType(), buffer:getDataType(), buffer:getSize())
+end
+
 function lib:newBuffer(type, dataType, length)
 	local id = "dream_" .. type .. "_" .. dataType
 	if not structs[id] and type ~= "scalar" then
@@ -41,8 +45,8 @@ function lib:newBuffer(type, dataType, length)
 	end
 	
 	return setmetatable({
-		dataType = dataType,
 		type = type,
+		dataType = dataType,
 		length = length,
 		buffer = type == "scalar" and ffi.new(dataType .. "[?]", length) or ffi.new(id .. "[?]", length)
 	}, self.meta.buffer)
@@ -51,6 +55,14 @@ end
 local class = {
 	link = { "buffer" },
 }
+
+function class:getType()
+	return self.type
+end
+
+function class:getDataType()
+	return self.dataType
+end
 
 function class:append(data)
 	error("Can not insert into static buffer!")

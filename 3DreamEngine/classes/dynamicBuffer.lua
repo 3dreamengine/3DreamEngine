@@ -14,6 +14,15 @@ local function wrap(data)
 	return #data == 4 and vec4(data) or #data == 3 and vec3(data) or #data == 2 and vec2(data) or data
 end
 
+function class:getType()
+	local data = self.buffer[1] or { }
+	return #data == 4 and "vec4" or #data == 3 and "vec3" or #data == 2 and "vec2" or "scalar"
+end
+
+function class:getDataType()
+	return "float"
+end
+
 function class:append(data)
 	table.insert(self.buffer, wrap(data))
 end

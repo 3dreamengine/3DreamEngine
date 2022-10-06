@@ -55,6 +55,26 @@ function class:tostring()
 	return string.format("%s: %d objects, %d meshes, %d physics, %d lights, %s", self.name, count(self.objects), count(self.meshes), count(self.physics or { }), count(self.lights), table.concat(tags, ", "))
 end
 
+local function copy(t)
+	local n = { }
+	for d, s in pairs(t) do
+		if type(s) == "table" and type(s.clone) == "function" then
+			n[d] = s:clone()
+		else
+			n[d] = s
+		end
+	end
+	return setmetatable(n, getmetatable(t))
+end
+
+function class:clone()
+	local n = copy(self)
+	for _, key in ipairs({ "objects", "meshes" }) do
+		self[key] = copy(self[key])
+	end
+	return setmetatable(n, getmetatable(self))
+end
+
 function class:setLOD(min, max)
 	self.LOD_min = min
 	self.LOD_max = max
@@ -123,7 +143,7 @@ end
 
 function class:copySkeleton(o)
 	assert(o.skeleton, "object has no skeletons")
-	self.sekelton = o.skeleton
+	self.skeleton = o.skeleton
 end
 
 function class:meshesToPhysics()
@@ -135,43 +155,59 @@ function class:meshesToPhysics()
 	self.meshes = { }
 end
 
---merge all meshes of an object and concatenate all buffer together
---it uses a material of one random mesh and therefore requires only identical materials
---it returns a cloned object with only one mesh
-function class:merge()
-	error("temporary disabled")
-	local sourceMesh = self.meshes[next(self.meshes)]
-	
-	local final = self:clone()
-	local mesh = lib:newMesh("merged", sourceMesh.material, final.args.meshType)
-	final.meshes = { merged = mesh }
-	
-	--objects with skinning information should not get transformed
-	if mesh.joints then
-		mesh.transform = sourceMesh.transform
-	end
-	
-	--get valid objects
-	local meshes = { }
-	for d, s in pairs(self.meshes) do
-		if not s.LOD_max or s.LOD_max >= math.huge then
-			if s.tags.merge ~= false then
-				meshes[d] = s
+local function getAllMeshes(object, list)
+	if not object.LOD_max or object.LOD_max >= math.huge then
+		for _, o in pairs(object.objects) do
+			getAllMeshes(o, list)
+		end
+		for _, m in pairs(object.meshes) do
+			if m.vertices then
+				table.insert(list, m)
 			end
 		end
+	end
+end
+
+function class:getAllMeshes()
+	local list = { }
+	getAllMeshes(self, list)
+	return list
+end
+
+--merge all meshes, recursively, of an object and concatenate all buffer together
+--it uses a material of one random mesh and therefore requires only identical materials
+--it returns a new object with only one mesh named merged
+function class:merge()
+	--apply the current transform
+	local appliedSource = self:clone()
+	appliedSource:applyTransform()
+	
+	--get valid meshes
+	local meshes = appliedSource:getAllMeshes()
+	local sourceMesh = meshes[next(meshes)]
+	local mesh = lib:newMesh("merged", sourceMesh.material, sourceMesh.meshType)
+	
+	assert(sourceMesh.vertices, "At least the vertex buffer is required.")
+	
+	--look for the max size
+	local size = 0
+	local faces = 0
+	for _, source in pairs(meshes) do
+		size = size + source.vertices:getSize()
+		faces = faces + source.faces:getSize()
 	end
 	
 	--check which buffers are necessary
 	local found = { }
-	for _, s in pairs(meshes) do
-		for _, buffer in pairs(s) do
-			if buffer.class == "buffer" or buffer.class == "dynamicBuffer" then
-				found[buffer] = true
+	for name, buffer in pairs(sourceMesh) do
+		if type(buffer) == "table" and (buffer.class == "buffer" or buffer.class == "dynamicBuffer") then
+			if name ~= "faces" then
+				--todo generify
+				table.insert(found, name)
+				mesh[name] = lib:newBuffer(buffer:getType(), buffer:getDataType(), size)
 			end
 		end
 	end
-	
-	assert(found.vertices, "object has been cleaned up!")
 	
 	local defaults = {
 		vertices = vec3(0, 0, 0),
@@ -181,41 +217,34 @@ function class:merge()
 	
 	--merge buffers
 	local startIndices = { }
-	for d, s in pairs(meshes) do
-		local index = #mesh.vertices
+	local index = 0
+	for d, source in ipairs(meshes) do
 		startIndices[d] = index
 		
-		local transform, transformNormal
-		if not s.joints then
-			transform = s.transform
-			transformNormal = transform and transform:subm()
-		end
-		
-		for buffer, _ in pairs(found) do
-			mesh[buffer] = mesh[buffer] or { }
-			for i = 1, s.vertices:getSize() do
-				local v = s[buffer] and s[buffer]:getVector(i) or defaults[buffer] or false
-				
-				if transform then
-					if buffer == "vertices" then
-						v = transform * v
-					elseif buffer == "normals" then
-						v = transformNormal * v
-					end
-				end
-				
-				mesh[buffer][index + i] = v
+		for _, name in ipairs(found) do
+			for i = 1, source.vertices:getSize() do
+				local v = source[name] and source[name]:getVector(i) or defaults[name] or false
+				mesh[name]:set(index + i, v)
 			end
 		end
+		
+		index = index + source.vertices:getSize()
 	end
 	
 	--merge faces
-	for d, s in pairs(meshes) do
-		for _, face in ipairs(s.faces) do
-			local i = startIndices[d]
-			table.insert(mesh.faces, { face[1] + i, face[2] + i, face[3] + i })
+	mesh.faces = lib:newBuffer("vec3", "float", faces)
+	local faceId = 0
+	for d, m in ipairs(meshes) do
+		local i = startIndices[d]
+		for _, face in m.faces:ipairs() do
+			faceId = faceId + 1
+			mesh.faces:set(faceId, { face.x + i, face.y + i, face.z + i })
 		end
 	end
+	
+	local final = lib:newObject(self.name)
+	
+	final.meshes = { merged = mesh }
 	
 	final:updateBoundingBox()
 	
@@ -223,14 +252,14 @@ function class:merge()
 end
 
 function class:applyTransform()
-	for _, o in ipairs(self.objects) do
+	for _, o in pairs(self.objects) do
 		o:setTransform(self:getTransform() * o:getTransform())
 		o:applyTransform()
 	end
-	for _, mesh in ipairs(self.meshes) do
+	for _, mesh in pairs(self.meshes) do
 		mesh:applyTransform(self:getTransform())
 	end
-	s:resetTransform()
+	self:resetTransform()
 end
 
 --create and apply pose (wrapper)

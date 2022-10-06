@@ -190,10 +190,16 @@ function class:getMesh(name)
 end
 
 function class:applyTransform(transform)
-	local subm = transform:subm()
-	for i = 1, self.vertices:getSize() do
-		self.vertices:set(i, transform * self.vertices:getVector(i))
-		self.normals:set(i, subm * self.normals:getVector(i))
+	if self.vertices then
+		local oldVertices = self.vertices
+		local oldNormals = self.normals
+		self.vertices = lib:newBufferLike(self.vertices)
+		self.normals = lib:newBufferLike(self.normals)
+		local subm = transform:subm()
+		for i = 1, self.vertices:getSize() do
+			self.vertices:set(i, transform * oldVertices:getVector(i))
+			self.normals:set(i, subm * oldNormals:getVector(i))
+		end
 	end
 end
 
@@ -204,8 +210,8 @@ function class:applyBones(skeleton)
 		if not self.oldVertices then
 			self.oldVertices = self.vertices
 			self.oldNormals = self.normals
-			self.vertices = lib:newDynamicBuffer() --todo optimize
-			self.normals = lib:newStaticBuffer()
+			self.vertices = lib:newBufferLike(self.vertices)
+			self.normals = lib:newBufferLike(self.normals)
 		end
 		
 		--apply joint transforms
@@ -232,7 +238,7 @@ local empty = { 0, 0 }
 function class:calcTangents()
 	self.tangents = lib:newBuffer("vec4", "float", self.vertices:getSize())
 	
-	for _, f in ipairs(self.faces) do
+	for _, f in self.faces:ipairs() do
 		--vertices
 		local v1 = self.vertices:get(f.x)
 		local v2 = self.vertices:get(f.y)
@@ -250,19 +256,19 @@ function class:calcTangents()
 		local edge1uv = { uv2.x - uv1.x, uv2.y - uv1.y }
 		local edge2uv = { uv3.x - uv1.x, uv3.y - uv1.y }
 		
-		local cp = edge1uv.x * edge2uv.y - edge1uv.y * edge2uv.x
+		local cp = edge1uv[1] * edge2uv[2] - edge1uv[2] * edge2uv[1]
 		
 		if cp ~= 0.0 then
 			--handle clockwise-uvs
 			local clockwise = mat3(uv1.x, uv1.y, 1, uv2.x, uv2.y, 1, uv3.x, uv3.y, 1):det() > 0
 			
-			tangent.x = (edge1[1] * edge2uv.y - edge2[1] * edge1uv.y) / cp
-			tangent.y = (edge1[2] * edge2uv.y - edge2[2] * edge1uv.y) / cp
-			tangent.z = (edge1[3] * edge2uv.y - edge2[3] * edge1uv.y) / cp
+			tangent.x = (edge1[1] * edge2uv[2] - edge2[1] * edge1uv[2]) / cp
+			tangent.y = (edge1[2] * edge2uv[2] - edge2[2] * edge1uv[2]) / cp
+			tangent.z = (edge1[3] * edge2uv[2] - edge2[3] * edge1uv[2]) / cp
 			
 			--sum up tangents to smooth across shared vertices
-			for i = 1, 3 do
-				local t = self.tangents:get(f[i])
+			for _, key in ipairs({ "x", "y", "z" }) do
+				local t = self.tangents:get(f[key])
 				t.x = t.x + tangent.x
 				t.y = t.y + tangent.y
 				t.z = t.z + tangent.z
