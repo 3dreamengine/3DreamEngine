@@ -70,8 +70,4 @@ return function(self, obj, path)
 			mesh = obj.meshes[meshID]
 		end
 	end
-	
-	for _, mesh in pairs(obj.meshes) do
-		--todo convert buffers to static ones?
-	end
 end

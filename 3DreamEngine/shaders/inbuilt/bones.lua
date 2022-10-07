@@ -80,7 +80,7 @@ end
 local ID = mat4.getIdentity()
 function sh:perTask(dream, shaderObject, task)
 	local bt = task:getBoneTransforms()
-	assert(bt, "missing bone transforms")
+	assert(bt, "Missing bone transforms")
 	
 	if shaderObject.session.bones ~= bt then
 		local mesh = task:getMesh()
@@ -98,7 +98,7 @@ function sh:perTask(dream, shaderObject, task)
 		end
 		if #matrices > self.maxJoints and not mesh._jointExceededWarning then
 			mesh._jointExceededWarning = true
-			print(string.format("mesh %s has %d joints, but the shader is limited to %d", mesh.name, #matrices, self.maxJoints))
+			print(string.format("Mesh %s has %d joints, but the shader is limited to %d", mesh.name, #matrices, self.maxJoints))
 		end
 		shaderObject.shader:send("jointTransforms", table.unpack(matrices))
 	end

@@ -42,12 +42,12 @@ function class.interpolateFrames(f1, f2, factor)
 	return {
 		position = f1.position * (1.0 - factor) + f2.position * factor,
 		rotation = f1.rotation:nLerp(f2.rotation, factor),
+		--todo size?
 	}
 end
 
 --returns a new animated pose at a specific time stamp
 function class:getPose(time)
-	assert(self, "animation is nil, is the name correct?")
 	local pose = lib:newPose()
 	
 	for joint, frames in pairs(self.frames) do
@@ -72,7 +72,7 @@ function class:getPose(time)
 			
 			--get interpolation factor
 			local diff = (f2.time - f1.time)
-			local factor = diff == 0 and 0.5 or (t - f1.time) / diff
+			local factor = diff == 0 and 0.5 or (t - f1.time) / diff --todo fails sometimes
 			pose[joint] = self.interpolateFrames(f1, f2, factor)
 		end
 	end

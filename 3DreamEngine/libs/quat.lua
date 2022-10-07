@@ -72,7 +72,7 @@ function quat.clone(p)
 end
 
 function quat.toString(p)
-	return string.format("%f + %fi + %fj + %fk\n", p[1], p[2], p[3], p[4])
+	return string.format("%f + %fi + %fj + %fk", p[1], p[2], p[3], p[4])
 end
 
 function quat.isZero(p)

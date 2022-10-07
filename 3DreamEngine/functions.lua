@@ -136,6 +136,7 @@ end
 --todo the frustum culling code fails for close objects, a constant factor "fix" it but it's not fixing the actual problem
 local perspectiveWarpFactor = 1.5
 
+--todo octant test
 --optimized plane frustum check
 local cache = { }
 function lib:inFrustum(cam, pos, radius, id)
@@ -151,6 +152,7 @@ function lib:inFrustum(cam, pos, radius, id)
 		cache[id] = nil
 	end
 	
+	--todo missing z plane?
 	for i = 1, 4 do
 		if i ~= c then
 			local plane = cam.planes[i]

@@ -1,5 +1,3 @@
-local lib = _3DreamEngine
-
 local I = mat4.getIdentity()
 
 local class = { }
