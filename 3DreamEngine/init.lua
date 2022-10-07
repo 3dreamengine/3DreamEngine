@@ -31,6 +31,7 @@ lib.xml2lua = require((...) .. "/libs/xml2lua/xml2lua")
 lib.xmlTreeHandler = require((...) .. "/libs/xml2lua/tree")
 lib.json = require((...) .. "/libs/json")
 lib.inspect = require((...) .. "/libs/inspect")
+lib.base64 = require((...) .. "/libs/base64")
 
 table.unpack = table.unpack or unpack
 
