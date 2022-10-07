@@ -66,7 +66,7 @@ function class:preload()
 	--todo
 end
 
-function class:addObject(object, parentTransform, dynamic, boneTransforms, reflection)
+function class:addObject(object, parentTransform, dynamic, reflection)
 	--apply transformation
 	local transform
 	if parentTransform then
@@ -99,21 +99,21 @@ function class:addObject(object, parentTransform, dynamic, boneTransforms, refle
 	end
 	
 	--pass down some additional data
-	boneTransforms = object.skeleton and object.skeleton.transforms or boneTransforms
 	reflection = object.reflection or reflection
 	
 	--children
 	for _, o in pairs(object.objects) do
-		self:addObject(o, transform, dynamic, boneTransforms, reflection)
+		self:addObject(o, transform, dynamic, reflection)
 	end
 	
 	--meshes
 	for _, m in pairs(object.meshes) do
-		self:addMesh(m, transform, dynamic, boneTransforms, reflection)
+		self:addMesh(m, transform, dynamic, reflection)
 	end
 end
 
-function class:addMesh(mesh, transform, dynamic, boneTransforms, reflection)
+function class:addMesh(mesh, transform, dynamic, reflection)
+	local boneTransforms = mesh.skeleton and mesh.skeleton.transforms
 	local pos = getPosition(mesh, transform)
 	local size = getSize(mesh, transform)
 	

@@ -8,6 +8,7 @@ local types = {
 	vec2 = { "x", "y" },
 	vec3 = { "x", "y", "z" },
 	vec4 = { "x", "y", "z", "w" },
+	mat4 = { "v00", "v10", "v20", "v30", "v01", "v11", "v21", "v31", "v02", "v12", "v22", "v32", "v03", "v13", "v23", "v33" },
 }
 
 local sizes = {
@@ -15,13 +16,13 @@ local sizes = {
 	vec2 = 2,
 	vec3 = 3,
 	vec4 = 4,
+	mat4 = 16,
 }
 
 local sizeLookup = {
 	[2] = "vec2",
 	[3] = "vec3",
 	[4] = "vec4",
-	[9] = "mat3",
 	[16] = "mat4",
 }
 
@@ -45,8 +46,15 @@ function lib:newBufferLike(buffer)
 	return self:newBuffer(buffer:getType(), buffer:getDataType(), buffer:getSize())
 end
 
+function lib:bufferFromString(type, dataType, str)
+	local buffer = self:newBuffer(type, dataType, #str / (ffi.sizeof(dataType) * sizes[type]))
+	local source = ffi.cast("char*", love.data.newByteData(str):getFFIPointer())
+	ffi.copy(buffer.buffer, source, #str)
+	return buffer
+end
+
 function lib:newBuffer(type, dataType, length)
-	local id = "dream_" .. type .. "_" .. dataType
+	local id = ("dream_" .. type .. "_" .. dataType):gsub(" ", "_")
 	if not structs[id] and type ~= "scalar" then
 		ffi.cdef("typedef struct { " .. dataType .. " " .. table.concat(types[type], ", ") .. "; } " .. id .. ";")
 	end
@@ -94,6 +102,13 @@ function class:getVector(index)
 		return vec3(v.x, v.y, v.z)
 	elseif self.type == "vec2" then
 		return vec2(v.x, v.y)
+	elseif self.type == "mat4" then
+		return mat4({
+			v.v00, v.v01, v.v02, v.v03,
+			v.v10, v.v11, v.v12, v.v13,
+			v.v20, v.v21, v.v22, v.v23,
+			v.v30, v.v31, v.v32, v.v33,
+		})
 	else
 		return v
 	end
@@ -134,6 +149,14 @@ function class:ipairs()
 			return i, self.buffer[i + offset]
 		end
 	end
+end
+
+function class:toArray()
+	local array = { }
+	for i = 1, self:getSize() do
+		table.insert(array, self:getVector(i))
+	end
+	return array
 end
 
 function class:tostring()

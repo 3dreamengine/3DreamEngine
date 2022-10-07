@@ -7,7 +7,11 @@ function lib:newMesh(name, material, meshType)
 		
 		boundingBox = self:newEmptyBoundingBox(),
 		
+		meshDrawMode = "triangles",
 		meshType = meshType or (material.pixelShader or self.defaultPixelShader).meshType,
+		
+		mesh = false,
+		skeleton = false,
 		
 		preventCleanup = false,
 		
@@ -38,6 +42,13 @@ function class:getName()
 	return self.name
 end
 
+function class:setSkeleton(skeleton)
+	self.skeleton = skeleton
+end
+function class:getSkeleton()
+	return self.skeleton
+end
+
 function class:setPreventCleanup(t)
 	self.preventCleanup = t
 end
@@ -48,6 +59,11 @@ function class:tostring()
 	--vertex count
 	if self.mesh and self.mesh.getVertexCount then
 		table.insert(tags, self.mesh:getVertexCount() .. " vertices")
+	end
+	
+	--vertex count
+	if self.skeleton then
+		table.insert(tags, "skeleton")
 	end
 	
 	--visibility
@@ -204,6 +220,8 @@ end
 
 --apply joints to mesh data directly
 function class:applyBones(skeleton)
+	skeleton = skeleton or self.skeleton
+	
 	if self.joints then
 		--make a copy of vertices
 		if not self.oldVertices then
@@ -318,7 +336,7 @@ function class:create()
 	--create mesh
 	local meshFormat = lib.meshFormats[self.meshType]
 	local meshLayout = meshFormat.meshLayout
-	self.mesh = love.graphics.newMesh(meshLayout, self.vertices:getSize(), "triangles", "static")
+	self.mesh = love.graphics.newMesh(meshLayout, self.vertices:getSize(), self.meshDrawMode, "static")
 	
 	--vertex map
 	self.mesh:setVertexMap(vertexMap)
@@ -468,8 +486,8 @@ function class:encode(meshCache, dataStrings)
 	end
 	
 	--export buffer data
-	data["weights"] = self.weights
 	data["joints"] = self.joints
+	data["weights"] = self.weights
 	data["jointNames"] = self.jointNames
 	data["inverseBindMatrices"] = self.inverseBindMatrices
 	data["vertices"] = self.vertices

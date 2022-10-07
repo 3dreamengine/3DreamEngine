@@ -203,10 +203,9 @@ return function(self, obj, path)
 				controllers[controller._attr.id] = c
 				
 				--load bind transform
-				local data = loadInputs(skin.joints[1])
-				c.jointNames = data.JOINT[1]
-				
-				c.inverseBindMatrices = data.INV_BIND_MATRIX[1]
+				local jointData = loadInputs(skin.joints[1])
+				c.jointNames = jointData.JOINT[1]
+				c.inverseBindMatrices = jointData.INV_BIND_MATRIX[1]
 				
 				--load data
 				local data = loadInputs(skin.vertex_weights[1])
@@ -299,8 +298,8 @@ return function(self, obj, path)
 						local matId = p._attr.material
 						
 						--combine polygons
-						for _, p in ipairs(mesh.polygons.p) do
-							local a = loadFloatArray(p[1])
+						for _, tri in ipairs(mesh.polygons.p) do
+							local a = loadFloatArray(tri[1])
 							for _, v in ipairs(a) do
 								table.insert(idxs, v)
 							end
@@ -338,26 +337,28 @@ return function(self, obj, path)
 		return s.matrix and mat4(loadFloatArray(s.matrix[1][1])) or mat4.getIdentity()
 	end
 	
-	local function skeletonLoader(nodes)
-		local skel = { }
-		for _, s in ipairs(nodes) do
-			if s._attr.type == "JOINT" then
-				local name = s._attr.sid
-				
-				skel[name] = {
-					name = name,
-					transform = getTransform(s),
-				}
-				
-				if s.node then
-					skel[name].children = skeletonLoader(s.node)
+	local skeletons = { }
+	local function skeletonLoader(s)
+		--todo class
+		local bone = {
+			name = s._attr.sid,
+			transform = getTransform(s),
+		}
+		
+		if s.node then
+			bone.children = { }
+			for _, child in ipairs(s.node) do
+				if child._attr.type == "JOINT" then
+					local b = skeletonLoader(child)
+					bone.children[b.name] = b
 				end
 			end
 		end
-		return skel
+		
+		return bone
 	end
 	
-	local function addNewObject(name, meshes, transform, controller)
+	local function addNewObject(name, meshes, transform, controller, skeleton)
 		local o = self:newObject(name)
 		o.transform = transform
 		
@@ -387,6 +388,10 @@ return function(self, obj, path)
 				newMesh.jointNames = controller.jointNames
 				newMesh.inverseBindMatrices = controller.inverseBindMatrices
 			end
+			
+			if skeleton then
+				newMesh:setSkeleton(skeleton)
+			end
 		end
 	end
 	
@@ -404,8 +409,10 @@ return function(self, obj, path)
 			elseif s.instance_controller then
 				local id = s.instance_controller[1]._attr.url:sub(2)
 				local controller = controllers[id]
-				local mesh = meshData[controller.mesh]
-				addNewObject(name, mesh, transform, controller)
+				local meshes = meshData[controller.mesh]
+				local skeleton = skeletons[s.instance_controller[1].skeleton[1][1]:sub(2)]
+				addNewObject(name, meshes, transform, controller, skeleton)
+				obj.mainSkeleton = obj.mainSkeleton or skeleton
 			elseif s.instance_light then
 				--light source
 				local id = s.instance_light[1]._attr.url:sub(2)
@@ -418,11 +425,7 @@ return function(self, obj, path)
 			elseif s.instance_node then
 				--todo
 			elseif s._attr.type == "JOINT" then
-				--start of a skeleton
-				--we treat skeletons different than nodes and will use a different traverser here
-				if s.node then
-					obj.skeleton = self:newSkeleton(skeletonLoader(nodes))
-				end
+				skeletons[s._attr.id] = self:newSkeleton(skeletonLoader(s))
 			end
 			
 			--children
@@ -480,6 +483,7 @@ return function(self, obj, path)
 						time = sources.INPUT[i],
 						rotation = quat.fromMatrix(m:subm()),
 						position = vec3(m[4], m[8], m[12]),
+						--todo class, scale
 					})
 				end
 			end

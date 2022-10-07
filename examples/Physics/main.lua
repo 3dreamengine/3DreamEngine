@@ -106,7 +106,7 @@ function love.draw()
 			local v = o.collider:getVelocity()
 			o.walkingAnim = (o.walkingAnim or 0) + love.timer.getDelta() * vec3(v.x, 0, v.z):length()
 			o.avgVelocity = (o.avgVelocity or v) * (1 - love.timer.getDelta() * 5) + v * love.timer.getDelta() * 5
-			o.object:applyPose(o.object.animations.Armature:getPose(o.walkingAnim))
+			o.object:getMainSkeleton():applyPose(o.object.animations.Armature:getPose(o.walkingAnim))
 			o.object:rotateY(math.atan2(o.avgVelocity.z, o.avgVelocity.x) - math.pi / 2)
 			o.object:rotateX(-math.pi / 2) --blender space
 			o.object:scale(1 / 20)

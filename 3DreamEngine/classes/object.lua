@@ -21,6 +21,8 @@ function lib:newObject(name)
 		
 		name = name,
 		
+		mainSkeleton = false,
+		
 		boundingBox = self:newEmptyBoundingBox(),
 		
 		loaded = true,
@@ -73,6 +75,10 @@ function class:clone()
 		self[key] = copy(self[key])
 	end
 	return setmetatable(n, getmetatable(self))
+end
+
+function class:getMainSkeleton()
+	return self.mainSkeleton
 end
 
 function class:setLOD(min, max)
@@ -139,11 +145,6 @@ function class:preload(force)
 	for _, s in pairs(self.meshes) do
 		s:preload(force)
 	end
-end
-
-function class:copySkeleton(o)
-	assert(o.skeleton, "object has no skeletons")
-	self.skeleton = o.skeleton
 end
 
 function class:meshesToPhysics()
@@ -256,28 +257,15 @@ function class:applyTransform()
 	self:resetTransform()
 end
 
---create and apply pose (wrapper)
-function class:setPose(animation, time)
-	assert(self.skeleton, "object requires a skeleton")
-	local p = self:getPose(animation, time)
-	self:applyPose(p)
-end
-
---apply the pose to the skeleton (wrapper)
-function class:applyPose(pose)
-	assert(self.skeleton, "object requires a skeleton")
-	self.skeleton:applyPose(pose)
-end
-
 --apply joints to mesh data directly
 function class:applyBones(skeleton)
 	for _, m in pairs(self.meshes) do
-		m:applyBones(self.skeleton or skeleton)
+		m:applyBones(skeleton)
 	end
 	
 	--also apply to children
 	for _, o in pairs(self.objects) do
-		o:applyBones(self.skeleton or skeleton)
+		o:applyBones(skeleton)
 	end
 end
 
@@ -355,22 +343,6 @@ function class:print()
 		for _, p in pairs(self.positions) do
 			printf("%s at %s", p.name, p.position)
 		end
-		pop()
-	end
-	
-	--skeleton
-	if self.skeleton then
-		local function p(s)
-			for _, v in pairs(s) do
-				push(v.name)
-				if v.children then
-					p(v.children)
-				end
-				pop()
-			end
-		end
-		push("skeleton")
-		p(self.skeleton.bones)
 		pop()
 	end
 	
@@ -466,7 +438,6 @@ function class:encode(meshCache, dataStrings)
 		["transform"] = self.transform,
 		
 		["animations"] = self.animations,
-		["skeleton"] = self.skeleton,
 		
 		["LOD_min"] = self.LOD_min,
 		["LOD_max"] = self.LOD_max,
@@ -528,11 +499,6 @@ function class:decode(meshData)
 	for _, s in pairs(self.reflections) do
 		setmetatable(s, lib.meta.reflection)
 		s:decode()
-	end
-	
-	--recreate skeleton data
-	if self.skeleton then
-		self.skeleton = lib:newSkeleton(self.skeleton.bones)
 	end
 	
 	--decode animations
