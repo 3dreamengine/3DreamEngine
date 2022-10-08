@@ -54,7 +54,7 @@ function class:tostring()
 	for d, s in pairs(self.tags) do
 		table.insert(tags, tostring(d))
 	end
-	return string.format("%s: %d objects, %d meshes, %d physics, %d lights, %s", self.name, count(self.objects), count(self.meshes), count(self.physics or { }), count(self.lights), table.concat(tags, ", "))
+	return string.format("%s: %d objects, %d meshes, %d physics, %d lights%s%s", self.name, count(self.objects), count(self.meshes), count(self.physics or { }), count(self.lights), #tags > 0 and ", " or "", table.concat(tags, ", "))
 end
 
 local function copy(t)

@@ -7,6 +7,8 @@ local lib = _3DreamEngine
 local cache = { }
 local rootObject
 local file
+local binary
+local directory
 
 local function cached(func, node)
 	local id = tostring(node) .. tostring(func)
@@ -27,11 +29,13 @@ local accessorDataTypes = {
 }
 
 local function loadBuffer(node)
-	if node.uri:sub(1, 5) == "data:" then
+	if not node.uri then
+		return binary
+	elseif node.uri:sub(1, 5) == "data:" then
 		local f = node.uri:find("base64")
 		return lib.base64.decode(node.uri:sub(f + 7)) --todo
 	else
-		return love.filesystem.read(node.uri)
+		return love.filesystem.read(directory .. node.uri)
 	end
 end
 
@@ -243,9 +247,11 @@ local function loadSampler(node)
 	}
 end
 
-return function(self, obj, path)
-	file = self.json.decode(love.filesystem.read(path))
+return function(self, obj, path, header, blob)
+	file = header or self.json.decode(love.filesystem.read(path))
+	binary = blob
 	rootObject = obj
+	directory = path:match("(.*[/\\])")
 	
 	--load scenes
 	if file.scenes then

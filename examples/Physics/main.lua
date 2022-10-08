@@ -19,16 +19,13 @@ require("examples/Physics/materials")
 --load objects
 local objects = {
 	scene = dream:loadObject("examples/Physics/objects/scene"),
-	chicken = dream:loadObject("examples/Physics/objects/chicken", {
-		callback = function(object)
-			--we set the shader in the callback so it is initialized before cleanup
-			--alternatively you could disable cleanup, then apply the shader
-			object:setVertexShader("bones")
-		end
-	}),
+	chicken = dream:loadObject("examples/Physics/objects/chicken"),
 	crate = dream:loadObject("examples/Physics/objects/crate"),
 	sphere = dream:loadObject("examples/Physics/objects/sphere", { cleanup = false }),
 }
+
+--add vertex shaders for skinning
+objects.chicken:setVertexShader("bones")
 
 objects.scene:print()
 

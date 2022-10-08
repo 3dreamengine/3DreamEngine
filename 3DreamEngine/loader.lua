@@ -20,7 +20,7 @@ lib.meshTags = {
 
 --the default args used by the object loader
 lib.defaultArgs = {
-	cleanup = true,
+	cleanup = false,
 	mesh = true,
 	export3do = false,
 	skip3do = false,
@@ -57,8 +57,8 @@ end
 
 lib.supportedFiles = {
 	"3do", --3DreamEngine object file - way faster than obj but does not keep vertex information
-	"gltf", --glTF embedded or separate
 	"glb", --glTF binary format
+	"gltf", --glTF embedded or separate
 	"vox", --magicka voxel
 	"obj", --obj file
 	"dae", --dae file
