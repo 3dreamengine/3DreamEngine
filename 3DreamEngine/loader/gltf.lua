@@ -142,6 +142,7 @@ local function loadMaterial(node)
 	end
 	if node.emissiveTexture then
 		material:setEmissionTexture(loadTexture(file.textures[node.emissiveTexture.index + 1]))
+		material:setEmission(1, 1, 1)
 	end
 	
 	--combine textures
