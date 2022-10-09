@@ -78,11 +78,92 @@ local function loadTransform(node)
 	end
 end
 
+local function loadImage(node)
+	if node.uri then
+		return love.image.newImageData(directory .. node.uri)
+	elseif node.bufferView then
+		local bufferView = cached(loadBufferView, file.bufferViews[node.bufferView + 1])
+		local str = bufferView.buffer:sub(bufferView.byteOffset + 1, bufferView.byteOffset + bufferView.byteLength)
+		return love.image.newImageData(love.data.newByteData(str))
+	end
+end
+
+local lookup = {
+	[9728] = "nearest",
+	[9729] = "linear",
+	[9984] = "nearest",
+	[9985] = "linear",
+	[9986] = "nearest",
+	[9987] = "linear",
+}
+
+local function loadSampler(node)
+	return {
+		minFilter = node and lookup[node.minFilter] or "linear",
+		magFilter = node and lookup[node.magFilter] or "linear",
+	}
+end
+
+local function loadTexture(node)
+	if node then
+		local image = cached(loadImage, file.images[node.source + 1])
+		local sampler = node.sampler and cached(loadSampler, file.images[node.sampler + 1]) or loadSampler()
+		local texture = love.graphics.newImage(image)
+		texture:setFilter(sampler.minFilter, sampler.magFilter)
+		return texture, image
+	end
+end
+
 local function loadMaterial(node)
 	if lib.materialLibrary[node.name] then
-		--todo
+		return lib.materialLibrary[node.name]
 	end
-	local material = lib:newMaterial()
+	
+	local material = lib:newMaterial(node.name)
+	
+	local metallicRoughness, occlusionTexture
+	
+	if node.pbrMetallicRoughness then
+		if node.pbrMetallicRoughness.baseColorTexture then
+			local tex, _ = loadTexture(file.textures[node.pbrMetallicRoughness.baseColorTexture.index + 1])
+			material:setAlbedoTexture(tex)
+		end
+		
+		if node.pbrMetallicRoughness.metallicRoughnessTexture then
+			_, metallicRoughness = loadTexture(file.textures[node.pbrMetallicRoughness.metallicRoughnessTexture.index + 1])
+		end
+	end
+	
+	if node.normalTexture then
+		material:setNormalTexture(loadTexture(file.textures[node.normalTexture.index + 1]))
+	end
+	if node.occlusionTexture then
+		_, occlusionTexture = loadTexture(file.textures[node.occlusionTexture.index + 1])
+	end
+	if node.emissiveTexture then
+		material:setEmissionTexture(loadTexture(file.textures[node.emissiveTexture.index + 1]))
+	end
+	
+	--combine textures
+	if metallicRoughness or occlusionTexture then
+		material:setMaterialTexture(lib:combineTextures(metallicRoughness, metallicRoughness, occlusionTexture))
+	end
+	
+	if node.pbrMetallicRoughness then
+		material:setColor(unpack(node.pbrMetallicRoughness.baseColorFactor or { 1, 1, 1, 1 }))
+		material:setMetallic(node.pbrMetallicRoughness.metallicFactor or 1)
+		material:setRoughness(node.pbrMetallicRoughness.roughnessFactor or 1)
+	else
+		material:setColor(1, 1, 1, 1)
+		material:setMetallic(1)
+		material:setRoughness(1)
+	end
+	
+	material:setEmission(unpack(node.emissiveFactor or { 0, 0, 0 }))
+	
+	--material:setAlphaMode(material.alphaMode or "OPAQUE") --todo
+	material:setAlphaCutoff(node.alphaCutoff or 0.5)
+	material:setCullMode(material.doubleSided and "none" or "back")
 	
 	return material
 end

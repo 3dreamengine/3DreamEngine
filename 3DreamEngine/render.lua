@@ -261,7 +261,7 @@ function lib:render(canvases, cam, dynamic)
 				shaderObject.worldShader:perMaterial(self, shaderObject, material)
 				
 				--culling
-				love.graphics.setMeshCullMode(canvases.cullMode or material.cullMode or "back")
+				love.graphics.setMeshCullMode(material.cullMode)
 				
 				self.stats.materialsUsed = self.stats.materialsUsed + 1
 			end

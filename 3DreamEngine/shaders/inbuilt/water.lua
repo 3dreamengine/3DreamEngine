@@ -103,12 +103,12 @@ function sh:buildPixel(dream, mat)
 	//material
 #ifdef MATERIAL_TEXTURE
 	vec3 material = Texel(materialTexture, uvw).xyz;
-	roughness = mix(liquidRoughness, material.x * materialColor.x, density);
-	metallic = mix(liquidMetallic, material.y * materialColor.y, density);
+	metallic = mix(liquidMetallic, material.x * materialColor.x, density);
+	roughness = mix(liquidRoughness, material.y * materialColor.y, density);
 	ao = material.z;
 #else
-	roughness = mix(liquidRoughness, materialColor.x, density);
-	metallic = mix(liquidMetallic, materialColor.y, density);
+	metallic = mix(liquidMetallic, materialColor.x, density);
+	roughness = mix(liquidRoughness, materialColor.y, density);
 #endif
 	
 	//emission
@@ -140,7 +140,7 @@ function sh:perMaterial(dream, shaderObject, material)
 	if shader:hasUniform("materialTexture") then
 		shader:send("materialTexture", dream:getImage(material.materialTexture) or tex.default)
 	end
-	shader:send("materialColor", {material.roughness, material.metallic})
+	shader:send("materialColor", {material.metallic, material.roughness})
 	
 	shader:send("normalTexture", dream:getImage(material.normalTexture) or tex.defaultNormal)
 	

@@ -8,7 +8,7 @@ function sh:getId(dream, mat, shadow)
 	if shadow then
 		return 0
 	else
-		return (mat.normalTexture and 1 or 0) * 2^1 + (mat.emissionTexture and 1 or 0) * 2^2
+		return (mat.normalTexture and 1 or 0) * 2 ^ 1 + (mat.emissionTexture and 1 or 0) * 2 ^ 2 + (mat.materialTexture and 1 or 0) * 2 ^ 3
 	end
 end
 
@@ -52,12 +52,12 @@ function sh:buildPixel(dream, mat)
 	//material
 #ifdef MATERIAL_TEXTURE
 	vec3 material = Texel(materialTexture, VaryingTexCoord.xy).xyz;
-	roughness = material.x * materialColor.x;
-	metallic = material.y * materialColor.y;
+	metallic = material.x * materialColor.x;
+	roughness = material.y * materialColor.y;
 	ao = material.z;
 #else
-	roughness = materialColor.x;
-	metallic = materialColor.y;
+	metallic = materialColor.x;
+	roughness = materialColor.y;
 #endif
 	
 	//emission
@@ -96,7 +96,7 @@ function sh:perMaterial(dream, shaderObject, material)
 	if shader:hasUniform("materialTexture") then
 		shader:send("materialTexture", dream:getImage(material.materialTexture) or tex.default)
 	end
-	shader:send("materialColor", {material.roughness, material.metallic})
+	shader:send("materialColor", { material.metallic, material.roughness })
 	
 	if shader:hasUniform("normalTexture") then
 		shader:send("normalTexture", dream:getImage(material.normalTexture) or tex.defaultNormal)

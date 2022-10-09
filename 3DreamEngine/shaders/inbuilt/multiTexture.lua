@@ -123,12 +123,12 @@ function sh:buildPixel(dream, mat)
 		blend
 	);
 	
-	roughness = material.x;
-	metallic = material.y;
+	metallic = material.x;
+	roughness = material.y;
 	ao = material.z;
 #else
-	roughness = mix(materialColor1.x, materialColor2.x, blend);
-	metallic = mix(materialColor1.y, materialColor2.y, blend);
+	metallic = mix(materialColor1.x, materialColor2.x, blend);
+	roughness = mix(materialColor1.y, materialColor2.y, blend);
 #endif
 	
 	//emission
@@ -191,8 +191,8 @@ function sh:perMaterial(dream, shaderObject, material)
 		shader:send("materialTexture1", dream:getImage(material.materialTexture) or tex.default)
 		shader:send("materialTexture2", dream:getImage(material2.materialTexture) or tex.default)
 	end
-	shader:send("materialColor1", {material.roughness, material.metallic})
-	shader:send("materialColor2", {material2.roughness, material2.metallic})
+	shader:send("materialColor1", {material.metallic, material.roughness})
+	shader:send("materialColor2", {material2.metallic, material2.roughness})
 	
 	if shader:hasUniform("normalTexture1") then
 		shader:send("normalTexture1", dream:getImage(material.normalTexture) or tex.defaultNormal)

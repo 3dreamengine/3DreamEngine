@@ -75,9 +75,6 @@ A material description file is a lua file with [specific fields](https://3dreame
 
 [`dream:getImagePath(path)`](https://3dreamengine.github.io/3DreamEngine/docu/functions#getImagePath) returns the path to the best image, e.g. `test` may return `test.png` if such image is given. It is therefore not necessary to provide extension in the material description files, `getImage()` function or any other `setTexture()` function you may encounter.
 
-### Thumbnails
-Name a smaller version of your image "yourImage_thumb.ext" to let the texture loader automatically load it first, then load the full textures at the end.
-
 
 
 ## Pipeline

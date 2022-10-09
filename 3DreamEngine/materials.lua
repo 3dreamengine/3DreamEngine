@@ -34,7 +34,6 @@ function lib:loadMaterialLibrary(path, prefix)
 			local mat = self:newMaterial((prefix .. s):sub(1, -5))
 			local matLoaded = love.filesystem.load(p)()
 			table.merge(mat, matLoaded)
-			mat.mat = matLoaded
 			mat.library = true
 			self:lookForTextures(mat, path, mat.name)
 			self.materialLibrary[mat.name] = mat
@@ -43,7 +42,6 @@ function lib:loadMaterialLibrary(path, prefix)
 			local mat = self:newMaterial(prefix .. s)
 			local matLoaded = love.filesystem.load(p .. "/material.mat")()
 			table.merge(mat, matLoaded)
-			mat.mat = matLoaded
 			mat.library = true
 			self:lookForTextures(mat, p)
 			self.materialLibrary[mat.name] = mat
@@ -103,7 +101,7 @@ function lib:lookForTextures(mat, directory, filter)
 	--combiner
 	if not mat["materialTexture"] then
 		if mat["metallicTexture"] or mat["roughnessTexture"] or mat["aoTex"] then
-			mat["materialTexture"] = self:combineTextures(mat["roughnessTexture"], mat["metallicTexture"], mat["aoTex"])
+			mat:setMaterialTexture(self:combineTextures(mat["metallicTexture"], mat["roughnessTexture"], mat["aoTex"]))
 		end
 	end
 	
@@ -111,6 +109,4 @@ function lib:lookForTextures(mat, directory, filter)
 	mat.pixelShader = lib:getShader(mat.pixelShader)
 	mat.vertexShader = lib:getShader(mat.vertexShader)
 	mat.worldShader = lib:getShader(mat.worldShader)
-	
-	mat.mat = nil
 end
