@@ -55,9 +55,9 @@ return function(self, obj, path)
 			index = index + vertexCount
 			for i = 1, vertexCount do
 				local v2 = string.split(v[i + 1]:gsub("//", "/0/"), "/")
-				meshVertices:append(vertices[tonumber(v2[1])])
-				meshTexCoords:append(texture[tonumber(v2[2])])
-				meshNormals:append(normals[tonumber(v2[3])])
+				meshVertices:append(vertices[tonumber(v2[1])] or { 0, 0, 0 })
+				meshTexCoords:append(texture[tonumber(v2[2])] or { 0, 0 })
+				meshNormals:append(normals[tonumber(v2[3])] or { 1, 0, 0 })
 			end
 		elseif v[1] == "o" then
 			local meshID
