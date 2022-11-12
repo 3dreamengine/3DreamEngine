@@ -14,7 +14,7 @@ function lib:export3do(obj)
 	
 	--save the length of each data segment
 	data.dataStringsLengths = { }
-	for d, s in pairs(dataStrings) do
+	for _, s in pairs(dataStrings) do
 		table.insert(data.dataStringsLengths, #s)
 	end
 	

@@ -4,6 +4,7 @@
 
 local lib = _3DreamEngine
 
+--todo remove transformScale
 function lib:renderSky(transformProj, camTransform, transformScale)
 	if transformScale then
 		transformProj = transformProj * mat4.getScale(transformScale)
