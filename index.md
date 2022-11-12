@@ -1,14 +1,15 @@
 # Content
 
-Most functions are annotated using EmmyLua doc strings. Therefore, please look up documentation in the respective files in `3DreamEngine/`.
+Most functions are annotated using EmmyLua doc strings. Therefore, please look up documentation in the respective files:
+
+- `3DreamEngine/settings.lua` contains global settings
+- `3DreamEngine/functions.lua` contains global helper functions
+- `3DreamEngine/classes/*` contains classes
 
 Due to its size the documentation is organized in several files:
 
 - [Engine](https://3dreamengine.github.io/3DreamEngine/docu/engine)
   Main components and design choices of the engine
-
-- [Classes](https://3dreamengine.github.io/3DreamEngine/docu/classes)
-  Objects, Materials, Cameras, ...
 
 - [Functions](https://3dreamengine.github.io/3DreamEngine/docu/functions)
   Public functions; from rendering to helpful utils

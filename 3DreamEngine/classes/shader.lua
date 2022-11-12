@@ -1,14 +1,15 @@
 local lib = _3DreamEngine
 
+---@class DreamHasShaders
 local class = { }
 
 function class:setPixelShader(shader)
 	if self.class == "object" then
-		for d,s in pairs(self.objects) do
+		for _, s in pairs(self.objects) do
 			s:setPixelShader(shader)
 		end
 		
-		for d,s in pairs(self.meshes) do
+		for _, s in pairs(self.meshes) do
 			s:setPixelShader(shader)
 		end
 	else
@@ -24,11 +25,11 @@ end
 
 function class:setVertexShader(shader)
 	if self.class == "object" then
-		for d,s in pairs(self.objects) do
+		for _, s in pairs(self.objects) do
 			s:setVertexShader(shader)
 		end
 		
-		for d,s in pairs(self.meshes) do
+		for _, s in pairs(self.meshes) do
 			s:setVertexShader(shader)
 		end
 	else
@@ -44,11 +45,11 @@ end
 
 function class:setWorldShader(shader)
 	if self.class == "object" then
-		for d,s in pairs(self.objects) do
+		for _, s in pairs(self.objects) do
 			s:setWorldShader(shader)
 		end
 		
-		for d,s in pairs(self.meshes) do
+		for _, s in pairs(self.meshes) do
 			s:setWorldShader(shader)
 		end
 	else

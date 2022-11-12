@@ -15,7 +15,7 @@ local socket = dream:loadObject("examples/Lamborghini/socket")
 
 --sun object
 local sun = dream:newLight("sun")
-sun:addShadow()
+sun:addNewShadow()
 sun:setDirection(-1, 1, 1)
 
 function love.draw()

@@ -13,7 +13,7 @@ local meshFormat = {
 	{ "VertexWeight", "float", 4 }
 }
 
-function sh:initMesh(dream, mesh)
+function sh:initMesh(mesh)
 	if mesh:getMesh("mesh") then
 		if not mesh:getMesh("boneMesh") then
 			assert(mesh.joints and mesh.weights, "GPU bones require a joint and weight buffer")

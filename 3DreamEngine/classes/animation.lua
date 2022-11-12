@@ -1,5 +1,7 @@
 local lib = _3DreamEngine
 
+---Creates a new, empty animation
+---@return DreamAnimation | DreamClonable
 function lib:newAnimation()
 	return setmetatable({
 		frames = { },
@@ -8,10 +10,12 @@ function lib:newAnimation()
 	}, self.meta.animation)
 end
 
+---@class DreamAnimation
 local class = {
 	link = { "clone", "animation" }
 }
 
+--todo create that into constructor, receive a list of frames
 function class:finish()
 	local maxTime = 0
 	for _, frames in pairs(self.frames) do
@@ -37,16 +41,21 @@ function class:finish()
 	self.length = maxTime
 end
 
---linear interpolation of position and rotation between two frames
-function class.interpolateFrames(f1, f2, factor)
+---Linear interpolation between two frames
+---@param first DreamAnimationFrame
+---@param Second DreamAnimationFrame
+---@param blend number
+function class.interpolateFrames(first, Second, blend)
 	return {
-		position = f1.position * (1.0 - factor) + f2.position * factor,
-		rotation = f1.rotation:nLerp(f2.rotation, factor),
+		position = first.position * (1.0 - blend) + Second.position * blend,
+		rotation = first.rotation:nLerp(Second.rotation, blend),
 		--todo size?
 	}
 end
 
---returns a new animated pose at a specific time stamp
+---Returns a new animated pose at a specific time stamp
+---@param time number
+---@return table
 function class:getPose(time)
 	local pose = lib:newPose()
 	

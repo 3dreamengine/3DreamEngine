@@ -9,7 +9,7 @@ f.meshLayout = {
 
 local empty = vec4(1, 0, 1, 1)
 function f:create(mesh)
-	mesh:calcTangents()
+	mesh:recalculateTangents()
 	
 	for i = 1, mesh.vertices:getSize() do
 		local vertex = mesh.vertices:getOrDefault(i, empty)

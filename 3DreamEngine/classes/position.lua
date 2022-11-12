@@ -1,5 +1,6 @@
 local lib = _3DreamEngine
 
+---@return DreamPosition | DreamClonable
 function lib:newPosition(position, size, value)
 	local l = {
 		name = "unnamed",
@@ -11,6 +12,7 @@ function lib:newPosition(position, size, value)
 	return setmetatable(l, self.meta.position)
 end
 
+---@class DreamPosition
 local class = {
 	link = { "position", "clone" },
 }

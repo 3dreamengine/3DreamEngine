@@ -13,7 +13,7 @@ dream:setSky(sky.render)
 
 --sun
 local sun = dream:newLight("sun")
-sun:addShadow()
+sun:addNewShadow()
 
 --load all materials
 dream:loadMaterialLibrary("examples/firstpersongame/materials")

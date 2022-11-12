@@ -1,6 +1,8 @@
 local I = mat4.getIdentity()
 
+---@class DreamTransformable
 local class = { }
+
 function class:resetTransform()
 	self.transform = false
 	return self

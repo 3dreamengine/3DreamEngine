@@ -59,7 +59,7 @@ for d, l in pairs(tavern.positions) do
 	l.r = math.random()
 	if l:getValue() == "light" then
 		lights[d] = dream:newLight("point", l:getPosition() + vec3(0, 0.1, 0), vec3(1.0, 0.75, 0.3))
-		lights[d]:addShadow()
+		lights[d]:addNewShadow()
 		lights[d].shadow:setStatic(true)
 		lights[d].shadow:setSmooth(true)
 		lights[d].shadow:setRefreshStepSize(1000)
@@ -67,7 +67,7 @@ for d, l in pairs(tavern.positions) do
 		lights[d]:setAttenuation(3) --unrealistic but looks better
 	elseif l:getValue() == "fire" then
 		lights[d] = dream:newLight("point", l:getPosition() + vec3(0, 0.1, 0), vec3(1.0, 0.75, 0.2))
-		lights[d]:addShadow()
+		lights[d]:addNewShadow()
 		lights[d].shadow:setStatic(true)
 		lights[d].shadow:setSmooth(true)
 		lights[d].shadow:setRefreshStepSize(1000)
@@ -169,7 +169,7 @@ function love.draw()
 	if lookingAtCheck then
 		local t = love.timer.getTime()
 		local coll = false
-		local origin = dream.camera.pos
+		local origin = dream.camera.position
 		local direction
 		
 		if rotateCamera then

@@ -1,11 +1,13 @@
 local lib = _3DreamEngine
 
+---@return DreamObject | DreamClonable | DreamTransformable | DreamHasShaders
 function lib:newLinkedObject(original, source)
 	return setmetatable({
 		linked = source
 	}, { __index = original })
 end
 
+---@return DreamObject | DreamClonable | DreamTransformable | DreamHasShaders
 function lib:newObject(name)
 	return setmetatable({
 		objects = { },
@@ -29,6 +31,15 @@ function lib:newObject(name)
 	}, self.meta.object)
 end
 
+---@class DreamObject
+---@field objects DreamObject[]
+---@field meshes DreamMesh[]
+---@field positions DreamPosition[]
+---@field lights DreamLight[]
+--todo
+---@field physics DreamPhysics[]
+---@field reflections DreamReflection[]
+---@field animations DreamAnimation[]
 local class = {
 	link = { "clone", "transform", "shader", "object" },
 }
@@ -39,22 +50,6 @@ local function count(t)
 		c = c + 1
 	end
 	return c
-end
-
-function class:tostring()
-	local tags = { }
-	
-	--lod
-	local min, max = self:getLOD()
-	if min then
-		table.insert(tags, math.floor(min) .. "-" .. math.floor(max))
-	end
-	
-	--tags
-	for d, s in pairs(self.tags) do
-		table.insert(tags, tostring(d))
-	end
-	return string.format("%s: %d objects, %d meshes, %d physics, %d lights%s%s", self.name, count(self.objects), count(self.meshes), count(self.physics or { }), count(self.lights), #tags > 0 and ", " or "", table.concat(tags, ", "))
 end
 
 local function copy(t)
@@ -77,10 +72,15 @@ function class:clone()
 	return setmetatable(n, getmetatable(self))
 end
 
+---The main skeleton is usually the one used by all meshes, but may be nil or unused
+---@return DreamSkeleton
 function class:getMainSkeleton()
 	return self.mainSkeleton
 end
 
+---Range in which this object should be rendered
+---@param min number
+---@param max number
 function class:setLOD(min, max)
 	self.LOD_min = min
 	self.LOD_max = max
@@ -147,6 +147,8 @@ function class:preload(force)
 	end
 end
 
+--todo
+---Converts all meshes to physics colliders
 function class:meshesToPhysics()
 	for id, mesh in pairs(self.meshes) do
 		for idx, m in ipairs(mesh:separate()) do
@@ -169,15 +171,16 @@ local function getAllMeshes(object, list)
 	end
 end
 
+---Get all child meshes, recursively
 function class:getAllMeshes()
 	local list = { }
 	getAllMeshes(self, list)
 	return list
 end
 
---merge all meshes, recursively, of an object and concatenate all buffer together
---it uses a material of one random mesh and therefore requires only identical materials
---it returns a new object with only one mesh named merged
+---Merge all meshes, recursively, of an object and concatenate all buffer together
+--It uses a material of one random mesh and therefore requires only identical materials
+--It returns a new object with only one mesh named merged
 function class:merge()
 	--apply the current transform
 	local appliedSource = self:clone()
@@ -186,7 +189,7 @@ function class:merge()
 	--get valid meshes
 	local meshes = appliedSource:getAllMeshes()
 	local sourceMesh = meshes[next(meshes)]
-	local mesh = lib:newMesh("merged", sourceMesh.material, sourceMesh.meshType)
+	local mesh = lib:newMesh("merged", sourceMesh.material, sourceMesh.meshFormat)
 	
 	assert(sourceMesh.vertices, "At least the vertex buffer is required.")
 	
@@ -246,6 +249,7 @@ function class:merge()
 	return final
 end
 
+---Apply the current transformation to the meshes
 function class:applyTransform()
 	for _, o in pairs(self.objects) do
 		o:setTransform(self:getTransform() * o:getTransform())
@@ -257,7 +261,8 @@ function class:applyTransform()
 	self:resetTransform()
 end
 
---apply joints to mesh data directly
+---Apply joints to mesh data directly
+---@param skeleton DreamSkeleton @ optional
 function class:applyBones(skeleton)
 	for _, m in pairs(self.meshes) do
 		m:applyBones(skeleton)
@@ -269,111 +274,7 @@ function class:applyBones(skeleton)
 	end
 end
 
-local tree = { }
-
-local function printf(str, ...)
-	table.insert(tree, { text = string.format(tostring(str), ...) })
-end
-
-local function push(str, ...)
-	printf(str, ...)
-	tree[#tree].children = { parent = tree }
-	tree = tree[#tree].children
-end
-
-local function pop()
-	tree = tree.parent
-end
-
-local function printNode(node, tabs)
-	tabs = tabs or ""
-	for d, s in ipairs(node) do
-		print(tabs .. (d == #node and "└─" or "├─") .. s.text)
-		
-		if s.children then
-			printNode(s.children, tabs .. (d == #node and "  " or "│ "))
-		end
-	end
-	tree = { }
-end
-
-function class:print()
-	--general information
-	if self.linked then
-		push(self.name .. " (linked)")
-	else
-		push(self.name)
-	end
-	
-	if self.linked then
-		pop()
-		return
-	end
-	
-	--print objects
-	if next(self.meshes) then
-		push("meshes")
-		for _, m in pairs(self.meshes) do
-			printf(m)
-		end
-		pop()
-	end
-	
-	--physics
-	if next(self.physics) then
-		push("physics")
-		for _, s in pairs(self.physics or { }) do
-			printf("%s", s.name)
-		end
-		pop()
-	end
-	
-	--lights
-	if next(self.lights) then
-		push("lights")
-		for _, l in pairs(self.lights) do
-			printf(l)
-		end
-		pop()
-	end
-	
-	--positions
-	if next(self.positions) then
-		push("positions")
-		for _, p in pairs(self.positions) do
-			printf("%s at %s", p.name, p.position)
-		end
-		pop()
-	end
-	
-	--animations
-	if next(self.animations) then
-		push("animations")
-		for d, s in pairs(self.animations) do
-			printf("%s: %.1f sec", d, s.length)
-		end
-		pop()
-	end
-	
-	--print objects
-	if next(self.objects) then
-		push("objects")
-		for _, o in pairs(self.objects) do
-			o:print()
-		end
-		pop()
-	end
-	
-	pop()
-	
-	--print result
-	if not tree.parent then
-		printNode(tree)
-		tree = { }
-	end
-end
-
---create meshes
+---Create all render-able meshes
 function class:createMeshes()
 	if not self.linked then
 		for _, mesh in pairs(self.meshes) do
@@ -388,35 +289,40 @@ function class:createMeshes()
 	end
 end
 
-function class:setVisible(b)
-	self:setRenderVisibility(b)
-	self:setShadowVisibility(b)
+---@param visibility boolean
+function class:setVisible(visibility)
+	self:setRenderVisibility(visibility)
+	self:setShadowVisibility(visibility)
 end
 
-function class:setRenderVisibility(b)
+---@param visibility boolean
+function class:setRenderVisibility(visibility)
 	for _, s in pairs(self.objects) do
-		s:setRenderVisibility(b)
+		s:setRenderVisibility(visibility)
 	end
 	for _, s in pairs(self.meshes) do
-		s:setRenderVisibility(b)
-	end
-end
-
-function class:setShadowVisibility(b)
-	for _, s in pairs(self.objects) do
-		s:setShadowVisibility(b)
-	end
-	for _, s in pairs(self.meshes) do
-		s:setShadowVisibility(b)
+		s:setRenderVisibility(visibility)
 	end
 end
 
-function class:setFarVisibility(b)
+---@param visibility boolean
+function class:setShadowVisibility(visibility)
 	for _, s in pairs(self.objects) do
-		s:setFarVisibility(b)
+		s:setShadowVisibility(visibility)
 	end
 	for _, s in pairs(self.meshes) do
-		s:setFarVisibility(b)
+		s:setShadowVisibility(visibility)
+	end
+end
+
+---Set whether the outer layers of the sun cascade shadow should render this object
+---@param visibility boolean
+function class:setFarVisibility(visibility)
+	for _, s in pairs(self.objects) do
+		s:setFarVisibility(visibility)
+	end
+	for _, s in pairs(self.meshes) do
+		s:setFarVisibility(visibility)
 	end
 end
 
@@ -517,6 +423,127 @@ function class:decode(meshData)
 	for _, s in pairs(self.positions) do
 		s.position = vec3(s.position)
 	end
+end
+
+local tree = { }
+
+local function printf(str, ...)
+	table.insert(tree, { text = string.format(tostring(str), ...) })
+end
+
+local function push(str, ...)
+	printf(str, ...)
+	tree[#tree].children = { parent = tree }
+	tree = tree[#tree].children
+end
+
+local function pop()
+	tree = tree.parent
+end
+
+local function printNode(node, tabs)
+	tabs = tabs or ""
+	for d, s in ipairs(node) do
+		print(tabs .. (d == #node and "└─" or "├─") .. s.text)
+		
+		if s.children then
+			printNode(s.children, tabs .. (d == #node and "  " or "│ "))
+		end
+	end
+	tree = { }
+end
+
+---Print a detailed summary of this object
+function class:print()
+	--general information
+	if self.linked then
+		push(self.name .. " (linked)")
+	else
+		push(self.name)
+	end
+	
+	if self.linked then
+		pop()
+		return
+	end
+	
+	--print objects
+	if next(self.meshes) then
+		push("meshes")
+		for _, m in pairs(self.meshes) do
+			printf(m)
+		end
+		pop()
+	end
+	
+	--physics
+	if next(self.physics) then
+		push("physics")
+		for _, s in pairs(self.physics or { }) do
+			printf("%s", s.name)
+		end
+		pop()
+	end
+	
+	--lights
+	if next(self.lights) then
+		push("lights")
+		for _, l in pairs(self.lights) do
+			printf(l)
+		end
+		pop()
+	end
+	
+	--positions
+	if next(self.positions) then
+		push("positions")
+		for _, p in pairs(self.positions) do
+			printf("%s at %s", p.name, p.position)
+		end
+		pop()
+	end
+	
+	--animations
+	if next(self.animations) then
+		push("animations")
+		for d, s in pairs(self.animations) do
+			printf("%s: %.1f sec", d, s.length)
+		end
+		pop()
+	end
+	
+	--print objects
+	if next(self.objects) then
+		push("objects")
+		for _, o in pairs(self.objects) do
+			o:print()
+		end
+		pop()
+	end
+	
+	pop()
+	
+	--print result
+	if not tree.parent then
+		printNode(tree)
+		tree = { }
+	end
+end
+
+function class:tostring()
+	local tags = { }
+	
+	--lod
+	local min, max = self:getLOD()
+	if min then
+		table.insert(tags, math.floor(min) .. "-" .. math.floor(max))
+	end
+	
+	--tags
+	for d, s in pairs(self.tags) do
+		table.insert(tags, tostring(d))
+	end
+	return string.format("%s: %d objects, %d meshes, %d physics, %d lights%s%s", self.name, count(self.objects), count(self.meshes), count(self.physics or { }), count(self.lights), #tags > 0 and ", " or "", table.concat(tags, ", "))
 end
 
 return class

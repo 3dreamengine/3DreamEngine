@@ -1,15 +1,17 @@
+---@class DreamClonable
 local class = {
 	link = { },
 }
 
+---Clone
 function class:clone()
 	local n = { }
 	
-	for d,s in pairs(self) do
-		if type(s) == "table" and type(s.clone) == "function" then
-			n[d] = s:clone()
+	for key, value in pairs(self) do
+		if type(value) == "table" and type(value.clone) == "function" then
+			n[key] = value:clone()
 		else
-			n[d] = s
+			n[key] = value
 		end
 	end
 	

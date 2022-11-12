@@ -20,7 +20,7 @@ scene:print()
 --light
 local p = scene.positions.POS_light:getPosition()
 local light = dream:newLight("point", p, vec3(1.4, 1.2, 1.0), 40.0)
-light:addShadow()
+light:addNewShadow()
 light.shadow:setStatic(true)
 light.shadow:setSmooth(true)
 light.blacklist = {[scene.objects.chandelier_glass.meshes.chandelier_glass] = true, [scene.objects.chandelier.meshes.chandelier] = true}

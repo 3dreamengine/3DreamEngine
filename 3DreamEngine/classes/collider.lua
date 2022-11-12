@@ -7,6 +7,7 @@ local shapeModes = {
 	wall = true
 }
 
+--todo rename, documented
 function lib:newCollider(mesh, shapeMode)
 	shapeMode = shapeMode or "simple"
 	assert(shapeModes[shapeMode], "Unknown collider shape mode " .. tostring(shapeMode))

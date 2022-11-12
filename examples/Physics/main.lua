@@ -5,7 +5,7 @@ love.mouse.setRelativeMode(true)
 
 --sun and environment
 local sun = dream:newLight("sun")
-sun:addShadow()
+sun:addNewShadow()
 
 local sky = require("extensions/sky")
 dream:setSky(sky.render)

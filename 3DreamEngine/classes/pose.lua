@@ -1,28 +1,32 @@
 local lib = _3DreamEngine
 
+---@return DreamPose | DreamClonable
 function lib:newPose()
 	return setmetatable({}, self.meta.pose)
 end
 
+---@class DreamPose
 local class = {
-	link = {"clone", "pose"},
+	link = { "clone", "pose" },
 }
 
---blend with another pose
-function class:blend(b, factor)
+---Blend with another pose
+---@param second DreamPose
+---@param blend number
+function class:blend(second, blend)
 	local final = lib:newPose()
 	local keys = { }
-	for name, joint in pairs(self) do
+	for name, _ in pairs(self) do
 		keys[name] = true
 	end
-	for name, joint in pairs(b) do
+	for name, _ in pairs(second) do
 		keys[name] = true
 	end
 	for name, _ in pairs(keys) do
-		if self[name] and b[name] then
-			final[name] = lib.classes.animation.interpolateFrames(self[name], b[name], factor)
+		if self[name] and second[name] then
+			final[name] = lib.classes.animation.interpolateFrames(self[name], second[name], blend)
 		else
-			final[name] = self[name] or b[name]
+			final[name] = self[name] or second[name]
 		end
 	end
 	return final

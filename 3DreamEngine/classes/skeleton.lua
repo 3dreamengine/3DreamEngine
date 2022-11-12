@@ -1,5 +1,6 @@
 local lib = _3DreamEngine
 
+---@return DreamSkeleton
 function lib:newSkeleton(root)
 	return setmetatable({
 		root = root,
@@ -7,6 +8,7 @@ function lib:newSkeleton(root)
 	}, self.meta.skeleton)
 end
 
+---@class DreamSkeleton
 local class = {
 	link = { "skeleton" },
 }
@@ -32,12 +34,15 @@ function class:applyPoseToNode(node, pose, parentTransform)
 	end
 end
 
---apply the pose to the skeleton
+---Apply the pose to the skeleton
 function class:applyPose(pose)
 	self.transforms = { }
 	self:applyPoseToNode(self.root, pose, false)
 end
 
+---Get the transformation matrix for a given joint name
+---@param name string
+---@return "mat4"
 function class:getTransform(name)
 	return self.transforms[name]
 end

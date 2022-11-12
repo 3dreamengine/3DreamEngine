@@ -1,5 +1,6 @@
 local lib = _3DreamEngine
 
+---@return DreamBuffer
 function lib:newDynamicBuffer()
 	return setmetatable({
 		buffer = { }

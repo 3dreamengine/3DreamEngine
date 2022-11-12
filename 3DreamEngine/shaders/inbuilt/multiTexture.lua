@@ -2,7 +2,7 @@ local sh = { }
 
 sh.type = "pixel"
 
-sh.meshType = "textured"
+sh.meshFormat = "textured"
 
 function sh:getId(dream, mat, shadow)
 	if shadow then
@@ -12,7 +12,7 @@ function sh:getId(dream, mat, shadow)
 	end
 end
 
-function sh:initMesh(dream, mesh)
+function sh:initMesh(mesh)
 	if mesh:getMesh("mesh") then
 		if not mesh:getMesh("uv2Mesh") then
 			assert(mesh.colors, "To use the multiTetxure shader the color buffer should contain the blending factor.")

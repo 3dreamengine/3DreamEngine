@@ -1,5 +1,6 @@
 local lib = _3DreamEngine
 
+---@return DreamLight
 function lib:newLight(typ, position, color, brightness)
 	local l = {
 		typ = typ or "point",
@@ -11,6 +12,7 @@ function lib:newLight(typ, position, color, brightness)
 		brightness = brightness or 1.0,
 		attenuation = 2.0,
 		
+		--todo remove
 		godray = false,
 		godrayLength = typ == "sun" and 0.1 or 0.05,
 		godraySize = typ == "sun" and 0.1 or 0.035,
@@ -19,33 +21,42 @@ function lib:newLight(typ, position, color, brightness)
 	return setmetatable(l, self.meta.light)
 end
 
+---@class DreamLight
 local class = {
-	link = {"light", "clone"},
-	
-	setterGetter = {
-		name = "string",
-		size = "number",
-		attenuation = "number",
-		godrayLength = "number",
-		godraySize = "number",
-	},
+	link = { "light", "clone" },
 }
 
 function class:tostring()
 	return string.format("%s (%.3f brightness)", self.name, self.brightness)
 end
 
+---@param name string
 function class:setName(name)
 	self.name = lib:removePostfix(name)
 end
-
-function class:setPosition(position)
-	self.position = position
-end
-function class:getPosition()
-	return self.position
+function class:getName()
+	return self.name
 end
 
+---The size mostly affects smooth lighting
+---@param size number
+function class:setSize(size)
+	self.size = size
+end
+function class:getSize()
+	return self.size
+end
+
+---The attenuation exponent should be 2.0 for realism, but higher values produce a more cozy, artistic result
+---@param attenuation number
+function class:setAttenuation(attenuation)
+	self.attenuation = attenuation
+end
+function class:getAttenuation()
+	return self.attenuation
+end
+
+--todo remove
 function class:setGodrays(e)
 	self.godrays = e
 end
@@ -61,7 +72,7 @@ function class:getBrightness()
 end
 
 function class:setColor(r, g, b)
-	self.color = vec3(r, g, b):normalize()
+	self.color = vec3(r, g, b)
 end
 function class:getColor()
 	return self.color
@@ -81,19 +92,20 @@ function class:getDirection()
 	return self.direction
 end
 
-function class:addShadow(res)
-	if type(res) == "table" then
-		assert(res.typ, "Provided shadow object does not seem to be a shadow.")
-		self.shadow = res
-		self.shadow:refresh()
-	else
-		self.shadow = lib:newShadow(self.typ, res)
-	end
+---@param shadow DreamShadow
+function class:addShadow(shadow)
+	assert(shadow and shadow.typ, "Provided shadow object does not seem to be a shadow.")
+	self.shadow = shadow
+	self.shadow:refresh()
 end
 
-function class:setShadow(shadow)
-	self.shadow = shadow
+---Creates a new shadow with given resolution
+---@param resolution number
+function class:addNewShadow(resolution)
+	self.shadow = lib:newShadow(self.typ, resolution)
 end
+
+---@return DreamShadow
 function class:getShadow()
 	return self.shadow
 end

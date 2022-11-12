@@ -46,7 +46,7 @@ function lib:buildScene(typ, dynamic, alpha, cam, blacklist, frustumCheck, noSma
 			for _, materialGroup in ipairs(materialGroups) do
 				for _, task in pairs(materialGroup) do
 					local mesh = task:getMesh()
-					if mesh.mesh and (not blacklist or not blacklist[mesh]) and (not noSmallObjects or mesh.farVisibility ~= false) then
+					if mesh.mesh and (not blacklist or not blacklist[mesh]) and (not noSmallObjects or mesh.farShadowVisibility ~= false) then
 						if not frustumCheck or not mesh.boundingBox.initialized or self:inFrustum(cam, task:getPosition(), task:getSize(), mesh.rID) then
 							task:setShaderID(shaderID)
 							table.insert(scene, task)
@@ -583,7 +583,7 @@ function lib:renderFull(cam, canvases)
 				love.graphics.setBlendMode("multiply", "premultiplied")
 				love.graphics.draw(canvases.AO_2, 0, 0, 0, 1 / self.AO_resolution)
 			end
-		elseif canvases.smode == "lite" then
+		elseif canvases.mode == "lite" then
 			--without final and blur, draw directly on color
 			love.graphics.setShader(self:getBasicShader("rrr1"))
 			love.graphics.setCanvas(canvases.color)
@@ -612,7 +612,7 @@ function lib:renderFull(cam, canvases)
 			love.graphics.setBlendMode("replace", "premultiplied")
 		end
 		
-		--autochoose
+		--auto choose
 		local quality = self.bloom_quality
 		if quality < 0 then
 			quality = math.floor(math.log(self.bloom_resolution * self.bloom_size * canvases.width) - 1.4)

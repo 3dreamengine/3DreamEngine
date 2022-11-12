@@ -146,10 +146,7 @@ function lib:getFogHeight()
 end
 
 ---Sets the reflection type used for reflections, "sky" uses the Sky dome and only makes sense when using an animated, custom dome, Texture can be a 2D HDRi or a CubeImage, or an 3Dream Reflection object
----@param texture Texture
----@param texture Reflection
----@param texture "false"
----@param texture "sky"
+---@param texture Texture|DreamReflection|"false"|"sky"
 function lib:setDefaultReflection(texture)
 	if texture == "sky" then
 		--use sky

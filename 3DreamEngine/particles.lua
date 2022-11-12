@@ -14,34 +14,34 @@ local maxCount = 1024 * 32
 
 --instancemesh
 local instanceFormat = {
-	{"InstanceCenter", "float", 3},    -- x, y, z
-	{"InstanceRotation", "float", 1},  -- rotation
-	{"InstanceSize", "float", 2},      -- size
-	{"InstanceTexOffset", "float", 2}, -- uv offset
-	{"InstanceTexScale", "float", 2},  -- uv scale
-	{"InstanceEmission", "float", 1},  -- emission
-	{"InstanceDistortion", "float", 1},-- distortion strength
-	{"InstanceColor", "byte", 4},      -- color
+	{ "InstanceCenter", "float", 3 }, -- x, y, z
+	{ "InstanceRotation", "float", 1 }, -- rotation
+	{ "InstanceSize", "float", 2 }, -- size
+	{ "InstanceTexOffset", "float", 2 }, -- uv offset
+	{ "InstanceTexScale", "float", 2 }, -- uv scale
+	{ "InstanceEmission", "float", 1 }, -- emission
+	{ "InstanceDistortion", "float", 1 }, -- distortion strength
+	{ "InstanceColor", "byte", 4 }, -- color
 }
 
 --quad
 local f = {
-	{"VertexPosition", "float", 3},    -- x, y, z
-	{"VertexTexCoord", "float", 2},    -- uv
+	{ "VertexPosition", "float", 3 }, -- x, y, z
+	{ "VertexTexCoord", "float", 2 }, -- uv
 }
 local mesh = love.graphics.newMesh(f, {
-	{-0.5, -0.5, 0.0, 1.0, 1.0},
-	{0.5, -0.5, 0.0, 0.0, 1.0},
-	{0.5, 0.5, 0.0, 0.0, 0.0},
-	{-0.5, 0.5, 0.0, 1.0, 0.0},
+	{ -0.5, -0.5, 0.0, 1.0, 1.0 },
+	{ 0.5, -0.5, 0.0, 0.0, 1.0 },
+	{ 0.5, 0.5, 0.0, 0.0, 0.0 },
+	{ -0.5, 0.5, 0.0, 1.0, 0.0 },
 }, "fan", "static")
 
 
 --sorter (surprisingly this works faster than caching the distances
 local sortingCamPos
 local sortFunction = function(a, b)
-	local distA = (a[1] - sortingCamPos[1])^2 + (a[2] - sortingCamPos[2])^2 + (a[3] - sortingCamPos[3])^2
-	local distB = (b[1] - sortingCamPos[1])^2 + (b[2] - sortingCamPos[2])^2 + (b[3] - sortingCamPos[3])^2
+	local distA = (a[1] - sortingCamPos[1]) ^ 2 + (a[2] - sortingCamPos[2]) ^ 2 + (a[3] - sortingCamPos[3]) ^ 2
+	local distB = (b[1] - sortingCamPos[1]) ^ 2 + (b[2] - sortingCamPos[2]) ^ 2 + (b[3] - sortingCamPos[3]) ^ 2
 	return distA > distB
 end
 
@@ -56,7 +56,7 @@ local meta = {
 		local n = #self.instances
 		if n < maxCount then
 			local r, g, b, a = love.graphics.getColor()
-			self.instances[n+1] = {x, y, z, rot or 0, sx, sy or sx or 1, 0, 0, 1, 1, emission or (self.emissionTexture and 1 or 0), distortion or 1, r, g, b, a}
+			self.instances[n + 1] = { x, y, z, rot or 0, sx, sy or sx or 1, 0, 0, 1, 1, emission or (self.emissionTexture and 1 or 0), distortion or 1, r, g, b, a }
 		end
 	end,
 	
@@ -68,7 +68,7 @@ local meta = {
 			local sw, sh = quad:getTextureDimensions()
 			local ratio = h / w
 			local r, g, b, a = love.graphics.getColor()
-			self.instances[n+1] = {x, y, z, rot or 0, sx or 1, (sy or sx or 1) * ratio, qx / sw, qy / sh, w / sw, h / sh, emission or (self.emissionTexture and 1 or 0), distortion or 1, r, g, b, a}
+			self.instances[n + 1] = { x, y, z, rot or 0, sx or 1, (sy or sx or 1) * ratio, qx / sw, qy / sh, w / sw, h / sh, emission or (self.emissionTexture and 1 or 0), distortion or 1, r, g, b, a }
 		end
 	end,
 	
@@ -88,7 +88,7 @@ local meta = {
 			_G.instanceMesh = love.graphics.newMesh(instanceFormat, math.ceil(#self.instances / minIncreaseStep) * minIncreaseStep, "triangles", "dynamic")
 			
 			--attach instance mesh
-			for d,s in pairs({"InstanceCenter", "InstanceRotation", "InstanceSize", "InstanceTexScale", "InstanceTexOffset", "InstanceEmission", "InstanceDistortion", "InstanceColor"}) do
+			for d, s in pairs({ "InstanceCenter", "InstanceRotation", "InstanceSize", "InstanceTexScale", "InstanceTexOffset", "InstanceEmission", "InstanceDistortion", "InstanceColor" }) do
 				mesh:detachAttribute(s)
 				mesh:attachAttribute(s, instanceMesh, "perinstance")
 			end
@@ -174,5 +174,5 @@ function lib:newParticleBatch(texture, emissionTexture, distortionTexture)
 	
 	p.instances = { }
 	
-	return setmetatable(p, {__index = meta})
+	return setmetatable(p, { __index = meta })
 end

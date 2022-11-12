@@ -2,7 +2,7 @@ local sh = { }
 
 sh.type = "pixel"
 
-sh.meshType = "material"
+sh.meshFormat = "material"
 
 function sh:getId(dream, mat, shadow)
 	return 0

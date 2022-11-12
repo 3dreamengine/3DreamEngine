@@ -82,7 +82,7 @@ function job:execute(light)
 		
 		--render
 		local smooth = false
-		if light.shadow.dynamic or true then
+		if light.shadow.dynamic then
 			if shadowCam.rendered then
 				--dynamic part
 				lib:renderShadows(shadowCam, canvases, light.blacklist, true, cascade > 1, false)

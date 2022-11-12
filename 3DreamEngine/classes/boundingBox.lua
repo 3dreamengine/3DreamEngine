@@ -21,16 +21,9 @@ function lib:newBoundingBox(first, second, center, size)
 	}, self.meta.boundingBox)
 end
 
+---@class DreamBoundingBox
 local class = {
-	link = {"clone", "boundingBox"},
-	
-	setterGetter = {
-		first = "table",
-		second = "table",
-		center = "table",
-		size = "number",
-		initialized = "boolean",
-	}
+	link = { "clone", "boundingBox" },
 }
 
 function class:decode()
@@ -39,17 +32,51 @@ function class:decode()
 	self.center = vec3(self.center)
 end
 
-function class:merge(bb)
+---Merge with a second bounding box
+---@param boundingBox DreamBoundingBox
+function class:merge(boundingBox)
+	--todo bounding spheres not merged efficiently
 	return lib:newBoundingBox(
-		self.first:max(bb.first),
-		self.second:max(bb.second),
-		(self.center + bb.center) / 2
+			self.first:max(boundingBox.first),
+			self.second:max(boundingBox.second),
+			(self.center + boundingBox.center) / 2
 	)
 end
 
+---Extend bounding box
+---@param margin number
 function class:extend(margin)
 	local m = vec3(margin, margin, margin)
 	return lib:newBoundingBox(self.first - m, self.second + m, self.center, self.size)
+end
+
+function class:setInitialized(b)
+	self.initialized = b
+end
+
+---@return boolean
+function class:isInitialized()
+	return self.initialized
+end
+
+---@return "vec3"
+function class:getFirst()
+	return self.first
+end
+
+---@return "vec3"
+function class:getSecond()
+	return self.second
+end
+
+---@return "vec3"
+function class:getCenter()
+	return self.center
+end
+
+---@return number
+function class:getSize()
+	return self.size
 end
 
 return class

@@ -1,40 +1,87 @@
 local lib = _3DreamEngine
 
-function lib:newMesh(name, material, meshType)
-	local o = {
+---newMesh
+---@param name string
+---@param material DreamMaterial
+---@param meshFormat DreamMeshFormat @ optional, uses material or global pixel shaders mesh format
+---@return DreamMesh | DreamClonable | DreamHasShaders
+function lib:newMesh(name, material, meshFormat)
+	local mesh = {
 		name = name,
 		material = material,
-		
 		boundingBox = self:newEmptyBoundingBox(),
 		
 		meshDrawMode = "triangles",
-		meshType = meshType or (material.pixelShader or self.defaultPixelShader).meshType,
-		
+		meshFormat = meshFormat or (material.pixelShader or self.defaultPixelShader).meshFormat,
 		mesh = false,
+		
 		skeleton = false,
 		
+		--todo replace with simple meshes
 		preventCleanup = false,
 		
 		renderVisibility = true,
 		shadowVisibility = true,
 		
+		--todo split instance mesh up into custom mesh class
 		instancesCount = 0,
 	}
 	
-	return setmetatable(o, self.meta.mesh)
+	return setmetatable(mesh, self.meta.mesh)
 end
 
+---@class DreamMesh
+---@field name string
+---@field meshFormat DreamMeshFormat
+---@field boundingBox DreamBoundingBox
+---@field meshDrawMode "MeshDrawMode"
+---@field meshFormat DreamMeshFormat
+---@field mesh DreamMesh
+---@field skeleton DreamSkeleton
+---@field preventCleanup boolean
+---@field renderVisibility boolean @ visible in render pass
+---@field shadowVisibility boolean @ visible in shadow pass
+---@field instancesCount number @ number of instances in this instance mesh, if it is one
 local class = {
 	link = { "clone", "shader", "mesh" },
-	
-	setterGetter = {
-		instancesCount = "number",
-		renderVisibility = "boolean",
-		shadowVisibility = "boolean",
-		farVisibility = "boolean",
-	}
 }
 
+--todo move
+function class:getInstanceCount()
+	return self.instancesCount
+end
+
+---@param visibility boolean
+function class:setVisible(visibility)
+	self:setRenderVisibility(visibility)
+	self:setShadowVisibility(visibility)
+end
+
+---@param visibility boolean
+function class:setRenderVisibility(visibility)
+	self.renderVisibility = visibility
+end
+function class:getRenderVisibility()
+	return self.renderVisibility
+end
+
+---@param visibility boolean
+function class:setShadowVisibility(visibility)
+	self.renderVisibility = visibility
+end
+function class:getShadowVisibility()
+	return self.renderVisibility
+end
+
+---@param visibility boolean
+function class:setFarShadowVisibility(visibility)
+	self.farShadowVisibility = visibility
+end
+function class:getFarShadowVisibility()
+	return self.farShadowVisibility
+end
+
+---@param name string
 function class:setName(name)
 	self.name = lib:removePostfix(name)
 end
@@ -42,6 +89,7 @@ function class:getName()
 	return self.name
 end
 
+---@param skeleton DreamSkeleton
 function class:setSkeleton(skeleton)
 	self.skeleton = skeleton
 end
@@ -49,6 +97,7 @@ function class:getSkeleton()
 	return self.skeleton
 end
 
+--todo remove
 function class:setPreventCleanup(t)
 	self.preventCleanup = t
 end
@@ -103,29 +152,29 @@ function class:updateBoundingBox()
 	self.boundingBox.size = math.max(math.sqrt(max), self.boundingBox.size)
 end
 
-local meshTypeWarning
+local meshFormatWarning
 function class:initShaders()
 	--pixel
-	local ps = self.material.pixelShader or self.pixelShader or lib.defaultPixelShader
-	if ps.initMesh then
-		ps:initMesh(lib, self)
+	local pixelShader = self.material.pixelShader or self.pixelShader or lib.defaultPixelShader
+	if pixelShader.initMesh then
+		pixelShader:initMesh(self)
 	end
 	
 	--vertex
-	local vs = self.material.vertexShader or self.vertexShader or lib.defaultVertexShader
-	if vs.initMesh then
-		vs:initMesh(lib, self)
+	local vertexShader = self.material.vertexShader or self.vertexShader or lib.defaultVertexShader
+	if vertexShader.initMesh then
+		vertexShader:initMesh(self)
 	end
 	
 	--world
-	local ws = self.material.worldShader or self.worldShader or lib.defaultWorldShader
-	if ws.initMesh then
-		ws:initMesh(lib, self)
+	local worldShader = self.material.worldShader or self.worldShader or lib.defaultWorldShader
+	if worldShader.initMesh then
+		worldShader:initMesh(self)
 	end
 	
 	--recreate mesh
-	if self.mesh and not meshTypeWarning and (ps.meshType ~= self.meshType or vs.meshType ~= self.meshType or ws.meshType ~= self.meshType) then
-		meshTypeWarning = true
+	if self.mesh and not meshFormatWarning and (pixelShader.meshFormat ~= self.meshFormat or vertexShader.meshFormat ~= self.meshFormat or worldShader.meshFormat ~= self.meshFormat) then
+		meshFormatWarning = true
 		print("WARNING: Required and given mesh type do not match. Either set a default shader before loading the object or provide a shader in the material file.")
 	end
 	
@@ -133,6 +182,7 @@ function class:initShaders()
 end
 
 --clean most primary buffers
+--todo buffers are now classes and can be cleaned up more efficiently
 function class:cleanup()
 	if not self.preventCleanup then
 		self.vertices = nil
@@ -154,6 +204,8 @@ function class:cleanup()
 	end
 end
 
+---Preload all required textures, meshes and resources now
+---@param force boolean @ even bypass threaded resource loading
 function class:preload(force)
 	if self.preloaded then
 		return
@@ -174,6 +226,8 @@ function class:preload(force)
 	end
 end
 
+---Get a mesh, load automatically if required
+---@param name DreamMesh
 function class:getMesh(name)
 	local mesh = self[name]
 	if type(mesh) == "userdata" then
@@ -193,8 +247,8 @@ function class:getMesh(name)
 			newMesh:setVertices(mesh.vertices)
 			
 			--cache it for later, in case it is a shared mesh
-			for d, s in pairs(mesh) do
-				mesh[d] = nil
+			for key, _ in pairs(mesh) do
+				mesh[key] = nil
 			end
 			mesh.mesh = newMesh
 			
@@ -204,6 +258,8 @@ function class:getMesh(name)
 	end
 end
 
+---Apply a transformation matrix to all vertices
+---@param transform "mat4"
 function class:applyTransform(transform)
 	if self.vertices then
 		local oldVertices = self.vertices
@@ -218,7 +274,8 @@ function class:applyTransform(transform)
 	end
 end
 
---apply joints to mesh data directly
+---Apply joints to mesh data directly
+---@param skeleton DreamSkeleton @ optional
 function class:applyBones(skeleton)
 	skeleton = skeleton or self.skeleton
 	
@@ -233,26 +290,28 @@ function class:applyBones(skeleton)
 		
 		--apply joint transforms
 		for i = 1, self.vertices:getSize() do
-			local transform = self:getJointMat(skeleton, i)
+			local transform = self:getJointMatrix(skeleton, i)
 			self.vertices:set(i, transform * self.oldVertices:getVector(i))
 			self.normals:set(i, transform:subm() * self.oldNormals:getVector(i))
 		end
 	end
 end
 
---returns the final joint transformation based on vertex weights
-function class:getJointMat(skeleton, i)
+---Returns the final joint transformation based on vertex weights
+---@param skeleton DreamSkeleton
+---@param jointIndex number
+---@return "mat4"
+function class:getJointMatrix(skeleton, jointIndex)
 	assert(skeleton.transforms, "No pose has been applied to skeleton!")
 	local m = mat4()
-	for jointNr = 1, #self.joints[i] do
-		m = m + skeleton.transforms[self.joints[i][jointNr]] * self.weights[i][jointNr]
+	for jointNr = 1, #self.joints[jointIndex] do
+		m = m + skeleton.transforms[self.joints[jointIndex][jointNr]] * self.weights[jointIndex][jointNr]
 	end
 	return m
 end
 
---add tangents buffer
 local empty = { 0, 0 }
-function class:calcTangents()
+function class:recalculateTangents()
 	self.tangents = lib:newBuffer("vec4", "float", self.vertices:getSize())
 	
 	for _, f in self.faces:ipairs() do
@@ -319,7 +378,7 @@ function class:calcTangents()
 	end
 end
 
---creates a render-able mesh
+---Makes this mesh render-able.
 function class:create()
 	assert(self.faces, "face array is required")
 	
@@ -334,7 +393,7 @@ function class:create()
 	end
 	
 	--create mesh
-	local meshFormat = lib.meshFormats[self.meshType]
+	local meshFormat = lib.meshFormats[self.meshFormat]
 	local meshLayout = meshFormat.meshLayout
 	self.mesh = love.graphics.newMesh(meshLayout, self.vertices:getSize(), self.meshDrawMode, "static")
 	
@@ -345,6 +404,7 @@ function class:create()
 	meshFormat:create(self)
 end
 
+--todo custom class
 function class:createInstances(count)
 	self.originalBoundingBox = self.boundingBox:clone()
 	
@@ -359,6 +419,7 @@ function class:createInstances(count)
 	self.instancesCount = 0
 end
 
+--todo custom class
 function class:addInstance(rotation, position, index)
 	if not index then
 		self.instancesCount = self.instancesCount + 1
@@ -377,23 +438,25 @@ function class:addInstance(rotation, position, index)
 	))
 end
 
+--todo custom class
 function class:addInstances(instances)
 	self:createInstances(#instances)
 	self.instanceMesh:setVertices(instances)
 	self.instancesCount = #instances
 end
 
-local function hash(v)
+local function vertexHash(v)
 	return tostring(v.x) .. tostring(v.y) .. tostring(v.z)
 end
 
---separates by loose parts and returns a list of new meshes
+---Separates by loose parts and returns a list of new meshes
+---@return DreamMesh[]
 function class:separate()
 	--initialize group indices
 	local groupIndices = { }
 	for i = 1, self.vertices:getSize() do
 		local v = self.vertices:get(i)
-		groupIndices[hash(v)] = i
+		groupIndices[vertexHash(v)] = i
 	end
 	
 	--group vertices via floodfill
@@ -401,9 +464,9 @@ function class:separate()
 	while found do
 		found = false
 		for _, face in self.faces:ipairs() do
-			local a = hash(self.vertices:get(face.x))
-			local b = hash(self.vertices:get(face.y))
-			local c = hash(self.vertices:get(face.z))
+			local a = vertexHash(self.vertices:get(face.x))
+			local b = vertexHash(self.vertices:get(face.y))
+			local c = vertexHash(self.vertices:get(face.z))
 			
 			local ga = groupIndices[a]
 			local gb = groupIndices[b]
@@ -424,7 +487,7 @@ function class:separate()
 	--get a set of remaining lists
 	local active = { }
 	for _, face in self.faces:ipairs() do
-		local a = hash(self.vertices:get(face.x))
+		local a = vertexHash(self.vertices:get(face.x))
 		local ga = groupIndices[a]
 		active[ga] = true
 	end
@@ -437,7 +500,7 @@ function class:separate()
 		meshes[ID] = self:clone()
 		meshes[ID].faces = lib:newDynamicBuffer()
 		for _, face in self.faces:ipairs() do
-			local a = hash(self.vertices:get(face.x))
+			local a = vertexHash(self.vertices:get(face.x))
 			if groupIndices[a] == group then
 				meshes[ID].faces:append(face)
 			end
@@ -445,11 +508,6 @@ function class:separate()
 	end
 	
 	return meshes
-end
-
-function class:setVisible(b)
-	self:setRenderVisibility(b)
-	self:setShadowVisibility(b)
 end
 
 ---Gets or creates an dynamic, typeless buffer
@@ -461,21 +519,21 @@ function class:getOrCreateBuffer(name)
 	return self[name]
 end
 
-local cached = { }
+local cachedMeshFormatStructs = { }
 
 function class:encode(meshCache, dataStrings)
 	local ffi = require("ffi")
 	
 	local data = {
 		["name"] = self.name,
-		["meshType"] = self.meshType,
+		["meshFormat"] = self.meshFormat,
 		["preventCleanup"] = self.preventCleanup,
 		
 		["boundingBox"] = self.boundingBox,
 		
 		["renderVisibility"] = self.renderVisibility,
 		["shadowVisibility"] = self.shadowVisibility,
-		["farVisibility"] = self.farVisibility,
+		["farShadowVisibility"] = self.farShadowVisibility,
 	}
 	
 	--save the material id if its registered or the entire material
@@ -531,9 +589,9 @@ function class:encode(meshCache, dataStrings)
 				--build a C struct to make sure data match
 				local attrCount = 0
 				local types = { }
-				if cached[hash] then
-					attrCount = cached[hash].attrCount
-					types = cached[hash].types
+				if cachedMeshFormatStructs[hash] then
+					attrCount = cachedMeshFormatStructs[hash].attrCount
+					types = cachedMeshFormatStructs[hash].types
 				else
 					local str = "typedef struct {" .. "\n"
 					for _, ff in ipairs(f) do
@@ -555,7 +613,7 @@ function class:encode(meshCache, dataStrings)
 					str = str .. "} mesh_vertex_" .. hash .. ";"
 					ffi.cdef(str)
 					
-					cached[hash] = {
+					cachedMeshFormatStructs[hash] = {
 						attrCount = attrCount,
 						types = types,
 					}

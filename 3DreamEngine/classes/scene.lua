@@ -1,5 +1,6 @@
 local lib = _3DreamEngine
 
+---@return DreamScene
 function lib:newScene()
 	local m = setmetatable({ }, self.meta.scene)
 	m:clear()
@@ -36,6 +37,7 @@ local function isWithingLOD(LOD_min, LOD_max, pos, size)
 	end
 end
 
+---@class DreamScene
 local class = {
 	link = { "scene" },
 }

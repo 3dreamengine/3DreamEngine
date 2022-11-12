@@ -1,5 +1,6 @@
 local lib = _3DreamEngine
 
+---@return DreamReflections
 function lib:newReflection(static, resolution, roughness, lazy)
 	roughness = roughness ~= false
 	
@@ -14,7 +15,7 @@ function lib:newReflection(static, resolution, roughness, lazy)
 	else
 		--create new canvas
 		canvas = love.graphics.newCanvas(resolution, resolution,
-			{format = self.reflections_format, readable = true, msaa = 0, type = "cube", mipmaps = roughness and "manual" or "none"})
+				{ format = self.reflections_format, readable = true, msaa = 0, type = "cube", mipmaps = roughness and "manual" or "none" })
 	end
 	
 	return setmetatable({
@@ -32,12 +33,9 @@ function lib:newReflection(static, resolution, roughness, lazy)
 	}, self.meta.reflection)
 end
 
+---@class DreamReflections
 local class = {
-	link = {"reflection"},
-	
-	setterGetter = {
-		lazy = "boolean"
-	}
+	link = { "reflection" },
 }
 
 function class:refresh()
@@ -51,6 +49,15 @@ function class:setLocal(center, first, second)
 end
 function class:getLocal()
 	return self.center, self.first, self.second
+end
+
+---Lazy reflections spread the load over several frames
+---@param lazy boolean
+function class:setLazy(lazy)
+	self.lazy = lazy
+end
+function class:getLazy()
+	return self.lazy
 end
 
 function class:decode()

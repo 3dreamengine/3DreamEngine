@@ -26,6 +26,7 @@ local sizeLookup = {
 	[16] = "mat4",
 }
 
+---@return DreamBuffer
 function lib:newBufferFromArray(array)
 	local buffer = self:newBuffer(sizeLookup[#array[1]], "float", #array)
 	if buffer.type == "scalar" then
@@ -42,10 +43,12 @@ function lib:newBufferFromArray(array)
 	return buffer
 end
 
+---@return DreamBuffer
 function lib:newBufferLike(buffer)
 	return self:newBuffer(buffer:getType(), buffer:getDataType(), buffer:getSize())
 end
 
+---@return DreamBuffer
 function lib:bufferFromString(type, dataType, str)
 	local buffer = self:newBuffer(type, dataType, #str / (ffi.sizeof(dataType) * sizes[type]))
 	local source = ffi.cast("char*", love.data.newByteData(str):getFFIPointer())
@@ -53,6 +56,7 @@ function lib:bufferFromString(type, dataType, str)
 	return buffer
 end
 
+---@return DreamBuffer
 function lib:newBuffer(type, dataType, length)
 	local id = ("dream_" .. type .. "_" .. dataType):gsub(" ", "_")
 	if not structs[id] and type ~= "scalar" then
@@ -67,6 +71,7 @@ function lib:newBuffer(type, dataType, length)
 	}, self.meta.buffer)
 end
 
+---@class DreamBuffer
 local class = {
 	link = { "buffer" },
 }
@@ -79,20 +84,38 @@ function class:getDataType()
 	return self.dataType
 end
 
+---Append a value to the buffer
+---@param data number|"vec2"|"vec2"|"vec2"
 function class:append(data)
 	error("Can not insert into static buffer!")
 end
 
+---Set a value in the buffer
+---@param index number
+---@param data number|"vec2"|"vec2"|"vec2"
 function class:set(index, data)
 	assert(index > 0 and index <= self.length)
 	self.buffer[index - 1] = data
 end
 
+---Get a raw value from the buffer
+---@param index number
+---@return "ctype"|number
 function class:get(index)
 	assert(index > 0 and index <= self.length)
 	return self.buffer[index - 1]
 end
 
+---Get a raw value from the buffer without risking a out of bounds
+---@param index number
+---@return "ctype"|number
+function class:getOrDefault(index, default)
+	return index > 0 and index <= self.length and self.buffer[index - 1] or default
+end
+
+---Get a casted value from the buffer
+---@param index number
+---@return number|"vec2"|"vec2"|"vec2"
 function class:getVector(index)
 	assert(index > 0 and index <= self.length)
 	local v = self.buffer[index - 1]
@@ -114,10 +137,11 @@ function class:getVector(index)
 	end
 end
 
-function class:getOrDefault(index, default)
-	return index > 0 and index <= self.length and self.buffer[index - 1] or default
-end
-
+---Copy data from one buffer into another, offsets given in indices
+---@param source DreamBuffer
+---@param dstOffset number
+---@param srcOffset number
+---@param srcLength number
 function class:copyFrom(source, dstOffset, srcOffset, srcLength)
 	dstOffset = dstOffset or 0
 	srcOffset = srcOffset or 0
@@ -135,10 +159,12 @@ function class:copyFrom(source, dstOffset, srcOffset, srcLength)
 	end
 end
 
+---Get the size of this buffer
 function class:getSize()
 	return self.length
 end
 
+---Iterate over every raw value
 function class:ipairs()
 	local offset = self.class == "buffer" and -1 or 0
 	local i = 0
@@ -151,6 +177,7 @@ function class:ipairs()
 	end
 end
 
+---Convert buffer to a Lua array
 function class:toArray()
 	local array = { }
 	for i = 1, self:getSize() do

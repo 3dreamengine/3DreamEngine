@@ -23,40 +23,10 @@ local function link(chain)
 	return { __index = m, __tostring = m.tostring }
 end
 
---auto create setter and getter
-for _, s in pairs(lib.classes) do
-	if s.setterGetter then
-		for name, typ in pairs(s.setterGetter) do
-			local n = name:sub(1, 1):upper() .. name:sub(2)
-			
-			if not s["set" .. n] then
-				s["set" .. n] = function(self, value)
-					assert(type(value) == typ, typ .. " expected, got " .. type(value))
-					self[name] = value
-				end
-			end
-			
-			if typ == "boolean" then
-				if not s["is" .. n] and not s["get" .. n] then
-					s["is" .. n] = function(self)
-						return self[name]
-					end
-				end
-			else
-				if not s["get" .. n] then
-					s["get" .. n] = function(self)
-						return self[name]
-					end
-				end
-			end
-		end
-	end
-end
-
 --final meta tables
 lib.meta = { }
-for d, s in pairs(lib.classes) do
+for name, s in pairs(lib.classes) do
 	if s.link then
-		lib.meta[d] = link(s.link)
+		lib.meta[name] = link(s.link)
 	end
 end

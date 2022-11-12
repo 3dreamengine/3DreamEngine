@@ -57,7 +57,7 @@ yourObject = dream:loadObject("examples/monkey/object")
 light = dream:newLight("point", vec3(3, 2, 1), vec3(1.0, 0.75, 0.2), 50.0)
 
 --add shadow to light source
-light:addShadow()
+light:addNewShadow()
 
 function love.draw()
 	--prepare for rendering
