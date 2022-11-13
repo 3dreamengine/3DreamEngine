@@ -17,7 +17,7 @@ end
 --todo merge setSettings and the actual set
 ---@class DreamSetSettings
 local class = {
-	link = { "setSettings" },
+	links = { "setSettings" },
 	
 	setterGetter = {
 		resolution = "number",

@@ -35,7 +35,7 @@ end
 
 ---@class DreamReflections
 local class = {
-	link = { "reflection" },
+	links = { "reflection" },
 }
 
 function class:refresh()

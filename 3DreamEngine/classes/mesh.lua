@@ -17,9 +17,6 @@ function lib:newMesh(name, material, meshFormat)
 		
 		skeleton = false,
 		
-		--todo replace with simple meshes
-		preventCleanup = false,
-		
 		renderVisibility = true,
 		shadowVisibility = true,
 		
@@ -38,12 +35,11 @@ end
 ---@field meshFormat DreamMeshFormat
 ---@field mesh DreamMesh
 ---@field skeleton DreamSkeleton
----@field preventCleanup boolean
 ---@field renderVisibility boolean @ visible in render pass
 ---@field shadowVisibility boolean @ visible in shadow pass
 ---@field instancesCount number @ number of instances in this instance mesh, if it is one
 local class = {
-	link = { "clone", "shader", "mesh" },
+	links = { "clone", "shader", "mesh" },
 }
 
 --todo move
@@ -95,11 +91,6 @@ function class:setSkeleton(skeleton)
 end
 function class:getSkeleton()
 	return self.skeleton
-end
-
---todo remove
-function class:setPreventCleanup(t)
-	self.preventCleanup = t
 end
 
 function class:tostring()
@@ -184,23 +175,10 @@ end
 --clean most primary buffers
 --todo buffers are now classes and can be cleaned up more efficiently
 function class:cleanup()
-	if not self.preventCleanup then
-		self.vertices = nil
-		self.faces = nil
-		self.normals = nil
-		
-		self.joints = nil
-		self.weights = nil
-	end
-	
-	self.texCoords = nil
-	self.colors = nil
-	self.extras = nil
-	self.tangents = nil
-	
-	for i = 1, 10 do
-		self["texCoords_" .. i] = nil
-		self["colors_" .. i] = nil
+	for i, v in pairs(self) do
+		if type(v) == "table" and v.link and v.link.buffer then
+			self[i] = nil
+		end
 	end
 end
 
@@ -527,7 +505,6 @@ function class:encode(meshCache, dataStrings)
 	local data = {
 		["name"] = self.name,
 		["meshFormat"] = self.meshFormat,
-		["preventCleanup"] = self.preventCleanup,
 		
 		["boundingBox"] = self.boundingBox,
 		

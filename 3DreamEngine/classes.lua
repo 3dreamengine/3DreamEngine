@@ -25,8 +25,12 @@ end
 
 --final meta tables
 lib.meta = { }
-for name, s in pairs(lib.classes) do
-	if s.link then
-		lib.meta[name] = link(s.link)
+for name, class in pairs(lib.classes) do
+	class.link = { }
+	if class.links then
+		lib.meta[name] = link(class.links)
+		for _, meta in pairs(class.links) do
+			class.link[meta] = true
+		end
 	end
 end

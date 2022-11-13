@@ -268,7 +268,7 @@ function lib:processObject(obj)
 		--raytrace objects are usually not meant to be rendered
 		if object.tags.raytrace then
 			for _, mesh in pairs(object.meshes) do
-				mesh:setPreventCleanup()
+				--todo
 			end
 			object:setVisible(false)
 		end

@@ -21,7 +21,7 @@ end
 
 ---@class DreamCamera
 local class = {
-	link = { "transform", "camera" },
+	links = { "transform", "camera" },
 }
 
 ---Updates the frustum planes, required for plane frustum check, called internally

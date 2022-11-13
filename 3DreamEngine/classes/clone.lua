@@ -1,6 +1,6 @@
 ---@class DreamClonable
 local class = {
-	link = { },
+	links = { },
 }
 
 ---Clone

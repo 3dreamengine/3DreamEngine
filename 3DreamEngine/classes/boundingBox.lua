@@ -23,7 +23,7 @@ end
 
 ---@class DreamBoundingBox
 local class = {
-	link = { "clone", "boundingBox" },
+	links = { "clone", "boundingBox" },
 }
 
 function class:decode()

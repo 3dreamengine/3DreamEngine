@@ -41,7 +41,7 @@ end
 ---@field reflections DreamReflection[]
 ---@field animations DreamAnimation[]
 local class = {
-	link = { "clone", "transform", "shader", "object" },
+	links = { "clone", "transform", "shader", "object" },
 }
 
 local function count(t)

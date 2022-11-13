@@ -22,7 +22,7 @@ end
 
 ---@class DreamShadow
 local class = {
-	link = { "shadow" },
+	links = { "shadow" },
 }
 
 ---The step size defines at what difference in position a shadow should be recalculated
@@ -30,7 +30,7 @@ local class = {
 function class:setRefreshStepSize(refreshStepSize)
 	self.refreshStepSize = refreshStepSize
 end
-function class:setRefreshStepSize()
+function class:getRefreshStepSize()
 	return self.refreshStepSize
 end
 

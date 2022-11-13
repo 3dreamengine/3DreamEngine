@@ -8,7 +8,7 @@ function lib:newDynamicBuffer()
 end
 
 local class = {
-	link = { "buffer", "dynamicBuffer" },
+	links = { "buffer", "dynamicBuffer" },
 }
 
 local function wrap(data)

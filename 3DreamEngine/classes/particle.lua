@@ -22,7 +22,7 @@ end
 
 ---@class DreamParticle
 local class = {
-	link = { "particle" },
+	links = { "particle" },
 }
 
 function class:setTexture(texture)

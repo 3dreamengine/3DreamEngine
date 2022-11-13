@@ -39,7 +39,7 @@ end
 
 ---@class DreamScene
 local class = {
-	link = { "scene" },
+	links = { "scene" },
 }
 
 function class:clear()

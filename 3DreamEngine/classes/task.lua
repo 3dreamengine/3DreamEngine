@@ -2,7 +2,7 @@ local identityMatrix = mat4.getIdentity()
 
 ---@class DreamTask
 local class = {
-	link = {"task"}
+	links = {"task"}
 }
 
 function class:getMesh()

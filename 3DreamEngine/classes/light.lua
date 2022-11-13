@@ -23,7 +23,7 @@ end
 
 ---@class DreamLight
 local class = {
-	link = { "light", "clone" },
+	links = { "light", "clone" },
 }
 
 function class:tostring()

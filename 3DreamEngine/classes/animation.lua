@@ -12,7 +12,7 @@ end
 
 ---@class DreamAnimation
 local class = {
-	link = { "clone", "animation" }
+	links = { "clone", "animation" }
 }
 
 --todo create that into constructor, receive a list of frames

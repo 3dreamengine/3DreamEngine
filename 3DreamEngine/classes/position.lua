@@ -14,7 +14,7 @@ end
 
 ---@class DreamPosition
 local class = {
-	link = { "position", "clone" },
+	links = { "position", "clone" },
 }
 
 function class:tostring()

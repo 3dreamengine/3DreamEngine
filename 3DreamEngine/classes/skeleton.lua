@@ -10,7 +10,7 @@ end
 
 ---@class DreamSkeleton
 local class = {
-	link = { "skeleton" },
+	links = { "skeleton" },
 }
 
 --apply the pose to the joints

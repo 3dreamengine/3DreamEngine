@@ -73,7 +73,7 @@ end
 
 ---@class DreamBuffer
 local class = {
-	link = { "buffer" },
+	links = { "buffer" },
 }
 
 function class:getType()

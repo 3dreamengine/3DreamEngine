@@ -7,7 +7,7 @@ end
 
 ---@class DreamPose
 local class = {
-	link = { "clone", "pose" },
+	links = { "clone", "pose" },
 }
 
 ---Blend with another pose

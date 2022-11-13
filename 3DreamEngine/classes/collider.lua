@@ -24,7 +24,7 @@ function lib:newCollider(mesh, shapeMode)
 end
 
 local class = {
-	link = { "collider" },
+	links = { "collider" },
 	
 	setterGetter = {
 		

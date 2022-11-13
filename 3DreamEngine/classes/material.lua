@@ -21,7 +21,7 @@ end
 
 ---@class DreamMaterial
 local class = {
-	link = { "clone", "shader", "material" },
+	links = { "clone", "shader", "material" },
 }
 
 --todo merge alpha, solid and discard
