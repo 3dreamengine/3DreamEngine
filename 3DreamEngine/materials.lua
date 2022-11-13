@@ -29,7 +29,8 @@ function lib:loadMaterialLibrary(path, prefix)
 	
 	for d, s in ipairs(love.filesystem.getDirectoryItems(path)) do
 		local p = path .. "/" .. s
-		if s:sub(#s - 3) == ".mat" then
+		local ext = s:sub(#s - 3)
+		if ext == ".lua" then
 			--custom material
 			local mat = self:newMaterial((prefix .. s):sub(1, -5))
 			local matLoaded = love.filesystem.load(p)()
@@ -37,10 +38,10 @@ function lib:loadMaterialLibrary(path, prefix)
 			mat.library = true
 			self:lookForTextures(mat, path, mat.name)
 			self.materialLibrary[mat.name] = mat
-		elseif love.filesystem.getInfo(p .. "/material.mat") then
+		elseif love.filesystem.getInfo(p .. "/material.lua") then
 			--material using the recommended directory-format
 			local mat = self:newMaterial(prefix .. s)
-			local matLoaded = love.filesystem.load(p .. "/material.mat")()
+			local matLoaded = love.filesystem.load(p .. "/material.lua")()
 			table.merge(mat, matLoaded)
 			mat.library = true
 			self:lookForTextures(mat, p)
