@@ -47,6 +47,15 @@ function class:getInstanceCount()
 	return self.instancesCount
 end
 
+---Sets the meshes material
+---@param material DreamMaterial
+function class:setMaterial(material)
+	self.material = material
+end
+function class:getMaterial()
+	return self.material
+end
+
 ---@param visibility boolean
 function class:setVisible(visibility)
 	self:setRenderVisibility(visibility)
@@ -163,8 +172,8 @@ function class:initShaders()
 		worldShader:initMesh(self)
 	end
 	
-	--recreate mesh
-	if self.mesh and not meshFormatWarning and (pixelShader.meshFormat ~= self.meshFormat or vertexShader.meshFormat ~= self.meshFormat or worldShader.meshFormat ~= self.meshFormat) then
+	--warning
+	if self.mesh and not meshFormatWarning and (pixelShader.meshFormat and pixelShader.meshFormat ~= self.meshFormat or vertexShader.meshFormat and vertexShader.meshFormat ~= self.meshFormat or worldShader.meshFormat and worldShader.meshFormat ~= self.meshFormat) then
 		meshFormatWarning = true
 		print("WARNING: Required and given mesh type do not match. Either set a default shader before loading the object or provide a shader in the material file.")
 	end

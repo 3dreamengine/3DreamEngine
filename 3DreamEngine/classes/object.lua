@@ -64,6 +64,10 @@ local function copy(t)
 	return setmetatable(n, getmetatable(t))
 end
 
+function class:newInstance()
+	return setmetatable({}, { __index = self })
+end
+
 function class:clone()
 	local n = copy(self)
 	for _, key in ipairs({ "objects", "meshes" }) do

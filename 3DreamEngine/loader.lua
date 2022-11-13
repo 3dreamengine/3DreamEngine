@@ -397,22 +397,18 @@ function lib:finishObject(obj)
 		obj.objects["link_" .. index] = o
 	end
 	
-	
 	--create meshes
 	if obj.args.mesh then
 		obj:createMeshes()
 	end
-	
 	
 	--callback
 	if obj.args.callback then
 		obj.args.callback(obj)
 	end
 	
-	
 	--init modules
 	obj:initShaders()
-	
 	
 	--cleaning up
 	if obj.args.cleanup then

@@ -27,7 +27,7 @@ function lib:loadMaterialLibrary(path, prefix)
 		return
 	end
 	
-	for d, s in ipairs(love.filesystem.getDirectoryItems(path)) do
+	for _, s in ipairs(love.filesystem.getDirectoryItems(path)) do
 		local p = path .. "/" .. s
 		local ext = s:sub(#s - 3)
 		if ext == ".lua" then

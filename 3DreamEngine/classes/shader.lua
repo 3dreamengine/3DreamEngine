@@ -14,7 +14,7 @@ function class:setPixelShader(shader)
 		end
 	else
 		shader = lib:getShader(shader)
-		assert(shader.type == "pixel", "invalid shader type")
+		assert(shader.type == "pixel", "Invalid shader type")
 		self.pixelShader = shader
 		
 		if self.class == "mesh" then
@@ -34,7 +34,7 @@ function class:setVertexShader(shader)
 		end
 	else
 		shader = lib:getShader(shader)
-		assert(shader.type == "vertex", "invalid shader type")
+		assert(shader.type == "vertex", "Invalid shader type")
 		self.vertexShader = shader
 		
 		if self.class == "mesh" then
@@ -54,7 +54,7 @@ function class:setWorldShader(shader)
 		end
 	else
 		shader = lib:getShader(shader)
-		assert(shader.type == "world", "invalid shader type")
+		assert(shader.type == "world", "Invalid shader type")
 		self.worldShader = shader
 		
 		if self.class == "mesh" then
