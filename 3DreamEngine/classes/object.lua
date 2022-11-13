@@ -124,12 +124,12 @@ function class:updateBoundingBox()
 	end
 end
 
-function class:initShaders()
+function class:clearMeshes()
 	for _, s in pairs(self.objects) do
-		s:initShaders()
+		s:clearMeshes(s)
 	end
 	for _, s in pairs(self.meshes) do
-		s:initShaders()
+		s:clearMesh(s)
 	end
 end
 
@@ -193,7 +193,7 @@ function class:merge()
 	--get valid meshes
 	local meshes = appliedSource:getAllMeshes()
 	local sourceMesh = meshes[next(meshes)]
-	local mesh = lib:newMesh("merged", sourceMesh.material, sourceMesh.meshFormat)
+	local mesh = lib:newMesh("merged", sourceMesh.material)
 	
 	assert(sourceMesh.vertices, "At least the vertex buffer is required.")
 	
@@ -282,9 +282,7 @@ end
 function class:createMeshes()
 	if not self.linked then
 		for _, mesh in pairs(self.meshes) do
-			if not mesh.mesh and mesh.faces then
-				mesh:create()
-			end
+			mesh:getMesh()
 		end
 		
 		for _, o in pairs(self.objects) do

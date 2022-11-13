@@ -12,7 +12,7 @@ local class = {
 }
 
 local function wrap(data)
-	return #data == 4 and vec4(data) or #data == 3 and vec3(data) or #data == 2 and vec2(data) or data
+	return type(data) == "table" and (#data == 4 and vec4(data) or #data == 3 and vec3(data) or #data == 2 and vec2(data)) or data
 end
 
 function class:getType()

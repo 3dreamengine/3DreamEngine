@@ -139,7 +139,7 @@ function sky.render(dream, transformProj, camTransform)
 	self.shaders.sky:send("rainbowDir", self.rainbow_dir)
 	
 	love.graphics.setColor(self.skyColor)
-	local mesh = dream.cubeObject.meshes.Cube.mesh
+	local mesh = dream.cubeObject.meshes.Cube:getMesh()
 	mesh:setTexture(self.textures.sky)
 	love.graphics.draw(mesh)
 	
@@ -161,8 +161,8 @@ function sky.render(dream, transformProj, camTransform)
 	self.shaders.moon:send("sun", {math.cos(self.day / 30 * math.pi * 2), math.sin(self.day / 30 * math.pi * 2), 0})
 	self.shaders.moon:send("normalTex", self.textures.moon_normal)
 	
-	dream.planeObject.meshes.Plane.mesh:setTexture(self.textures.moon)
-	love.graphics.draw(dream.planeObject.meshes.Plane.mesh)
+	dream.planeObject.meshes.Plane:getMesh():setTexture(self.textures.moon)
+	love.graphics.draw(dream.planeObject.meshes.Plane:getMesh())
 	
 	--suns
 	for _,l in ipairs(dream.lighting) do
@@ -179,9 +179,9 @@ function sky.render(dream, transformProj, camTransform)
 			self.shaders.sun:send("right", right * size)
 			self.shaders.sun:send("InstanceCenter", l.direction)
 			
-			dream.planeObject.meshes.Plane.mesh:setTexture(self.textures.sun)
+			dream.planeObject.meshes.Plane:getMesh():setTexture(self.textures.sun)
 			
-			love.graphics.draw(dream.planeObject.meshes.Plane.mesh)
+			love.graphics.draw(dream.planeObject.meshes.Plane:getMesh())
 			
 			love.graphics.setBlendMode("alpha")
 		end

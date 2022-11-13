@@ -46,7 +46,7 @@ function lib:buildScene(typ, dynamic, alpha, cam, blacklist, frustumCheck, noSma
 			for _, materialGroup in ipairs(materialGroups) do
 				for _, task in pairs(materialGroup) do
 					local mesh = task:getMesh()
-					if mesh.mesh and (not blacklist or not blacklist[mesh]) and (not noSmallObjects or mesh.farShadowVisibility ~= false) then
+					if mesh:getMesh() and (not blacklist or not blacklist[mesh]) and (not noSmallObjects or mesh.farShadowVisibility ~= false) then
 						if not frustumCheck or not mesh.boundingBox.initialized or self:inFrustum(cam, task:getPosition(), task:getSize(), mesh.rID) then
 							task:setShaderID(shaderID)
 							table.insert(scene, task)
@@ -291,18 +291,13 @@ function lib:render(canvases, cam, dynamic)
 			--object transformation
 			shader:send("transform", task:getTransform())
 			
-			--shader
-			if not mesh.shadersInitialized then
-				mesh:initShaders()
-			end
-			
 			--per task
 			shaderObject.pixelShader:perTask(self, shaderObject, task)
 			shaderObject.vertexShader:perTask(self, shaderObject, task)
 			shaderObject.worldShader:perTask(self, shaderObject, task)
 			
 			--render
-			local objectMesh = mesh:getMesh("mesh")
+			local objectMesh = mesh:getMesh()
 			local instanceMesh = mesh:getMesh("instanceMesh")
 			if instanceMesh then
 				objectMesh:attachAttribute("InstanceRotation0", instanceMesh, "perinstance")
@@ -518,7 +513,7 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects, smoo
 		shaderObject.worldShader:perTask(self, shaderObject, task)
 		
 		--render
-		local objectMesh = mesh:getMesh("mesh")
+		local objectMesh = mesh:getMesh()
 		local instanceMesh = mesh:getMesh("instanceMesh")
 		if instanceMesh then
 			objectMesh:attachAttribute("InstanceRotation0", instanceMesh, "perinstance")

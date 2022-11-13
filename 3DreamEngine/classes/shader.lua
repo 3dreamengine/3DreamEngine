@@ -18,7 +18,7 @@ function class:setPixelShader(shader)
 		self.pixelShader = shader
 		
 		if self.class == "mesh" then
-			self:initShaders()
+			self:clearMesh()
 		end
 	end
 end
@@ -38,7 +38,7 @@ function class:setVertexShader(shader)
 		self.vertexShader = shader
 		
 		if self.class == "mesh" then
-			self:initShaders()
+			self:clearMesh()
 		end
 	end
 end
@@ -58,7 +58,7 @@ function class:setWorldShader(shader)
 		self.worldShader = shader
 		
 		if self.class == "mesh" then
-			self:initShaders()
+			self:clearMesh()
 		end
 	end
 end

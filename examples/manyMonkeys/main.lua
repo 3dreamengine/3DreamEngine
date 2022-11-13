@@ -26,6 +26,9 @@ local function createSlow(n)
 	for i = 1, n do
 		newMonkey.objects[i] = monkey:clone()
 		newMonkey.objects[i]:translate(getPos())
+		newMonkey.objects[i]:rotateX(math.random() * math.pi * 2)
+		newMonkey.objects[i]:rotateY(math.random() * math.pi * 2)
+		newMonkey.objects[i]:rotateZ(math.random() * math.pi * 2)
 	end
 	return newMonkey
 end
@@ -48,7 +51,7 @@ local function createMerged(n)
 		newMonkey.objects[i]:translate(getPos())
 	end
 	newMonkey = newMonkey:merge()
-	newMonkey:createMeshes()
+	newMonkey:clearMeshes()
 	return newMonkey
 end
 

@@ -27,7 +27,7 @@ function sh:getId(dream, mat, shadow)
 end
 
 function sh:initMesh(mesh)
-	if mesh:getMesh("mesh") then
+	if mesh:getMesh() then
 		--any additional initializion you may need
 		--initMesh is called after load and after a shader change
 	end

@@ -3,16 +3,14 @@ local lib = _3DreamEngine
 ---newMesh
 ---@param name string
 ---@param material DreamMaterial
----@param meshFormat DreamMeshFormat @ optional, uses material or global pixel shaders mesh format
 ---@return DreamMesh | DreamClonable | DreamHasShaders
-function lib:newMesh(name, material, meshFormat)
+function lib:newMesh(name, material)
 	local mesh = {
 		name = name,
 		material = material,
 		boundingBox = self:newEmptyBoundingBox(),
 		
 		meshDrawMode = "triangles",
-		meshFormat = meshFormat or (material.pixelShader or self.defaultPixelShader).meshFormat,
 		mesh = false,
 		
 		skeleton = false,
@@ -43,7 +41,7 @@ local class = {
 }
 
 --todo move
-function class:getInstanceCount()
+function class:getInstancesCount()
 	return self.instancesCount
 end
 
@@ -102,12 +100,25 @@ function class:getSkeleton()
 	return self.skeleton
 end
 
+function class:getPixelShader()
+	return self.material.pixelShader or self.pixelShader or lib.defaultPixelShader
+end
+
+function class:getVertexShader()
+	return self.material.vertexShader or self.vertexShader or lib.defaultVertexShader
+end
+
+function class:getWorldShader()
+	return self.material.worldShader or self.worldShader or lib.defaultWorldShader
+end
+
 function class:tostring()
 	local tags = { }
 	
 	--vertex count
-	if self.mesh and self.mesh.getVertexCount then
-		table.insert(tags, self.mesh:getVertexCount() .. " vertices")
+	local m = self:getMesh()
+	if m and m.getVertexCount then
+		table.insert(tags, m:getVertexCount() .. " vertices")
 	end
 	
 	--vertex count
@@ -152,35 +163,6 @@ function class:updateBoundingBox()
 	self.boundingBox.size = math.max(math.sqrt(max), self.boundingBox.size)
 end
 
-local meshFormatWarning
-function class:initShaders()
-	--pixel
-	local pixelShader = self.material.pixelShader or self.pixelShader or lib.defaultPixelShader
-	if pixelShader.initMesh then
-		pixelShader:initMesh(self)
-	end
-	
-	--vertex
-	local vertexShader = self.material.vertexShader or self.vertexShader or lib.defaultVertexShader
-	if vertexShader.initMesh then
-		vertexShader:initMesh(self)
-	end
-	
-	--world
-	local worldShader = self.material.worldShader or self.worldShader or lib.defaultWorldShader
-	if worldShader.initMesh then
-		worldShader:initMesh(self)
-	end
-	
-	--warning
-	if self.mesh and not meshFormatWarning and (pixelShader.meshFormat and pixelShader.meshFormat ~= self.meshFormat or vertexShader.meshFormat and vertexShader.meshFormat ~= self.meshFormat or worldShader.meshFormat and worldShader.meshFormat ~= self.meshFormat) then
-		meshFormatWarning = true
-		print("WARNING: Required and given mesh type do not match. Either set a default shader before loading the object or provide a shader in the material file.")
-	end
-	
-	self.shadersInitialized = true
-end
-
 --clean most primary buffers
 --todo buffers are now classes and can be cleaned up more efficiently
 function class:cleanup()
@@ -213,9 +195,19 @@ function class:preload(force)
 	end
 end
 
+---Deletes the mesh, will regenerate next time needed
+function class:clearMesh()
+	self.mesh = nil
+end
+
 ---Get a mesh, load automatically if required
----@param name DreamMesh
+---@param name string @ optional, default "mesh"
 function class:getMesh(name)
+	name = name or "mesh"
+	if name == "mesh" and not self.mesh then
+		self:create()
+	end
+	
 	local mesh = self[name]
 	if type(mesh) == "userdata" then
 		return mesh
@@ -367,7 +359,7 @@ end
 
 ---Makes this mesh render-able.
 function class:create()
-	assert(self.faces, "face array is required")
+	assert(self.faces, "Face array is required")
 	
 	--set up vertex map
 	local vertexMap = { }
@@ -380,7 +372,7 @@ function class:create()
 	end
 	
 	--create mesh
-	local meshFormat = lib.meshFormats[self.meshFormat]
+	local meshFormat = lib.meshFormats[self:getPixelShader().meshFormat]
 	local meshLayout = meshFormat.meshLayout
 	self.mesh = love.graphics.newMesh(meshLayout, self.vertices:getSize(), self.meshDrawMode, "static")
 	
@@ -389,6 +381,24 @@ function class:create()
 	
 	--fill vertices
 	meshFormat:create(self)
+	
+	--initialize pixel shader
+	local pixelShader = self:getPixelShader()
+	if pixelShader.initMesh then
+		pixelShader:initMesh(self)
+	end
+	
+	--initialize vertex shader
+	local vertexShader = self:getVertexShader()
+	if vertexShader.initMesh then
+		vertexShader:initMesh(self)
+	end
+	
+	--initialize world shader
+	local worldShader = self:getWorldShader()
+	if worldShader.initMesh then
+		worldShader:initMesh(self)
+	end
 end
 
 --todo custom class

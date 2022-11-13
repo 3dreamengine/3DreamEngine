@@ -14,7 +14,7 @@ local meshFormat = {
 }
 
 function sh:initMesh(mesh)
-	if mesh:getMesh("mesh") then
+	if mesh:getMesh() then
 		if not mesh:getMesh("boneMesh") then
 			assert(mesh.joints and mesh.weights, "GPU bones require a joint and weight buffer")
 			mesh.boneMesh = love.graphics.newMesh(meshFormat, mesh.joints:getSize(), "triangles", "static")
@@ -30,8 +30,8 @@ function sh:initMesh(mesh)
 			end
 		end
 		
-		mesh:getMesh("mesh"):attachAttribute("VertexJoint", mesh:getMesh("boneMesh"))
-		mesh:getMesh("mesh"):attachAttribute("VertexWeight", mesh:getMesh("boneMesh"))
+		mesh:getMesh():attachAttribute("VertexJoint", mesh:getMesh("boneMesh"))
+		mesh:getMesh():attachAttribute("VertexWeight", mesh:getMesh("boneMesh"))
 	end
 end
 

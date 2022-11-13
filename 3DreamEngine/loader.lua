@@ -49,7 +49,7 @@ end
 --remove objects without vertices
 local function cleanEmpties(obj)
 	for d, m in pairs(obj.meshes) do
-		if m.vertices and m.vertices:getSize() == 0 then
+		if not m.faces or not m.vertices or m.vertices:getSize() == 0 then
 			obj.meshes[d] = nil
 		end
 	end
@@ -312,10 +312,6 @@ function lib:processObject(obj)
 	end
 	
 	
-	--remove empty objects (second pass)
-	cleanEmpties(obj)
-	
-	
 	--merge objects with the same name (e.g. different level of detail, collisions, light sources of a coherent object)
 	if obj.args.scene then
 		for _, typ in ipairs({ "objects", "meshes", "positions", "lights", "physics", "reflections", "animations" }) do
@@ -397,18 +393,13 @@ function lib:finishObject(obj)
 		obj.objects["link_" .. index] = o
 	end
 	
-	--create meshes
-	if obj.args.mesh then
-		obj:createMeshes()
-	end
-	
 	--callback
 	if obj.args.callback then
 		obj.args.callback(obj)
 	end
 	
-	--init modules
-	obj:initShaders()
+	--remove empty meshes
+	cleanEmpties(obj)
 	
 	--cleaning up
 	if obj.args.cleanup then

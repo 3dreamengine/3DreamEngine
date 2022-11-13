@@ -39,11 +39,9 @@ return function(self, obj, path)
 	
 	--mesh creation and 3DO exporting makes no longer sense
 	obj.args.particleSystems = false
-	obj.args.mesh = false
 	obj.args.export3do = false
 	for _,s in pairs(obj.objects) do
 		s.args.particleSystems = false
-		s.args.mesh = false
 		s.args.export3do = false
 	end
 	
