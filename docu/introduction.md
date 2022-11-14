@@ -111,6 +111,94 @@ function love.resize()
 end
 ```
 
+## Advanced Object loading
+
+For everything beyond loading and rendering a singular object, let's take a look at advanced features:
+
+### Scenes
+
+````lua
+local yourScene = dream:loadScene(path) 
+````
+
+A scene is an object, but restructured to have similar named objects grouped.
+Imagine this object, loaded with `loadObject()`:
+
+```
+└─test
+  └─objects
+    ├─Lamp
+    │ └─meshes
+    │   └─mesh (96 vertices)
+    ├─Lamp
+    │ └─meshes
+    │   └─mesh (96 vertices)
+    ├─Lamp
+    │ └─physics
+    │   └─mesh
+    ├─Lamp
+    │ └─meshes
+    │   └─mesh (96 vertices)
+    └─Crate
+      └─meshes
+        └─mesh (96 vertices)
+
+```
+
+It consists of two objects, a Lamp and a Crate. The Lamp has a collider, two LODs and a light source.
+Now, since Blender flattens any hierarchy we have a bit of a mess. You can not transform the entire lamp, since it's mixed with the crate. Now take a look at the object loaded using `dream:loadScene()`:
+
+```
+└─test
+  └─objects
+    ├─Lamp
+    │ └─objects
+    │   ├─Lamp
+    │   │ └─meshes
+    │   │   └─mesh (96 vertices)
+    │   ├─Lamp
+    │   │ └─meshes
+    │   │   └─mesh (96 vertices)
+    │   ├─Lamp
+    │   │ └─meshes
+    │   │   └─mesh (96 vertices)
+    │   └─Lamp
+    │     └─physics
+    │       └─mesh
+    └─Crate
+      └─objects
+        └─Crate
+          └─meshes
+            └─mesh (96 vertices)
+
+```
+
+We now have two objects, one for Lamp and one for Crate. Objects are merged based on their name, excluding any tags (explained later) and postfixes (seperated using a dot).
+
+### Tags
+
+Sometimes it is required to tag certain objects, e.g. mark them to use a specific LOD, or to be colliders, or to represent reflection gloves etc. Names are therefore parsed for tags in the format `{TAG:VALUE_|TAG_}name{.postfix}`. E.g. an LOD, which is also used as a collider could be called `LOD:0_PHYSICS_yourObject.001`.
+
+Refer to the function documentation for a list of tags: `3DreamEngine/loader.lua".
+
+### Linked Objects
+
+If you use an object in several scenes, you might want to consider creating an object library, then reuse that object in your respective scenes.
+
+This can be especially useful if your object consists of LODs, collisions, maybe light sources etc and copying them around is tedious.
+
+````lua
+-- Load a scene and register all objects as library objects, with given prefix.
+dream:loadLibrary(path, args, prefix)
+
+-- Or register a specific objects under a name
+dream:registerObject(object, name)
+````
+
+Now tag your reference object, e.g. `LINK:yourObject_yourReferenceObject`.
+That will replace that object during `dream:loadObject()` with the full library entry.
+Which is usually faster, requires less memory on disk and allows for easier reuse and updating.
+
 ## Resource Loader
 
 3Dream uses a resource manager to simplify texture loading.
