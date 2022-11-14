@@ -158,7 +158,7 @@ function lib.loadShader(self)
 end
 
 --the final canvas combines all resources into one result
-function lib.getFinalShader(self, canvases)
+function lib:getFinalShader(canvases)
 	local parts = { }
 	
 	table.insert(parts, self.autoExposure_enabled and "#define AUTOEXPOSURE_ENABLED" or nil)
@@ -203,9 +203,9 @@ function lib:getRenderShaderID(task, shadows)
 		pixelShader.id % 256, math.floor(pixelShader.id / 256),
 		vertexShader.id % 256, math.floor(vertexShader.id / 256),
 		worldShader.id % 256, math.floor(worldShader.id / 256),
-		pixelShader:getId(self, mat, shadows),
-		vertexShader:getId(self, mat, shadows),
-		worldShader:getId(self, mat, shadows)
+		pixelShader:getId(mat, shadows),
+		vertexShader:getId(mat, shadows),
+		worldShader:getId(mat, shadows)
 	)
 end
 
@@ -347,19 +347,19 @@ function lib:getRenderShader(ID, mesh, pass, canvases, light, shadows, sun)
 		end
 		
 		--material shader
-		insertHeadered(defines, "pixel shader", info.pixelShader:buildDefines(self, mat, shadows))
-		insertHeadered(defines, "vertex shader", info.vertexShader:buildDefines(self, mat, shadows))
+		insertHeadered(defines, "pixel shader", info.pixelShader:buildDefines(mat, shadows))
+		insertHeadered(defines, "vertex shader", info.vertexShader:buildDefines(mat, shadows))
 		
-		insertHeadered(pixelMaterial, "pixel shader", info.pixelShader:buildPixel(self, mat, shadows))
-		insertHeadered(pixelMaterial, "vertex shader", info.vertexShader:buildPixel(self, mat, shadows))
+		insertHeadered(pixelMaterial, "pixel shader", info.pixelShader:buildPixel(mat, shadows))
+		insertHeadered(pixelMaterial, "vertex shader", info.vertexShader:buildPixel(mat, shadows))
 		
-		insertHeadered(vertex, "vertex shader", info.vertexShader:buildVertex(self, mat, shadows))
-		insertHeadered(vertex, "pixel shader", info.pixelShader:buildVertex(self, mat, shadows))
+		insertHeadered(vertex, "vertex shader", info.vertexShader:buildVertex(mat, shadows))
+		insertHeadered(vertex, "pixel shader", info.pixelShader:buildVertex(mat, shadows))
 		
 		--world
-		insertHeadered(defines, "world shader", info.worldShader:buildDefines(self, mat, shadows))
-		insertHeadered(pixel, "world shader", info.worldShader:buildPixel(self, mat, shadows))
-		insertHeadered(vertex, "world shader", info.worldShader:buildVertex(self, mat, shadows))
+		insertHeadered(defines, "world shader", info.worldShader:buildDefines(mat, shadows))
+		insertHeadered(pixel, "world shader", info.worldShader:buildPixel(mat, shadows))
+		insertHeadered(vertex, "world shader", info.worldShader:buildVertex(mat, shadows))
 		
 		--build code
 		local code = codes.base
@@ -494,13 +494,13 @@ function lib:getLightComponents(light, basic)
 		IDs[light.light_typ] = (IDs[light.light_typ] or -1) + 1
 		local id = light.light_typ .. "_" .. IDs[light.light_typ]
 		
-		insertHeadered(lcInit, id, self.lightShaders[light.light_typ]:constructDefines(self, id))
+		insertHeadered(lcInit, id, self.lightShaders[light.light_typ]:constructDefines(id))
 		
 		local px
 		if basic then
-			px = self.lightShaders[light.light_typ]:constructPixelBasic(self, id)
+			px = self.lightShaders[light.light_typ]:constructPixelBasic(id)
 		else
-			px = self.lightShaders[light.light_typ]:constructPixel(self, id)
+			px = self.lightShaders[light.light_typ]:constructPixel(id)
 		end
 		if px then
 			insertHeadered(lc, id, "{\n" .. px .. "\n}")

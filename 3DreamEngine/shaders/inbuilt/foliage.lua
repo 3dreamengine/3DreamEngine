@@ -1,8 +1,10 @@
+local lib = _3DreamEngine
+
 local sh = { }
 
 sh.type = "vertex"
 
-function sh:init(dream)
+function sh:init()
 	self.speed = 0.05      -- the time multiplier
 	self.strength = 0.5    -- the multiplier of animation
 	self.scale = 0.25      -- the scale of wind waves
@@ -10,11 +12,11 @@ function sh:init(dream)
 	self.fadeWidth = 3     -- the blending margin
 end
 
-function sh:getId(dream, mat, shadow)
+function sh:getId(mat, shadow)
 	return 0
 end
 
-function sh:buildDefines(dream, mat)
+function sh:buildDefines(mat)
 	return [[
 #ifdef PIXEL
 	extern float windShaderFade;
@@ -32,13 +34,13 @@ function sh:buildDefines(dream, mat)
 	]]
 end
 
-function sh:buildPixel(dream, mat)
+function sh:buildPixel(mat)
 	return [[
 		alpha *= windShaderFade;
 	]]
 end
 
-function sh:buildVertex(dream, mat)
+function sh:buildVertex(mat)
 	return [[
 		vec3 noise = Texel(noiseTexture, vertexPos.xz * windShaderScale * 0.3 + vec2(windShaderTime, windShaderTime * 0.7)).xyz - vec3(0.5);
 		
@@ -48,12 +50,12 @@ function sh:buildVertex(dream, mat)
 	]]
 end
 
-function sh:perShader(dream, shaderObject)
+function sh:perShader(shaderObject)
 	local shader = shaderObject.shader
-	shader:send("noiseTexture", dream.textures.noise)
+	shader:send("noiseTexture", lib.textures.noise)
 end
 
-function sh:perMaterial(dream, shaderObject, material)
+function sh:perMaterial(shaderObject, material)
 	local shader = shaderObject.shader
 	shader:send("windShaderScale", material.windShaderScale or self.scale)
 	shader:send("windShaderStrength", material.windShaderStrength or self.strength)
@@ -62,11 +64,11 @@ function sh:perMaterial(dream, shaderObject, material)
 	shader:send("windShaderGrass", material.windShaderGrass and 1 or 0)
 end
 
-function sh:perTask(dream, shaderObject, task)
+function sh:perTask(shaderObject, task)
 	local shader = shaderObject.shader
-	local LOD_max = (task:getMesh().LOD_max or 1) * dream.LODDistance
+	local LOD_max = (task:getMesh().LOD_max or 1) * lib.LODDistance
 	local width = task:getMesh().material.windShaderFadeWidth or self.fadeWidth
-	local dist = (task:getPosition() - dream.camera.position):length() - task:getSize()
+	local dist = (task:getPosition() - lib.camera.position):length() - task:getSize()
 	local fade = math.max(0, math.min(1, (LOD_max - dist) / width))
 	shader:send("windShaderFade", fade)
 end

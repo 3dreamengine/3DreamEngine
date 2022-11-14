@@ -181,6 +181,7 @@ if love.graphics then
 end
 
 --a canvas set is used to render a scene to
+--todo merge with settings
 function lib:newCanvasSet(settings, w, h)
 	local set = { }
 	w = w or settings.resolution
@@ -233,6 +234,7 @@ function lib:newCanvasSet(settings, w, h)
 end
 
 --release set and free memory
+--todo
 function lib:unloadCanvasSet(set)
 	if set then
 		for _, s in pairs(set) do
@@ -243,7 +245,9 @@ function lib:unloadCanvasSet(set)
 	end
 end
 
---load canvases
+---Reload canvases
+---@param w number
+---@param h number
 function lib:resize(w, h)
 	w = w or love.graphics.getWidth()
 	h = h or love.graphics.getHeight()
@@ -254,12 +258,15 @@ function lib:resize(w, h)
 	self:unloadCanvasSet(self.canvases_mirror)
 	
 	--canvases sets
+	--todo solve using :resize
 	self.canvases = self:newCanvasSet(self.renderSet, w, h)
 	self.canvases_reflections = self:newCanvasSet(self.reflectionsSet)
 	self.canvases_mirror = self:newCanvasSet(self.mirrorSet, w, h)
 end
 
---applies settings and load canvases
+---Applies settings and load canvases
+---@param w number
+---@param h number
 function lib:init(w, h)
 	if self.renderSet.mode == "direct" then
 		local width, height, flags = love.window.getMode()
@@ -301,7 +308,7 @@ function lib:init(w, h)
 	self:initJobs()
 end
 
---clears the current scene
+---Clears the current scene
 function lib:prepare()
 	self.lighting = { }
 	
@@ -324,7 +331,15 @@ function lib:prepare()
 	self.stats.draws = 0
 end
 
---add an object to the default scene
+---draw
+---@param object DreamObject
+---@param x number
+---@param y number
+---@param z number
+---@param sx number
+---@param sy number
+---@param sz number
+---@overload fun(object: DreamObject)
 function lib:draw(object, x, y, z, sx, sy, sz)
 	--prepare transform matrix
 	local transform
@@ -346,12 +361,29 @@ function lib:draw(object, x, y, z, sx, sy, sz)
 	self.delton:stop()
 end
 
---will render this scene
+---Add a light
+---@param light DreamLight
+function lib:addLight(light)
+	table.insert(self.lighting, light)
+end
+
+---Add a new simple light
+---@param typ string
+---@param position "vec3"
+---@param color "vec3"
+---@param brightness number
+function lib:addNewLight(typ, position, color, brightness)
+	self:addLight(self:newLight(typ, position, color, brightness))
+end
+
+---Will render this scene
+---@param scene DreamScene
 function lib:drawScene(scene)
 	self.scenes[scene] = true
 end
 
---will render this batch
+---Will render this batch
+---@param batch DreamParticleBatch
 function lib:drawParticleBatch(batch)
 	local ID = (batch.emissionTexture and 2 or 1) + (batch.distortionTexture and 2 or 0)
 	local bt = self.particleBatches[batch.alpha and 2 or 1]
@@ -359,7 +391,12 @@ function lib:drawParticleBatch(batch)
 	bt[ID][batch] = true
 end
 
---draw a particle
+---Draw a single particle
+---@param particle DreamParticle
+---@param quad Quad
+---@param x number
+---@param y number
+---@param z number
 function lib:drawParticle(particle, quad, x, y, z, ...)
 	assert(particle.class == "particle", "create a particle object and pass it here")
 	particle = particle:clone()

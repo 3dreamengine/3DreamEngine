@@ -5,14 +5,10 @@ functions.lua - contains library relevant functions
 
 local lib = _3DreamEngine
 
-function lib:addLight(light)
-	table.insert(self.lighting, light)
-end
-
-function lib:addNewLight(...)
-	self:addLight(self:newLight(...))
-end
-
+---Returns the look-at transformation matrix
+---@param eye "vec3"
+---@param at "vec3"
+---@param up "vec3" @ default vec3(0.0, 1.0, 0.0)
 function lib:lookAt(eye, at, up)
 	up = up or vec3(0.0, 1.0, 0.0)
 	
@@ -21,10 +17,10 @@ function lib:lookAt(eye, at, up)
 	local yaxis = xaxis:cross(zaxis)
 	
 	return mat4(
-		xaxis.x, xaxis.y, xaxis.z, -xaxis:dot(eye),
-		yaxis.x, yaxis.y, yaxis.z, -yaxis:dot(eye),
-		-zaxis.x, -zaxis.y, -zaxis.z, zaxis:dot(eye),
-		0, 0, 0, 1
+			xaxis.x, xaxis.y, xaxis.z, -xaxis:dot(eye),
+			yaxis.x, yaxis.y, yaxis.z, -yaxis:dot(eye),
+			-zaxis.x, -zaxis.y, -zaxis.z, zaxis:dot(eye),
+			0, 0, 0, 1
 	)
 end
 
@@ -54,7 +50,7 @@ function lib:RGBtoHSV(r, g, b)
 	local h, s, v
 	local min = math.min(r, g, b)
 	local max = math.max(r, g, b)
-
+	
 	v = max
 	local delta = max - min
 	if max ~= 0 then
@@ -84,20 +80,28 @@ function lib:RGBtoHSV(r, g, b)
 	return h, s, v
 end
 
-function lib:pointToPixel(point, cam, canvases)
-	cam = cam or self.camera
+---Convert a 3D point to 2D screen coordinates
+---@param point "vec3"
+---@param camera DreamCamera
+---@param canvases DreamCanvases
+function lib:pointToPixel(point, camera, canvases)
+	camera = camera or self.camera
 	canvases = canvases or self.canvases
 	
-	local p = cam.transformProj * vec4(point[1], point[2], point[3], 1.0)
+	local p = camera.transformProj * vec4(point[1], point[2], point[3], 1.0)
 	
-	return vec3((p[1] / p[4] + 1) * canvases.width/2, (p[2] / p[4] + 1) * canvases.height/2, p[3])
+	return vec3((p[1] / p[4] + 1) * canvases.width / 2, (p[2] / p[4] + 1) * canvases.height / 2, p[3])
 end
 
-function lib:pixelToPoint(point, cam, canvases)
-	cam = cam or self.camera
+---Convert 3D screen coordinates to 3D point, if the depth is unknown pass 1
+---@param point "vec3"
+---@param camera DreamCamera
+---@param canvases DreamCanvases
+function lib:pixelToPoint(point, camera, canvases)
+	camera = camera or self.camera
 	canvases = canvases or self.canvases
 	
-	local inv = cam.transformProj:invert()
+	local inv = camera.transformProj:invert()
 	
 	--(-1, 1) normalized coords
 	local x = (point[1] * 2 / canvases.width - 1)
@@ -112,15 +116,16 @@ function lib:pixelToPoint(point, cam, canvases)
 	far = far / far.w
 	
 	--normalized depth
-	local depth = (point[3] - cam.near) / (cam.far - cam.near)
+	local depth = (point[3] - camera.near) / (camera.far - camera.near)
 	
 	--interpolate between planes based on depth
 	return vec3(near) * (1.0 - depth) + vec3(far) * depth
 end
 
---prepares a camera to support plane frustum checks
+---Create frustum planes
+---@param m "mat4"
 function lib:getFrustumPlanes(m)
-	local planes = {vec4(), vec4(), vec4(), vec4(), vec4(), vec4()}
+	local planes = { vec4(), vec4(), vec4(), vec4(), vec4(), vec4() }
 	for i = 1, 4 do
 		planes[1][i] = m[12 + i] + m[0 + i]
 		planes[2][i] = m[12 + i] - m[0 + i]
@@ -131,7 +136,6 @@ function lib:getFrustumPlanes(m)
 	end
 	return planes
 end
-
 
 --todo the frustum culling code fails for close objects, a constant factor "fix" it but it's not fixing the actual problem
 local perspectiveWarpFactor = 1.5
@@ -183,15 +187,15 @@ function lib:getBarycentricClamped(x, y, x1, y1, x2, y2, x3, y3)
 	local edge1Y = y2 - y1
 	local edge2X = x3 - x1
 	local edge2Y = y3 - y1
-	local a00 = edge1X^2 + edge1Y^2
+	local a00 = edge1X ^ 2 + edge1Y ^ 2
 	local a01 = edge1X * edge2X + edge1Y * edge2Y
-	local a11 = edge2X^2 + edge2Y^2
+	local a11 = edge2X ^ 2 + edge2Y ^ 2
 	local b0 = diffX * edge1X + diffY * edge1Y
 	local b1 = diffX * edge2X + diffY * edge2Y
 	local det = a00 * a11 - a01 * a01
 	local t1 = a01 * b1 - a11 * b0
 	local t2 = a01 * b0 - a00 * b1
-
+	
 	if t1 + t2 <= det then
 		if t1 < 0 then
 			if t2 < 0 then
@@ -316,11 +320,11 @@ function lib:blurCanvas(canvas, strength, iterations, mask)
 	love.graphics.setShader(sh)
 	
 	for i = iterations, 1, -1 do
-		sh:send("dir", {2^(i-1) / canvas:getWidth() * strength, 0})
+		sh:send("dir", { 2 ^ (i - 1) / canvas:getWidth() * strength, 0 })
 		love.graphics.setCanvas(temp)
 		love.graphics.draw(canvas)
 		
-		sh:send("dir", {0, 2^(i-1) / canvas:getHeight() * strength})
+		sh:send("dir", { 0, 2 ^ (i - 1) / canvas:getHeight() * strength })
 		love.graphics.setCanvas(canvas)
 		love.graphics.draw(temp)
 	end
@@ -329,40 +333,40 @@ end
 
 local blurVecs = {
 	{
-		{1.0, 0.0, 0.0},
-		{0.0, 0.0, -1.0},
-		{0.0, -1.0, 0.0},
-		{0.0, 0.0, 1.0},
+		{ 1.0, 0.0, 0.0 },
+		{ 0.0, 0.0, -1.0 },
+		{ 0.0, -1.0, 0.0 },
+		{ 0.0, 0.0, 1.0 },
 	},
 	{
-		{-1.0, 0.0, 0.0},
-		{0.0, 0.0, 1.0},
-		{0.0, -1.0, 0.0},
-		{0.0, 0.0, 1.0},
+		{ -1.0, 0.0, 0.0 },
+		{ 0.0, 0.0, 1.0 },
+		{ 0.0, -1.0, 0.0 },
+		{ 0.0, 0.0, 1.0 },
 	},
 	{
-		{0.0, 1.0, 0.0},
-		{1.0, 0.0, 0.0},
-		{0.0, 0.0, 1.0},
-		{1.0, 0.0, 0.0},
+		{ 0.0, 1.0, 0.0 },
+		{ 1.0, 0.0, 0.0 },
+		{ 0.0, 0.0, 1.0 },
+		{ 1.0, 0.0, 0.0 },
 	},
 	{
-		{0.0, -1.0, 0.0},
-		{1.0, 0.0, 0.0},
-		{0.0, 0.0, -1.0},
-		{1.0, 0.0, 0.0},
+		{ 0.0, -1.0, 0.0 },
+		{ 1.0, 0.0, 0.0 },
+		{ 0.0, 0.0, -1.0 },
+		{ 1.0, 0.0, 0.0 },
 	},
 	{
-		{0.0, 0.0, 1.0},
-		{1.0, 0.0, 0.0},
-		{0.0, -1.0, 0.0},
-		{1.0, 0.0, 0.0},
+		{ 0.0, 0.0, 1.0 },
+		{ 1.0, 0.0, 0.0 },
+		{ 0.0, -1.0, 0.0 },
+		{ 1.0, 0.0, 0.0 },
 	},
 	{
-		{0.0, 0.0, -1.0},
-		{-1.0, 0.0, 0.0},
-		{0.0, -1.0, 0.0},
-		{1.0, 0.0, 0.0},
+		{ 0.0, 0.0, -1.0 },
+		{ -1.0, 0.0, 0.0 },
+		{ 0.0, -1.0, 0.0 },
+		{ 1.0, 0.0, 0.0 },
 	},
 }
 
@@ -375,19 +379,19 @@ function lib:getTemporaryCanvas(canvas, half)
 			readable = canvas:isReadable(),
 			msaa = canvas:getMSAA(),
 			type = canvas:getTextureType(),
-			mipmaps = canvas:getMipmapMode()})
+			mipmaps = canvas:getMipmapMode() })
 	end
 	return self.canvasCache[id]
 end
 
 local function setMultiCubeMap(cube, level)
 	love.graphics.setCanvas({
-		{cube, face = 1, mipmap = level},
-		{cube, face = 2, mipmap = level},
-		{cube, face = 3, mipmap = level},
-		{cube, face = 4, mipmap = level},
-		{cube, face = 5, mipmap = level},
-		{cube, face = 6, mipmap = level},
+		{ cube, face = 1, mipmap = level },
+		{ cube, face = 2, mipmap = level },
+		{ cube, face = 3, mipmap = level },
+		{ cube, face = 4, mipmap = level },
+		{ cube, face = 5, mipmap = level },
+		{ cube, face = 6, mipmap = level },
 	})
 end
 
@@ -489,7 +493,7 @@ function lib:take3DScreenshot(pos, resolution, path)
 	local lookNormals = self.lookNormals
 	resolution = resolution or 512
 	local canvases = self:newCanvasSet(self.renderSet, resolution, resolution)
-	local results = love.graphics.newCanvas(resolution, resolution, {format = "rgba16f", type = "cube", mipmaps = "manual"})
+	local results = love.graphics.newCanvas(resolution, resolution, { format = "rgba16f", type = "cube", mipmaps = "manual" })
 	
 	--view matrices
 	local transformations = {
@@ -505,7 +509,7 @@ function lib:take3DScreenshot(pos, resolution, path)
 	for face = 1, 6 do
 		love.graphics.push("all")
 		love.graphics.reset()
-		love.graphics.setCanvas({{results, face = face}})
+		love.graphics.setCanvas({ { results, face = face } })
 		love.graphics.clear()
 		
 		--render
@@ -554,15 +558,15 @@ do
 	local n = 0.01
 	local f = 1000.0
 	local fov = 90
-	local scale = math.tan(fov/2*math.pi/180)
+	local scale = math.tan(fov / 2 * math.pi / 180)
 	local r = scale * n
 	local l = -r
 	
 	lib.cubeMapProjection = mat4(
-			2*n / (r-l),   0,              (r+l) / (r-l),     0,
-			0,             -2*n / (r - l),  (r+l) / (r-l),     0,
-			0,             0,              -(f+n) / (f-n),    -2*f*n / (f-n),
-			0,             0,              -1,                0
+			2 * n / (r - l), 0, (r + l) / (r - l), 0,
+			0, -2 * n / (r - l), (r + l) / (r - l), 0,
+			0, 0, -(f + n) / (f - n), -2 * f * n / (f - n),
+			0, 0, -1, 0
 	)
 end
 

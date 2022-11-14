@@ -218,9 +218,9 @@ function lib:render(canvases, cam, dynamic)
 					self:sendLightUniforms(light, shaderObject)
 					
 					--shader
-					shaderObject.pixelShader:perShader(self, shaderObject)
-					shaderObject.vertexShader:perShader(self, shaderObject)
-					shaderObject.worldShader:perShader(self, shaderObject)
+					shaderObject.pixelShader:perShader(shaderObject)
+					shaderObject.vertexShader:perShader(shaderObject)
+					shaderObject.worldShader:perShader(shaderObject)
 					
 					--fog
 					if hasUniform(shaderObject, "fog_density") then
@@ -256,9 +256,9 @@ function lib:render(canvases, cam, dynamic)
 				checkAndSendCached(shaderObject, "translucent", material.translucent)
 				
 				--shader
-				shaderObject.pixelShader:perMaterial(self, shaderObject, material)
-				shaderObject.vertexShader:perMaterial(self, shaderObject, material)
-				shaderObject.worldShader:perMaterial(self, shaderObject, material)
+				shaderObject.pixelShader:perMaterial(shaderObject, material)
+				shaderObject.vertexShader:perMaterial(shaderObject, material)
+				shaderObject.worldShader:perMaterial(shaderObject, material)
 				
 				--culling
 				love.graphics.setMeshCullMode(material.cullMode)
@@ -292,9 +292,9 @@ function lib:render(canvases, cam, dynamic)
 			shader:send("transform", task:getTransform())
 			
 			--per task
-			shaderObject.pixelShader:perTask(self, shaderObject, task)
-			shaderObject.vertexShader:perTask(self, shaderObject, task)
-			shaderObject.worldShader:perTask(self, shaderObject, task)
+			shaderObject.pixelShader:perTask(shaderObject, task)
+			shaderObject.vertexShader:perTask(shaderObject, task)
+			shaderObject.worldShader:perTask(shaderObject, task)
 			
 			--render
 			local objectMesh = mesh:getMesh()
@@ -489,9 +489,9 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects, smoo
 				shader:send("viewPos", cam.position)
 			end
 			
-			shaderObject.pixelShader:perShader(self, shaderObject)
-			shaderObject.vertexShader:perShader(self, shaderObject)
-			shaderObject.worldShader:perShader(self, shaderObject)
+			shaderObject.pixelShader:perShader(shaderObject)
+			shaderObject.vertexShader:perShader(shaderObject)
+			shaderObject.worldShader:perShader(shaderObject)
 		end
 		
 		--set active material
@@ -508,9 +508,9 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects, smoo
 		shader:send("transform", task:getTransform())
 		
 		--shader
-		shaderObject.pixelShader:perTask(self, shaderObject, task)
-		shaderObject.vertexShader:perTask(self, shaderObject, task)
-		shaderObject.worldShader:perTask(self, shaderObject, task)
+		shaderObject.pixelShader:perTask(shaderObject, task)
+		shaderObject.vertexShader:perTask(shaderObject, task)
+		shaderObject.worldShader:perTask(shaderObject, task)
 		
 		--render
 		local objectMesh = mesh:getMesh()

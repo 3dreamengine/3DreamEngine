@@ -1,18 +1,20 @@
+local dream = _3DreamEngine
+
 local sh = { }
 
 sh.type = "vertex"
 
-function sh:init(dream)
+function sh:init()
 	self.speed = 0.05      -- the time multiplier
 	self.strength = 1.0    -- the multiplier of animation
 	self.scale = 0.25      -- the scale of wind waves
 end
 
-function sh:getId(dream, mat, shadow)
+function sh:getId(mat, shadow)
 	return 0
 end
 
-function sh:buildDefines(dream, mat)
+function sh:buildDefines(mat)
 	return [[
 #ifdef VERTEX
 	extern float windShaderTime;
@@ -26,11 +28,11 @@ function sh:buildDefines(dream, mat)
 	]]
 end
 
-function sh:buildPixel(dream, mat)
+function sh:buildPixel(mat)
 	return ""
 end
 
-function sh:buildVertex(dream, mat)
+function sh:buildVertex(mat)
 	return [[
 		vec3 noise = Texel(noiseTexture, vertexPos.xz * windShaderScale * 0.3 + vec2(windShaderTime, windShaderTime * 0.7)).xyz - vec3(0.5);
 		
@@ -40,12 +42,12 @@ function sh:buildVertex(dream, mat)
 	]]
 end
 
-function sh:perShader(dream, shaderObject)
+function sh:perShader(shaderObject)
 	local shader = shaderObject.shader
 	shader:send("noiseTexture", dream.textures.noise)
 end
 
-function sh:perMaterial(dream, shaderObject, material)
+function sh:perMaterial(shaderObject, material)
 	local shader = shaderObject.shader
 	shader:send("windShaderScale", material.windShaderScale or self.scale)
 	shader:send("windShaderStrength", material.windShaderStrength or self.strength)
@@ -54,7 +56,7 @@ function sh:perMaterial(dream, shaderObject, material)
 	shader:send("windShaderGrass", material.windShaderGrass and 1 or 0)
 end
 
-function sh:perTask(dream, shaderObject, task)
+function sh:perTask(shaderObject, task)
 
 end
 

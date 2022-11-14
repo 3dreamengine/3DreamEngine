@@ -1,14 +1,16 @@
+local lib = _3DreamEngine
+
 local sh = { }
 
 sh.type = "pixel"
 
 sh.meshFormat = "material"
 
-function sh:getId(dream, mat, shadow)
+function sh:getId(mat, shadow)
 	return 0
 end
 
-function sh:buildDefines(dream, mat, shadow)
+function sh:buildDefines(mat, shadow)
 	return [[
 		varying vec3 VaryingMaterial;
 		
@@ -20,7 +22,7 @@ function sh:buildDefines(dream, mat, shadow)
 	]]
 end
 
-function sh:buildPixel(dream, mat)
+function sh:buildPixel(mat)
 	return [[
 	//color
 	albedo = VaryingColor.rgb;
@@ -36,7 +38,7 @@ function sh:buildPixel(dream, mat)
 	]]
 end
 
-function sh:buildVertex(dream, mat)
+function sh:buildVertex(mat)
 	return [[
 	//get color
 	VaryingColor = gammaCorrectedTexel(lookupTexture, vec2(VertexMaterial, 0.0));
@@ -46,16 +48,16 @@ function sh:buildVertex(dream, mat)
 	]]
 end
 
-function sh:perShader(dream, shaderObject)
+function sh:perShader(shaderObject)
 
 end
 
-function sh:perMaterial(dream, shaderObject, material)
+function sh:perMaterial(shaderObject, material)
 	local shader = shaderObject.shader
-	shader:send("lookupTexture", dream:getImage(material.lookupTexture) or dream.textures.default)
+	shader:send("lookupTexture", lib:getImage(material.lookupTexture) or lib.textures.default)
 end
 
-function sh:perTask(dream, shaderObject, task)
+function sh:perTask(shaderObject, task)
 
 end
 

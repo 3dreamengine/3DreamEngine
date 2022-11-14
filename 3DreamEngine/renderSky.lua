@@ -30,7 +30,7 @@ function lib:renderSky(transformProj, camTransform, transformScale)
 		mesh:setTexture(self.sky_texture)
 		love.graphics.draw(mesh)
 	elseif type(self.sky_texture) == "function" then
-		self:sky_texture(transformProj, camTransform, transformScale)
+		self.sky_texture(transformProj, camTransform, transformScale)
 	end
 	love.graphics.pop()
 end

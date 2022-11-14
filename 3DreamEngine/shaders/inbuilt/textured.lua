@@ -1,10 +1,12 @@
+local dream = _3DreamEngine
+
 local sh = { }
 
 sh.type = "pixel"
 
 sh.meshFormat = "textured"
 
-function sh:getId(dream, mat, shadow)
+function sh:getId(mat, shadow)
 	if shadow then
 		return 0
 	else
@@ -12,7 +14,7 @@ function sh:getId(dream, mat, shadow)
 	end
 end
 
-function sh:buildDefines(dream, mat, shadow)
+function sh:buildDefines(mat, shadow)
 	return [[
 		]] .. (mat.normalTexture and "#define NORMAL_TEXTURE\n" or "") .. [[
 		]] .. (mat.normalTexture and "#define TANGENT\n" or "") .. [[
@@ -42,7 +44,7 @@ function sh:buildDefines(dream, mat, shadow)
 	]]
 end
 
-function sh:buildPixel(dream, mat)
+function sh:buildPixel(mat)
 	return [[
 	//color
 	vec4 c = gammaCorrectedTexel(albedoTexture, VaryingTexCoord.xy) * albedoColor;
@@ -77,15 +79,15 @@ function sh:buildPixel(dream, mat)
 	]]
 end
 
-function sh:buildVertex(dream, mat)
+function sh:buildVertex(mat)
 	return ""
 end
 
-function sh:perShader(dream, shaderObject)
+function sh:perShader(shaderObject)
 
 end
 
-function sh:perMaterial(dream, shaderObject, material)
+function sh:perMaterial(shaderObject, material)
 	local shader = shaderObject.shader
 	
 	local tex = dream.textures
@@ -109,7 +111,7 @@ function sh:perMaterial(dream, shaderObject, material)
 	shader:send("emissionColor", material.emission)
 end
 
-function sh:perTask(dream, shaderObject, task)
+function sh:perTask(shaderObject, task)
 
 end
 

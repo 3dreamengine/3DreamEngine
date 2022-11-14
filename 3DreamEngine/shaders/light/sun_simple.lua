@@ -6,7 +6,7 @@ function sh:constructDefinesGlobal(dream)
 
 end
 
-function sh:constructDefines(dream, ID)
+function sh:constructDefines(ID)
 	return ([[
 		extern vec3 sun_simple_vec_#ID#;
 		extern vec3 sun_simple_color_#ID#;
@@ -21,23 +21,23 @@ function sh:constructPixelBasicGlobal(dream)
 
 end
 
-function sh:constructPixel(dream, ID)
+function sh:constructPixel(ID)
 	return ([[
 		light += getLight(sun_simple_color_#ID#, viewVec, sun_simple_vec_#ID#, normal, albedo, roughness, metallic);
 	]]):gsub("#ID#", ID)
 end
 
-function sh:constructPixelBasic(dream, ID)
+function sh:constructPixelBasic(ID)
 	return ([[
 		light += sun_simple_color_#ID#;
 	]]):gsub("#ID#", ID)
 end
 
-function sh:sendGlobalUniforms(dream, shaderObject)
+function sh:sendGlobalUniforms(shaderObject)
 	
 end
 
-function sh:sendUniforms(dream, shaderObject, light, ID)
+function sh:sendUniforms(shaderObject, light, ID)
 	local shader = shaderObject.shader
 	
 	shader:send("sun_simple_color_" .. ID,  light.color * light.brightness)

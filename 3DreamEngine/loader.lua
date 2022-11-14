@@ -91,9 +91,32 @@ function lib:loadScene(path, args)
 	return self:loadObject(path, args)
 end
 
---loads an object
---path is the absolute path without extension
---args is a table containing additional settings
+--[[
+Object Tags in name
+A mesh/object name may contain additional tags, denoted as `TAG:VALUE_` or `TAG_`
+	`POS:name` treats it as position
+	`PHYSICS:type` treats it as a collider
+	`LOD:level` set lod, starting at 0
+	`LINK:name` replace this object with an library entry
+	`RAYTRACE` treat as raytrace, puts it into
+	`REFLECTION` treat as reflection (WIP)
+	`REMOVE` removes, may be used for placeholder or reference objects
+	`SHADOW:FALSE` disabled shadow
+--]]
+
+--[[
+Loader Args
+	`mesh (true)` create a mesh after loading
+	`particleSystems (true)` generate particleSystems as defined in the material
+	`cleanup (true)` deloads raw buffers (positions, normals, ...) after finishing loading
+	`export3do (false)` loads the object as usual, then export the entire object as a 3DO file
+	`animations (nil)` when using COLLADA format, split the animation into `{key = {from, to}}`, where `from` and `to` are timestamps in seconds
+	`decodeBlenderNames (true)` remove the vertex objects postfix added on export, e.g. `name` instead of `name_Cube`
+--]]
+
+---LoadObject
+---@param path string @ Path to object without extension
+---@param args "Args"
 function lib:loadObject(path, args)
 	--set default args
 	args = prepareArgs(args)

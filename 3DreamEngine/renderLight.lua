@@ -12,9 +12,9 @@ end
 local lastID = 0
 local IDs = { }
 function lib:getLightSetupID(lights, types)
-	local ID = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	local ID = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 	if lights then
-		for d,s in pairs(types) do
+		for d, s in pairs(types) do
 			if not IDs[d] then
 				lastID = lastID + 1
 				IDs[d] = lastID
@@ -29,7 +29,7 @@ end
 --creates a subset of light sources, optimized for the current scene
 function lib:getLightOverview(cam)
 	--select the most important lights
-	for d,s in ipairs(self.lighting) do
+	for d, s in ipairs(self.lighting) do
 		s.active = false
 		s.priority = s.brightness * (s.shadow and 2.0 or 1.0)
 		if s.typ ~= "sun" then
@@ -42,9 +42,9 @@ function lib:getLightOverview(cam)
 	--todo cleanup
 	local lights = { }
 	local types = { }
-	for d,s in ipairs(self.lighting) do
+	for d, s in ipairs(self.lighting) do
 		local typ = s.typ .. "_" .. (s.shadow and (
-			"shadow" .. (s.shadow.smooth and "_smooth" or "") .. (s.shadow.dynamic and "_dynamic" or "")
+				"shadow" .. (s.shadow.smooth and "_smooth" or "") .. (s.shadow.dynamic and "_dynamic" or "")
 		) or "simple")
 		s.light_typ = typ
 		
@@ -68,14 +68,14 @@ function lib:sendLightUniforms(light, shader, overwriteTyp)
 	local lightPos = { }
 	
 	--global uniforms
-	for typ,count in pairs(light.types) do
-		self.lightShaders[typ]:sendGlobalUniforms(self, shader, count, light.lights)
+	for typ, count in pairs(light.types) do
+		self.lightShaders[typ]:sendGlobalUniforms(shader, count, light.lights)
 	end
 	
 	--uniforms
 	local IDs = { }
-	for _,light in ipairs(light.lights) do
+	for _, light in ipairs(light.lights) do
 		IDs[light.light_typ] = (IDs[light.light_typ] or -1) + 1
-		self.lightShaders[overwriteTyp or light.light_typ]:sendUniforms(self, shader, light, light.light_typ .. "_" .. IDs[light.light_typ])
+		self.lightShaders[overwriteTyp or light.light_typ]:sendUniforms(shader, light, light.light_typ .. "_" .. IDs[light.light_typ])
 	end
 end

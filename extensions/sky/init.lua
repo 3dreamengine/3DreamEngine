@@ -3,6 +3,8 @@
 provides some basic features to simulate dynamic weather
 --]]
 
+local dream = _3DreamEngine
+
 local sky = { }
 
 local root = (...)
@@ -70,9 +72,9 @@ function sky:setDaytime(sun, time)
 	
 	--position
 	sun.direction = mat4.getRotateY(self.sun_rotation) * mat4.getRotateZ(self.sun_offset) * vec3(
-		0,
-		math.sin(self.time * math.pi * 2),
-		-math.cos(self.time * math.pi * 2)
+			0,
+			math.sin(self.time * math.pi * 2),
+			-math.cos(self.time * math.pi * 2)
 	):normalize()
 	
 	--current sample
@@ -80,15 +82,15 @@ function sky:setDaytime(sun, time)
 	
 	--direct sun color
 	sun.color = (
-		self.sunlight[math.max(1, math.min(c, math.ceil(p)))] * (1.0 - p % 1) +
-		self.sunlight[math.max(1, math.min(c, math.ceil(p+1)))] * (p % 1)
+			self.sunlight[math.max(1, math.min(c, math.ceil(p)))] * (1.0 - p % 1) +
+					self.sunlight[math.max(1, math.min(c, math.ceil(p + 1)))] * (p % 1)
 	)
 	
 	--sky color
 	--todo rename and make more accessable
 	_3DreamEngine.sun_ambient = (
-		self.skylight[math.max(1, math.min(c, math.ceil(p)))] * (1.0 - p % 1) +
-		self.skylight[math.max(1, math.min(c, math.ceil(p+1)))] * (p % 1)
+			self.skylight[math.max(1, math.min(c, math.ceil(p)))] * (1.0 - p % 1) +
+					self.skylight[math.max(1, math.min(c, math.ceil(p + 1)))] * (p % 1)
 	)
 end
 function sky:getDaytime()
@@ -112,12 +114,12 @@ function sky:getRainbowDir()
 	return self.rainbow_dir
 end
 
-function sky.render(dream, transformProj, camTransform)
+function sky.render(transformProj, camTransform)
 	local self = sky
 	
 	--look for suns
 	local sun
-	for _,l in ipairs(dream.lighting) do
+	for _, l in ipairs(dream.lighting) do
 		if l.typ == "sun" then
 			sun = l
 		end
@@ -158,14 +160,14 @@ function sky.render(dream, transformProj, camTransform)
 	self.shaders.moon:send("up", up * size)
 	self.shaders.moon:send("right", right * size)
 	self.shaders.moon:send("InstanceCenter", sun and -sun.direction or vec3(1, 1, 1))
-	self.shaders.moon:send("sun", {math.cos(self.day / 30 * math.pi * 2), math.sin(self.day / 30 * math.pi * 2), 0})
+	self.shaders.moon:send("sun", { math.cos(self.day / 30 * math.pi * 2), math.sin(self.day / 30 * math.pi * 2), 0 })
 	self.shaders.moon:send("normalTex", self.textures.moon_normal)
 	
 	dream.planeObject.meshes.Plane:getMesh():setTexture(self.textures.moon)
 	love.graphics.draw(dream.planeObject.meshes.Plane:getMesh())
 	
 	--suns
-	for _,l in ipairs(dream.lighting) do
+	for _, l in ipairs(dream.lighting) do
 		if l.typ == "sun" then
 			local size = 1 / (2.0 + math.sin(self.time * math.pi * 2.0))
 			
@@ -196,11 +198,11 @@ function sky.render(dream, transformProj, camTransform)
 		
 		self.shaders.clouds:send("sunVec", sun and sun.direction or vec3(0, 1, 0))
 		
-		for _,cloud in ipairs(self.clouds) do
+		for _, cloud in ipairs(self.clouds) do
 			self.shaders.clouds:send("clouds", cloud.texture)
 			self.shaders.clouds:send("cloudsTransform", mat4.getRotateY((cloud.roration or 0) + love.timer.getTime() * (cloud.rotationDelta)):subm())
 			
-			love.graphics.setColor(cloud.color or {1, 1, 1})
+			love.graphics.setColor(cloud.color or { 1, 1, 1 })
 			local mesh = dream.cubeObject.meshes.Cube.mesh
 			love.graphics.draw(mesh)
 		end
@@ -218,13 +220,13 @@ sky:setClouds({
 		texture = love.graphics.newCubeImage(root .. "/res/clouds_high.png"),
 		rotation = 0,
 		rotationDelta = -0.001,
-		color = {1.0, 1.0, 1.0},
+		color = { 1.0, 1.0, 1.0 },
 	},
 	{
 		texture = love.graphics.newCubeImage(root .. "/res/clouds_low.png"),
 		rotation = 0,
 		rotationDelta = 0.002,
-		color = {1.0, 1.0, 1.0},
+		color = { 1.0, 1.0, 1.0 },
 	},
 })
 

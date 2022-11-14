@@ -1,10 +1,12 @@
+local dream = _3DreamEngine
+
 local sh = { }
 
 sh.type = "pixel"
 
 sh.meshFormat = "textured"
 
-function sh:getId(dream, mat, shadow)
+function sh:getId(mat, shadow)
 	if shadow then
 		return 0
 	else
@@ -12,7 +14,7 @@ function sh:getId(dream, mat, shadow)
 	end
 end
 
-function sh:buildDefines(dream, mat, shadow)
+function sh:buildDefines(mat, shadow)
 	assert(mat.alpha, "water shader requires alpha pass set to true")
 	assert(mat.normalTexture, "water shader requires a normal texture for wave movement")
 	
@@ -64,7 +66,7 @@ function sh:buildDefines(dream, mat, shadow)
 	]]
 end
 
-function sh:buildPixel(dream, mat)
+function sh:buildPixel(mat)
 	return [[
 	//two moving UV coords for the wave normal
 	vec2 waterUV = VaryingTexCoord.xy + vertexPos.xz;
@@ -120,16 +122,16 @@ function sh:buildPixel(dream, mat)
 	]]
 end
 
-function sh:buildVertex(dream, mat)
+function sh:buildVertex(mat)
 	return ""
 end
 
-function sh:perShader(dream, shaderObject)
+function sh:perShader(shaderObject)
 	local shader = shaderObject.shader
 	shader:send("time", love.timer.getTime())
 end
 
-function sh:perMaterial(dream, shaderObject, material)
+function sh:perMaterial(shaderObject, material)
 	local shader = shaderObject.shader
 	
 	local tex = dream.textures
@@ -167,7 +169,7 @@ function sh:perMaterial(dream, shaderObject, material)
 	shader:send("liquidMetallic", material.liquidMetallic or 1.0)
 end
 
-function sh:perTask(dream, shaderObject, task)
+function sh:perTask(shaderObject, task)
 
 end
 
