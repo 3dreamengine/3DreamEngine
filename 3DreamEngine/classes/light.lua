@@ -12,7 +12,6 @@ function lib:newLight(typ, position, color, brightness)
 		brightness = brightness or 1.0,
 		attenuation = 2.0,
 		
-		--todo remove
 		godray = false,
 		godrayLength = typ == "sun" and 0.1 or 0.05,
 		godraySize = typ == "sun" and 0.1 or 0.035,
@@ -56,7 +55,6 @@ function class:getAttenuation()
 	return self.attenuation
 end
 
---todo remove
 function class:setGodrays(e)
 	self.godrays = e
 end

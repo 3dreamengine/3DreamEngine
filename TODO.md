@@ -8,6 +8,16 @@ Each class is serializable, which can be used for the internal file format but a
 
 But currently I broke it again...
 
+# Improve godrays
+
+The current light disk approach performs barely acceptable, but can be further enhanced:
+
+* Tweak the disk, make rays texture less sharp
+* Instead of calculating pixels on the entire screen, convert the disks border into a radian stripe and only calculate that
+* Then use this 2D stripe for the rest of the screen, lookup using atan
+* The lookup table has small y resolution for everything within the disk
+* This lookup table is generated for each light source, and THEN is a common godray step performed
+
 # Scene Graph
 
 Currently, the graph (scene) is loosely connected.

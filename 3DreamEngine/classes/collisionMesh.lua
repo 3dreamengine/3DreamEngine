@@ -8,7 +8,7 @@ local shapeModes = {
 }
 
 ---A new collision mesh, containing only relevant data for a collider
----@param mesh CollisionMesh
+---@param mesh DreamCollisionMesh
 ---@param shapeMode string
 function lib:newCollisionMesh(mesh, shapeMode)
 	shapeMode = shapeMode or "simple"
@@ -25,7 +25,7 @@ function lib:newCollisionMesh(mesh, shapeMode)
 	return setmetatable(c, self.meta.collisionMesh)
 end
 
----@class CollisionMesh
+---@class DreamCollisionMesh
 local class = {
 	links = { "collisionMesh" },
 }

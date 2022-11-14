@@ -1,6 +1,6 @@
 local lib = _3DreamEngine
 
----@return DreamReflections
+---@return DreamReflection
 function lib:newReflection(static, resolution, roughness, lazy)
 	roughness = roughness ~= false
 	
@@ -33,7 +33,7 @@ function lib:newReflection(static, resolution, roughness, lazy)
 	}, self.meta.reflection)
 end
 
----@class DreamReflections
+---@class DreamReflection
 local class = {
 	links = { "reflection" },
 }

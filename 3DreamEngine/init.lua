@@ -98,7 +98,7 @@ lib:setGamma(true)
 lib:setMaxLights(16)
 lib:setFrustumCheck(true)
 lib:setLODDistance(10)
-lib:setGodrays(false, false)
+lib:setGodrays(false)
 lib:setDistortionMargin(true)
 
 --loader settings

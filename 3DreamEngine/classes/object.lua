@@ -37,8 +37,8 @@ end
 ---@field meshes DreamMesh[]
 ---@field positions DreamPosition[]
 ---@field lights DreamLight[]
---todo
----@field physics DreamPhysics[]
+---@field collisionMeshes DreamCollisionMesh[]
+---@field raytraceMeshes DreamRaytraceMesh[]
 ---@field reflections DreamReflection[]
 ---@field animations DreamAnimation[]
 local class = {
@@ -152,9 +152,8 @@ function class:preload(force)
 	end
 end
 
---todo
----Converts all meshes to physics colliders
-function class:meshesToPhysics()
+---Converts all meshes to physics meshes
+function class:meshesToCollisionMeshes()
 	for id, mesh in pairs(self.meshes) do
 		for idx, m in ipairs(mesh:separate()) do
 			self.collisionMeshes[id .. "_" .. idx] = lib:getPhysicsData(m)
@@ -543,8 +542,8 @@ function class:tostring()
 	end
 	
 	--tags
-	for d, s in pairs(self.tags) do
-		table.insert(tags, tostring(d))
+	for tag, _ in pairs(self.tags) do
+		table.insert(tags, tostring(tag))
 	end
 	return string.format("%s: %d objects, %d meshes, %d physics, %d lights%s%s", self.name, count(self.objects), count(self.meshes), count(self.collisionMeshes or { }), count(self.lights), #tags > 0 and ", " or "", table.concat(tags, ", "))
 end
