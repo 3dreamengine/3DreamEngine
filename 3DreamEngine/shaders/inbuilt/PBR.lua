@@ -57,7 +57,7 @@ function sh:buildDefines(mat, shadow)
 				#ifdef TRANSLUCENCY
 				if (dot(normal, lightVec) < 0.0) {
 					lightVec = normalize(reflect(lightVec, normalize(varyingNormal)));
-					lightColor *= translucent;
+					lightColor *= translucency;
 				}
 				#endif
 				

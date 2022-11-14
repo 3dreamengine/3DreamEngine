@@ -199,7 +199,7 @@ function lib:getRenderShaderID(task, shadows)
 	--construct full ID
 	return string.char(
 		reflections and 1 or 0,
-		(mesh.instanceMesh and 1 or 0) + (mat.discard and 2 or 0) + (mat.dither and 4 or 0) + (mat.translucent > 0 and 8 or 0),
+		(mesh.instanceMesh and 1 or 0) + (mat.discard and 2 or 0) + (mat.dither and 4 or 0) + (mat.translucency > 0 and 8 or 0),
 		pixelShader.id % 256, math.floor(pixelShader.id / 256),
 		vertexShader.id % 256, math.floor(vertexShader.id / 256),
 		worldShader.id % 256, math.floor(worldShader.id / 256),
@@ -281,7 +281,7 @@ function lib:getRenderShader(ID, mesh, pass, canvases, light, shadows, sun)
 		end
 		
 		--translucency
-		if mat.translucent > 0 then
+		if mat.translucency > 0 then
 			table.insert(defines, "#define TRANSLUCENCY")
 		end
 		

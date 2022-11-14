@@ -253,7 +253,7 @@ function lib:render(canvases, cam, dynamic)
 				--alpha
 				checkAndSendCached(shaderObject, "dither", material.dither and 1 or 0)
 				
-				checkAndSendCached(shaderObject, "translucent", material.translucent)
+				checkAndSendCached(shaderObject, "translucency", material.translucency)
 				
 				--shader
 				shaderObject.pixelShader:perMaterial(shaderObject, material)

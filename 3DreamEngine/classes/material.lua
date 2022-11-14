@@ -13,7 +13,7 @@ function lib:newMaterial(name)
 		alphaCutoff = 0.5, --todo
 		name = name or "None",
 		ior = 1.0,
-		translucent = 0.0,
+		translucency = 0.0,
 		library = false,
 		cullMode = "back",
 	}, self.meta.material)
@@ -60,8 +60,8 @@ end
 ---Sets the object translucency (light coming through to the other side of a face), will disable mesh culling of translucency is larger than 0
 ---@param translucency number
 function class:setTranslucency(translucency)
-	self.translucent = translucency or 0.0
-	if self.translucent > 0.0 then
+	self.translucency = translucency or 0.0
+	if self.translucency > 0.0 then
 		self:setMeshCullMode("none")
 	end
 end

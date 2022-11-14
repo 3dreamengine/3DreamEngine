@@ -1,7 +1,7 @@
 return {
 	alpha = false,
 	metallic = 0.0,
-	translucent = 1.0,
+	translucency = 1.0,
 	cullMode = "none",
 	discard = true,
 	vertexShader = "wind",
