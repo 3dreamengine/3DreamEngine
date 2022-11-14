@@ -389,18 +389,18 @@ function lib:processObject(obj)
 		if animation then
 			obj.animations = { }
 			for anim, time in pairs(obj.args.animations) do
-				obj.animations[anim] = self:newAnimation()
+				local newFrames = { }
 				for joint, frames in pairs(animation.frames) do
-					obj.animations[anim].frames[joint] = { }
+					newFrames[joint] = { }
 					for _, frame in ipairs(frames) do
 						if frame.time >= time[1] and frame.time <= time[2] then
 							local f = table.flatCopy(frame)
 							f.time = f.time - time[1]
-							table.insert(obj.animations[anim].frames[joint], f)
+							table.insert(newFrames[joint], f)
 						end
 					end
 				end
-				obj.animations[anim]:finish()
+				self:newAnimation(newFrames)
 			end
 		end
 	end

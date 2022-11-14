@@ -87,7 +87,7 @@ function sky:setDaytime(sun, time)
 	)
 	
 	--sky color
-	--todo rename and make more accessable
+	--todo rename and make more accessible
 	_3DreamEngine.sun_ambient = (
 			self.skylight[math.max(1, math.min(c, math.ceil(p)))] * (1.0 - p % 1) +
 					self.skylight[math.max(1, math.min(c, math.ceil(p + 1)))] * (p % 1)

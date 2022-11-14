@@ -452,7 +452,7 @@ return function(self, obj, path)
 	
 	--load animations
 	local function loadAnimation(anim)
-		local animation = self:newAnimation()
+		local frames = {}
 		
 		for _, a in ipairs(anim.animation) do
 			if a.animation and a.channel then
@@ -476,20 +476,20 @@ return function(self, obj, path)
 				id = id:gsub("/transform", "")
 				local name = indices[id] and indices[id]._attr.sid
 				assert(name, "animation output channel refers to unknown id " .. id)
-				animation.frames[name] = { }
+				frames[name] = { }
 				for i = 1, #sources.OUTPUT / 16 do
 					local m = mat4(unpack(sources.OUTPUT, i * 16 - 15, i * 16))
-					table.insert(animation.frames[name], {
+					table.insert(frames[name], {
 						time = sources.INPUT[i],
 						rotation = quat.fromMatrix(m:subm()),
 						position = vec3(m[4], m[8], m[12]),
-						--todo class, scale
+						scale = 1,
 					})
 				end
 			end
 		end
 		
-		animation:finish()
+		local animation = self:newAnimation(frames)
 		if animation.length > 0 then
 			local name = anim._attr and (anim._attr.name or anim._attr.id) or "Default"
 			obj.animations[name] = animation

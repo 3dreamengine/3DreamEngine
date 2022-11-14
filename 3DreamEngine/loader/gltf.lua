@@ -321,7 +321,7 @@ local function loadObject(node)
 	return not empty and object
 end
 
-local function loadSampler(node)
+local function loadSkeletalSampler(node)
 	return {
 		times = cached(loadAccessor, file.accessors[node.input + 1]):toArray(),
 		values = cached(loadAccessor, file.accessors[node.output + 1]):toArray(),
@@ -350,29 +350,27 @@ return function(self, obj, path, header, blob)
 	--load animations
 	if file.animations then
 		for aid, animation in ipairs(file.animations) do
-			local anim = lib:newAnimation()
 			local targets = { }
 			for _, channel in ipairs(animation.channels) do
 				local name = file.nodes[channel.target.node + 1].name
 				targets[name] = targets[name] or { }
-				targets[name][channel.target.path] = cached(loadSampler, animation.samplers[channel.sampler + 1])
+				targets[name][channel.target.path] = cached(loadSkeletalSampler, animation.samplers[channel.sampler + 1])
 			end
 			
+			local frames = { }
 			for node, target in pairs(targets) do
-				local frames = { }
+				frames[node] = { }
 				for i, time in ipairs(target[next(target)].times) do
-					table.insert(frames, { --todo class
+					table.insert(frames[node], { --todo class
 						time = time,
 						rotation = target["rotation"] and quat(target["rotation"].values[i]) or quat(0, 0, 0, 1),
 						position = target["translation"] and target["translation"].values[i] or vec3(0, 0, 0),
 						scale = target["scale"] and target["scale"].values[i] or vec3(1, 1, 1),
 					})
 				end
-				anim.frames[node] = frames
 			end
 			
-			anim:finish()
-			obj.animations[animation.name or aid] = anim
+			obj.animations[animation.name or aid] = lib:newAnimation(frames)
 		end
 	end
 	
