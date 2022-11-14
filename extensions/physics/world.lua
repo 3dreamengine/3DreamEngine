@@ -24,7 +24,7 @@ end
 
 --world metatable
 function methods:add(shape, bodyType, x, y, z)
-	return self.physics:newCollider(self, shape, bodyType, x, y, z)
+	return self.physics:newCollisionMesh(self, shape, bodyType, x, y, z)
 end
 
 function methods:update(dt)

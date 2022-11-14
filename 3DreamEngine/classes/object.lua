@@ -12,9 +12,10 @@ function lib:newObject(name)
 	return setmetatable({
 		objects = { },
 		meshes = { },
+		collisionMeshes = { },
+		raytraceMeshes = { },
 		positions = { },
 		lights = { },
-		physics = { },
 		reflections = { },
 		animations = { },
 		links = { },
@@ -156,7 +157,7 @@ end
 function class:meshesToPhysics()
 	for id, mesh in pairs(self.meshes) do
 		for idx, m in ipairs(mesh:separate()) do
-			self.physics[id .. "_" .. idx] = lib:getPhysicsData(m)
+			self.collisionMeshes[id .. "_" .. idx] = lib:getPhysicsData(m)
 		end
 	end
 	self.meshes = { }
@@ -334,7 +335,7 @@ function class:encode(meshCache, dataStrings)
 		["meshes"] = { },
 		["positions"] = self.positions,
 		["lights"] = self.lights,
-		["physics"] = self.physics,
+		["collisionMeshes"] = self.collisionMeshes,
 		["reflections"] = self.reflections,
 		["links"] = self.links,
 		["args"] = self.args,
@@ -416,8 +417,8 @@ function class:decode(meshData)
 	end
 	
 	--decode physics
-	for _, s in pairs(self.physics) do
-		setmetatable(s, lib.meta.collider)
+	for _, s in pairs(self.collisionMeshes) do
+		setmetatable(s, lib.meta.collisionMesh)
 		s:decode()
 	end
 	
@@ -479,9 +480,9 @@ function class:print()
 	end
 	
 	--physics
-	if next(self.physics) then
+	if next(self.collisionMeshes) then
 		push("physics")
-		for _, s in pairs(self.physics or { }) do
+		for _, s in pairs(self.collisionMeshes or { }) do
 			printf("%s", s.name)
 		end
 		pop()
@@ -545,7 +546,7 @@ function class:tostring()
 	for d, s in pairs(self.tags) do
 		table.insert(tags, tostring(d))
 	end
-	return string.format("%s: %d objects, %d meshes, %d physics, %d lights%s%s", self.name, count(self.objects), count(self.meshes), count(self.physics or { }), count(self.lights), #tags > 0 and ", " or "", table.concat(tags, ", "))
+	return string.format("%s: %d objects, %d meshes, %d physics, %d lights%s%s", self.name, count(self.objects), count(self.meshes), count(self.collisionMeshes or { }), count(self.lights), #tags > 0 and ", " or "", table.concat(tags, ", "))
 end
 
 return class

@@ -2,17 +2,20 @@
 
 A list of upcoming changes and features.
 
+# Fix 3DO
+
+Each class is serializable, which can be used for the internal file format but also to shader objects between threads efficiently (since the buffers are not copied).
+
+But currently I broke it again...
+
 # Scene Graph
 
 Currently, the graph (scene) is loosely connected.
 This has no real benefits, but a few downsides instead.
+Instead, a full scene graph may be used (which also replaces the current scenes system)
 
 * If each object (instance) is unique, the local transformation and everything around it can be cached.
 * The local transformation is known before/independent on the last scene render
-
-# GLTF
-
-COLLADA is a mess. The current import does its job half of the time and I will probably leave it there, but GLTF might be more suitable and stable.
 
 # Buffer builder
 
@@ -34,11 +37,6 @@ COLLADA is a mess. The current import does its job half of the time and I will p
 # Text
 
 * `dream:drawText()` as a wrapper to `love.graphics.print` and `printf`
-
-# Physics extension
-
-* Finish and simplify
-    * 3Dream is not designed for full 3D games, but a basic physics lib can be helpful
 
 # Performance
 

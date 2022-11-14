@@ -62,7 +62,7 @@ end
 
 local colliderMeta = { __index = methods }
 
-function physicsExtension:newCollider(world, shape, bodyType, x, y, z)
+function physicsExtension:newCollisionMesh(world, shape, bodyType, x, y, z)
 	---@type Collider
 	local c = setmetatable({ }, colliderMeta)
 	

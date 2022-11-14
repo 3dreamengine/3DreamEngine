@@ -291,9 +291,13 @@ function lib:processObject(obj)
 		--raytrace objects are usually not meant to be rendered
 		if object.tags.raytrace then
 			for _, mesh in pairs(object.meshes) do
-				--todo
+				object.raytraceMeshes[meshId .. "_" .. i] = self:newRaytraceMesh(mesh)
 			end
-			object:setVisible(false)
+			
+			--remove if no longer used
+			if not object.tags.lod then
+				object.meshes = { }
+			end
 		end
 		
 		
@@ -317,7 +321,7 @@ function lib:processObject(obj)
 			for meshId, mesh in pairs(object.meshes) do
 				--2.5D physics
 				for i, m in ipairs(mesh:separate()) do
-					object.physics[meshId .. "_" .. i] = self:newCollider(m, shapeMode)
+					object.collisionMeshes[meshId .. "_" .. i] = self:newCollisionMesh(m, shapeMode)
 				end
 				
 				--remove if no longer used

@@ -1,5 +1,6 @@
 --load the 3D lib
 local dream = require("3DreamEngine")
+
 local raytrace = require("extensions/raytrace")
 
 love.window.setTitle("PBR Tavern")
@@ -181,8 +182,9 @@ function love.draw()
 		end
 		
 		--check
-		if raytrace:raytrace(tavern, origin, direction) then
-			coll = raytrace:getObject().name
+		local result = raytrace:cast(tavern, origin, direction)
+		if result then
+			coll = result:getMesh().name
 		end
 		
 		--cursor

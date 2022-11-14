@@ -18,16 +18,6 @@ end
 ---@class DreamSetSettings
 local class = {
 	links = { "setSettings" },
-	
-	setterGetter = {
-		resolution = "number",
-		format = "string",
-		msaa = "number",
-		fxaa = "boolean",
-		refractions = "boolean",
-		alphaPass = "boolean",
-		mode = "getter",
-	},
 }
 
 --todo remove lite, change to flag

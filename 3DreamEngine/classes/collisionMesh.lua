@@ -7,8 +7,10 @@ local shapeModes = {
 	wall = true
 }
 
---todo rename, documented
-function lib:newCollider(mesh, shapeMode)
+---A new collision mesh, containing only relevant data for a collider
+---@param mesh CollisionMesh
+---@param shapeMode string
+function lib:newCollisionMesh(mesh, shapeMode)
 	shapeMode = shapeMode or "simple"
 	assert(shapeModes[shapeMode], "Unknown collider shape mode " .. tostring(shapeMode))
 	
@@ -20,25 +22,12 @@ function lib:newCollider(mesh, shapeMode)
 		normals = mesh.normals,
 	}
 	
-	return setmetatable(c, self.meta.collider)
+	return setmetatable(c, self.meta.collisionMesh)
 end
 
+---@class CollisionMesh
 local class = {
-	links = { "collider" },
-	
-	setterGetter = {
-		
-	},
+	links = { "collisionMesh" },
 }
-
-function class:decode()
-	self.transform = mat4(self.transform)
-	for i, v in ipairs(self.vertices) do
-		self.vertices[i] = vec3(v)
-	end
-	for i, v in ipairs(self.normals) do
-		self.normals[i] = vec3(v)
-	end
-end
 
 return class
