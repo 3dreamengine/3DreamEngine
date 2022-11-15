@@ -7,7 +7,7 @@ love.mouse.setRelativeMode(true)
 local projectDir = "examples/AlphaBlending/"
 
 --settings
-dream.renderSet:setRefractions(true)
+dream.canvases:setRefractions(true)
 dream:setSky(love.graphics.newImage(projectDir .. "sky.hdr"), 0.25)
 dream:init()
 
@@ -44,7 +44,7 @@ function love.draw()
 	dream:present()
 	
 	love.graphics.print(table.concat({
-		"1 to toggle refractions .. (" .. tostring(dream.renderSet:getRefractions()) .. ")",
+		"1 to toggle refractions .. (" .. tostring(dream.canvases:getRefractions()) .. ")",
 	}, "\n"), 5, 5)
 end
 
@@ -60,7 +60,7 @@ end
 
 function love.keypressed(key)
 	if key == "1" then
-		dream.renderSet:setRefractions(not dream.renderSet:getRefractions())
+		dream.canvases:setRefractions(not dream.canvases:getRefractions())
 		dream:init()
 	end
 	

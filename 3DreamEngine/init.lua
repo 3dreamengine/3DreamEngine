@@ -116,17 +116,15 @@ lib:setSkyReflectionFormat(256, "rgba16f", false)
 lib:setAutoExposure(false)
 
 --canvas set settings
-lib.renderSet = lib:newSetSettings()
-lib.renderSet:setRefractions(true)
-lib.renderSet:setMode("normal")
+lib.canvases = lib:newCanvases()
+lib.canvases:setRefractions(true)
+lib.canvases:setMode("normal")
 
-lib.reflectionsSet = lib:newSetSettings()
-lib.reflectionsSet:setMode("direct")
+lib.reflectionCanvases = lib:newCanvases()
+lib.reflectionCanvases:setMode("direct")
 
-lib.mirrorSet = lib:newSetSettings()
-lib.mirrorSet:setMode("lite")
-
-lib.shadowSet = lib:newSetSettings()
+--lib.mirrorCanvases = lib:newCanvases()
+--lib.mirrorCanvases:setMode("lite")
 
 --default camera
 lib.camera = lib:newCamera()
@@ -180,71 +178,6 @@ if love.graphics then
 	end
 end
 
---a canvas set is used to render a scene to
---todo merge with settings
-function lib:newCanvasSet(settings, w, h)
-	local set = { }
-	w = w or settings.resolution
-	h = h or settings.resolution
-	
-	--settings
-	set.width = w
-	set.height = h
-	set.msaa = settings.msaa
-	set.mode = settings.mode
-	set.refractions = settings.alphaPass and settings.refractions and settings.mode == "normal"
-	set.format = settings.format
-	set.alphaPass = settings.alphaPass
-	
-	if settings.mode ~= "direct" then
-		--depth
-		set.depth_buffer = love.graphics.newCanvas(w, h, { format = self.canvasFormats["depth32f"] and "depth32f" or self.canvasFormats["depth24"] and "depth24" or "depth16", readable = false, msaa = set.msaa })
-		
-		--temporary HDR color
-		set.color = love.graphics.newCanvas(w, h, { format = settings.format, readable = true, msaa = set.msaa })
-		
-		--additional color if using refractions
-		if set.refractions then
-			set.colorAlpha = love.graphics.newCanvas(w, h, { format = "rgba16f", readable = true, msaa = set.msaa })
-			set.distortion = love.graphics.newCanvas(w, h, { format = "rg16f", readable = true, msaa = set.msaa })
-		end
-		
-		--depth
-		set.depth = love.graphics.newCanvas(w, h, { format = "r16f", readable = true, msaa = set.msaa })
-	end
-	
-	--screen space ambient occlusion blurring canvases
-	if self.AO_enabled and settings.mode ~= "direct" then
-		set.AO_1 = love.graphics.newCanvas(w * self.AO_resolution, h * self.AO_resolution, { format = "r8", readable = true, msaa = 0 })
-		if self.AO_blur then
-			set.AO_2 = love.graphics.newCanvas(w * self.AO_resolution, h * self.AO_resolution, { format = "r8", readable = true, msaa = 0 })
-		end
-	end
-	
-	--post effects
-	if settings.mode == "normal" then
-		--bloom blurring canvases
-		if self.bloom_enabled then
-			set.bloom_1 = love.graphics.newCanvas(w * self.bloom_resolution, h * self.bloom_resolution, { format = settings.format, readable = true, msaa = 0 })
-			set.bloom_2 = love.graphics.newCanvas(w * self.bloom_resolution, h * self.bloom_resolution, { format = settings.format, readable = true, msaa = 0 })
-		end
-	end
-	
-	return set
-end
-
---release set and free memory
---todo
-function lib:unloadCanvasSet(set)
-	if set then
-		for _, s in pairs(set) do
-			if type(s) == "userdata" and s.release then
-				s:release()
-			end
-		end
-	end
-end
-
 ---Reload canvases
 ---@param w number
 ---@param h number
@@ -252,23 +185,17 @@ function lib:resize(w, h)
 	w = w or love.graphics.getWidth()
 	h = h or love.graphics.getHeight()
 	
-	--fully unload previous sets
-	self:unloadCanvasSet(self.canvases)
-	self:unloadCanvasSet(self.canvases_reflections)
-	self:unloadCanvasSet(self.canvases_mirror)
-	
 	--canvases sets
-	--todo solve using :resize
-	self.canvases = self:newCanvasSet(self.renderSet, w, h)
-	self.canvases_reflections = self:newCanvasSet(self.reflectionsSet)
-	self.canvases_mirror = self:newCanvasSet(self.mirrorSet, w, h)
+	self.canvases:init(w, h)
+	self.reflectionCanvases:init()
+	--self.mirrorCanvases:init(w, h)
 end
 
 ---Applies settings and load canvases
 ---@param w number
 ---@param h number
 function lib:init(w, h)
-	if self.renderSet.mode == "direct" then
+	if self.canvases.mode == "direct" then
 		local width, height, flags = love.window.getMode()
 		if flags.depth == 0 then
 			print("Direct render is enabled, but there is no depth buffer! Using 16-bit depth from now on.")
@@ -276,7 +203,7 @@ function lib:init(w, h)
 		end
 	end
 	
-	if self.autoExposure_enabled and self.renderSet.mode == "direct" then
+	if self.autoExposure_enabled and self.canvases.mode == "direct" then
 		print("Autoexposure does not work with direct render! Autoexposure has been disabled.")
 		self:setAutoExposure(false)
 	end

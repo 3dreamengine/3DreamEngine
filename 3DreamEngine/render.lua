@@ -128,7 +128,7 @@ function lib:render(canvases, cam, dynamic)
 	
 	--clear depth
 	if canvases.mode ~= "direct" then
-		love.graphics.setCanvas({ canvases.color, canvases.depth, depthstencil = canvases.depth_buffer })
+		love.graphics.setCanvas({ canvases.color, canvases.depth, depthstencil = canvases.depthBuffer })
 		
 		love.graphics.setDepthMode()
 		love.graphics.clear(false, false, true)
@@ -176,11 +176,11 @@ function lib:render(canvases, cam, dynamic)
 		if canvases.mode ~= "direct" and pass == 2 then
 			if canvases.refractions then
 				--refractions only
-				love.graphics.setCanvas({ canvases.colorAlpha, canvases.distortion, depthstencil = canvases.depth_buffer })
+				love.graphics.setCanvas({ canvases.colorAlpha, canvases.distortion, depthstencil = canvases.depthBuffer })
 				love.graphics.clear(true, false, false)
 			else
 				--disable depth
-				love.graphics.setCanvas({ canvases.color, depthstencil = canvases.depth_buffer })
+				love.graphics.setCanvas({ canvases.color, depthstencil = canvases.depthBuffer })
 			end
 		end
 		

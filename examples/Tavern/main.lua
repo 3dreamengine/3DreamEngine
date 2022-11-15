@@ -11,7 +11,7 @@ love.mouse.setRelativeMode(true)
 local projectDir = "examples/Tavern/"
 dream:setSmoothLoading(false)
 
-dream.renderSet:setRefractions(true)
+dream.canvases:setRefractions(true)
 
 dream:setSky(false)
 dream:setDefaultReflection(dream.cimg:load(projectDir .. "sky.cimg"))
@@ -251,7 +251,7 @@ function love.keypressed(key)
 	end
 	
 	if key == "1" then
-		dream.renderSet:setRefractions(not dream.renderSet:getRefractions())
+		dream.canvases:setRefractions(not dream.canvases:getRefractions())
 		dream:init()
 	end
 	
@@ -270,12 +270,12 @@ function love.keypressed(key)
 	end
 	
 	if key == "8" then
-		dream.renderSet:setMode("direct")
+		dream.canvases:setMode("direct")
 		dream:init()
 	end
 	
 	if key == "9" then
-		dream.renderSet:setMode("normal")
+		dream.canvases:setMode("normal")
 		dream:init()
 	end
 	

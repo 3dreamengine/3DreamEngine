@@ -290,8 +290,8 @@ function lib:processObject(obj)
 		
 		--raytrace objects are usually not meant to be rendered
 		if object.tags.raytrace then
-			for _, mesh in pairs(object.meshes) do
-				object.raytraceMeshes[meshId .. "_" .. i] = self:newRaytraceMesh(mesh)
+			for i, mesh in pairs(object.meshes) do
+				object.raytraceMeshes[i] = self:newRaytraceMesh(mesh)
 			end
 			
 			--remove if no longer used
