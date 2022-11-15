@@ -177,24 +177,7 @@ local function nearestPointToLine(a, b, p)
 	return a + t * ab
 end
 
-local function transform(origin, direction, mesh)
-	if mesh.transform then
-		local m = mesh:getInvertedTransform()
-		
-		return m * origin, vec3({
-			m[1] * direction[1] + m[2] * direction[2] + m[3] * direction[3],
-			m[5] * direction[1] + m[6] * direction[2] + m[7] * direction[3],
-			m[9] * direction[1] + m[10] * direction[2] + m[11] * direction[3],
-		})
-	else
-		return origin, direction
-	end
-end
-
-local function raytraceMesh(mesh, origin, direction)
-	--object transform
-	local localOrigin, localDirection = transform(origin, direction, mesh)
-	
+local function raytraceMesh(mesh, localOrigin, localDirection)
 	--bounding box check
 	local center = mesh.boundingBox.center
 	local nearest = nearestPointToLine(localOrigin, localOrigin + localDirection, center)
@@ -213,28 +196,41 @@ local function raytraceMesh(mesh, origin, direction)
 	raytraceTree(localOrigin, localDirection, mesh.raytraceTree)
 	if oldT ~= nearestT or oldF ~= nearestFace then
 		nearestMesh = mesh
+		return { }
 	end
-	
-	return false
 end
 
-local function raytraceObject(object, origin, direction, onlyRaytraceMeshes)
+local function raytraceObject(object, localOrigin, localDirection, onlyRaytraceMeshes)
 	--object transform
-	local localOrigin, localDirection = transform(origin, direction, object)
+	if object.transform then
+		local m = object:getInvertedTransform()
+		localOrigin = m * localOrigin
+		localDirection = vec3({
+			m[1] * localDirection[1] + m[2] * localDirection[2] + m[3] * localDirection[3],
+			m[5] * localDirection[1] + m[6] * localDirection[2] + m[7] * localDirection[3],
+			m[9] * localDirection[1] + m[10] * localDirection[2] + m[11] * localDirection[3],
+		})
+	end
 	
 	--for all meshes
+	local transforms
 	for _, mesh in pairs(onlyRaytraceMeshes and object.raytraceMeshes or object.meshes) do
 		if mesh.vertices and mesh.faces then
-			raytraceMesh(mesh, localOrigin, localDirection)
+			transforms = raytraceMesh(mesh, localOrigin, localDirection) or transforms
 		end
 	end
 	
 	--for all objects
 	for _, o in pairs(object.objects) do
-		raytraceObject(o, localOrigin, localDirection, onlyRaytraceMeshes)
+		transforms = raytraceObject(o, localOrigin, localDirection, onlyRaytraceMeshes) or transforms
 	end
 	
-	return false
+	--on the way back, store transformation matrices
+	if transforms and object.transform then
+		table.insert(transforms, object.transform)
+	end
+	
+	return transforms
 end
 
 ---@class DreamRaytraceResult
@@ -274,8 +270,17 @@ function raytraceResult:getNormal()
 			local c = self.mesh.vertices:getVector(self.face[3])
 			self.normal = (b - a):cross(c - a)
 		end
-		return self.normal
+		
+		--convert back into global position
+		if self.transforms then
+			for i = 1, #self.transforms do
+				self.normal = self.transforms[i]:subm() * self.normal
+			end
+		end
+		
+		self.normal = self.normal:normalize()
 	end
+	return self.normal
 end
 
 ---@class DreamRaytracer
@@ -292,7 +297,7 @@ function raytracer:cast(object, origin, direction, onlyRaytraceMeshes)
 	nearestT, nearestU, nearestV, nearestFace, nearestMesh = 1, false, false, false, false
 	
 	--search
-	raytraceObject(object, origin, direction, onlyRaytraceMeshes, true)
+	local transforms = raytraceObject(object, origin, direction, onlyRaytraceMeshes)
 	
 	--pack
 	return nearestU and setmetatable({
@@ -301,6 +306,7 @@ function raytracer:cast(object, origin, direction, onlyRaytraceMeshes)
 		v = nearestV,
 		face = nearestFace,
 		mesh = nearestMesh,
+		transforms = transforms,
 		position = origin + nearestT * direction
 	}, meta) or false
 end
