@@ -263,15 +263,15 @@ end
 
 function raytraceResult:getNormal()
 	if not self.normal then
-		if self.nearestMesh.normals then
-			local a = self.nearestMesh.normals:getVector(self.nearestFace[1])
-			local b = self.nearestMesh.normals:getVector(self.nearestFace[2])
-			local c = self.nearestMesh.normals:getVector(self.nearestFace[3])
-			self.normal = a * self.nearestU + b * self.nearestV + c * (1.0 - self.nearestU - self.nearestV)
+		if self.mesh.normals then
+			local a = self.mesh.normals:getVector(self.face[1])
+			local b = self.mesh.normals:getVector(self.face[2])
+			local c = self.mesh.normals:getVector(self.face[3])
+			self.normal = a * self.u + b * self.v + c * (1.0 - self.u - self.v)
 		else
-			local a = self.nearestMesh.vertices:getVector(self.nearestFace[1])
-			local b = self.nearestMesh.vertices:getVector(self.nearestFace[2])
-			local c = self.nearestMesh.vertices:getVector(self.nearestFace[3])
+			local a = self.mesh.vertices:getVector(self.face[1])
+			local b = self.mesh.vertices:getVector(self.face[2])
+			local c = self.mesh.vertices:getVector(self.face[3])
 			self.normal = (b - a):cross(c - a)
 		end
 		return self.normal
@@ -297,8 +297,8 @@ function raytracer:cast(object, origin, direction, onlyRaytraceMeshes)
 	--pack
 	return nearestU and setmetatable({
 		t = nearestT,
-		z = nearestU,
-		n = nearestV,
+		u = nearestU,
+		v = nearestV,
 		face = nearestFace,
 		mesh = nearestMesh,
 		position = origin + nearestT * direction
