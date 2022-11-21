@@ -70,10 +70,10 @@ end
 
 ---@param visibility boolean
 function class:setShadowVisibility(visibility)
-	self.renderVisibility = visibility
+	self.shadowVisibility = visibility
 end
 function class:getShadowVisibility()
-	return self.renderVisibility
+	return self.shadowVisibility
 end
 
 ---@param visibility boolean

@@ -278,7 +278,7 @@ function lib:processObject(obj)
 			assert(level, "Malformed LoD tag!")
 			
 			local nextLevel = math.huge
-			for _, o in ipairs(obj.objects) do
+			for _, o in pairs(obj.objects) do
 				local l = tonumber(o.tags.lod)
 				if l and l > level and l < nextLevel then
 					nextLevel = l

@@ -78,7 +78,7 @@ function lib:getShader(name)
 end
 
 --inbuilt shader
-for d,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/inbuilt")) do
+for _,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/inbuilt")) do
 	if s:sub(-4) == ".lua" then
 		lib:registerShader(lib.root .. "/shaders/inbuilt/" .. s:sub(1, #s-4))
 	end
@@ -91,13 +91,13 @@ lib.defaultWorldShader = lib:getShader("PBR")
 
 --load code snippsets
 local codes = { }
-for d,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/code")) do
+for _,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/code")) do
 	codes[s:sub(1, #s-5)] = love.filesystem.read(lib.root .. "/shaders/code/" .. s)
 end
 
 --light shaders
 lib.lightShaders = { }
-for d,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/light")) do
+for _,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/light")) do
 	local name = s:sub(1, #s-4)
 	lib.lightShaders[name] = require(lib.root .. "/shaders/light/" .. name)
 end
@@ -122,7 +122,7 @@ local function generateFooter()
 	return "//////////////////////////////////////////"
 end
 
-local function insertHeadered(t, name, code)
+local function insertHeader(t, name, code)
 	if code and #code > 0 then
 		table.insert(t, generateHeader(name))
 		table.insert(t, code)
@@ -347,19 +347,19 @@ function lib:getRenderShader(ID, mesh, pass, canvases, light, shadows, sun)
 		end
 		
 		--material shader
-		insertHeadered(defines, "pixel shader", info.pixelShader:buildDefines(mat, shadows))
-		insertHeadered(defines, "vertex shader", info.vertexShader:buildDefines(mat, shadows))
+		insertHeader(defines, "pixel shader", info.pixelShader:buildDefines(mat, shadows))
+		insertHeader(defines, "vertex shader", info.vertexShader:buildDefines(mat, shadows))
 		
-		insertHeadered(pixelMaterial, "pixel shader", info.pixelShader:buildPixel(mat, shadows))
-		insertHeadered(pixelMaterial, "vertex shader", info.vertexShader:buildPixel(mat, shadows))
+		insertHeader(pixelMaterial, "pixel shader", info.pixelShader:buildPixel(mat, shadows))
+		insertHeader(pixelMaterial, "vertex shader", info.vertexShader:buildPixel(mat, shadows))
 		
-		insertHeadered(vertex, "vertex shader", info.vertexShader:buildVertex(mat, shadows))
-		insertHeadered(vertex, "pixel shader", info.pixelShader:buildVertex(mat, shadows))
+		insertHeader(vertex, "vertex shader", info.vertexShader:buildVertex(mat, shadows))
+		insertHeader(vertex, "pixel shader", info.pixelShader:buildVertex(mat, shadows))
 		
 		--world
-		insertHeadered(defines, "world shader", info.worldShader:buildDefines(mat, shadows))
-		insertHeadered(pixel, "world shader", info.worldShader:buildPixel(mat, shadows))
-		insertHeadered(vertex, "world shader", info.worldShader:buildVertex(mat, shadows))
+		insertHeader(defines, "world shader", info.worldShader:buildDefines(mat, shadows))
+		insertHeader(pixel, "world shader", info.worldShader:buildPixel(mat, shadows))
+		insertHeader(vertex, "world shader", info.worldShader:buildVertex(mat, shadows))
 		
 		--build code
 		local code = codes.base
@@ -475,26 +475,26 @@ function lib:getLightComponents(light, basic)
 	local lc = { }
 	
 	--global defines and code
-	for typ,count in pairs(light.types) do
+	for typ, _ in pairs(light.types) do
 		local id = "light " .. typ
 		assert(self.lightShaders[typ], "Light of type '" .. typ .. "' does not exist!")
-		insertHeadered(lcInit, id, self.lightShaders[typ]:constructDefinesGlobal(self))
+		insertHeader(lcInit, id, self.lightShaders[typ]:constructDefinesGlobal(self))
 		
 		if basic then
-			insertHeadered(lc, id, self.lightShaders[typ]:constructPixelBasicGlobal(self))
+			insertHeader(lc, id, self.lightShaders[typ]:constructPixelBasicGlobal(self))
 		else
-			insertHeadered(lc, id, self.lightShaders[typ]:constructPixelGlobal(self))
+			insertHeader(lc, id, self.lightShaders[typ]:constructPixelGlobal(self))
 		end
 	end
 	
 	--defines and code
 	local IDs = { }
-	for	_,light in ipairs(light.lights) do
+	for	_, light in ipairs(light.lights) do
 		
 		IDs[light.light_typ] = (IDs[light.light_typ] or -1) + 1
 		local id = light.light_typ .. "_" .. IDs[light.light_typ]
 		
-		insertHeadered(lcInit, id, self.lightShaders[light.light_typ]:constructDefines(id))
+		insertHeader(lcInit, id, self.lightShaders[light.light_typ]:constructDefines(id))
 		
 		local px
 		if basic then
@@ -503,7 +503,7 @@ function lib:getLightComponents(light, basic)
 			px = self.lightShaders[light.light_typ]:constructPixel(id)
 		end
 		if px then
-			insertHeadered(lc, id, "{\n" .. px .. "\n}")
+			insertHeader(lc, id, "{\n" .. px .. "\n}")
 		end
 	end
 	
