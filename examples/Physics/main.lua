@@ -70,7 +70,7 @@ end
 local player = addObject(objects.chicken, 0, 10, 0, physics:newCylinder(0.175, 0.5))
 
 --add some crates
-for _ = 1, -30 do
+for _ = 1, 30 do
 	objects.crate:resetTransform()
 	objects.crate:scale(math.random() * 0.5 + 0.5)
 	local collider = addObject(objects.crate, (math.random() - 0.5) * 10, 15, (math.random() - 0.5) * 10)

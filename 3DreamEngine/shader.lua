@@ -89,7 +89,7 @@ lib.defaultPixelShader = lib:getShader("textured")
 lib.defaultVertexShader = lib:getShader("vertex")
 lib.defaultWorldShader = lib:getShader("PBR")
 
---load code snippsets
+--load code snippets
 local codes = { }
 for _,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/code")) do
 	codes[s:sub(1, #s-5)] = love.filesystem.read(lib.root .. "/shaders/code/" .. s)

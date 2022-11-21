@@ -12,32 +12,39 @@ if love.filesystem.read("debugEnabled") == "true" then
 	_DEBUGMODE = true
 end
 
+_3DreamEngine = lib
+lib.root = (...):gsub("%.", "/")
+if lib.root:sub(-4) == "init" then
+	lib.root = lib.root:sub(1, -6)
+end
+
+
 --load libraries
-_G.mat2 = require((...) .. "/libs/luaMatrices/mat2")
-_G.mat3 = require((...) .. "/libs/luaMatrices/mat3")
-_G.mat4 = require((...) .. "/libs/luaMatrices/mat4")
-require((...) .. "/libs/luaMatrices/mat4Extended")
+_G.mat2 = require(lib.root .. "/libs/luaMatrices/mat2")
+_G.mat3 = require(lib.root .. "/libs/luaMatrices/mat3")
+_G.mat4 = require(lib.root .. "/libs/luaMatrices/mat4")
+require(lib.root .. "/libs/luaMatrices/mat4Extended")
 
-_G.vec2 = require((...) .. "/libs/luaVectors/vec2")
-_G.vec3 = require((...) .. "/libs/luaVectors/vec3")
-_G.vec4 = require((...) .. "/libs/luaVectors/vec4")
+_G.vec2 = require(lib.root .. "/libs/luaVectors/vec2")
+_G.vec3 = require(lib.root .. "/libs/luaVectors/vec3")
+_G.vec4 = require(lib.root .. "/libs/luaVectors/vec4")
 
-_G.quat = require((...) .. "/libs/quat")
+_G.quat = require(lib.root .. "/libs/quat")
 
-lib.utils = require((...) .. "/libs/utils")
-lib.cimg = require((...) .. "/libs/cimg")
-lib.packTable = require((...) .. "/libs/packTable")
-lib.xml2lua = require((...) .. "/libs/xml2lua/xml2lua")
-lib.xmlTreeHandler = require((...) .. "/libs/xml2lua/tree")
-lib.json = require((...) .. "/libs/json")
-lib.inspect = require((...) .. "/libs/inspect")
-lib.base64 = require((...) .. "/libs/base64")
+lib.utils = require(lib.root .. "/libs/utils")
+lib.cimg = require(lib.root .. "/libs/cimg")
+lib.packTable = require(lib.root .. "/libs/packTable")
+lib.xml2lua = require(lib.root .. "/libs/xml2lua/xml2lua")
+lib.xmlTreeHandler = require(lib.root .. "/libs/xml2lua/tree")
+lib.json = require(lib.root .. "/libs/json")
+lib.inspect = require(lib.root .. "/libs/inspect")
+lib.base64 = require(lib.root .. "/libs/base64")
 
 table.unpack = table.unpack or unpack
 
 --delton, disabled when not in debug mode
-lib.delton = require((...) .. "/libs/delton"):new(512)
-lib.deltonLoad = require((...) .. "/libs/delton"):new(1)
+lib.delton = require(lib.root .. "/libs/delton"):new(512)
+lib.deltonLoad = require(lib.root .. "/libs/delton"):new(1)
 lib.deltonLoad.maxAge = 999999
 
 if not _DEBUGMODE then
@@ -49,33 +56,27 @@ if not _DEBUGMODE then
 	lib.deltonLoad.step = lib.delton.start
 end
 
-_3DreamEngine = lib
-lib.root = (...)
-if lib.root:find(".", 0, true) then
-	error("Ambiguous dots in require('" .. lib.root .. "'). Use slashes and avoid dots in file paths!")
-end
-
 --load sub modules
-require((...) .. "/functions")
-require((...) .. "/settings")
-require((...) .. "/classes")
-require((...) .. "/shader")
-require((...) .. "/loader")
-require((...) .. "/materials")
-require((...) .. "/resources")
-require((...) .. "/render")
-require((...) .. "/renderLight")
-require((...) .. "/renderGodrays")
-require((...) .. "/renderSky")
-require((...) .. "/jobs")
-require((...) .. "/particlesystem")
-require((...) .. "/particles")
-require((...) .. "/3doExport")
+require(lib.root .. "/functions")
+require(lib.root .. "/settings")
+require(lib.root .. "/classes")
+require(lib.root .. "/shader")
+require(lib.root .. "/loader")
+require(lib.root .. "/materials")
+require(lib.root .. "/resources")
+require(lib.root .. "/render")
+require(lib.root .. "/renderLight")
+require(lib.root .. "/renderGodrays")
+require(lib.root .. "/renderSky")
+require(lib.root .. "/jobs")
+require(lib.root .. "/particlesystem")
+require(lib.root .. "/particles")
+require(lib.root .. "/3doExport")
 
 --file loader
 lib.loader = { }
-for _, s in pairs(love.filesystem.getDirectoryItems((...) .. "/loader")) do
-	lib.loader[s:sub(1, #s - 4)] = require((...) .. "/loader/" .. s:sub(1, #s - 4))
+for _, s in pairs(love.filesystem.getDirectoryItems(lib.root .. "/loader")) do
+	lib.loader[s:sub(1, #s - 4)] = require(lib.root .. "/loader/" .. s:sub(1, #s - 4))
 end
 
 --supported canvas formats
