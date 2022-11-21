@@ -341,7 +341,7 @@ function lib:processObject(obj)
 	
 	--merge objects with the same name (e.g. different level of detail, collisions, light sources of a coherent object)
 	if obj.args.scene then
-		for _, typ in ipairs({ "objects", "meshes", "positions", "lights", "physics", "reflections", "animations" }) do
+		for _, typ in ipairs({ "objects", "meshes", "collisionMeshes", "raytraceMeshes", "positions", "lights", "reflections", "animations" }) do
 			local old = obj[typ]
 			obj[typ] = { }
 			

@@ -210,7 +210,6 @@ function class:merge()
 	for name, buffer in pairs(sourceMesh) do
 		if type(buffer) == "table" and (buffer.class == "buffer" or buffer.class == "dynamicBuffer") then
 			if name ~= "faces" then
-				--todo generify
 				table.insert(found, name)
 				mesh[name] = lib:newBuffer(buffer:getType(), buffer:getDataType(), size)
 			end
