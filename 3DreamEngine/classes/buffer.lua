@@ -61,6 +61,7 @@ function lib:newBuffer(type, dataType, length)
 	local id = ("dream_" .. type .. "_" .. dataType):gsub(" ", "_")
 	if not structs[id] and type ~= "scalar" then
 		ffi.cdef("typedef struct { " .. dataType .. " " .. table.concat(types[type], ", ") .. "; } " .. id .. ";")
+		structs[id] = true
 	end
 	
 	return setmetatable({

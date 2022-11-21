@@ -30,7 +30,7 @@ local physicsExtension = _G._PhysicsExtension
 ---@param shapeMode string
 ---@return DreamCollider
 function physicsExtension:newObject(object, shapeMode)
-	---@type Collider
+	---@type DreamCollider
 	local colliders = { }
 	newObjectInner(self, object, false, colliders, shapeMode or "simple")
 	return self:newMultiMesh(colliders)

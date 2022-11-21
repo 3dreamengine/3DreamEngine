@@ -80,12 +80,16 @@ function sh:buildPixel(mat)
 	);
 	normal = normalize(TBN * waterNormal * vec3(1.0, waterHeight, 1.0));
 	
-	//disorted final uvs
+	//distorted final uvs
 	vec2 uvd = vertexPos.xz + waterNormal.xz * surfaceDistortion;
 	vec2 uvw = uvd * foamScale;
 	
 	//foam
+#ifdef DEPTH_AVAILABLE
 	float waterDepth = Texel(depthTexture, love_PixelCoord.xy / love_ScreenSize.xy).r - depth;
+#else
+	float waterDepth = 1.0f;;
+#endif
 	
 	//two moving UV coords for the wave normal
 	vec2 foamUV = VaryingTexCoord.xy + uvd;
