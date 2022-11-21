@@ -2,9 +2,9 @@ local c = {
 	x = 0,
 	y = 0,
 	z = 0,
-	ax = 0,
-	ay = 0,
-	az = 0,
+	vx = 0,
+	vy = 0,
+	vz = 0,
 	rx = 0,
 	ry = 0,
 }
@@ -14,38 +14,38 @@ function c:update(dt)
 	local speed = 10 * dt
 	
 	--move
-	self.x = self.x + self.ax * dt
-	self.y = self.y + self.ay * dt
-	self.z = self.z + self.az * dt
+	self.x = self.x + self.vx * dt
+	self.y = self.y + self.vy * dt
+	self.z = self.z + self.vz * dt
 	
 	--accelerate
 	if d("w") then
-		self.ax = self.ax + math.cos(self.ry-math.pi/2) * speed
-		self.az = self.az + math.sin(self.ry-math.pi/2) * speed
+		self.vx = self.vx + math.cos(self.ry-math.pi/2) * speed
+		self.vz = self.vz + math.sin(self.ry-math.pi/2) * speed
 	end
 	if d("s") then
-		self.ax = self.ax + math.cos(self.ry+math.pi-math.pi/2) * speed
-		self.az = self.az + math.sin(self.ry+math.pi-math.pi/2) * speed
+		self.vx = self.vx + math.cos(self.ry+math.pi-math.pi/2) * speed
+		self.vz = self.vz + math.sin(self.ry+math.pi-math.pi/2) * speed
 	end
 	if d("a") then
-		self.ax = self.ax + math.cos(self.ry-math.pi/2-math.pi/2) * speed
-		self.az = self.az + math.sin(self.ry-math.pi/2-math.pi/2) * speed
+		self.vx = self.vx + math.cos(self.ry-math.pi/2-math.pi/2) * speed
+		self.vz = self.vz + math.sin(self.ry-math.pi/2-math.pi/2) * speed
 	end
 	if d("d") then
-		self.ax = self.ax + math.cos(self.ry+math.pi/2-math.pi/2) * speed
-		self.az = self.az + math.sin(self.ry+math.pi/2-math.pi/2) * speed
+		self.vx = self.vx + math.cos(self.ry+math.pi/2-math.pi/2) * speed
+		self.vz = self.vz + math.sin(self.ry+math.pi/2-math.pi/2) * speed
 	end
 	if d("space") then
-		self.ay = self.ay + speed
+		self.vy = self.vy + speed
 	end
 	if d("lshift") then
-		self.ay = self.ay - speed
+		self.vy = self.vy - speed
 	end
 	
 	--air resistance
-	self.ax = self.ax * (1 - dt * 5)
-	self.ay = self.ay * (1 - dt * 5)
-	self.az = self.az * (1 - dt * 5)
+	self.vx = self.vx * (1 - dt * 5)
+	self.vy = self.vy * (1 - dt * 5)
+	self.vz = self.vz * (1 - dt * 5)
 end
 
 function c:setCamera(cam)

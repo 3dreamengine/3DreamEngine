@@ -2,7 +2,7 @@
 local physicsExtension = _G._PhysicsExtension
 
 function physicsExtension:newCapsule(radius, height, bottom)
-	---@type Collider
+	---@type DreamCollider
 	local n = { }
 	
 	n.typ = "capsule"

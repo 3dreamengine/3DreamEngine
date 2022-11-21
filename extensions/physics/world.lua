@@ -58,7 +58,7 @@ function methods:update(dt)
 			--apply new speed
 			c.body:setLinearVelocity(vx, vz)
 			c.body:setAngularVelocity(va)
-			c.ay = c.ay + c.fy * dt
+			c.vy = c.vy + c.fy * dt
 			
 			--reset forces
 			c.fx = 0
@@ -72,10 +72,10 @@ function methods:update(dt)
 			c.colls = 0
 			
 			--gravity
-			c.ay = c.ay - dt * self.gravity
+			c.vy = c.vy - dt * self.gravity
 			
 			--update vertical position
-			c.y = c.y + c.ay * dt
+			c.y = c.y + c.vy * dt
 			
 			--remember the available space
 			c.topY = math.huge
@@ -98,19 +98,19 @@ function methods:update(dt)
 				collider.dx = collider.dx / collider.colls
 				collider.dy = collider.dy / collider.colls
 				
-				local loss = 1 - collider.dx ^ 2 - collider.dy ^ 2
+				local loss = math.sqrt(math.min(1, math.max(0, 1 - collider.dx ^ 2 - collider.dy ^ 2)))
 				
-				local f = -loss * collider.ay ^ 2 * collider.body:getMass()
+				local f = -loss * math.abs(collider.vy) * collider.body:getMass()
 				collider.body:applyLinearImpulse(collider.dx * f, collider.dy * f)
 				
-				collider.ay = collider.ay * (1 - loss)
+				collider.vy = collider.vy * (1 - loss)
 			end
 			
 			local diff = (collider.topY - collider.bottomY) - (collider.shape.top - collider.shape.bottom)
 			if diff < 0 then
 				--stuck, reset to last safe position
 				collider.y = collider.lastSafeY
-				collider.ay = collider.lastSafeVy
+				collider.vy = collider.lastSafeVy
 				collider.body:setPosition(collider.lastSafeX, collider.lastSafeZ)
 				collider.body:setAngularVelocity(-collider.lastSafeVx, -collider.lastSafeVz)
 				collider.body:setAngle(collider.lastSafeAngle)
@@ -119,7 +119,7 @@ function methods:update(dt)
 				--remember safe position
 				collider.lastSafeY = collider.y
 				collider.lastSafeX, collider.lastSafeZ = collider.body:getPosition()
-				collider.lastSafeVy = collider.ay
+				collider.lastSafeVy = collider.vy
 				collider.lastSafeVx, collider.lastSafeVz = collider.body:getLinearVelocity()
 				collider.lastSafeAngle = collider.body:getAngle()
 				collider.lastSafeAngleVelocity = collider.body:getAngularVelocity()
@@ -133,12 +133,7 @@ local function getDirection(w, x1, y1, x2, y2, x3, y3)
 	local det = (x1 * y2 - x1 * y3 - x2 * y1 + x2 * y3 + x3 * y1 - x3 * y2)
 	local x = (w[1] * y2 - w[1] * y3 - w[2] * y1 + w[2] * y3 + w[3] * y1 - w[3] * y2) / det
 	local y = (-w[1] * x2 + w[1] * x3 + w[2] * x1 - w[2] * x3 - w[3] * x1 + w[3] * x2) / det
-	local l = 1
-	if l > 0 then
-		return x, y
-	else
-		return 0, 0
-	end
+	return x, y
 end
 
 --tries to resolve a collision and returns true if failed to do so
@@ -156,15 +151,14 @@ local function attemptSolve(a, b)
 	
 	--extend x,y to outer radius
 	local radius = colliderA.shape.radius
-	local tx, ty
+	local tx, ty = x, y
 	local floorDx, floorDy = getDirection(highest, x1, y1, x2, y2, x3, y3)
 	if radius then
 		local l = math.sqrt(floorDx ^ 2 + floorDy ^ 2)
-		tx = x + floorDx * radius / l
-		ty = y + floorDy * radius / l
-	else
-		tx = x
-		ty = y
+		if l > 0.0001 then
+			tx = x + floorDx * radius / l
+			ty = y + floorDy * radius / l
+		end
 	end
 	
 	--interpolate height
@@ -172,18 +166,17 @@ local function attemptSolve(a, b)
 	local topY = colliderB.y + highest[1] * w1 + highest[2] * w2 + highest[3] * w3
 	
 	--extend head
-	local w1l, w2l, w3l
+	local w1l, w2l, w3l = w1, w2, w3
 	local ceilingDx, ceilingDy = getDirection(lowest, x1, y1, x2, y2, x3, y3)
 	ceilingDx = -ceilingDx
 	ceilingDy = -ceilingDy
 	if radius then
 		local l = math.sqrt(ceilingDx ^ 2 + ceilingDy ^ 2)
-		tx = x + ceilingDx * radius / l
-		ty = y + ceilingDy * radius / l
-		
-		w1l, w2l, w3l = lib:getBarycentricClamped(tx, ty, x1, y1, x2, y2, x3, y3)
-	else
-		w1l, w2l, w3l = w1, w2, w3
+		if l > 0.0001 then
+			tx = x + ceilingDx * radius / l
+			ty = y + ceilingDy * radius / l
+			w1l, w2l, w3l = lib:getBarycentricClamped(tx, ty, x1, y1, x2, y2, x3, y3)
+		end
 	end
 	
 	--interpolate height of head

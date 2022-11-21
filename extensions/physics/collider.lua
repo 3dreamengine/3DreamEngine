@@ -1,7 +1,7 @@
 ---@type PhysicsExtension
 local physicsExtension = _G._PhysicsExtension
 
----@class Collider
+---@class DreamCollider
 local methods = { }
 
 function methods:getPosition()
@@ -15,7 +15,7 @@ end
 
 function methods:getVelocity()
 	local cx, cy = self.body:getLinearVelocity()
-	return vec3(cx, self.ay, cy)
+	return vec3(cx, self.vy, cy)
 end
 
 function methods:applyForce(fx, fy, fz)
@@ -25,7 +25,7 @@ function methods:applyForce(fx, fy, fz)
 end
 
 function methods:applyLinearImpulse(fx, fy, fz)
-	self.ay = self.ay + fy
+	self.vy = self.vy + fy
 	self.body:applyLinearImpulse(fx, fz)
 end
 
@@ -63,7 +63,7 @@ end
 local colliderMeta = { __index = methods }
 
 function physicsExtension:newCollisionMesh(world, shape, bodyType, x, y, z)
-	---@type Collider
+	---@type DreamCollider
 	local c = setmetatable({ }, colliderMeta)
 	
 	c.shape = shape
@@ -76,7 +76,7 @@ function physicsExtension:newCollisionMesh(world, shape, bodyType, x, y, z)
 	c.fz = 0
 	c.torque = 0
 	
-	c.ay = 0
+	c.vy = 0
 	c.y = y or 0
 	
 	c.staticFriction = 0
