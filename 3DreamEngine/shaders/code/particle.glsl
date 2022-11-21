@@ -17,7 +17,7 @@ extern highp vec3 viewPos;
 extern Image emissionTexture;
 #endif
 
-#ifdef DISORTION_TEXTURE
+#ifdef DISTORTION_TEXTURE
 extern Image distortionTexture;
 #endif
 
@@ -52,7 +52,7 @@ void effect() {
 	vec3 color = albedo.rgb * VaryingEmission;
 #endif
 	
-#ifdef DISORTION_TEXTURE
+#ifdef DISTORTION_TEXTURE
 	vec2 distortion = (Texel(distortionTexture, VaryingTexCoord.xy).xy * 2.0 - 1.0) * VaryingDistortion;
 #else
 	vec2 distortion = vec2(0.0);

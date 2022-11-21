@@ -18,7 +18,7 @@ function sh:constructDefinesGlobal(dream)
 	]]
 end
 
-function sh:constructDefines(dream, ID)
+function sh:constructDefines(ID)
 	return ([[
 	extern samplerCube ps_tex_#ID#;
 	extern vec3 ps_pos_#ID#;
@@ -35,7 +35,7 @@ function sh:constructPixelBasicGlobal(dream)
 
 end
 
-function sh:constructPixel(dream, ID)
+function sh:constructPixel(ID)
 	return ([[
 		vec3 lightVec = ps_pos_#ID# - vertexPos;
 		
@@ -52,7 +52,7 @@ function sh:constructPixel(dream, ID)
 	]]):gsub("#ID#", ID)
 end
 
-function sh:constructPixelBasic(dream, ID)
+function sh:constructPixelBasic(ID)
 	return ([[
 		vec3 lightVec = ps_pos_#ID# - vertexPos;
 		
@@ -66,17 +66,17 @@ function sh:constructPixelBasic(dream, ID)
 	]]):gsub("#ID#", ID)
 end
 
-function sh:sendGlobalUniforms(dream, shaderObject)
+function sh:sendGlobalUniforms(shaderObject)
 	
 end
 
-function sh:sendUniforms(dream, shaderObject, light, ID)
+function sh:sendUniforms(shaderObject, light, ID)
 	local shader = shaderObject.shader or shaderObject
 	
 	if light.shadow.canvas then
 		shader:send("ps_tex_" .. ID, light.shadow.canvas)
 		shader:send("ps_color_" .. ID, light.color * light.brightness)
-		shader:send("ps_pos_" .. ID, light.pos)
+		shader:send("ps_pos_" .. ID, light.position)
 		shader:send("ps_attenuation_" .. ID, -light.attenuation)
 	else
 		shader:send("ps_color_" .. ID, {0, 0, 0})

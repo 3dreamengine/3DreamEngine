@@ -9,7 +9,7 @@ return function(self, obj, path)
 	local typ = file:read(4)
 	
 	--check if up to date
-	if typ ~= "3DO5" then
+	if typ ~= "3DO" .. self.version_3DO then
 		print("3DO file " .. path .. " seems to be outdated and will be skipped")
 		file:close()
 		return true
@@ -24,7 +24,7 @@ return function(self, obj, path)
 	local headerData = file:read(headerLength)
 	
 	--object lua data
-	local header = packTable.unpack(love.data.decompress("string", "lz4", headerData))
+	local header = self.packTable.unpack(love.data.decompress("string", "lz4", headerData))
 	table.merge(obj, header)
 	
 	--additional mesh data
@@ -39,11 +39,9 @@ return function(self, obj, path)
 	
 	--mesh creation and 3DO exporting makes no longer sense
 	obj.args.particleSystems = false
-	obj.args.mesh = false
 	obj.args.export3do = false
-	for d,s in pairs(obj.objects) do
+	for _,s in pairs(obj.objects) do
 		s.args.particleSystems = false
-		s.args.mesh = false
 		s.args.export3do = false
 	end
 	

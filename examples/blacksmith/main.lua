@@ -7,7 +7,7 @@ love.mouse.setRelativeMode(true)
 local projectDir = "examples/blacksmith/"
 
 --set reflection cubemap with local corrections
-local r = dream:newReflection(cimg:load(projectDir .. "sky.cimg"))
+local r = dream:newReflection(dream.cimg:load(projectDir .. "sky.cimg"))
 r:setLocal(vec3(0, 0, 0), vec3(-2, -1, -2), vec3(2, 1, 2))
 dream:setDefaultReflection(r)
 
@@ -36,13 +36,13 @@ local particleBatch = dream:newParticleBatch(texture_candle)
 particleBatch:setVertical(0.75)
 
 --a helper class
-local cameraController = require("examples/firstpersongame/cameraController")
+local cameraController = require("extensions/utils/cameraController")
 
 --create three light sources and assign shadows
 local lights = { }
 for i = 1, 3 do
 	lights[i] = dream:newLight("point", vec3(0, 0, 0), vec3(1.0, 0.75, 0.5))
-	lights[i]:addShadow()
+	lights[i]:addNewShadow()
 	lights[i].shadow:setStatic(true)
 	lights[i].shadow:setSmooth(true)
 end
@@ -51,7 +51,7 @@ local hideTooltips = false
 
 function love.draw()
 	--update camera
-	cameraController:setCamera(dream.cam)
+	cameraController:setCamera(dream.camera)
 	
 	dream:prepare()
 	
@@ -84,7 +84,7 @@ function love.draw()
 	dream:drawParticleBatch(particleBatch)
 	
 	--torches
-	torch:reset()
+	torch:resetTransform()
 	torch:rotateY(-math.pi/2)
 	dream:draw(torch, 0, 0, -1.9, 0.075)
 	torch:rotateY(-math.pi)
@@ -142,12 +142,12 @@ function love.keypressed(key)
 	
 	if key == "b" then
 		for d,s in pairs(lights) do
-			s.shadow:setSmooth(not s.shadow:getSmooth())
+			s.shadow:setSmooth(not s.shadow:isSmooth())
 		end
 	end
 	
 	if key == "f3" then
-		dream:take3DScreenshot(vec3(player.x, player.y, player.z), 256)
+		dream:take3DScreenshot(vec3(cameraController.x, cameraController.y, cameraController.z), 256)
 	end
 end
 

@@ -6,7 +6,6 @@
 /todo.txt
 /examples/shadowTest
 /examples/camera
-/examples/FrustumAndLoDs
 /examples/HolyPoly
 /examples/archer
 /examples/game
@@ -15,5 +14,7 @@
 /TextureTool
 /imgui.dll
 /lfs.dll
-/examples/CSGO
 /extensions/weather
+/.idea/
+*.blend
+*.blend1

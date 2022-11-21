@@ -4,31 +4,36 @@ sh.type = "vertex"
 
 sh.maxJoints = 64
 
-function sh:getId(dream, mat, shadow)
+function sh:getId(mat, shadow)
 	return 0
 end
 
-function sh:initMesh(dream, mesh)
-	if mesh:getMesh("mesh") then
-		if not mesh:getMesh("boneMesh") then
-			assert(mesh.joints and mesh.weights, "GPU bones require a joint and weight buffer")
-			mesh.boneMesh = love.graphics.newMesh({{"VertexJoint", "float", 4}, {"VertexWeight", "float", 4}}, #mesh.joints, "triangles", "static")
-			
-			--create mesh
-			for index = 1, #mesh.joints do
-				local w = mesh.weights[index]
-				local j = mesh.joints[index]
-				local sum = (w[1] or 0) + (w[2] or 0) + (w[3] or 0) + (w[4] or 0)
-				mesh.boneMesh:setVertex(index, (j[1] or 0) / 255, (j[2] or 0) / 255, (j[3] or 0) / 255, (j[4] or 0) / 255, (w[1] or 0) / sum, (w[2] or 0) / sum, (w[3] or 0) / sum, (w[4] or 0) / sum)
-			end
-		end
+local meshFormat = {
+	{ "VertexJoint", "float", 4 },
+	{ "VertexWeight", "float", 4 }
+}
+
+function sh:initMesh(mesh)
+	if not mesh:getMesh("boneMesh") then
+		assert(mesh.joints and mesh.weights, "GPU bones require a joint and weight buffer")
+		mesh.boneMesh = love.graphics.newMesh(meshFormat, mesh.joints:getSize(), "triangles", "static")
 		
-		mesh:getMesh("mesh"):attachAttribute("VertexJoint", mesh:getMesh("boneMesh"))
-		mesh:getMesh("mesh"):attachAttribute("VertexWeight", mesh:getMesh("boneMesh"))
+		--create mesh
+		for index = 1, mesh.joints:getSize() do
+			local w = mesh.weights:get(index)
+			local j = mesh.joints:get(index)
+			local sum = (w.x or 0) + (w.y or 0) + (w.z or 0) + (w.w or 0)
+			mesh.boneMesh:setVertex(index,
+					(j.x or 0) / 255, (j.y or 0) / 255, (j.z or 0) / 255, (j.w or 0) / 255,
+					(w.x or 0) / sum, (w.y or 0) / sum, (w.z or 0) / sum, (w.w or 0) / sum)
+		end
 	end
+	
+	mesh:getMesh():attachAttribute("VertexJoint", mesh:getMesh("boneMesh"))
+	mesh:getMesh():attachAttribute("VertexWeight", mesh:getMesh("boneMesh"))
 end
 
-function sh:buildDefines(dream, mat)
+function sh:buildDefines(mat)
 	return [[
 		#ifdef VERTEX
 		#define BONE
@@ -43,11 +48,11 @@ function sh:buildDefines(dream, mat)
 	]]
 end
 
-function sh:buildPixel(dream, mat)
+function sh:buildPixel(mat)
 	return ""
 end
 
-function sh:buildVertex(dream, mat)
+function sh:buildVertex(mat)
 	return [[
 	mat4 boneTransform = (
 		jointTransforms[int(VertexJoint[0]*255.0)] * VertexWeight[0] +
@@ -56,25 +61,24 @@ function sh:buildVertex(dream, mat)
 		jointTransforms[int(VertexJoint[3]*255.0)] * VertexWeight[3]
 	);
 	
-	vertexPos = (boneTransform * vec4(VertexPosition.xyz, 1.0)).xyz;
-	vertexPos = (transform * vec4(vertexPos.xyz, 1.0)).xyz;
+	vertexPos = (transform * (boneTransform * vec4(VertexPosition.xyz, 1.0))).xyz;
 	
 	normalTransform = normalTransform * mat3(boneTransform);
 	]]
 end
 
-function sh:perShader(dream, shaderObject)
-	
+function sh:perShader(shaderObject)
+
 end
 
-function sh:perMaterial(dream, shaderObject, material)
-	
+function sh:perMaterial(shaderObject, material)
+
 end
 
-local ID = mat4:getIdentity()
-function sh:perTask(dream, shaderObject, task)
+local ID = mat4.getIdentity()
+function sh:perTask(shaderObject, task)
 	local bt = task:getBoneTransforms()
-	assert(bt, "missing bone transforms")
+	assert(bt, "Missing bone transforms")
 	
 	if shaderObject.session.bones ~= bt then
 		local mesh = task:getMesh()
@@ -88,13 +92,13 @@ function sh:perTask(dream, shaderObject, task)
 			end
 		end
 		for i = #mesh.jointNames + 1, self.maxJoints do
-			matrices[i] = I
+			matrices[i] = ID
 		end
 		if #matrices > self.maxJoints and not mesh._jointExceededWarning then
 			mesh._jointExceededWarning = true
-			print(string.format("mesh %s has %d joints, but the shader is limited to %d", mesh.name, #matrices, self.maxJoints))
+			print(string.format("Mesh %s has %d joints, but the shader is limited to %d", mesh.name, #matrices, self.maxJoints))
 		end
-		shaderObject.shader:send("jointTransforms", unpack(matrices))
+		shaderObject.shader:send("jointTransforms", table.unpack(matrices))
 	end
 end
 

@@ -9,6 +9,13 @@ function quat.new(a, b, c, d)
 	return setmetatable(q, meta)
 end
 
+function quat.between(a, b)
+	local w = math.sqrt(a:lengthSquared() * b:lengthSquared()) + a:dot(b)
+	local c = a:cross(b)
+	local q = setmetatable({w, c[1], c[2], c[3]}, meta)
+	return q:normalize()
+end
+
 function quat.add(p, q)
 	if type(p) == "number" then
 		return quat.new(p+q[1], q[2], q[3], q[4])
@@ -65,7 +72,7 @@ function quat.clone(p)
 end
 
 function quat.toString(p)
-	return string.format("%f + %fi + %fj + %fk\n", p[1], p[2], p[3], p[4])
+	return string.format("%f + %fi + %fj + %fk", p[1], p[2], p[3], p[4])
 end
 
 function quat.isZero(p)
@@ -104,7 +111,7 @@ function quat.toMatrix(p)
 	local ySquared = p[2] * p[2]
 	local zSquared = p[3] * p[3]
 	
-	return mat4(
+	local c = mat4({
 		1 - 2 * (ySquared + zSquared),
 		2 * (xy - zw),
 		2 * (xz + yw),
@@ -118,7 +125,8 @@ function quat.toMatrix(p)
 		1 - 2 * (xSquared + ySquared),
 		0,
 		0, 0, 0, 1
-	)
+	})
+	return c
 end
 
 --requires compatible mat4 lib

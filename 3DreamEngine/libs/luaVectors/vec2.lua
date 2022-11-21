@@ -1,17 +1,62 @@
 local abs = math.abs
 local vec
 local metatable
+local methods
 
 vec = {
 	__call = function(self, x, y)
 		if not x then
-			return setmetatable({0, 0}, metatable)
+			return setmetatable({ 0, 0 }, metatable)
 		elseif type(x) == "number" then
-			return setmetatable({x, y}, metatable)
+			return setmetatable({ x, y }, metatable)
 		else
 			return setmetatable(x, metatable)
 		end
 	end,
+}
+
+methods = {
+	clone = function(a)
+		return vec(a[1], a[2])
+	end,
+	
+	length = function(a)
+		return math.sqrt(a[1] * a[1] + a[2] * a[2])
+	end,
+	
+	lengthSquared = function(a)
+		return a[1] * a[1] + a[2] * a[2]
+	end,
+	
+	normalize = function(a)
+		return a / a:length()
+	end,
+	
+	abs = function(a)
+		return vec(abs(a[1]), abs(a[2]))
+	end,
+	
+	dot = function(a, b)
+		return a[1] * b[1] + a[2] * b[2]
+	end,
+	
+	reflect = function(i, n)
+		return i - 2 * n:dot(i) * n
+	end,
+	
+	min = function(a, b)
+		return vec(math.min(a[1], b[1]), math.min(a[2], b[2]))
+	end,
+	
+	max = function(a, b)
+		return vec(math.max(a[1], b[1]), math.max(a[2], b[2]))
+	end,
+	
+	unpack = function(a)
+		return a[1], a[2]
+	end,
+	
+	type = "vec2",
 }
 
 metatable = {
@@ -97,7 +142,7 @@ metatable = {
 		elseif key == "y" then
 			return self[2]
 		else
-			return rawget(metatable, key)
+			return rawget(methods, key)
 		end
 	end,
 	
@@ -110,48 +155,6 @@ metatable = {
 			rawset(self, key, value)
 		end
 	end,
-	
-	clone = function(a)
-		return vec(a[1], a[2])
-	end,
-	
-	length = function(a)
-		return math.sqrt(a[1] * a[1] + a[2] * a[2])
-	end,
-	
-	lengthSquared = function(a)
-		return a[1] * a[1] + a[2] * a[2]
-	end,
-	
-	normalize = function(a)
-		return a / a:length()
-	end,
-	
-	abs = function(a)
-		return vec(abs(a[1]), abs(a[2]))
-	end,
-	
-	dot = function(a, b)
-		return a[1] * b[1] + a[2] * b[2]
-	end,
-	
-	reflect = function(i, n)
-		return i - 2 * n:dot(i) * n
-	end,
-	
-	min = function(a, b)
-		return vec(math.min(a[1], b[1]), math.min(a[2], b[2]))
-	end,
-	
-	max = function(a, b)
-		return vec(math.max(a[1], b[1]), math.max(a[2], b[2]))
-	end,
-	
-	unpack = function(a)
-		return a[1], a[2]
-	end,
-	
-	type = "vec2",
 }
 
 return setmetatable(vec, vec)

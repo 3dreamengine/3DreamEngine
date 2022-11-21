@@ -1,18 +1,20 @@
+local dream = _3DreamEngine
+
 local sh = { }
 
 sh.type = "pixel"
 
-sh.meshType = "textured"
+sh.meshFormat = "textured"
 
-function sh:getId(dream, mat, shadow)
+function sh:getId(mat, shadow)
 	if shadow then
 		return 0
 	else
-		return (mat.normalTexture and 1 or 0) * 2^1 + (mat.emissionTexture and 1 or 0) * 2^2
+		return (mat.normalTexture and 1 or 0) * 2 ^ 1 + (mat.emissionTexture and 1 or 0) * 2 ^ 2 + (mat.materialTexture and 1 or 0) * 2 ^ 3
 	end
 end
 
-function sh:buildDefines(dream, mat, shadow)
+function sh:buildDefines(mat, shadow)
 	return [[
 		]] .. (mat.normalTexture and "#define NORMAL_TEXTURE\n" or "") .. [[
 		]] .. (mat.normalTexture and "#define TANGENT\n" or "") .. [[
@@ -42,7 +44,7 @@ function sh:buildDefines(dream, mat, shadow)
 	]]
 end
 
-function sh:buildPixel(dream, mat)
+function sh:buildPixel(mat)
 	return [[
 	//color
 	vec4 c = gammaCorrectedTexel(albedoTexture, VaryingTexCoord.xy) * albedoColor;
@@ -52,12 +54,12 @@ function sh:buildPixel(dream, mat)
 	//material
 #ifdef MATERIAL_TEXTURE
 	vec3 material = Texel(materialTexture, VaryingTexCoord.xy).xyz;
-	roughness = material.x * materialColor.x;
-	metallic = material.y * materialColor.y;
+	metallic = material.x * materialColor.x;
+	roughness = material.y * materialColor.y;
 	ao = material.z;
 #else
-	roughness = materialColor.x;
-	metallic = materialColor.y;
+	metallic = materialColor.x;
+	roughness = materialColor.y;
 #endif
 	
 	//emission
@@ -77,15 +79,15 @@ function sh:buildPixel(dream, mat)
 	]]
 end
 
-function sh:buildVertex(dream, mat)
+function sh:buildVertex(mat)
 	return ""
 end
 
-function sh:perShader(dream, shaderObject)
+function sh:perShader(shaderObject)
 
 end
 
-function sh:perMaterial(dream, shaderObject, material)
+function sh:perMaterial(shaderObject, material)
 	local shader = shaderObject.shader
 	
 	local tex = dream.textures
@@ -96,7 +98,7 @@ function sh:perMaterial(dream, shaderObject, material)
 	if shader:hasUniform("materialTexture") then
 		shader:send("materialTexture", dream:getImage(material.materialTexture) or tex.default)
 	end
-	shader:send("materialColor", {material.roughness, material.metallic})
+	shader:send("materialColor", { material.metallic, material.roughness })
 	
 	if shader:hasUniform("normalTexture") then
 		shader:send("normalTexture", dream:getImage(material.normalTexture) or tex.defaultNormal)
@@ -109,7 +111,7 @@ function sh:perMaterial(dream, shaderObject, material)
 	shader:send("emissionColor", material.emission)
 end
 
-function sh:perTask(dream, shaderObject, task)
+function sh:perTask(shaderObject, task)
 
 end
 

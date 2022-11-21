@@ -1,28 +1,26 @@
 local lib = _3DreamEngine
 
-function lib:newAnimation()
-	local m = transform or pos and mat4:getIdentity():translate(pos) or mat4:getIdentity()
-	return setmetatable({
-		frames = { },
-		lookup = { },
-		length = 0,
-	}, self.meta.animation)
-end
-
-local class = {
-	link = {"clone", "animation"}
+---@class DreamAnimationFrame
+local DreamAnimationFrameStub = {
+	position = vec3(),
+	rotation = quat(),
+	scale = 1,
 }
+assert(DreamAnimationFrameStub)
 
-function class:finish()
+---Creates a new, empty animation
+---@param frameTable table<string, DreamAnimationFrame[]> |
+---@return DreamAnimation | DreamClonable
+function lib:newAnimation(frameTable)
 	local maxTime = 0
-	for joint, frames in pairs(self.frames) do
+	for _, frames in pairs(frameTable) do
 		maxTime = math.max(maxTime, frames[#frames].time)
 	end
 	
 	--create lookup table for animation keyframe
-	self.lookup = { }
-	for joint, frames in pairs(self.frames) do
-		self.lookup[joint] = { }
+	local lookup = { }
+	for joint, frames in pairs(frameTable) do
+		lookup[joint] = { }
 		for i = 1, #frames do
 			local idx = 2
 			for index, frame in ipairs(frames) do
@@ -31,27 +29,41 @@ function class:finish()
 					break
 				end
 			end
-			self.lookup[joint][i] = math.max(idx, 2)
+			lookup[joint][i] = math.max(idx, 2)
 		end
 	end
 	
-	self.length = maxTime
+	return setmetatable({
+		frames = frameTable,
+		lookup = lookup,
+		length = maxTime,
+	}, self.meta.animation)
 end
 
---linear interpolation of position and rotatation between two frames
-function class.interpolateFrames(f1, f2, factor)
+---@class DreamAnimation
+local class = {
+	links = { "clone", "animation" }
+}
+
+---Linear interpolation between two frames
+---@param first DreamAnimationFrame
+---@param Second DreamAnimationFrame
+---@param blend number
+function class.interpolateFrames(first, Second, blend)
 	return {
-		position = f1.position * (1.0 - factor) + f2.position * factor,
-		rotation = f1.rotation:nLerp(f2.rotation, factor),
+		position = first.position * (1.0 - blend) + Second.position * blend,
+		rotation = first.rotation:nLerp(Second.rotation, blend),
+		scale = first.scale * (1.0 - blend) + Second.scale * blend,
 	}
 end
 
---returns a new animated pose at a specific time stamp
+---Returns a new animated pose at a specific time stamp
+---@param time number
+---@return table
 function class:getPose(time)
-	assert(self, "animation is nil, is the name correct?")
 	local pose = lib:newPose()
 	
-	for joint,frames in pairs(self.frames) do
+	for joint, frames in pairs(self.frames) do
 		if #frames == 0 then
 			self.frames[joint] = nil
 		elseif #frames == 1 then
@@ -65,7 +77,7 @@ function class:getPose(time)
 			local lu = self.lookup[joint]
 			for f = lu and lu[math.ceil(t / self.length * #lu)] or 2, #frames do
 				if frames[f].time >= t then
-					f1 = frames[f-1]
+					f1 = frames[f - 1]
 					f2 = frames[f]
 					break
 				end
@@ -82,13 +94,12 @@ function class:getPose(time)
 end
 
 function class:decode()
-	for _,frames in pairs(self.frames) do
-		for _,frame in ipairs(frames) do
+	for _, frames in pairs(self.frames) do
+		for _, frame in ipairs(frames) do
 			frame.position = vec3(frame.position)
 			frame.rotation = quat(frame.rotation)
 		end
 	end
-	self:finish()
 end
 
 return class

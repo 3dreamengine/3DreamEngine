@@ -1,10 +1,12 @@
+local dream = _3DreamEngine
+
 local sh = { }
 
 sh.type = "pixel"
 
-sh.meshType = "textured"
+sh.meshFormat = "textured"
 
-function sh:getId(dream, mat, shadow)
+function sh:getId(mat, shadow)
 	if shadow then
 		return 0
 	else
@@ -12,7 +14,7 @@ function sh:getId(dream, mat, shadow)
 	end
 end
 
-function sh:buildDefines(dream, mat, shadow)
+function sh:buildDefines(mat, shadow)
 	assert(mat.alpha, "water shader requires alpha pass set to true")
 	assert(mat.normalTexture, "water shader requires a normal texture for wave movement")
 	
@@ -64,7 +66,7 @@ function sh:buildDefines(dream, mat, shadow)
 	]]
 end
 
-function sh:buildPixel(dream, mat)
+function sh:buildPixel(mat)
 	return [[
 	//two moving UV coords for the wave normal
 	vec2 waterUV = VaryingTexCoord.xy + vertexPos.xz;
@@ -103,12 +105,12 @@ function sh:buildPixel(dream, mat)
 	//material
 #ifdef MATERIAL_TEXTURE
 	vec3 material = Texel(materialTexture, uvw).xyz;
-	roughness = mix(liquidRoughness, material.x * materialColor.x, density);
-	metallic = mix(liquidMetallic, material.y * materialColor.y, density);
+	metallic = mix(liquidMetallic, material.x * materialColor.x, density);
+	roughness = mix(liquidRoughness, material.y * materialColor.y, density);
 	ao = material.z;
 #else
-	roughness = mix(liquidRoughness, materialColor.x, density);
-	metallic = mix(liquidMetallic, materialColor.y, density);
+	metallic = mix(liquidMetallic, materialColor.x, density);
+	roughness = mix(liquidRoughness, materialColor.y, density);
 #endif
 	
 	//emission
@@ -120,16 +122,16 @@ function sh:buildPixel(dream, mat)
 	]]
 end
 
-function sh:buildVertex(dream, mat)
+function sh:buildVertex(mat)
 	return ""
 end
 
-function sh:perShader(dream, shaderObject)
+function sh:perShader(shaderObject)
 	local shader = shaderObject.shader
 	shader:send("time", love.timer.getTime())
 end
 
-function sh:perMaterial(dream, shaderObject, material)
+function sh:perMaterial(shaderObject, material)
 	local shader = shaderObject.shader
 	
 	local tex = dream.textures
@@ -140,7 +142,7 @@ function sh:perMaterial(dream, shaderObject, material)
 	if shader:hasUniform("materialTexture") then
 		shader:send("materialTexture", dream:getImage(material.materialTexture) or tex.default)
 	end
-	shader:send("materialColor", {material.roughness, material.metallic})
+	shader:send("materialColor", {material.metallic, material.roughness})
 	
 	shader:send("normalTexture", dream:getImage(material.normalTexture) or tex.defaultNormal)
 	
@@ -152,12 +154,12 @@ function sh:perMaterial(dream, shaderObject, material)
 	
 	shader:send("emissionColor", material.emission)
 	
-	shader:send("waterScale", material.waterScale or 1 / 16)
+	shader:send("waterScale", material.waterScale or (1 / 16))
 	shader:send("waterSpeed", material.waterSpeed or 1)
 	shader:send("waterHeight", 1 / (material.waterHeight or 2))
 	shader:send("surfaceDistortion", material.surfaceDistortion or 1.0)
 	
-	shader:send("foamScale", material.foamScale or 1 / 8)
+	shader:send("foamScale", material.foamScale or (1 / 8))
 	shader:send("foamSpeed", material.foamSpeed or 0.1)
 	
 	shader:send("liquidAlbedo", material.liquidAlbedo or {0.5, 0.75, 1.0})
@@ -167,7 +169,7 @@ function sh:perMaterial(dream, shaderObject, material)
 	shader:send("liquidMetallic", material.liquidMetallic or 1.0)
 end
 
-function sh:perTask(dream, shaderObject, task)
+function sh:perTask(shaderObject, task)
 
 end
 

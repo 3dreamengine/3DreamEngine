@@ -1,32 +1,35 @@
+# Skeletal animations
 
-## skeletal animations
-WIP but should work fine. The COLLADA loader is often confused and needs further tweeking for some exports but should work most of the time.
+I noticed that DAE export/import in Blender is broken at some models, prefer GLTF.
 A vertex can be assigned to multiple joints/bones, but 3Dream only considers the 4 most important ones.
-The bone module has to be enabled on the object in order to use GPU acceleration.
+The bone vertex shader has to be enabled on the object in order to use GPU acceleration.
 
-Make sure the object has the inbuilt bone vertex shader applied.
 ```lua
 object:setVertexShader("bones")
 ```
 
-Returns a pose at a specific time stamp for the given animation.
+Now create a pose at a specific time stamp for the given animation.
 As long as the joints share the same name, the object containing the animations do not need to be the one containing the skeleton/mesh.
+That means, you can create separate animation libraries.
+
 ```lua
 pose = object.animations.animationName:getPose(time)
 ```
-`time` time in seconds  
 
-<br />
+`time` time in seconds
 
-Apply this pose to the skeleton. First line is a shortcut to the second one.
+Now apply this pose to the skeleton, which will recursively create transformation matrices for each join.
+
 ```lua
-object:applyPose(pose)
-object.skeleton:applyPose(pose)
+object:getMainSkeleton():applyPose(pose)
 ```
 
-<br />
+You can now draw the object.
 
-Apply the skeleton to the mesh directly on the CPU and therefore slow.
+You can also apply the skeleton to the mesh (or all objects meshes) directly on the CPU.
+That's of course slow, but might be required for certain applications.
+
 ```lua
-dream:applyBones()
+mesh:applyBones()
+object:applyBones()
 ```

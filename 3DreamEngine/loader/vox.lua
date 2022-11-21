@@ -26,11 +26,11 @@ local default = {
 
 local palette = { }
 for i = 1, 255 do
-	palette[i] = {
+	palette[i] = vec3 {
 		math.floor(default[i]) % 256,
 		math.floor(default[i] / 256) % 256,
-		math.floor(default[i] / 256^2) % 256,
-		math.floor(default[i] / 256^3) % 256,
+		math.floor(default[i] / 256 ^ 2) % 256,
+		math.floor(default[i] / 256 ^ 3) % 256,
 	}
 end
 
@@ -38,31 +38,31 @@ return function(self, obj, path)
 	local file = love.filesystem.read(path)
 	
 	local function parseInt(i)
-		return string.byte(file:sub(i+1, i+1)) + string.byte(file:sub(i+2, i+2)) * 256 + string.byte(file:sub(i+3, i+3)) * 256^2 + string.byte(file:sub(i+4, i+4)) * 256^3
+		return string.byte(file:sub(i + 1, i + 1)) + string.byte(file:sub(i + 2, i + 2)) * 256 + string.byte(file:sub(i + 3, i + 3)) * 256 ^ 2 + string.byte(file:sub(i + 4, i + 4)) * 256 ^ 3
 	end
-
-	local int32 = 2^32
+	
+	local int32 = 2 ^ 32
 	local function parseInt32(i)
 		local v = parseInt(i)
-		if v >= int32/2 then
+		if v >= int32 / 2 then
 			v = int32 - v - 2
 		end
 		return v
 	end
-
+	
 	local function parseString(i)
 		local length = parseInt32(i)
-		return file:sub(i+5, i+5+length-1), length
+		return file:sub(i + 5, i + 5 + length - 1), length
 	end
-
+	
 	local function parseDICT(i)
 		local i2 = 0
 		local count = parseInt32(i)
 		local t = { }
 		for c = 1, count do
-			local key, length = parseString(i+i2+4)
+			local key, length = parseString(i + i2 + 4)
 			i2 = i2 + length
-			local value, length = parseString(i+i2+8)
+			local value, length = parseString(i + i2 + 8)
 			i2 = i2 + length
 			
 			i2 = i2 + 8
@@ -85,67 +85,67 @@ return function(self, obj, path)
 	local currModel
 	local i = 8
 	while true do
-		local chunk = file:sub(i+1, i+4)
+		local chunk = file:sub(i + 1, i + 4)
 		if #chunk ~= 4 then
 			break
 		end
 		
-		local length = parseInt(i+4)
-		local length_children = parseInt(i+8)
+		local length = parseInt(i + 4)
+		local length_children = parseInt(i + 8)
 		
 		if chunk == "MAIN" then
-			
+		
 		elseif chunk == "PACK" then
-			modelCount = parseInt(i+12)
+			modelCount = parseInt(i + 12)
 		elseif chunk == "SIZE" then
-			local x = parseInt(i+12)
-			local y = parseInt(i+16)
-			local z = parseInt(i+20)
+			local x = parseInt(i + 12)
+			local y = parseInt(i + 16)
+			local z = parseInt(i + 20)
 			
 			--create new model
-			currModel = {x = x, y = y, z = z, blocks = ffi.new("uint8_t[" .. x .. "][" .. y .. "][" .. z .. "]")}
+			currModel = { x = x, y = y, z = z, blocks = ffi.new("uint8_t[" .. x .. "][" .. y .. "][" .. z .. "]") }
 			table.insert(models, currModel)
-			for xx = 0, x-1 do
-				for yy = 0, y-1 do
-					for zz = 0, z-1 do
+			for xx = 0, x - 1 do
+				for yy = 0, y - 1 do
+					for zz = 0, z - 1 do
 						currModel.blocks[xx][yy][zz] = 0
 					end
 				end
 			end
 		elseif chunk == "XYZI" then
-			local count = parseInt(i+12)
+			local count = parseInt(i + 12)
 			for c = 1, count do
-				local x = string.byte(file:sub(i+16+(c-1)*4+1, i+16+(c-1)*4+1))
-				local y = string.byte(file:sub(i+16+(c-1)*4+2, i+16+(c-1)*4+2))
-				local z = string.byte(file:sub(i+16+(c-1)*4+3, i+16+(c-1)*4+3))
-				local i = string.byte(file:sub(i+16+(c-1)*4+4, i+16+(c-1)*4+4))
+				local x = string.byte(file:sub(i + 16 + (c - 1) * 4 + 1, i + 16 + (c - 1) * 4 + 1))
+				local y = string.byte(file:sub(i + 16 + (c - 1) * 4 + 2, i + 16 + (c - 1) * 4 + 2))
+				local z = string.byte(file:sub(i + 16 + (c - 1) * 4 + 3, i + 16 + (c - 1) * 4 + 3))
+				local i = string.byte(file:sub(i + 16 + (c - 1) * 4 + 4, i + 16 + (c - 1) * 4 + 4))
 				currModel.blocks[x][y][z] = i
 			end
 		elseif chunk == "RGBA" then
 			for c = 1, 255 do
 				palette[i] = {
-					string.byte(file:sub(i+12+(c-1)*4+1, i+12+(c-1)*4+1)),
-					string.byte(file:sub(i+12+(c-1)*4+2, i+12+(c-1)*4+2)),
-					string.byte(file:sub(i+12+(c-1)*4+3, i+12+(c-1)*4+3)),
-					string.byte(file:sub(i+12+(c-1)*4+4, i+12+(c-1)*4+4)),
+					string.byte(file:sub(i + 12 + (c - 1) * 4 + 1, i + 12 + (c - 1) * 4 + 1)),
+					string.byte(file:sub(i + 12 + (c - 1) * 4 + 2, i + 12 + (c - 1) * 4 + 2)),
+					string.byte(file:sub(i + 12 + (c - 1) * 4 + 3, i + 12 + (c - 1) * 4 + 3)),
+					string.byte(file:sub(i + 12 + (c - 1) * 4 + 4, i + 12 + (c - 1) * 4 + 4)),
 				}
 			end
 		elseif chunk == "MATT" then
 			--not supported, deprecated
 		elseif chunk == "nTRN" then
-			local id = parseInt32(i+12)
-			local att, i2 = parseDICT(i+16)
-			local childId = parseInt32(i+i2+20)
-			local reserved = parseInt32(i+i2+24) --must be -1
-			local layerId = parseInt32(i+i2+28)
-			local frameCount = parseInt32(i+i2+32) --must be 1
+			local id = parseInt32(i + 12)
+			local att, i2 = parseDICT(i + 16)
+			local childId = parseInt32(i + i2 + 20)
+			local reserved = parseInt32(i + i2 + 24) --must be -1
+			local layerId = parseInt32(i + i2 + 28)
+			local frameCount = parseInt32(i + i2 + 32) --must be 1
 			
 			if reserved ~= -1 or frameCount ~= 1 then
 				print(reserved, frameCount)
 				print("unsupported vox file, reserved or frameCount in use, should be -1 / 1, trying to continue.")
 			end
 			
-			nodes[id] = {id = id, childId = childId, nodeAttributes = att, attributes = parseDICT(i+i2+36), children = { }}
+			nodes[id] = { id = id, childId = childId, nodeAttributes = att, attributes = parseDICT(i + i2 + 36), children = { } }
 			if nodes[id].attributes._t then
 				nodes[id].transform = string.split(nodes[id].attributes._t, " ")
 				for cc = 1, 3 do
@@ -153,39 +153,39 @@ return function(self, obj, path)
 				end
 			end
 		elseif chunk == "nGRP" then
-			local id = parseInt32(i+12)
-			local att, i2 = parseDICT(i+16)
-			local children = parseInt32(i+i2+20)
+			local id = parseInt32(i + 12)
+			local att, i2 = parseDICT(i + 16)
+			local children = parseInt32(i + i2 + 20)
 			
 			groups[id] = { }
 			for c = 1, children do
-				local cId = parseInt32(i+i2+24 + (c-1)*4)
+				local cId = parseInt32(i + i2 + 24 + (c - 1) * 4)
 				table.insert(groups[id], cId)
 			end
 		elseif chunk == "nSHP" then
-			local id = parseInt32(i+12)
-			local att, i2 = parseDICT(i+16)
-			local num = parseInt32(i+i2+20)
+			local id = parseInt32(i + 12)
+			local att, i2 = parseDICT(i + 16)
+			local num = parseInt32(i + i2 + 20)
 			
 			if num ~= 1 then
 				print("invalid vox file, more than one model per shape, trying to continue")
 			end
 			
-			nodes[id] = {id = id, nodeAttributes = att, modelId = parseInt32(i+i2+24), modelAttributes = parseDICT(i+i2+28)}
+			nodes[id] = { id = id, nodeAttributes = att, modelId = parseInt32(i + i2 + 24), modelAttributes = parseDICT(i + i2 + 28) }
 		elseif chunk == "LAYR" then
 			--not required
 		elseif chunk == "rOBJ" then
 			--the heck is this?
 		elseif chunk == "MATL" then
-			local id = parseInt32(i+12)
-			local mat = parseDICT(i+16)
-			local color = palette[id] or {0, 0, 0}
+			local id = parseInt32(i + 12)
+			local mat = parseDICT(i + 16)
+			local color = palette[id] or { 0, 0, 0 }
 			materials[id] = self:newMaterial()
 			materials[id].color = color
-			materials[id].roughness = mat._rough
+			materials[id].roughness = tonumber(mat._rough)
 			materials[id].metallic = mat._type == "_metal" and 1 or 0
 			materials[id].ior = mat._type == "_glass" and mat._ior or 1.0
-			materials[id].emission = {mat._flux, mat._flux, mat._flux}
+			materials[id].emission = { mat._flux, mat._flux, mat._flux }
 			materials[id].name = tostring(id)
 		else
 			print("unknown chunk " .. chunk)
@@ -194,25 +194,27 @@ return function(self, obj, path)
 		i = i + length + 12
 	end
 	
-	local function add(o, x, y, z, nx, ny, nz, mat)
-		table.insert(o.vertices, {x, y, z})
-		table.insert(o.normals, {nx, ny, nz})
-		table.insert(o.colors, mat.color)
-		table.insert(o.roughnesses, mat.roughness)
-		table.insert(o.metallics, mat.metallic)
-		table.insert(o.emissions, mat.emission)
+	local function add(mesh, x, y, z, nx, ny, nz, mat)
+		mesh:getOrCreateBuffer("vertices"):append(vec3 { x, y, z })
+		mesh:getOrCreateBuffer("normals"):append(vec3 { nx, ny, nz })
+		mesh:getOrCreateBuffer("colors"):append(mat.color)
+		mesh:getOrCreateBuffer("roughnesses"):append(mat.roughness)
+		mesh:getOrCreateBuffer("metallics"):append(mat.metallic)
+		mesh:getOrCreateBuffer("emissions"):append(mat.emission)
 	end
 	
 	--generate final object
 	local function generate(m, name, t)
 		local material = self:newMaterial()
 		material:setPixelShader("simple")
-		local o = self:newMesh(name, material)
-		obj.meshes[name] = o
+		local mesh = self:newMesh(name, material)
+		obj.meshes[name] = mesh
 		
-		for x = 0, m.x-1 do
-			for y = 0, m.y-1 do
-				for z = 0, m.z-1 do
+		local faces = mesh:getOrCreateBuffer("faces")
+		
+		for x = 0, m.x - 1 do
+			for y = 0, m.y - 1 do
+				for z = 0, m.z - 1 do
 					local b = m.blocks[x][y][z]
 					if b > 0 then
 						local ox = t[1] + x
@@ -222,69 +224,69 @@ return function(self, obj, path)
 						local mat = materials[b]
 						
 						--top
-						if z == 0 or m.blocks[x][y][z-1] == 0 then
-							add(o, ox+0, oy+0, oz+1, 0, -1, 0, mat)
-							add(o, ox+1, oy+0, oz+1, 0, -1, 0, mat)
-							add(o, ox+1, oy+0, oz+0, 0, -1, 0, mat)
-							add(o, ox+0, oy+0, oz+0, 0, -1, 0, mat)
-							local c = #o.vertices
-							table.insert(o.faces, {c-0, c-1, c-2})
-							table.insert(o.faces, {c-0, c-2, c-3})
+						if z == 0 or m.blocks[x][y][z - 1] == 0 then
+							add(mesh, ox + 0, oy + 0, oz + 1, 0, -1, 0, mat)
+							add(mesh, ox + 1, oy + 0, oz + 1, 0, -1, 0, mat)
+							add(mesh, ox + 1, oy + 0, oz + 0, 0, -1, 0, mat)
+							add(mesh, ox + 0, oy + 0, oz + 0, 0, -1, 0, mat)
+							local c = mesh:getOrCreateBuffer("vertices"):getSize()
+							faces:append({ c - 0, c - 1, c - 2 })
+							faces:append({ c - 0, c - 2, c - 3 })
 						end
 						
 						--bottom
-						if z == m.z-1 or m.blocks[x][y][z+1] == 0 then
-							add(o, ox+0, oy+1, oz+0, 0, 1, 0, mat)
-							add(o, ox+1, oy+1, oz+0, 0, 1, 0, mat)
-							add(o, ox+1, oy+1, oz+1, 0, 1, 0, mat)
-							add(o, ox+0, oy+1, oz+1, 0, 1, 0, mat)
-							local c = #o.vertices
-							table.insert(o.faces, {c-0, c-1, c-2})
-							table.insert(o.faces, {c-0, c-2, c-3})
+						if z == m.z - 1 or m.blocks[x][y][z + 1] == 0 then
+							add(mesh, ox + 0, oy + 1, oz + 0, 0, 1, 0, mat)
+							add(mesh, ox + 1, oy + 1, oz + 0, 0, 1, 0, mat)
+							add(mesh, ox + 1, oy + 1, oz + 1, 0, 1, 0, mat)
+							add(mesh, ox + 0, oy + 1, oz + 1, 0, 1, 0, mat)
+							local c = mesh:getOrCreateBuffer("vertices"):getSize()
+							faces:append({ c - 0, c - 1, c - 2 })
+							faces:append({ c - 0, c - 2, c - 3 })
 						end
 						
 						--right
-						if x == 0 or m.blocks[x-1][y][z] == 0 then
-							add(o, ox+0, oy+1, oz+0, -1, 0, 0, mat)
-							add(o, ox+0, oy+1, oz+1, -1, 0, 0, mat)
-							add(o, ox+0, oy+0, oz+1, -1, 0, 0, mat)
-							add(o, ox+0, oy+0, oz+0, -1, 0, 0, mat)
-							local c = #o.vertices
-							table.insert(o.faces, {c-0, c-1, c-2})
-							table.insert(o.faces, {c-0, c-2, c-3})
+						if x == 0 or m.blocks[x - 1][y][z] == 0 then
+							add(mesh, ox + 0, oy + 1, oz + 0, -1, 0, 0, mat)
+							add(mesh, ox + 0, oy + 1, oz + 1, -1, 0, 0, mat)
+							add(mesh, ox + 0, oy + 0, oz + 1, -1, 0, 0, mat)
+							add(mesh, ox + 0, oy + 0, oz + 0, -1, 0, 0, mat)
+							local c = mesh:getOrCreateBuffer("vertices"):getSize()
+							faces:append({ c - 0, c - 1, c - 2 })
+							faces:append({ c - 0, c - 2, c - 3 })
 						end
 						
 						--left
-						if x == m.x-1 or m.blocks[x+1][y][z] == 0 then
-							add(o, ox+1, oy+0, oz+0, 1, 0, 0, mat)
-							add(o, ox+1, oy+0, oz+1, 1, 0, 0, mat)
-							add(o, ox+1, oy+1, oz+1, 1, 0, 0, mat)
-							add(o, ox+1, oy+1, oz+0, 1, 0, 0, mat)
-							local c = #o.vertices
-							table.insert(o.faces, {c-0, c-1, c-2})
-							table.insert(o.faces, {c-0, c-2, c-3})
+						if x == m.x - 1 or m.blocks[x + 1][y][z] == 0 then
+							add(mesh, ox + 1, oy + 0, oz + 0, 1, 0, 0, mat)
+							add(mesh, ox + 1, oy + 0, oz + 1, 1, 0, 0, mat)
+							add(mesh, ox + 1, oy + 1, oz + 1, 1, 0, 0, mat)
+							add(mesh, ox + 1, oy + 1, oz + 0, 1, 0, 0, mat)
+							local c = mesh:getOrCreateBuffer("vertices"):getSize()
+							faces:append({ c - 0, c - 1, c - 2 })
+							faces:append({ c - 0, c - 2, c - 3 })
 						end
 						
 						--front
-						if y == 0 or m.blocks[x][y-1][z] == 0 then
-							add(o, ox+0, oy+0, oz+0, 0, 0, -1, mat)
-							add(o, ox+1, oy+0, oz+0, 0, 0, -1, mat)
-							add(o, ox+1, oy+1, oz+0, 0, 0, -1, mat)
-							add(o, ox+0, oy+1, oz+0, 0, 0, -1, mat)
-							local c = #o.vertices
-							table.insert(o.faces, {c-0, c-1, c-2})
-							table.insert(o.faces, {c-0, c-2, c-3})
+						if y == 0 or m.blocks[x][y - 1][z] == 0 then
+							add(mesh, ox + 0, oy + 0, oz + 0, 0, 0, -1, mat)
+							add(mesh, ox + 1, oy + 0, oz + 0, 0, 0, -1, mat)
+							add(mesh, ox + 1, oy + 1, oz + 0, 0, 0, -1, mat)
+							add(mesh, ox + 0, oy + 1, oz + 0, 0, 0, -1, mat)
+							local c = mesh:getOrCreateBuffer("vertices"):getSize()
+							faces:append({ c - 0, c - 1, c - 2 })
+							faces:append({ c - 0, c - 2, c - 3 })
 						end
 						
 						--back
-						if y == m.y-1 or m.blocks[x][y+1][z] == 0 then
-							add(o, ox+0, oy+1, oz+1, 0, 0, 1, mat)
-							add(o, ox+1, oy+1, oz+1, 0, 0, 1, mat)
-							add(o, ox+1, oy+0, oz+1, 0, 0, 1, mat)
-							add(o, ox+0, oy+0, oz+1, 0, 0, 1, mat)
-							local c = #o.vertices
-							table.insert(o.faces, {c-0, c-1, c-2})
-							table.insert(o.faces, {c-0, c-2, c-3})
+						if y == m.y - 1 or m.blocks[x][y + 1][z] == 0 then
+							add(mesh, ox + 0, oy + 1, oz + 1, 0, 0, 1, mat)
+							add(mesh, ox + 1, oy + 1, oz + 1, 0, 0, 1, mat)
+							add(mesh, ox + 1, oy + 0, oz + 1, 0, 0, 1, mat)
+							add(mesh, ox + 0, oy + 0, oz + 1, 0, 0, 1, mat)
+							local c = mesh:getOrCreateBuffer("vertices"):getSize()
+							faces:append({ c - 0, c - 1, c - 2 })
+							faces:append({ c - 0, c - 2, c - 3 })
 						end
 					end
 				end
@@ -295,11 +297,11 @@ return function(self, obj, path)
 	local function group(g, t, name)
 		if g.childId then
 			if groups[g.childId] then
-				for d,s in ipairs(groups[g.childId]) do
+				for d, s in ipairs(groups[g.childId]) do
 					group(nodes[s], t)
 				end
 			else
-				t = {t[1], t[2], t[3]}
+				t = { t[1], t[2], t[3] }
 				t[1] = t[1] + g.transform[1]
 				t[2] = t[2] + g.transform[2]
 				t[3] = t[3] + g.transform[3]
@@ -308,10 +310,10 @@ return function(self, obj, path)
 			end
 		else
 			local m = g.modelId
-			generate(models[m+1], name or tostring(m), t)
+			generate(models[m + 1], name or tostring(m), t)
 		end
 	end
 	
 	--hard coded offset
-	group(nodes[0], {0, 0, 0})
+	group(nodes[0], { 0, 0, 0 })
 end

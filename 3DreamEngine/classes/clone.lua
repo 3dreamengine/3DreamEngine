@@ -1,19 +1,19 @@
+---@class DreamClonable
 local class = {
-	link = { },
+	links = { },
 }
 
+---Clone
 function class:clone()
 	local n = { }
-	for d,s in pairs(self) do
-		if type(s) == "table" and type(s.clone) == "function" then
-			n[d] = s:clone()
+	
+	for key, value in pairs(self) do
+		if type(value) == "table" and type(value.clone) == "function" then
+			n[key] = value:clone()
 		else
-			n[d] = s
+			n[key] = value
 		end
 	end
-	
-	--allow this material to be added somewhere else
-	n.registeredAs = nil
 	
 	return setmetatable(n, getmetatable(self))
 end

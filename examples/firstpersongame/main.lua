@@ -13,7 +13,7 @@ dream:setSky(sky.render)
 
 --sun
 local sun = dream:newLight("sun")
-sun:addShadow()
+sun:addNewShadow()
 
 --load all materials
 dream:loadMaterialLibrary("examples/firstpersongame/materials")
@@ -22,7 +22,7 @@ dream:loadMaterialLibrary("examples/firstpersongame/materials")
 local scene = dream:loadObject("examples/firstpersongame/objects/scene")
 
 --a helper class
-local cameraController = require("examples/firstpersongame/cameraController")
+local cameraController = require("extensions/utils/cameraController")
 
 cameraController.x = 8
 cameraController.y = 10
@@ -38,13 +38,13 @@ local hideTooltips = false
 
 function love.draw()
 	--update camera
-	cameraController:setCamera(dream.cam)
+	cameraController:setCamera(dream.camera)
 	
 	--update light
 	dream:prepare()
 	dream:addLight(sun)
 	if love.mouse.isDown(1) then
-		dream:addNewLight("point", vec3(cameraController.x + dream.cam.normal.x, cameraController.y + dream.cam.normal.y, cameraController.z + dream.cam.normal.z), vec3(1.0, 0.75, 0.1), 5.0 + love.math.noise(love.timer.getTime()*2))
+		dream:addNewLight("point", vec3(cameraController.x + dream.camera.normal.x, cameraController.y + dream.camera.normal.y, cameraController.z + dream.camera.normal.z), vec3(1.0, 0.75, 0.1), 5.0 + love.math.noise(love.timer.getTime()*2))
 	end
 	
 	dream:draw(scene)

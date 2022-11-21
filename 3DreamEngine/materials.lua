@@ -6,13 +6,7 @@ materials.lua - load and process materials
 local lib = _3DreamEngine
 
 function lib:registerMaterial(material, name)
-	name = name or material.name
-	if material.registeredAs then
-		error("This material already have been registered with the name '" .. material.registeredAs .. "', clone it first.")
-	end
-	material.name = name
-	material.registeredAs = name
-	self.materialLibrary[name] = material
+	self.materialLibrary[name or material.name] = material
 end
 
 --looks for mat files or directories with an albedo texture
@@ -33,23 +27,22 @@ function lib:loadMaterialLibrary(path, prefix)
 		return
 	end
 	
-	for d,s in ipairs(love.filesystem.getDirectoryItems(path)) do
+	for _, s in ipairs(love.filesystem.getDirectoryItems(path)) do
 		local p = path .. "/" .. s
-		if s:sub(#s - 3) == ".mat" then
+		local ext = s:sub(#s - 3)
+		if ext == ".lua" then
 			--custom material
 			local mat = self:newMaterial((prefix .. s):sub(1, -5))
 			local matLoaded = love.filesystem.load(p)()
 			table.merge(mat, matLoaded)
-			mat.mat = matLoaded
 			mat.library = true
 			self:lookForTextures(mat, path, mat.name)
 			self.materialLibrary[mat.name] = mat
-		elseif love.filesystem.getInfo(p .. "/material.mat") then
+		elseif love.filesystem.getInfo(p .. "/material.lua") then
 			--material using the recommended directory-format
 			local mat = self:newMaterial(prefix .. s)
-			local matLoaded = love.filesystem.load(p .. "/material.mat")()
+			local matLoaded = love.filesystem.load(p .. "/material.lua")()
 			table.merge(mat, matLoaded)
-			mat.mat = matLoaded
 			mat.library = true
 			self:lookForTextures(mat, p)
 			self.materialLibrary[mat.name] = mat
@@ -72,7 +65,7 @@ local function texSetter(mat, typ, tex)
 end
 
 function lib:lookForTextures(mat, directory, filter)
-	for _,typ in ipairs({"albedo", "normal", "roughness", "metallic", "emission", "ao", "material"}) do
+	for _, typ in ipairs({ "albedo", "normal", "roughness", "metallic", "emission", "ao", "material" }) do
 		local custom = mat[typ .. "Texture"]
 		mat[typ .. "Texture"] = nil
 		
@@ -82,9 +75,9 @@ function lib:lookForTextures(mat, directory, filter)
 		elseif type(custom) == "string" then
 			--path or name specified
 			local path = self:getImagePath(custom) or
-				self:getImagePath(directory .. "/" .. custom) or
-				(love.filesystem.getInfo(custom, "file")) and custom or
-				(love.filesystem.getInfo(directory .. "/" .. custom, "file")) and (directory .. "/" .. custom)
+					self:getImagePath(directory .. "/" .. custom) or
+					(love.filesystem.getInfo(custom, "file")) and custom or
+					(love.filesystem.getInfo(directory .. "/" .. custom, "file")) and (directory .. "/" .. custom)
 			
 			if path then
 				texSetter(mat, typ, path)
@@ -109,7 +102,7 @@ function lib:lookForTextures(mat, directory, filter)
 	--combiner
 	if not mat["materialTexture"] then
 		if mat["metallicTexture"] or mat["roughnessTexture"] or mat["aoTex"] then
-			mat["materialTexture"] = self:combineTextures(mat["roughnessTexture"], mat["metallicTexture"], mat["aoTex"])
+			mat:setMaterialTexture(self:combineTextures(mat["metallicTexture"], mat["roughnessTexture"], mat["aoTex"]))
 		end
 	end
 	
@@ -117,6 +110,4 @@ function lib:lookForTextures(mat, directory, filter)
 	mat.pixelShader = lib:getShader(mat.pixelShader)
 	mat.vertexShader = lib:getShader(mat.vertexShader)
 	mat.worldShader = lib:getShader(mat.worldShader)
-	
-	mat.mat = nil
 end

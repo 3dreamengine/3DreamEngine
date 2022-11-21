@@ -1,6 +1,9 @@
 local lib = _3DreamEngine
 
---returns a particle instance used to draw a particle
+--todo particles do not significantly differ from objects, are they not added as tasks this a task?
+
+--Returns a particle instance used to draw a particle
+---@return DreamParticle
 function lib:newParticle(texture, emissionTexture, distortionTexture)
 	assert(texture, "texture required")
 	
@@ -17,23 +20,67 @@ function lib:newParticle(texture, emissionTexture, distortionTexture)
 	return setmetatable(p, self.meta.particle)
 end
 
+---@class DreamParticle
 local class = {
-	link = {"particle"},
-	
-	setterGetter = {
-		texture = "userdata",
-		emissionTexture = "userdata",
-		distortionTexture = "userdata",
-		emission = "number",
-		distortion = "number",
-		vertical = "number",
-		alpha = "boolean",
-	},
+	links = { "particle" },
 }
-	
-function class:setEmissionTexture(tex)
-	self.emission = tex and 1 or 0
-	emissionTexture = tex
+
+function class:setTexture(texture)
+	self.texture = texture
+end
+function class:getTexture()
+	return self.texture
+end
+
+function class:setEmissionTexture(texture)
+	self.emission = texture and 1 or 0
+	self.emissionTexture = texture
+end
+function class:getEmissionTexture()
+	return self.emissionTexture
+end
+
+function class:setDistortionTexture(distortionTexture)
+	self.distortionTexture = distortionTexture
+end
+function class:getDistortionTexture()
+	return self.distortionTexture
+end
+
+---Emission strength
+---@param emission number
+function class:setEmission(emission)
+	self.emission = emission
+end
+function class:getEmission()
+	return self.emission
+end
+
+---Distortion strength
+---@param distortion number
+function class:getDistortion(distortion)
+	self.distortion = distortion
+end
+function class:getDistortion()
+	return self.distortion
+end
+
+---Blend between billboard and vertical billboard
+---@param vertical boolean
+function class:setVertical(vertical)
+	self.vertical = vertical
+end
+function class:getVertical()
+	return self.vertical
+end
+
+---Use alpha pass
+---@param alpha boolean
+function class:setAlpha(alpha)
+	self.alpha = alpha
+end
+function class:getAlpha()
+	return self.alpha
 end
 
 function class:clone()

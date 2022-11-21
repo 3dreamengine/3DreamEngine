@@ -27,8 +27,7 @@ function job:execute(light)
 	end
 	
 	local normal = light.direction
-	local pos = light.pos
-	local pos = lib.cam.pos
+	local position = lib.camera.position
 	
 	light.lastCascade = light.lastCascade % #lazyMapping + 1
 	
@@ -36,7 +35,7 @@ function job:execute(light)
 		local stepSize = light.shadow.refreshStepSize * 2.3 ^ (cascade-1)
 		
 		local shadowCam = light.shadow.cams[cascade]
-		if not shadowCam or (pos - shadowCam.pos):lengthSquared() > stepSize or (normal - shadowCam.normal):lengthSquared() > 0 then
+		if not shadowCam or (position - shadowCam.position):lengthSquared() > stepSize or (normal - shadowCam.normal):lengthSquared() > 0 then
 			--create shadow camera
 			if not shadowCam then
 				light.shadow.cams[cascade] = lib:newCamera()
@@ -50,12 +49,12 @@ function job:execute(light)
 			local f = 100
 			
 			--camera orientation
-			shadowCam.pos = pos
+			shadowCam.position = position
 			shadowCam.normal = normal
-			shadowCam.transform = lib:lookAt(shadowCam.pos + shadowCam.normal * (f * 0.5), shadowCam.pos, vec3(0.0, 1.0, 0.0))
+			shadowCam.transform = lib:lookAt(shadowCam.position + shadowCam.normal * (f * 0.5), shadowCam.position, vec3(0.0, 1.0, 0.0))
 			shadowCam.rendered = false
 			
-			--orthopgraphic projected multiplied by the cameras view matrix
+			--orthographic projected multiplied by the cameras view matrix
 			local a1 = 1 / r
 			local a6 = -a1
 			local a11 = -2 / (f - n)
@@ -83,7 +82,7 @@ function job:execute(light)
 		
 		--render
 		local smooth = false
-		if light.shadow.dynamic or true then
+		if light.shadow.dynamic then
 			if shadowCam.rendered then
 				--dynamic part
 				lib:renderShadows(shadowCam, canvases, light.blacklist, true, cascade > 1, false)

@@ -1,36 +1,30 @@
 local lib = _3DreamEngine
 
+---@return DreamScene
 function lib:newScene()
 	local m = setmetatable({ }, self.meta.scene)
 	m:clear()
 	return m
 end
 
-local function getPos(object, transform)
-	local bb = object.boundingBox
+local function getPosition(object, transform)
 	if transform then
-		local a = bb.center
+		local a = object.boundingBox.center
 		return vec3(
-			transform[1] * a[1] + transform[2] * a[2] + transform[3] * a[3] + transform[4],
-			transform[5] * a[1] + transform[6] * a[2] + transform[7] * a[3] + transform[8],
-			transform[9] * a[1] + transform[10] * a[2] + transform[11] * a[3] + transform[12])
+				transform[1] * a[1] + transform[2] * a[2] + transform[3] * a[3] + transform[4],
+				transform[5] * a[1] + transform[6] * a[2] + transform[7] * a[3] + transform[8],
+				transform[9] * a[1] + transform[10] * a[2] + transform[11] * a[3] + transform[12])
 	else
-		return bb.center
+		return object.boundingBox.center
 	end
 end
 
 local function getSize(object, transform)
-	local scale = transform and math.sqrt(math.max(
-		(transform[1]^2 + transform[5]^2 + transform[9]^2),
-		(transform[2]^2 + transform[6]^2 + transform[10]^2),
-		(transform[3]^2 + transform[7]^2 + transform[11]^2)
-	)) or 1
-	
-	return object.boundingBox.size * scale
+	return object.boundingBox.size * (transform and transform:getLossySize() or 1)
 end
 
 local function isWithingLOD(LOD_min, LOD_max, pos, size)
-	local camPos = lib.cam.pos
+	local camPos = lib.camera.pos
 	if camPos then
 		local dist = math.max(((pos - camPos):length() - size) * lib.LODFactor, 0)
 		if dist <= LOD_max + 1 then
@@ -43,8 +37,9 @@ local function isWithingLOD(LOD_min, LOD_max, pos, size)
 	end
 end
 
+---@class DreamScene
 local class = {
-	link = {"scene"},
+	links = { "scene" },
 }
 
 function class:clear()
@@ -73,15 +68,7 @@ function class:preload()
 	--todo
 end
 
-function class:addObject(object, parentTransform, dynamic, boneTransforms, reflection)
-	if object.dynamic ~= nil then
-		dynamic = object.dynamic
-	end
-	
-	--pass down some additional data
-	boneTransforms = object.skeleton and object.skeleton.transforms or boneTransforms
-	reflection = object.reflection or reflection
-	
+function class:addObject(object, parentTransform, dynamic, reflection)
 	--apply transformation
 	local transform
 	if parentTransform then
@@ -96,42 +83,41 @@ function class:addObject(object, parentTransform, dynamic, boneTransforms, refle
 	
 	--handle LOD
 	if object.LOD_min or object.LOD_max then
+		local pos = getPosition(object, transform)
+		local size = getSize(object, transform)
 		local LOD_min = object.LOD_min or -math.huge
 		local LOD_max = object.LOD_max or math.huge
-		local pos = getPos(object, transform)
-		local size = getSize(object, transform)
-		if not isWithingLOD(LOD_min, LOD_max, pos, size) then
-			return
-		end
-	end
-	
-	--children
-	for _,o in pairs(object.objects) do
-		self:addObject(o, transform, dynamic, boneTransforms, reflection)
-	end
-	
-	--meshes
-	for _,m in pairs(object.meshes) do
-		self:addMesh(m, transform, dynamic, boneTransforms, reflection)
-	end
-end
-
-function class:addMesh(mesh, transform, dynamic, boneTransforms, reflection)
-	local pos = getPos(mesh, transform)
-	local size = getSize(mesh, transform)
-	
-	--handle LOD
-	if mesh.LOD_min or mesh.LOD_max then
-		local LOD_min = mesh.LOD_min or -math.huge
-		local LOD_max = mesh.LOD_max or math.huge
 		local found, preload = isWithingLOD(LOD_min, LOD_max, pos, size)
 		if preload then
-			mesh:preload()
+			object:preload()
 		end
 		if not found then
 			return
 		end
 	end
+	
+	if object.dynamic ~= nil then
+		dynamic = object.dynamic
+	end
+	
+	--pass down some additional data
+	reflection = object.reflection or reflection
+	
+	--children
+	for _, o in pairs(object.objects) do
+		self:addObject(o, transform, dynamic, reflection)
+	end
+	
+	--meshes
+	for _, m in pairs(object.meshes) do
+		self:addMesh(m, transform, dynamic, reflection)
+	end
+end
+
+function class:addMesh(mesh, transform, dynamic, reflection)
+	local boneTransforms = mesh.skeleton and mesh.skeleton.transforms
+	local pos = getPosition(mesh, transform)
+	local size = getSize(mesh, transform)
 	
 	--create task object
 	local task = setmetatable({
@@ -152,13 +138,13 @@ function class:addMesh(mesh, transform, dynamic, boneTransforms, reflection)
 	
 	--render pass
 	if mesh.renderVisibility then
-		local shaderID = lib:getRenderShaderID(task, pass, false)
+		local shaderID = lib:getRenderShaderID(task, false)
 		self:addTo(task, self.tasks.render[dyn][alpha], shaderID, mesh.material)
 	end
 	
 	--shadow pass
 	if alpha == 2 and mesh.shadowVisibility and mesh.material.shadow ~= false then
-		local shaderID = lib:getRenderShaderID(task, pass, true)
+		local shaderID = lib:getRenderShaderID(task, true)
 		self:addTo(task, self.tasks.shadows[dyn][alpha], shaderID, mesh.material)
 	end
 end

@@ -3,7 +3,7 @@ love.window.setTitle("Lamborghini Example")
 
 --settings
 dream:setSky(love.graphics.newImage("examples/Lamborghini/garage.hdr"))
-dream.cam.fov = 70
+dream.camera.fov = 70
 dream:init()
 
 --materials
@@ -15,7 +15,7 @@ local socket = dream:loadObject("examples/Lamborghini/socket")
 
 --sun object
 local sun = dream:newLight("sun")
-sun:addShadow()
+sun:addNewShadow()
 sun:setDirection(-1, 1, 1)
 
 function love.draw()
@@ -23,10 +23,10 @@ function love.draw()
 	dream:addLight(sun)
 	
 	--draw the car
-	car:reset()
-	car:scale(0.1)
-	car:rotateY(love.mouse.isDown(1) and (-2.25-(love.mouse.getX()/love.graphics.getWidth()-0.5)*4.0) or love.timer.getTime()*0.5)
+	car:resetTransform()
 	car:translate(0, -1.1225, -3.5)
+	car:rotateY(love.mouse.isDown(1) and (-2.25-(love.mouse.getX()/love.graphics.getWidth()-0.5)*4.0) or love.timer.getTime()*0.5)
+	car:scale(0.1)
 	dream:draw(car)
 	
 	--draw the socket

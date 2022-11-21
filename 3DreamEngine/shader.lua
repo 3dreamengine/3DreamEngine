@@ -153,12 +153,12 @@ function lib.loadShader(self)
 			local d = (0.5 + i % 4) / 4
 			f[#f+1] = {math.cos(r)*d*range / love.graphics.getWidth(), math.sin(r)*d*range / love.graphics.getHeight(), (1-d)^2 / self.AO_quality}
 		end
-		self.shaders.SSAO:send("samples", unpack(f))
+		self.shaders.SSAO:send("samples", table.unpack(f))
 	end
 end
 
 --the final canvas combines all resources into one result
-function lib.getFinalShader(self, canvases)
+function lib:getFinalShader(canvases)
 	local parts = { }
 	
 	table.insert(parts, self.autoExposure_enabled and "#define AUTOEXPOSURE_ENABLED" or nil)
@@ -185,7 +185,7 @@ function lib.getFinalShader(self, canvases)
 	return self.finalShaders[ID]
 end
 
-function lib:getRenderShaderID(task, pass, shadows)
+function lib:getRenderShaderID(task, shadows)
 	local mesh = task:getMesh()
 	local mat = mesh.material
 	
@@ -199,13 +199,13 @@ function lib:getRenderShaderID(task, pass, shadows)
 	--construct full ID
 	return string.char(
 		reflections and 1 or 0,
-		(mesh.instanceMesh and 1 or 0) + (mat.discard and 2 or 0) + (mat.dither and 4 or 0) + (mat.translucent > 0 and 8 or 0),
+		(mesh.instanceMesh and 1 or 0) + (mat.discard and 2 or 0) + (mat.dither and 4 or 0) + (mat.translucency > 0 and 8 or 0),
 		pixelShader.id % 256, math.floor(pixelShader.id / 256),
 		vertexShader.id % 256, math.floor(vertexShader.id / 256),
 		worldShader.id % 256, math.floor(worldShader.id / 256),
-		pixelShader:getId(self, mat, shadows),
-		vertexShader:getId(self, mat, shadows),
-		worldShader:getId(self, mat, shadows)
+		pixelShader:getId(mat, shadows),
+		vertexShader:getId(mat, shadows),
+		worldShader:getId(mat, shadows)
 	)
 end
 
@@ -250,7 +250,6 @@ function lib:getRenderShader(ID, mesh, pass, canvases, light, shadows, sun)
 		local info = {
 			reflection = reflection,
 			material = mat,
-			modules = m,
 			shadows = shadows,
 			uniforms = { },
 			
@@ -282,7 +281,7 @@ function lib:getRenderShader(ID, mesh, pass, canvases, light, shadows, sun)
 		end
 		
 		--translucency
-		if mat.translucent > 0 then
+		if mat.translucency > 0 then
 			table.insert(defines, "#define TRANSLUCENCY")
 		end
 		
@@ -348,19 +347,19 @@ function lib:getRenderShader(ID, mesh, pass, canvases, light, shadows, sun)
 		end
 		
 		--material shader
-		insertHeadered(defines, "pixel shader", info.pixelShader:buildDefines(self, mat, shadows))
-		insertHeadered(defines, "vertex shader", info.vertexShader:buildDefines(self, mat, shadows))
+		insertHeadered(defines, "pixel shader", info.pixelShader:buildDefines(mat, shadows))
+		insertHeadered(defines, "vertex shader", info.vertexShader:buildDefines(mat, shadows))
 		
-		insertHeadered(pixelMaterial, "pixel shader", info.pixelShader:buildPixel(self, mat, shadows))
-		insertHeadered(pixelMaterial, "vertex shader", info.vertexShader:buildPixel(self, mat, shadows))
+		insertHeadered(pixelMaterial, "pixel shader", info.pixelShader:buildPixel(mat, shadows))
+		insertHeadered(pixelMaterial, "vertex shader", info.vertexShader:buildPixel(mat, shadows))
 		
-		insertHeadered(vertex, "vertex shader", info.vertexShader:buildVertex(self, mat, shadows))
-		insertHeadered(vertex, "pixel shader", info.pixelShader:buildVertex(self, mat, shadows))
+		insertHeadered(vertex, "vertex shader", info.vertexShader:buildVertex(mat, shadows))
+		insertHeadered(vertex, "pixel shader", info.pixelShader:buildVertex(mat, shadows))
 		
 		--world
-		insertHeadered(defines, "world shader", info.worldShader:buildDefines(self, mat, shadows))
-		insertHeadered(pixel, "world shader", info.worldShader:buildPixel(self, mat, shadows))
-		insertHeadered(vertex, "world shader", info.worldShader:buildVertex(self, mat, shadows))
+		insertHeadered(defines, "world shader", info.worldShader:buildDefines(mat, shadows))
+		insertHeadered(pixel, "world shader", info.worldShader:buildPixel(mat, shadows))
+		insertHeadered(vertex, "world shader", info.worldShader:buildVertex(mat, shadows))
 		
 		--build code
 		local code = codes.base
@@ -415,7 +414,7 @@ function lib:getParticlesShader(pass, canvases, light, emissive, distortion, sin
 			table.insert(defines, "#define EMISSION_TEXTURE")
 		end
 		if distortion and pass == 2 then
-			table.insert(defines, "#define DISORTION_TEXTURE")
+			table.insert(defines, "#define DISTORTION_TEXTURE")
 		end
 		if self.fog_enabled and canvases.mode ~= "normal" then
 			table.insert(defines, "#define FOG_ENABLED")
@@ -495,13 +494,13 @@ function lib:getLightComponents(light, basic)
 		IDs[light.light_typ] = (IDs[light.light_typ] or -1) + 1
 		local id = light.light_typ .. "_" .. IDs[light.light_typ]
 		
-		insertHeadered(lcInit, id, self.lightShaders[light.light_typ]:constructDefines(self, id))
+		insertHeadered(lcInit, id, self.lightShaders[light.light_typ]:constructDefines(id))
 		
 		local px
 		if basic then
-			px = self.lightShaders[light.light_typ]:constructPixelBasic(self, id)
+			px = self.lightShaders[light.light_typ]:constructPixelBasic(id)
 		else
-			px = self.lightShaders[light.light_typ]:constructPixel(self, id)
+			px = self.lightShaders[light.light_typ]:constructPixel(id)
 		end
 		if px then
 			insertHeadered(lc, id, "{\n" .. px .. "\n}")

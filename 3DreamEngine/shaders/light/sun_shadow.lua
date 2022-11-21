@@ -54,7 +54,7 @@ function sh:constructDefinesGlobalCommon(dream)
 	]]
 end
 
-function sh:constructDefines(dream, ID)
+function sh:constructDefines(ID)
 	return ([[
 	extern float ss_factor_#ID#;
 	extern float ss_distance_#ID#;
@@ -83,7 +83,7 @@ function sh:constructPixelBasicGlobal(dream)
 
 end
 
-function sh:constructPixel(dream, ID)
+function sh:constructPixel(ID)
 	return ([[
 	float bias = mix(1.0, 0.01, dot(normal, ss_vec_#ID#)) / 512.0;
 	float shadow = ]] .. self.func .. [[(vertexPos, ss_pos_#ID#, ss_proj1_#ID#, ss_proj2_#ID#, ss_proj3_#ID#, ss_tex1_#ID#, ss_tex2_#ID#, ss_tex3_#ID#, ss_factor_#ID#, ss_distance_#ID#, ss_fade_#ID#, bias);
@@ -96,7 +96,7 @@ function sh:constructPixel(dream, ID)
 	]]):gsub("#ID#", ID)
 end
 
-function sh:constructPixelBasic(dream, ID)
+function sh:constructPixelBasic(ID)
 	return ([[
 	float bias = 1.0 / 512.0;
 	float shadow = ]] .. self.func .. [[(vertexPos, ss_pos_#ID#, ss_proj1_#ID#, ss_proj2_#ID#, ss_proj3_#ID#, ss_tex1_#ID#, ss_tex2_#ID#, ss_tex3_#ID#, ss_factor_#ID#, ss_distance_#ID#, ss_fade_#ID#, bias);
@@ -105,11 +105,11 @@ function sh:constructPixelBasic(dream, ID)
 	]]):gsub("#ID#", ID)
 end
 
-function sh:sendGlobalUniforms(dream, shaderObject)
+function sh:sendGlobalUniforms(shaderObject)
 	
 end
 
-function sh:sendUniforms(dream, shaderObject, light, ID)
+function sh:sendUniforms(shaderObject, light, ID)
 	local shader = shaderObject.shader
 	
 	if light.shadow.canvases and light.shadow.canvases[3] then
@@ -117,7 +117,7 @@ function sh:sendUniforms(dream, shaderObject, light, ID)
 		shader:send("ss_fade_" .. ID, 4 / light.shadow.cascadeFactor / light.shadow.cascadeFactor)
 		shader:send("ss_distance_" .. ID, 2 / light.shadow.cascadeDistance)
 		
-		shader:send("ss_pos_" .. ID, light.shadow.cams[1].pos)
+		shader:send("ss_pos_" .. ID, light.shadow.cams[1].position)
 		
 		shader:send("ss_proj1_" .. ID, light.shadow.cams[1].transformProj)
 		shader:send("ss_proj2_" .. ID, light.shadow.cams[2].transformProj)

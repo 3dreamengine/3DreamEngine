@@ -16,15 +16,24 @@ end
 _G.mat2 = require((...) .. "/libs/luaMatrices/mat2")
 _G.mat3 = require((...) .. "/libs/luaMatrices/mat3")
 _G.mat4 = require((...) .. "/libs/luaMatrices/mat4")
+require((...) .. "/libs/luaMatrices/mat4Extended")
 
 _G.vec2 = require((...) .. "/libs/luaVectors/vec2")
 _G.vec3 = require((...) .. "/libs/luaVectors/vec3")
 _G.vec4 = require((...) .. "/libs/luaVectors/vec4")
 
 _G.quat = require((...) .. "/libs/quat")
-_G.cimg = require((...) .. "/libs/cimg")
-_G.utils = require((...) .. "/libs/utils")
-_G.packTable = require((...) .. "/libs/packTable")
+
+lib.utils = require((...) .. "/libs/utils")
+lib.cimg = require((...) .. "/libs/cimg")
+lib.packTable = require((...) .. "/libs/packTable")
+lib.xml2lua = require((...) .. "/libs/xml2lua/xml2lua")
+lib.xmlTreeHandler = require((...) .. "/libs/xml2lua/tree")
+lib.json = require((...) .. "/libs/json")
+lib.inspect = require((...) .. "/libs/inspect")
+lib.base64 = require((...) .. "/libs/base64")
+
+table.unpack = table.unpack or unpack
 
 --delton, disabled when not in debug mode
 lib.delton = require((...) .. "/libs/delton"):new(512)
@@ -42,10 +51,12 @@ end
 
 _3DreamEngine = lib
 lib.root = (...)
+if lib.root:find(".", 0, true) then
+	error("Ambiguous dots in require('" .. lib.root .. "'). Use slashes and avoid dots in file paths!")
+end
 
 --load sub modules
 require((...) .. "/functions")
-require((...) .. "/bufferFunctions")
 require((...) .. "/settings")
 require((...) .. "/classes")
 require((...) .. "/shader")
@@ -63,8 +74,8 @@ require((...) .. "/3doExport")
 
 --file loader
 lib.loader = { }
-for d,s in pairs(love.filesystem.getDirectoryItems((...) .. "/loader")) do
-	lib.loader[s:sub(1, #s-4)] = require((...) .. "/loader/" .. s:sub(1, #s-4))
+for _, s in pairs(love.filesystem.getDirectoryItems((...) .. "/loader")) do
+	lib.loader[s:sub(1, #s - 4)] = require((...) .. "/loader/" .. s:sub(1, #s - 4))
 end
 
 --supported canvas formats
@@ -87,7 +98,7 @@ lib:setGamma(true)
 lib:setMaxLights(16)
 lib:setFrustumCheck(true)
 lib:setLODDistance(10)
-lib:setGodrays(false, false)
+lib:setGodrays(false)
 lib:setDistortionMargin(true)
 
 --loader settings
@@ -98,33 +109,33 @@ lib:setMipmaps(true)
 
 --sky
 lib:setDefaultReflection("sky")
-lib:setSky({0.5, 0.5, 0.5})
+lib:setSky({ 0.5, 0.5, 0.5 })
 lib:setSkyReflectionFormat(256, "rgba16f", false)
 
 --auto exposure
 lib:setAutoExposure(false)
 
 --canvas set settings
-lib.renderSet = lib:newSetSettings()
-lib.renderSet:setRefractions(true)
-lib.renderSet:setMode("normal")
+lib.canvases = lib:newCanvases()
+lib.canvases:setRefractions(true)
+lib.canvases:setMode("normal")
 
-lib.reflectionsSet = lib:newSetSettings()
-lib.reflectionsSet:setMode("direct")
+lib.reflectionCanvases = lib:newCanvases()
+lib.reflectionCanvases:setMode("direct")
 
-lib.mirrorSet = lib:newSetSettings()
-lib.mirrorSet:setMode("lite")
-
-lib.shadowSet = lib:newSetSettings()
+--lib.mirrorCanvases = lib:newCanvases()
+--lib.mirrorCanvases:setMode("lite")
 
 --default camera
-lib.cam = lib:newCamera()
+lib.camera = lib:newCamera()
 
 --default scene
 lib.scene = lib:newScene()
 
 --hardcoded mipmap count, do not change
 lib.reflectionsLevels = 6
+
+lib.version_3DO = 6
 
 --default meshFormats
 lib.meshFormats = { }
@@ -140,23 +151,23 @@ if love.graphics then
 	lib.skyObject = lib:loadObject(lib.root .. "/objects/sky")
 	lib.cubeObject = lib:loadObject(lib.root .. "/objects/cube")
 	lib.planeObject = lib:loadObject(lib.root .. "/objects/plane")
-
+	
 	--default textures
 	local pix = love.image.newImageData(2, 2)
 	lib.textures = {
 		default = love.graphics.newImage(lib.root .. "/res/default.png"),
 		godray = love.graphics.newImage(lib.root .. "/res/godray.png"),
 		defaultNormal = love.graphics.newImage(lib.root .. "/res/defaultNormal.png"),
-		skyFallback = love.graphics.newCubeImage({pix, pix, pix, pix, pix, pix}),
+		skyFallback = love.graphics.newCubeImage({ pix, pix, pix, pix, pix, pix }),
 	}
 	lib.textures.godray:setWrap("repeat", "repeat")
-
+	
 	lib.textures.noise = love.graphics.newImage(lib.root .. "/res/noise.png")
 	lib.textures.noise:setWrap("repeat")
-
+	
 	lib.textures.foam = love.graphics.newImage(lib.root .. "/res/foam.png")
 	lib.textures.foam:setWrap("repeat")
-
+	
 	--load textures once actually needed
 	lib.initTextures = { }
 	function lib.initTextures:PBR()
@@ -167,96 +178,32 @@ if love.graphics then
 	end
 end
 
---a canvas set is used to render a scene to
-function lib:newCanvasSet(settings, w, h)
-	local set = { }
-	w = w or settings.resolution
-	h = h or settings.resolution
-	
-	--settings
-	set.width = w
-	set.height = h
-	set.msaa = settings.msaa
-	set.mode = settings.mode
-	set.refractions = settings.alphaPass and settings.refractions and settings.mode == "normal"
-	set.format = settings.format
-	set.alphaPass = settings.alphaPass
-	
-	if settings.mode ~= "direct" then
-		--depth
-		set.depth_buffer = love.graphics.newCanvas(w, h, {format = self.canvasFormats["depth32f"] and "depth32f" or self.canvasFormats["depth24"] and "depth24" or "depth16", readable = false, msaa = set.msaa})
-		
-		--temporary HDR color
-		set.color = love.graphics.newCanvas(w, h, {format = settings.format, readable = true, msaa = set.msaa})
-		
-		--additional color if using refractions
-		if set.refractions then
-			set.colorAlpha = love.graphics.newCanvas(w, h, {format = "rgba16f", readable = true, msaa = set.msaa})
-			set.distortion = love.graphics.newCanvas(w, h, {format = "rg16f", readable = true, msaa = set.msaa})
-		end
-		
-		--depth
-		set.depth = love.graphics.newCanvas(w, h, {format = "r16f", readable = true, msaa = set.msaa})
-	end
-	
-	--screen space ambient occlusion blurring canvases
-	if self.AO_enabled and settings.mode ~= "direct" then
-		set.AO_1 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
-		if self.AO_blur then
-			set.AO_2 = love.graphics.newCanvas(w*self.AO_resolution, h*self.AO_resolution, {format = "r8", readable = true, msaa = 0})
-		end
-	end
-	
-	--post effects
-	if settings.mode == "normal" then
-		--bloom blurring canvases
-		if self.bloom_enabled then
-			set.bloom_1 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = settings.format, readable = true, msaa = 0})
-			set.bloom_2 = love.graphics.newCanvas(w*self.bloom_resolution, h*self.bloom_resolution, {format = settings.format, readable = true, msaa = 0})
-		end
-	end
-	
-	return set
-end
-
---release set and free memory
-function lib:unloadCanvasSet(set)
-	if set then
-		for d,s in pairs(set) do
-			if type(set) == "userdata" and set.release then
-				set:release()
-			end
-		end
-	end
-end
-
---load canvases
+---Reload canvases
+---@param w number
+---@param h number
 function lib:resize(w, h)
 	w = w or love.graphics.getWidth()
 	h = h or love.graphics.getHeight()
 	
-	--fully unload previous sets
-	self:unloadCanvasSet(self.canvases)
-	self:unloadCanvasSet(self.canvases_reflections)
-	self:unloadCanvasSet(self.canvases_mirror)
-	
 	--canvases sets
-	self.canvases = self:newCanvasSet(self.renderSet, w, h)
-	self.canvases_reflections = self:newCanvasSet(self.reflectionsSet)
-	self.canvases_mirror = self:newCanvasSet(self.mirrorSet, w, h)
+	self.canvases:init(w, h)
+	self.reflectionCanvases:init()
+	--self.mirrorCanvases:init(w, h)
 end
 
---applies settings and load canvases
+---Applies settings and load canvases
+---@param w number
+---@param h number
 function lib:init(w, h)
-	if self.renderSet.mode == "direct" then
+	if self.canvases.mode == "direct" then
 		local width, height, flags = love.window.getMode()
 		if flags.depth == 0 then
 			print("Direct render is enabled, but there is no depth buffer! Using 16-bit depth from now on.")
-			love.window.updateMode(width, height, {depth = 16})
+			love.window.updateMode(width, height, { depth = 16 })
 		end
 	end
 	
-	if self.autoExposure_enabled and self.renderSet.mode == "direct" then
+	if self.autoExposure_enabled and self.canvases.mode == "direct" then
 		print("Autoexposure does not work with direct render! Autoexposure has been disabled.")
 		self:setAutoExposure(false)
 	end
@@ -271,7 +218,7 @@ function lib:init(w, h)
 	self:loadShader()
 	
 	--reset lighting
-	for _,l in pairs(self.lighting or { }) do
+	for _, l in pairs(self.lighting or { }) do
 		if l.shadow then
 			l.shadow:clear()
 		end
@@ -280,7 +227,7 @@ function lib:init(w, h)
 	
 	--sky box
 	if self.defaultReflection == "sky" then
-		self.defaultReflectionCanvas = love.graphics.newCanvas(self.sky_resolution, self.sky_resolution, {format = self.sky_format, readable = true, msaa = 0, type = "cube", mipmaps = "manual"})
+		self.defaultReflectionCanvas = love.graphics.newCanvas(self.sky_resolution, self.sky_resolution, { format = self.sky_format, readable = true, msaa = 0, type = "cube", mipmaps = "manual" })
 	else
 		self.defaultReflectionCanvas = false
 	end
@@ -288,7 +235,7 @@ function lib:init(w, h)
 	self:initJobs()
 end
 
---clears the current scene
+---Clears the current scene
 function lib:prepare()
 	self.lighting = { }
 	
@@ -297,8 +244,8 @@ function lib:prepare()
 	lib:drawScene(self.scene)
 	self.scene:clear()
 	
-	self.particleBatches = {{}, {}}
-	self.particles = {{}, {}}
+	self.particleBatches = { {}, {} }
+	self.particles = { {}, {} }
 	
 	--keep track of reflections
 	self.lastReflections = self.reflections or { }
@@ -311,7 +258,15 @@ function lib:prepare()
 	self.stats.draws = 0
 end
 
---add an object to the default scene
+---draw
+---@param object DreamObject
+---@param x number
+---@param y number
+---@param z number
+---@param sx number
+---@param sy number
+---@param sz number
+---@overload fun(object: DreamObject)
 function lib:draw(object, x, y, z, sx, sy, sz)
 	--prepare transform matrix
 	local transform
@@ -323,7 +278,7 @@ function lib:draw(object, x, y, z, sx, sy, sz)
 			0, sy or sx or 1, 0, y,
 			0, 0, sz or sx or 1, z,
 			0, 0, 0, 1
-		}) 
+		})
 		dynamic = true
 	end
 	
@@ -333,12 +288,29 @@ function lib:draw(object, x, y, z, sx, sy, sz)
 	self.delton:stop()
 end
 
---will render this scene
+---Add a light
+---@param light DreamLight
+function lib:addLight(light)
+	table.insert(self.lighting, light)
+end
+
+---Add a new simple light
+---@param typ string
+---@param position "vec3"
+---@param color "vec3"
+---@param brightness number
+function lib:addNewLight(typ, position, color, brightness)
+	self:addLight(self:newLight(typ, position, color, brightness))
+end
+
+---Will render this scene
+---@param scene DreamScene
 function lib:drawScene(scene)
 	self.scenes[scene] = true
 end
 
---will render this batch
+---Will render this batch
+---@param batch DreamParticleBatch
 function lib:drawParticleBatch(batch)
 	local ID = (batch.emissionTexture and 2 or 1) + (batch.distortionTexture and 2 or 0)
 	local bt = self.particleBatches[batch.alpha and 2 or 1]
@@ -346,21 +318,26 @@ function lib:drawParticleBatch(batch)
 	bt[ID][batch] = true
 end
 
---draw a particle
+---Draw a single particle
+---@param particle DreamParticle
+---@param quad Quad
+---@param x number
+---@param y number
+---@param z number
 function lib:drawParticle(particle, quad, x, y, z, ...)
 	assert(particle.class == "particle", "create a particle object and pass it here")
-	local particle = particle:clone()
+	particle = particle:clone()
 	
 	if type(quad) == "userdata" then
 		particle.quad = quad
-		particle.position = {x or 0, y or 0, z or 0}
-		particle.transform = {...}
+		particle.position = { x or 0, y or 0, z or 0 }
+		particle.transform = { ... }
 	else
 		particle.quad = nil
-		particle.position = {quad or 0, x or 0, y or 0}
-		particle.transform = {z, ...}
+		particle.position = { quad or 0, x or 0, y or 0 }
+		particle.transform = { z, ... }
 	end
-	particle.color = {love.graphics.getColor()}
+	particle.color = { love.graphics.getColor() }
 	
 	local p = self.particles[particle.alpha and 2 or 1]
 	local id = particle:getID()

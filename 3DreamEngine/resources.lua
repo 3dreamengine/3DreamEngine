@@ -9,10 +9,9 @@ local lib = _3DreamEngine
 lib.threads = { }
 
 lib.texturesLoaded = { }
-lib.thumbnailsLoaded = { }
 
---start the threads (all except 2 cores planned for renderer and seperate client thread)
-for i = 1, math.max(1, require("love.system").getProcessorCount()-2) do
+--start the threads (all except 2 cores planned for renderer and separate client thread)
+for i = 1, math.max(1, require("love.system").getProcessorCount() - 2) do
 	lib.threads[i] = love.thread.newThread(lib.root .. "/thread.lua")
 	lib.threads[i]:start()
 end
@@ -31,12 +30,12 @@ function lib:getLoaderThreadUsage()
 end
 
 --scan for image files and adds path to image library
-local imageFormats = table.toSet({"tga", "png", "gif", "bmp", "exr", "hdr", "dds", "dxt", "pkm", "jpg", "jpe", "jpeg", "jp2"})
+local imageFormats = table.toSet({ "tga", "png", "gif", "bmp", "exr", "hdr", "dds", "dxt", "pkm", "jpg", "jpe", "jpeg", "jp2" })
 local images = { }
 local priority = { }
 local function scan(path)
 	if path:sub(1, 1) ~= "." then
-		for d,s in ipairs(love.filesystem.getDirectoryItems(path)) do
+		for _, s in ipairs(love.filesystem.getDirectoryItems(path)) do
 			if love.filesystem.getInfo(path .. "/" .. s, "directory") then
 				scan(path .. (#path > 0 and "/" or "") .. s)
 			else
@@ -75,7 +74,7 @@ function lib:update()
 			local t = love.timer.getTime()
 			
 			--prepare buffer
-			bufferData:paste(s.data, 0, 0, s.x*bufferSize, s.y*bufferSize, math.min(bufferSize, s.width - bufferSize*s.x), math.min(bufferSize, s.height - bufferSize*s.y))
+			bufferData:paste(s.data, 0, 0, s.x * bufferSize, s.y * bufferSize, math.min(bufferSize, s.width - bufferSize * s.x), math.min(bufferSize, s.height - bufferSize * s.y))
 			buffer:replacePixels(bufferData)
 			
 			--render
@@ -83,7 +82,7 @@ function lib:update()
 			love.graphics.reset()
 			love.graphics.setBlendMode("replace", "premultiplied")
 			love.graphics.setCanvas(s.canvas)
-			love.graphics.draw(buffer, s.x*bufferSize, s.y*bufferSize)
+			love.graphics.draw(buffer, s.x * bufferSize, s.y * bufferSize)
 			love.graphics.pop()
 			
 			--next chunk
@@ -118,7 +117,7 @@ function lib:update()
 		--image
 		local width, height = msg[3]:getDimensions()
 		if self.textures_smoothLoading and math.max(width, height) > bufferSize and not msg[4] then
-			local canvas = love.graphics.newCanvas(width, height, {mipmaps = self.textures_mipmaps and "manual" or "none"})
+			local canvas = love.graphics.newCanvas(width, height, { mipmaps = self.textures_mipmaps and "manual" or "none" })
 			
 			--settings
 			canvas:setWrap("repeat", "repeat")
@@ -134,7 +133,7 @@ function lib:update()
 				height = height,
 			}
 		else
-			local tex = love.graphics.newImage(msg[3], {mipmaps = self.textures_mipmaps})
+			local tex = love.graphics.newImage(msg[3], { mipmaps = self.textures_mipmaps })
 			
 			--settings
 			tex:setWrap("repeat", "repeat")
@@ -153,7 +152,7 @@ function lib:clearLoadedTextures()
 	self.texturesLoaded = { }
 end
 function lib:clearLoadedCanvases()
-	for d,s in pairs(self.texturesLoaded) do
+	for d, s in pairs(self.texturesLoaded) do
 		if type(s) == "userdata" and s:typeOf("Canvas") then
 			self.texturesLoaded[d] = nil
 		end
@@ -169,7 +168,6 @@ function lib:getImagePaths()
 end
 
 --get a texture, load it threaded if enabled and therefore may return nil first
---if a thumbnail is provided, it may return the thumbnail until fully loaded
 function lib:getImage(path, force)
 	if type(path) == "userdata" then
 		return path
@@ -177,62 +175,42 @@ function lib:getImage(path, force)
 	if not path then
 		return false
 	end
-	
-	--skip threaded loading
-	if force or not self.textures_threaded and type(path) == "string" then
-		if not self.texturesLoaded[path] then
-			self.texturesLoaded[path] = love.graphics.newImage(path, {mipmaps = self.textures_mipmaps})
-			self.texturesLoaded[path]:setWrap("repeat", "repeat")
-		end
-		return self.texturesLoaded[path]
+	if type(path) == "string" then
+		path = {
+			task = "image",
+			path = path
+		}
 	end
 	
-	--request image load, table indicates a thread instruction, e.g. a RMA combine request
-	local tex = self.texturesLoaded[path] or self.thumbnailsLoaded[path] or type(path) == "table" and self.texturesLoaded[path[2]]
-	if not tex and self.texturesLoaded[path] == nil then
+	--skip threaded loading
+	if force or not self.textures_threaded and path.task == "image" then
+		if not self.texturesLoaded[path.path] then
+			self.texturesLoaded[path.path] = love.graphics.newImage(path.path, { mipmaps = self.textures_mipmaps })
+			self.texturesLoaded[path.path]:setWrap("repeat", "repeat")
+		end
+		return self.texturesLoaded[path.path]
+	end
+	
+	--request image load
+	local tex = self.texturesLoaded[path.path]
+	if tex == nil then
 		--mark as in progress
-		self.texturesLoaded[path] = false
+		self.texturesLoaded[path.path] = false
 		
-		if type(path) == "table" then
-			--advanced instructions
-			if self.texturesLoaded[path[2]] == nil then
-				self.texturesLoaded[path[2]] = false
-				self.channel_jobs:push(path)
-				path = path[2]
-			else
-				path = false
-			end
-		else
-			--request texture load
-			self.channel_jobs:push({"image", path})
-		end
-		
-		--try to detect thumbnails
-		if path then
-			local base = path:match("(.*)[.].*")
-			if base then
-				local path_thumb = self:getImagePath(base .. "_thumb")
-				if path_thumb then
-					self.thumbnailsLoaded[path] = love.graphics.newImage(path_thumb)
-					self.thumbnailsLoaded[path]:setWrap("repeat")
-				end
-			end
-		end
+		--request texture load
+		self.channel_jobs:push(path)
 	end
 	
 	return tex
 end
 
 --combine 3 textures to use only one texture
-function lib:combineTextures(roughness, metallic, AO)
-	local path = roughness or metallic or (AO .. "_material")
-	
-	--remove extension
-	path = path:match("(.+)%..+")
-	
-	--replace typ
-	path:gsub("roughness", "material")
-	path:gsub("metallic", "material")
-	
-	return {"combine", path, roughness, metallic, AO}
+function lib:combineTextures(metallic, roughness, AO)
+	return {
+		task = "combine",
+		path = tostring(metallic) .. tostring(roughness) .. tostring(AO),
+		metallic = metallic,
+		roughness = roughness,
+		AO = AO
+	}
 end

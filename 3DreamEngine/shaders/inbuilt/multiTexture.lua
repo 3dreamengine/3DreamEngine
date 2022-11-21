@@ -1,40 +1,40 @@
+local dream = _3DreamEngine
+
 local sh = { }
 
 sh.type = "pixel"
 
-sh.meshType = "textured"
+sh.meshFormat = "textured"
 
-function sh:getId(dream, mat, shadow)
+function sh:getId(mat, shadow)
 	if shadow then
 		return (mat.discard and 1 or 0)
 	else
-		return (mat.normalTexture and 1 or 0) * 2^1 + (mat.emissionTexture and 1 or 0) * 2^2 + (mat.discard and not mat.dither and 1 or 0) * 2^3 + (mat.dither and 1 or 0) * 2^4
+		return (mat.normalTexture and 1 or 0) * 2 ^ 1 + (mat.emissionTexture and 1 or 0) * 2 ^ 2 + (mat.discard and not mat.dither and 1 or 0) * 2 ^ 3 + (mat.dither and 1 or 0) * 2 ^ 4
 	end
 end
 
-function sh:initMesh(dream, mesh)
-	if mesh:getMesh("mesh") then
-		if not mesh:getMesh("uv2Mesh") then
-			assert(mesh.colors, "To use the multiTetxure shader the color buffer should contain the blending factor.")
-			mesh.uv2Mesh = love.graphics.newMesh({
-				{"VertexBlend", "float", 1},
-				{"VertexTexCoord2", "float", 2},
-			}, #mesh.colors, "triangles", "static")
-			
-			--create mesh
-			local scale = mesh.texCoords2 and 1.0 or (mesh.multiTextureUV2Scale or 1.0)
-			for d,c in ipairs(mesh.colors) do
-				local uv = (mesh.texCoords2 or mesh.texCoords)[d]
-				mesh.uv2Mesh:setVertex(d, c[mesh.multiTextureColorChannel or 1], uv[1] * scale, uv[2] * scale)
-			end
-		end
+function sh:initMesh(mesh)
+	if not mesh:getMesh("uv2Mesh") then
+		assert(mesh.colors, "To use the multiTetxure shader the color buffer should contain the blending factor.")
+		mesh.uv2Mesh = love.graphics.newMesh({
+			{ "VertexBlend", "float", 1 },
+			{ "VertexTexCoord2", "float", 2 },
+		}, #mesh.colors, "triangles", "static")
 		
-		mesh:getMesh("mesh"):attachAttribute("VertexBlend", mesh:getMesh("uv2Mesh"))
-		mesh:getMesh("mesh"):attachAttribute("VertexTexCoord2", mesh:getMesh("uv2Mesh"))
+		--create mesh
+		local scale = mesh.texCoords2 and 1.0 or (mesh.multiTextureUV2Scale or 1.0)
+		for d, c in ipairs(mesh.colors) do
+			local uv = (mesh.texCoords2 or mesh.texCoords)[d]
+			mesh.uv2Mesh:setVertex(d, c[mesh.multiTextureColorChannel or 1], uv[1] * scale, uv[2] * scale)
+		end
 	end
+	
+	mesh:getMesh():attachAttribute("VertexBlend", mesh:getMesh("uv2Mesh"))
+	mesh:getMesh():attachAttribute("VertexTexCoord2", mesh:getMesh("uv2Mesh"))
 end
 
-function sh:buildDefines(dream, mat, shadow)
+function sh:buildDefines(mat, shadow)
 	return [[
 		]] .. (mat.normalTexture and "#define NORMAL_TEXTURE\n" or "") .. [[
 		]] .. (mat.normalTexture and "#define TANGENT\n" or "") .. [[
@@ -85,7 +85,7 @@ function sh:buildDefines(dream, mat, shadow)
 	]]
 end
 
-function sh:buildPixel(dream, mat)
+function sh:buildPixel(mat)
 	return [[
 	//blending
 	float blend = clamp(VaryingBlend * 2.0 - 0.5 + Texel(blendTexture, VaryingTexCoord.xy * multiTextureBlendScale).r * 0.5, 0.0, 1.0);
@@ -123,12 +123,12 @@ function sh:buildPixel(dream, mat)
 		blend
 	);
 	
-	roughness = material.x;
-	metallic = material.y;
+	metallic = material.x;
+	roughness = material.y;
 	ao = material.z;
 #else
-	roughness = mix(materialColor1.x, materialColor2.x, blend);
-	metallic = mix(materialColor1.y, materialColor2.y, blend);
+	metallic = mix(materialColor1.x, materialColor2.x, blend);
+	roughness = mix(materialColor1.y, materialColor2.y, blend);
 #endif
 	
 	//emission
@@ -160,18 +160,18 @@ function sh:buildPixel(dream, mat)
 	]]
 end
 
-function sh:buildVertex(dream, mat)
+function sh:buildVertex(mat)
 	return [[
 	VaryingTexCoord2 = VertexTexCoord2;
 	VaryingBlend = VertexBlend;
 	]]
 end
 
-function sh:perShader(dream, shaderObject)
+function sh:perShader(shaderObject)
 
 end
 
-function sh:perMaterial(dream, shaderObject, material)
+function sh:perMaterial(shaderObject, material)
 	local shader = shaderObject.shader
 	
 	local tex = dream.textures
@@ -191,8 +191,8 @@ function sh:perMaterial(dream, shaderObject, material)
 		shader:send("materialTexture1", dream:getImage(material.materialTexture) or tex.default)
 		shader:send("materialTexture2", dream:getImage(material2.materialTexture) or tex.default)
 	end
-	shader:send("materialColor1", {material.roughness, material.metallic})
-	shader:send("materialColor2", {material2.roughness, material2.metallic})
+	shader:send("materialColor1", { material.metallic, material.roughness })
+	shader:send("materialColor2", { material2.metallic, material2.roughness })
 	
 	if shader:hasUniform("normalTexture1") then
 		shader:send("normalTexture1", dream:getImage(material.normalTexture) or tex.defaultNormal)
@@ -208,7 +208,7 @@ function sh:perMaterial(dream, shaderObject, material)
 	shader:send("emissionColor2", material2.emission)
 end
 
-function sh:perTask(dream, shaderObject, task)
+function sh:perTask(shaderObject, task)
 
 end
 

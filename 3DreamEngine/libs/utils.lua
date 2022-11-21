@@ -9,20 +9,20 @@ local utils = {
 -- love dependency
 --recursively delete files
 function utils.filesystem.removeRecursive(item)
-    if love.filesystem.getInfo(item, "directory") then
-        for _, child in pairs(love.filesystem.getDirectoryItems(item)) do
-            utils.filesystem.removeRecursive(item .. '/' .. child)
-        end
-    end
-    love.filesystem.remove(item)
+	if love.filesystem.getInfo(item, "directory") then
+		for _, child in pairs(love.filesystem.getDirectoryItems(item)) do
+			utils.filesystem.removeRecursive(item .. '/' .. child)
+		end
+	end
+	love.filesystem.remove(item)
 end
 
 function utils.filesystem.getSize(item)
 	if love.filesystem.getInfo(item, "directory") then
 		local size = 0
-        for _, child in pairs(love.filesystem.getDirectoryItems(item)) do
-            size = size + utils.filesystem.getSize(item .. '/' .. child)
-        end
+		for _, child in pairs(love.filesystem.getDirectoryItems(item)) do
+			size = size + utils.filesystem.getSize(item .. '/' .. child)
+		end
 		return size
 	else
 		local i = love.filesystem.getInfo(item)
@@ -38,7 +38,7 @@ function utils.table.merge(first, second, cycles)
 		return first
 	end
 	cycles[first] = true
-	for k,v in pairs(second) do
+	for k, v in pairs(second) do
 		if type(v) == "table" then
 			if type(first[k]) == type(v) then
 				utils.table.merge(first[k], v, cycles)
@@ -56,7 +56,7 @@ end
 function utils.table.mergeCycles(first, second, cycles)
 	cycles = cycles or { }
 	cycles[second] = true
-	for k,v in pairs(second) do
+	for k, v in pairs(second) do
 		if type(v) == "table" then
 			if not first[k] then
 				first[k] = v
@@ -73,7 +73,7 @@ end
 --copy a table
 function utils.table.copy(first_table)
 	local second_table = { }
-	for k,v in pairs(first_table) do
+	for k, v in pairs(first_table) do
 		if type(v) == "table" then
 			second_table[k] = utils.table.copy(v)
 		else
@@ -85,22 +85,22 @@ end
 
 --copy a table, supports metatables and recursions
 function utils.table.deepCopy(value, cycles)
-    cycles = cycles or { }
-    if type(value) == "table" then
-        if cycles[value] then
-            return cycles[value]
-        else
-            local copy = { }
-            cycles[value] = copy
-            for k, v in next, value do
-                copy[utils.table.deepCopy(k, cycles)] = utils.table.deepCopy(v, cycles)
-            end
+	cycles = cycles or { }
+	if type(value) == "table" then
+		if cycles[value] then
+			return cycles[value]
+		else
+			local copy = { }
+			cycles[value] = copy
+			for k, v in next, value do
+				copy[utils.table.deepCopy(k, cycles)] = utils.table.deepCopy(v, cycles)
+			end
 			local meta = utils.table.deepCopy(getmetatable(value), cycles)
-            return setmetatable(copy, meta)
-        end
-    else
-        return value
-    end
+			return setmetatable(copy, meta)
+		end
+	else
+		return value
+	end
 end
 
 --copies a table, ignores complex objects
@@ -110,29 +110,29 @@ local valid = {
 	boolean = true,
 }
 function utils.table.primitiveCopy(value, cycles)
-    cycles = cycles or { }
-    if type(value) == "table" then
-        if cycles[value] then
-            return cycles[value]
-        else
-            local copy = { }
-            cycles[value] = copy
-            for k, v in next, value do
+	cycles = cycles or { }
+	if type(value) == "table" then
+		if cycles[value] then
+			return cycles[value]
+		else
+			local copy = { }
+			cycles[value] = copy
+			for k, v in next, value do
 				if valid[type(k)] and (valid[type(v)] or type(v) == "table") then
 					copy[k] = utils.table.primitiveCopy(v, cycles)
 				end
-            end
-            return copy
-        end
-    else
-        return value
-    end
+			end
+			return copy
+		end
+	else
+		return value
+	end
 end
 
 --flat copy a table
 function utils.table.flatCopy(first_table)
 	local second_table = { }
-	for k,v in pairs(first_table) do
+	for k, v in pairs(first_table) do
 		second_table[k] = v
 	end
 	return second_table
@@ -144,11 +144,11 @@ function utils.table.print(t, tab)
 		print()
 	end
 	tab = tab or 0
-	for d,s in pairs(t) do
-		local p = string.rep(" ", tab*2) .. (next(t, d) and "├─" or "└─") .. tostring(d)
+	for d, s in pairs(t) do
+		local p = string.rep(" ", tab * 2) .. (next(t, d) and "├─" or "└─") .. tostring(d)
 		if type(s) == "table" then
 			print(p)
-			utils.table.print(s, tab+1)
+			utils.table.print(s, tab + 1)
 		else
 			print(p .. " = " .. tostring(s))
 		end
@@ -158,7 +158,7 @@ end
 --invert indices and values to produce a set
 function utils.table.toSet(t)
 	local n = { }
-	for d,s in ipairs(t) do
+	for d, s in ipairs(t) do
 		n[s] = d
 	end
 	return n
@@ -166,7 +166,7 @@ end
 
 --finds a value in a table and returns its index, or false of not present
 function utils.table.find(t, v)
-	for d,s in pairs(t) do
+	for d, s in pairs(t) do
 		if s == v then
 			return d
 		end
@@ -177,15 +177,16 @@ end
 
 -- STRING --
 function utils.string.split(text, sep)
-	local sep, fields = sep or ":", { }
+	sep = sep or ":"
+	local fields = { }
 	local pattern = string.format("([^%s]+)", sep)
-	text:gsub(pattern, function(c) fields[#fields+1] = c end)
+	text:gsub(pattern, function(c) table.insert(fields, c) end)
 	return fields
 end
 
 --formats a value of type "bytes", "bits" or "number" with given exponent (or 1000) and decimal places (number type only)
-local prefix_l = {"k", "M", "G", "T", "P", "E", "Z", "Y"}
-local prefix_s = {"m", "μ", "n", "p", "f", "a", "z", "y"}
+local prefix_l = { "k", "M", "G", "T", "P", "E", "Z", "Y" }
+local prefix_s = { "m", "μ", "n", "p", "f", "a", "z", "y" }
 function utils.string.formatSize(value, typ, exp, decimals)
 	exp = exp or 1000
 	typ = typ or "number"
@@ -206,7 +207,7 @@ function utils.string.formatSize(value, typ, exp, decimals)
 	end
 	
 	if typ == "bytes" then
-		value = math.floor(value+0.5)
+		value = math.floor(value + 0.5)
 		if factor == 0 then
 			return tostring(value) .. " B"
 		elseif factor < 0 then
@@ -215,7 +216,7 @@ function utils.string.formatSize(value, typ, exp, decimals)
 			return tostring(value) .. " " .. (prefix_l[factor] or "?") .. (exp == 1024 and "iB" or "B")
 		end
 	elseif typ == "bits" then
-		value = math.floor(value+0.5)
+		value = math.floor(value + 0.5)
 		if factor == 0 then
 			return tostring(value) .. " b"
 		elseif factor < 0 then
@@ -239,12 +240,12 @@ end
 
 -- MATH --
 function utils.math.round(num, numDecimalPlaces)
-	local mult = 10^(numDecimalPlaces or 0)
+	local mult = 10 ^ (numDecimalPlaces or 0)
 	return math.floor(num * mult + 0.5) / mult
 end
 
 function utils.math.mix(a, b, f)
-	return a * (1.0 - f) + b * f 
+	return a * (1.0 - f) + b * f
 end
 
 function utils.math.clamp(v, a, b)
@@ -257,8 +258,8 @@ end
 
 
 --merge utils into lua tables
-for _,s in ipairs({"table", "string", "math"}) do
-	setmetatable(_G[s], {__index = utils[s]})
+for _, s in ipairs({ "table", "string", "math" }) do
+	setmetatable(_G[s], { __index = utils[s] })
 end
 
 return utils

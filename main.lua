@@ -25,6 +25,7 @@ local descriptions = {
 	["particlesystem"] = "Small particle system example.",
 	["game"] = "Unfinished collision demo.",
 	["knight"] = "MagicaVoxel demo.",
+	["manyMonkeys"] = "Demo on how to use instancing and object merging to achieve higher performance.",
 }
 
 local mousereleased = false
@@ -65,13 +66,7 @@ end
 function love.load()
 	local default = love.filesystem.read("default")
 	if default and default ~= "" then
-		if default == "ShaderEditor" then
-			require("ShaderEditor/main")
-		elseif default == "TextureTool" then
-			require("TextureTool/main")
-		else
-			require("examples/" .. love.filesystem.read("default") .. "/main")
-		end
+		require("examples/" .. love.filesystem.read("default") .. "/main")
 	end
 end
 
@@ -96,18 +91,6 @@ function love.draw()
 			require("examples/" .. s .. "/main")
 			return
 		end
-	end
-	
-	--launch shader editor
-	local hover = button("Shader Editor", 300, 50, 200, 30)
-	if hover and mousereleased then
-		require("ShaderEditor/main")
-	end
-	
-	--launch texture tool
-	local hover = button("Texture Tool", 300, 50 + 35, 200, 30)
-	if hover and mousereleased then
-		require("TextureTool/main")
 	end
 	
 	mousereleased = false

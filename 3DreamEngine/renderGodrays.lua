@@ -9,12 +9,12 @@ function lib:renderGodrays(light, canvases, cam)
 	local colors = { }
 	local sizes = { }
 	for d,s in ipairs(light.lights) do
-		if s.godrays then
+		if s.godray then
 			local pos
 			if s.typ == "sun" then
 				pos = cam.transformProjOrigin * vec4(s.direction.x, s.direction.y, s.direction.z, 1.0)
 			else
-				pos = cam.transformProj * vec4(s.pos.x, s.pos.y, s.pos.z, 1.0)
+				pos = cam.transformProj * vec4(s.position.x, s.position.y, s.position.z, 1.0)
 			end
 			pos = vec3(pos.x / pos.w * 0.5 + 0.5, pos.y / pos.w * 0.5 + 0.5, pos.z)
 			

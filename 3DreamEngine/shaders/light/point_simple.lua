@@ -12,7 +12,7 @@ function sh:constructDefinesGlobal(dream)
 	]]
 end
 
-function sh:constructDefines(dream, ID)
+function sh:constructDefines(ID)
 	
 end
 
@@ -41,15 +41,15 @@ function sh:constructPixelBasicGlobal(dream)
 	]])
 end
 
-function sh:constructPixel(dream, ID)
+function sh:constructPixel(ID)
 
 end
 
-function sh:constructPixelBasic(dream, ID)
+function sh:constructPixelBasic(ID)
 
 end
 
-function sh:sendGlobalUniforms(dream, shaderObject, count, lighting)
+function sh:sendGlobalUniforms(shaderObject, count, lighting)
 	local shader = shaderObject.shader
 	
 	local colors = { }
@@ -58,7 +58,7 @@ function sh:sendGlobalUniforms(dream, shaderObject, count, lighting)
 	for d,s in ipairs(lighting) do
 		if s.light_typ == "point_simple" then
 			table.insert(colors, s.color * s.brightness)
-			table.insert(pos, s.pos)
+			table.insert(pos, s.position)
 			table.insert(attenuation, -s.attenuation)
 		end
 	end
@@ -69,7 +69,7 @@ function sh:sendGlobalUniforms(dream, shaderObject, count, lighting)
 	shader:send("point_simple_attenuation", unpack(attenuation))
 end
 
-function sh:sendUniforms(dream, shaderObject, light, ID)
+function sh:sendUniforms(shaderObject, light, ID)
 	
 end
 

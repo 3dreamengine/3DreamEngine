@@ -9,20 +9,22 @@ local lib = _3DreamEngine
 local function loadParticles(self, particleSystems)
 	for _, ps in ipairs(particleSystems) do
 		--default values
-		ps.size = ps.size or {0.75, 1.25}
+		ps.size = ps.size or { 0.75, 1.25 }
 		ps.rotation = ps.rotation or 0.0
 		ps.tilt = ps.tilt ~= false
 		
 		ps.input = ps.input or { }
 		
 		ps.loadedObjects = { }
-		for i,v in pairs(ps.objects) do
-			local o = self:loadObject(i, {cleanup = false, mesh = false, particleSystems = false})
+		for i, v in pairs(ps.objects) do
+			local o = self:loadObject(i, { cleanup = false, mesh = false, particleSystems = false })
 			
 			--extract meshes
-			for d,s in pairs(o.meshes) do
-				s.particleDensity = v
-				table.insert(ps.loadedObjects, s)
+			for _, mesh in pairs(o.meshes) do
+				if mesh.vertices then
+					mesh.particleDensity = v
+					table.insert(ps.loadedObjects, mesh)
+				end
 			end
 		end
 	end
@@ -37,21 +39,22 @@ local ones = {
 		return 1
 	end,
 }
-local function getInput(input, o, f)
+local function getInput(input, mesh, face)
 	if input then
-		local b = o[input.buffer or "colors"]
+		error()
+		local b = mesh[input.buffer or "colors"]
 		if not b then
-			error("buffer " .. tostring(input.buffer or "colors") .. " does not exist!")
+			error("Buffer " .. tostring(input.buffer or "colors") .. " does not exist!")
 		end
 		local dat = input.invert and {
-			(1 - b[f[1]][input.channel]) * (input.mul or 1.0) + (input.add or 0.0),
-			(1 - b[f[2]][input.channel]) * (input.mul or 1.0) + (input.add or 0.0),
-			(1 - b[f[3]][input.channel]) * (input.mul or 1.0) + (input.add or 0.0)
-		} or #o.colors > 0 and {
-			b[f[1]][input.channel] * (input.mul or 1.0) + (input.add or 0.0),
-			b[f[2]][input.channel] * (input.mul or 1.0) + (input.add or 0.0),
-			b[f[3]][input.channel] * (input.mul or 1.0) + (input.add or 0.0)
-		} or {0, 0, 0}
+			(1 - b:getVector(face.x)[input.channel]) * (input.mul or 1.0) + (input.add or 0.0),
+			(1 - b:getVector(face.y)[input.channel]) * (input.mul or 1.0) + (input.add or 0.0),
+			(1 - b:getVector(face.z)[input.channel]) * (input.mul or 1.0) + (input.add or 0.0)
+		} or b:getSize() > 0 and {
+			b:getVector(face.x)[input.channel] * (input.mul or 1.0) + (input.add or 0.0),
+			b:getVector(face.y)[input.channel] * (input.mul or 1.0) + (input.add or 0.0),
+			b:getVector(face.z)[input.channel] * (input.mul or 1.0) + (input.add or 0.0)
+		} or { 0, 0, 0 }
 		
 		return {
 			get = function(self, u, v, w)
@@ -67,18 +70,18 @@ local function getInput(input, o, f)
 end
 
 --add particle system objects
---for every mesh (which is not a particle mesh itself) with a material with an attached particle systems create a new mesh (the particles)
-function lib:addParticlesystems(obj)
+--for every mesh (which is not a particle mesh itself) with a material with attached particle systems create a new object (the particles)
+function lib:addParticleSystems(obj)
 	local meshes = { }
 	for oName, o in pairs(obj.meshes) do
 		local particleSystems = o.material.particleSystems
-		if particleSystems and not o.tags.particle then
+		if particleSystems and not o.isParticle then
 			meshes[oName] = o
 		end
 	end
 	
-	for oName, o in pairs(meshes) do
-		local particleSystems = o.material.particleSystems
+	for meshName, mesh in pairs(meshes) do
+		local particleSystems = mesh.material.particleSystems
 		
 		--load objects of particle system into respective material
 		if not particleSystems.loaded then
@@ -88,7 +91,7 @@ function lib:addParticlesystems(obj)
 		
 		--remove emitter
 		if particleSystems.removeEmitter then
-			obj.meshes[oName] = nil
+			obj.meshes[meshName] = nil
 		end
 		
 		--place them
@@ -106,22 +109,22 @@ function lib:addParticlesystems(obj)
 				
 				--per face
 				local particleDensity = particle.particleDensity / #ps.loadedObjects
-				for _,f in ipairs(o.faces) do
-					local v1 = vec3(o.vertices[f[1]])
-					local v2 = vec3(o.vertices[f[2]])
-					local v3 = vec3(o.vertices[f[3]])
+				for _, face in mesh.faces:ipairs() do
+					local v1 = mesh.vertices:getVector(face.x)
+					local v2 = mesh.vertices:getVector(face.y)
+					local v3 = mesh.vertices:getVector(face.z)
 					
 					--area of the plane
-					local a = (v1-v2):length()
-					local b = (v2-v3):length()
-					local c = (v3-v1):length()
-					local s = (a+b+c)/2
-					local area = math.sqrt(s*(s-a)*(s-b)*(s-c))
+					local a = (v1 - v2):length()
+					local b = (v2 - v3):length()
+					local c = (v3 - v1):length()
+					local s = (a + b + c) / 2
+					local area = math.sqrt(s * (s - a) * (s - b) * (s - c))
 					
 					--specific input for density
-					local density, maxDensity = getInput(ps.input.density, o, f)
+					local density = getInput(ps.input.density, mesh, face)
 					local maxDensity = density:getMax()
-					local size = getInput(ps.input.size, o, f)
+					local size = getInput(ps.input.size, mesh, face)
 					
 					--amount of objects
 					local am = math.floor(area * maxDensity * particleDensity + math.random())
@@ -142,11 +145,11 @@ function lib:addParticlesystems(obj)
 						--interpolated per vertex density
 						if maxDensity == 1.0 or density:get(u, v, w) / maxDensity > math.random() then
 							--interpolated normal and position
-							local normal = vec3(o.normals[f[1]]) * u + vec3(o.normals[f[2]]) * v + vec3(o.normals[f[3]]) * w
+							local normal = mesh.normals:getVector(face.x) * u + mesh.normals:getVector(face.y) * v + mesh.normals:getVector(face.z) * w
 							
 							--randomize normal
 							if ps.rotation > 0 then
-								normal = vec3(math.random()-0.5, math.random()-0.5, math.random()-0.5) * ps.rotation + normal * (1 - ps.rotation)
+								normal = vec3(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * ps.rotation + normal * (1 - ps.rotation)
 							end
 							normal = normal:normalize()
 							
@@ -157,13 +160,13 @@ function lib:addParticlesystems(obj)
 							local top = vec3(0, 1, 0)
 							local vec = top:cross(normal)
 							local angle = -math.acos(top:dot(normal))
-							local transform = math.abs(angle) < 0.00001 and mat3:getIdentity() or mat3:getRotate(vec, angle) * sc
+							local transform = math.abs(angle) < 0.00001 and mat3.getIdentity() or mat3.getRotate(vec, angle) * sc
 							
 							t.maxScale = math.max(t.maxScale, sc)
 							
 							--tilt
 							if ps.tilt then
-								transform = transform * mat3:getRotate(normal, (math.random() - 0.5) * math.pi * 2)
+								transform = transform * mat3.getRotate(normal, (math.random() - 0.5) * math.pi * 2)
 							end
 							
 							--apply particle transform
@@ -191,9 +194,9 @@ function lib:addParticlesystems(obj)
 				--find best splitting layout
 				local splits = vec3(1, 1, 1)
 				local size = t.max - t.min
-				local vertices = #particle.vertices * #t.particles
+				local vertices = particle.vertices:getSize() * #t.particles
 				while vertices / (splits[1] * splits[2] * splits[3]) > (ps.maxCellVertexCount or 10000) do
-					local max = math.max(unpack(size / splits))
+					local max = math.max(table.unpack(size / splits))
 					for i = 1, 3 do
 						if size[i] / splits[i] == max then
 							splits[i] = splits[i] + 1
@@ -230,32 +233,22 @@ function lib:addParticlesystems(obj)
 								ID = ID + 1
 								
 								--prepare new mesh
-								local pname = oName .. "_ps_" .. psID .. "_" .. pID .. "_" .. ID
-								local po = particle:clone()
-								obj.meshes[pname] = po
-								po.name = o.name
-								po.obj = o.obj
-								po.transform = o.transform
-								po.tags.particle = true
-								po:setLOD(0, 1)
+								local pname = meshName .. "_ps_" .. psID .. "_" .. pID .. "_" .. ID
+								local po = lib:newObject(pname)
+								local pm = particle:clone()
+								po.meshes[pname] = pm
+								obj.objects[pname] = po
+								
+								po.transform = mesh.transform
+								pm.isParticle = true
 								
 								local sz = particle.boundingBox.size * t.maxScale
 								local margin = vec3(sz, sz, sz)
 								
-								po.boundingBox = self:newBoundaryBox(true)
-								po.boundingBox.first = vec3(x, y, z) - margin
-								po.boundingBox.second = po.boundingBox.first + delta + margin * 2
-								po.boundingBox.center = (po.boundingBox.second + po.boundingBox.first) / 2
-								po.boundingBox.size = (po.boundingBox.center - po.boundingBox.first):length() * math.sqrt(3)
+								pm:addInstances(transforms)
 								
-								po.instanceMesh = love.graphics.newMesh({
-									{"InstanceRotation0", "float", 3},
-									{"InstanceRotation1", "float", 3},
-									{"InstanceRotation2", "float", 3},
-									{"InstancePosition", "float", 3},
-								}, #transforms)
-								
-								po.instanceMesh:setVertices(transforms)
+								pm.boundingBox = self:newBoundingBox(vec3(x, y, z) - margin, po.boundingBox.first + delta + margin * 2)
+								po:updateBoundingBox()
 							end
 						end
 					end
@@ -263,5 +256,4 @@ function lib:addParticlesystems(obj)
 			end
 		end
 	end
-	imageDataCache = { }
 end

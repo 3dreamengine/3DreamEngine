@@ -1,12 +1,14 @@
+local dream = _3DreamEngine
+
 local sh = { }
 
 sh.type = "world"
 
-function sh:getId(dream, mat, shadow)
+function sh:getId(mat, shadow)
 	return 0
 end
 
-function sh:buildDefines(dream, mat, shadow)
+function sh:buildDefines(mat, shadow)
 	if shadow then
 		return ""
 	else
@@ -55,7 +57,7 @@ function sh:buildDefines(dream, mat, shadow)
 				#ifdef TRANSLUCENCY
 				if (dot(normal, lightVec) < 0.0) {
 					lightVec = normalize(reflect(lightVec, normalize(varyingNormal)));
-					lightColor *= translucent;
+					lightColor *= translucency;
 				}
 				#endif
 				
@@ -87,7 +89,7 @@ function sh:buildDefines(dream, mat, shadow)
 	end
 end
 
-function sh:buildPixel(dream, mat, shadow)
+function sh:buildPixel(mat, shadow)
 	if shadow then
 		return ""
 	else
@@ -124,11 +126,11 @@ function sh:buildPixel(dream, mat, shadow)
 	end
 end
 
-function sh:buildVertex(dream, mat)
+function sh:buildVertex(mat)
 	return ""
 end
 
-function sh:perShader(dream, shaderObject)
+function sh:perShader(shaderObject)
 	local shader = shaderObject.shader
 	
 	if shader:hasUniform("brdfLUT") then
@@ -137,14 +139,15 @@ function sh:perShader(dream, shaderObject)
 	end
 end
 
-function sh:perMaterial(dream, shaderObject, material)
+function sh:perMaterial(shaderObject, material)
 	local shader = shaderObject.shader
 	
-	--ior
-	checkAndSendCached(shaderObject, "ior", 1 / material.ior)
+	if shader:hasUniform("ior") then
+		shader:send("ior", 1 / material.ior)
+	end
 end
 
-function sh:perTask(dream, shaderObject, task)
+function sh:perTask(shaderObject, task)
 	
 end
 
