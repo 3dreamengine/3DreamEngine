@@ -56,7 +56,8 @@ local function cleanEmpties(obj)
 end
 
 lib.supportedFiles = {
-	"3do", --3DreamEngine object file - way faster than obj but does not keep vertex information
+	--todo temporary disabled
+	-- "3do", --3DreamEngine object file - way faster than obj but does not keep vertex information
 	"glb", --glTF binary format
 	"gltf", --glTF embedded or separate
 	"vox", --magicka voxel
@@ -184,7 +185,8 @@ function lib:loadObject(path, args)
 	self.deltonLoad:stop()
 	
 	--3do exporter
-	if obj.args.export3do then
+	--todo temporary disable
+	if obj.args.export3do and false then
 		self:export3do(obj)
 		
 		--doing that enforces loading the exported 3do object instead, making sure the first load behaves the same as the other ones

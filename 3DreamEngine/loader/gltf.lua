@@ -105,6 +105,10 @@ local function loadSampler(node)
 end
 
 local function loadTexture(node)
+	if not love.graphics then
+		return nil
+	end
+	
 	if node then
 		local image = cached(loadImage, file.images[node.source + 1])
 		local sampler = node.sampler and cached(loadSampler, file.images[node.sampler + 1]) or loadSampler()
