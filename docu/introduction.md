@@ -80,6 +80,19 @@ yourSecondObject = yourObject:newInstance()
 yourSecondObject = yourObject:clone()
 ```
 
+# Camera
+
+A camera is another class created using `dream:newCamera()`, but it is recommended to use the default one at `dream.camera`, if no multi-camera scene is required.
+
+A first person camera could look something like this, which resets the camera, moves it to a player, rotates yaw and then pitch:
+
+```lua
+dream.camera:resetTransform()
+dream.camera:translate(player.x, player.y, player.z)
+dream.camera:rotateY(player.ry)
+dream.camera:rotateX(player.rx)
+```
+
 # Render loop
 
 Your draw/update code should look something like that:
