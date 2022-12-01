@@ -662,22 +662,26 @@ function lib:renderFull(cam, canvases)
 	end
 end
 
-function lib:present(cam, canvases, lite)
+function lib:present(camera, canvases, lite)
 	self.delton:start("present")
+	
+	if lite == nil then
+		lite = camera and true or false
+	end
 	
 	--result canvases
 	canvases = canvases or self.canvases
 	
 	--extract camera position and normal
-	cam = cam or self.camera
-	cam.position = vec3(cam.transform[4], cam.transform[8], cam.transform[12])
-	cam.normal = vec3(-cam.transform[3], -cam.transform[7], -cam.transform[11]):normalize()
+	camera = camera or self.camera
+	camera.position = vec3(camera.transform[4], camera.transform[8], camera.transform[12])
+	camera.normal = vec3(-camera.transform[3], -camera.transform[7], -camera.transform[11]):normalize()
 	
 	--perspective transform
 	do
-		local n = cam.near
-		local f = cam.far
-		local fov = cam.fov
+		local n = camera.near
+		local f = camera.far
+		local fov = camera.fov
 		local scale = math.tan(fov * math.pi / 360)
 		local aspect = canvases.width / canvases.height
 		local r = scale * n * aspect
@@ -686,29 +690,29 @@ function lib:present(cam, canvases, lite)
 		
 		--optimized matrix multiplication by removing constants
 		--looks like a mess, but its only the opengl projection multiplied by the camera
-		local b = cam.transform:invert()
+		local b = camera.transform:invert()
 		local a1 = n / r
 		local a6 = n / t * m
 		local fn1 = 1 / (f - n)
 		local a11 = -(f + n) * fn1
 		local a12 = -2 * f * n * fn1
 		
-		cam.transformProj = mat4(
+		camera.transformProj = mat4(
 				a1 * b[1], a1 * b[2], a1 * b[3], a1 * b[4],
 				a6 * b[5], a6 * b[6], a6 * b[7], a6 * b[8],
 				a11 * b[9], a11 * b[10], a11 * b[11], a11 * b[12] + a12,
 				-b[9], -b[10], -b[11], -b[12]
 		)
 		
-		cam.transformProjOrigin = mat4(
+		camera.transformProjOrigin = mat4(
 				a1 * b[1], a1 * b[2], a1 * b[3], 0.0,
 				a6 * b[5], a6 * b[6], a6 * b[7], 0.0,
 				a11 * b[9], a11 * b[10], a11 * b[11], a12,
 				-b[9], -b[10], -b[11], 0.0
 		)
 		
-		cam.aspect = aspect
-		self.lastUsedCam = cam
+		camera.aspect = aspect
+		self.lastUsedCam = camera
 	end
 	
 	--process render jobs
@@ -720,7 +724,7 @@ function lib:present(cam, canvases, lite)
 	
 	--render
 	self.delton:start("renderFull")
-	self:renderFull(cam, canvases)
+	self:renderFull(camera, canvases)
 	self.delton:stop()
 	self.delton:stop()
 	
