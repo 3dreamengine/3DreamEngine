@@ -26,6 +26,7 @@ local descriptions = {
 	["game"] = "Unfinished collision demo.",
 	["knight"] = "MagicaVoxel demo.",
 	["manyMonkeys"] = "Demo on how to use instancing and object merging to achieve higher performance.",
+	["Cameras"] = "Multiple cameras and target canvases in a minimalistic scene",
 }
 
 local mousereleased = false
@@ -53,10 +54,10 @@ local function button(text, x, y, w, h)
 	--text
 	love.graphics.setFont(font)
 	local width = font:getWidth(text)
-	local scale = math.min(1.0, (w-20) / width)
+	local scale = math.min(1.0, (w - 20) / width)
 	local baseline = font:getBaseline() * scale
 	love.graphics.setColor(0.1, 0.1, 0.1)
-	love.graphics.print(text, x+10, y + h - baseline - 5, 0, scale)
+	love.graphics.print(text, x + 10, y + h - baseline - 5, 0, scale)
 	love.graphics.pop()
 	
 	return hover
@@ -71,9 +72,9 @@ function love.load()
 end
 
 function love.draw()
-	for d,s in ipairs(examples) do
+	for d, s in ipairs(examples) do
 		--button
-		local hover = button(s, 50, 50 + (d-1)*35, 200, 30)
+		local hover = button(s, 50, 50 + (d - 1) * 35, 200, 30)
 		
 		--description
 		if hover and descriptions[s] then
