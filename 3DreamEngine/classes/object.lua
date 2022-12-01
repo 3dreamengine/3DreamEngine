@@ -327,6 +327,17 @@ function class:setFarVisibility(visibility)
 	end
 end
 
+---A object has no material, therefore this call will forward this to all Meshes
+---@param material DreamMaterial
+function class:setMaterial(material)
+	for _, s in pairs(self.objects) do
+		s:setMaterial(material)
+	end
+	for _, s in pairs(self.meshes) do
+		s:setMaterial(material)
+	end
+end
+
 function class:encode(meshCache, dataStrings)
 	local data = {
 		["objects"] = { },
