@@ -6,6 +6,7 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 --]]
 
+---@class Dream
 local lib = { }
 
 if love.filesystem.read("debugEnabled") == "true" then
@@ -86,9 +87,6 @@ lib.canvasFormats = love.graphics and love.graphics.getCanvasFormats() or { }
 lib.materialLibrary = { }
 lib.objectLibrary = { }
 
-lib:registerMaterial(lib:newMaterial(), "None")
-lib:registerMaterial(lib:newMaterial(), "Material")
-
 --default settings
 lib:setAO(32, 0.75, false)
 lib:setBloom(-1)
@@ -149,9 +147,9 @@ lib.canvasCache = { }
 
 if love.graphics then
 	--default objects
-	lib.skyObject = lib:loadObject(lib.root .. "/objects/sky")
-	lib.cubeObject = lib:loadObject(lib.root .. "/objects/cube")
-	lib.planeObject = lib:loadObject(lib.root .. "/objects/plane")
+	lib.skyObject = lib:loadObject(lib.root .. "/objects/sky", { ignoreMissingMaterials = true })
+	lib.cubeObject = lib:loadObject(lib.root .. "/objects/cube", { ignoreMissingMaterials = true })
+	lib.planeObject = lib:loadObject(lib.root .. "/objects/plane", { ignoreMissingMaterials = true })
 	
 	--default textures
 	local pix = love.image.newImageData(2, 2)

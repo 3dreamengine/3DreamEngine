@@ -115,7 +115,7 @@ Loader Args
 	`decodeBlenderNames (true)` remove the vertex objects postfix added on export, e.g. `name` instead of `name_Cube`
 --]]
 
----LoadObject
+---Load an object
 ---@param path string @ Path to object without extension
 ---@param args "Args"
 function lib:loadObject(path, args)
