@@ -75,6 +75,15 @@ function class:getMSAA()
 	return self.msaa
 end
 
+---Sets the resolution, requires a reinit
+---@param px number
+function class:setResolution(px)
+	self.resolution = px
+end
+function class:getResolution()
+	return self.resolution
+end
+
 ---Initialize that canvas set
 ---@param w number @ optional
 ---@param h number @ optional
