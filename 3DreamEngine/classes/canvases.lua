@@ -128,9 +128,10 @@ end
 
 ---Unload canvases
 function class:unloadCanvasSet()
-	for _, s in pairs(self) do
+	for k, s in pairs(self) do
 		if type(s) == "userdata" and s.release then
 			s:release()
+			self[k] = nil
 		end
 	end
 end
