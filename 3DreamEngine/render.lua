@@ -666,7 +666,7 @@ function lib:present(camera, canvases, lite)
 	self.delton:start("present")
 	
 	if lite == nil then
-		lite = camera and true or false
+		lite = canvases and true or false
 	end
 	
 	--result canvases
