@@ -50,6 +50,14 @@ function class:extend(margin)
 	return lib:newBoundingBox(self.first - m, self.second + m, self.center, self.size)
 end
 
+---Test if two bounding boxes intersect
+---@param b DreamBoundingBox
+function class:intersect(b)
+	return self.second.x > b.first.x and self.first.x < b.second.x
+			and self.second.y > b.first.y and self.first.y < b.second.y
+			and self.second.z > b.first.z and self.first.z < b.second.z
+end
+
 function class:setInitialized(b)
 	self.initialized = b
 end
