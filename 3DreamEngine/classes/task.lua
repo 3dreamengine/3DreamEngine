@@ -29,20 +29,16 @@ function class:getShaderID()
 	return self[5]
 end
 
-function class:getBoneTransforms()
+function class:getReflection()
 	return self[6]
 end
 
-function class:getReflection()
+function class:getDistance()
 	return self[7]
 end
 
-function class:getDistance()
-	return self[8]
-end
-
 function class:setDistance(d)
-	self[8] = d
+	self[7] = d
 end
 
 return class

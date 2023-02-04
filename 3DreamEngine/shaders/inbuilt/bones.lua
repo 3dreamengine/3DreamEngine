@@ -77,7 +77,7 @@ end
 
 local ID = mat4.getIdentity()
 function sh:perTask(shaderObject, task)
-	local bt = task:getBoneTransforms()
+	local bt = task:getMesh().skeleton and task:getMesh().skeleton.transforms
 	assert(bt, "Missing bone transforms")
 	
 	if shaderObject.session.bones ~= bt then

@@ -115,7 +115,6 @@ function class:addObject(object, parentTransform, dynamic, reflection)
 end
 
 function class:addMesh(mesh, transform, dynamic, reflection)
-	local boneTransforms = mesh.skeleton and mesh.skeleton.transforms
 	local pos = getPosition(mesh, transform)
 	local size = getSize(mesh, transform)
 	
@@ -126,7 +125,6 @@ function class:addMesh(mesh, transform, dynamic, reflection)
 		pos,
 		size,
 		false,
-		boneTransforms,
 		reflection,
 	}, lib.meta.task)
 	
