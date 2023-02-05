@@ -22,7 +22,7 @@ function lib:buildScene(typ, dynamic, alpha, cam, blacklist, frustumCheck, noSma
 		scene:add(object)
 	end
 	
-	local tasks = scene:flatten()
+	local tasks = scene:getIterator()
 	
 	self.delton:stop()
 	
@@ -143,7 +143,7 @@ function lib:render(canvases, cam, dynamic)
 		
 		--start rendering
 		self.delton:start("render")
-		for _, task in ipairs(scene) do
+		for task in scene do
 			local mesh = task:getMesh()
 			local shaderID = task:getShaderID()
 			
@@ -426,7 +426,7 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects, smoo
 	love.graphics.clear(255, 255, 255, 255)
 	
 	--start rendering
-	for _, task in ipairs(scene) do
+	for task in scene do
 		local mesh = task:getMesh()
 		local shaderID = task:getShaderID()
 		

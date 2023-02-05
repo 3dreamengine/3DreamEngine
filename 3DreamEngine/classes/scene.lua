@@ -198,29 +198,38 @@ local function sortFunction(a, b)
 	return a:getDistance() > b:getDistance()
 end
 
-function class:flatten()
-	--and flatten, perform frustum etc on addObject
-	local tasks = { }
+function class:getIterator()
 	if self.alpha then
-		tasks = self.tasks
-		
-		for _, task in ipairs(tasks) do
+		for _, task in ipairs(self.tasks) do
 			local dist = (task:getPosition() - self.cam.position):lengthSquared()
 			task:setDistance(dist)
 		end
 		
-		table.sort(tasks, sortFunction)
+		table.sort(self.tasks, sortFunction)
+		
+		local i = 0
+		return function()
+			i = i + 1
+			return self.tasks[i]
+		end
 	else
-		--todo iterator to avoid copy
-		for _, shaderGroup in pairs(self.tasks) do
-			for _, materialGroup in pairs(shaderGroup) do
-				for _, task in pairs(materialGroup) do
-					table.insert(tasks, task)
+		local co = coroutine.create(function()
+			for _, shaderGroup in pairs(self.tasks) do
+				for _, materialGroup in pairs(shaderGroup) do
+					for _, task in pairs(materialGroup) do
+						coroutine.yield(task)
+					end
 				end
+			end
+		end)
+		
+		return function()
+			local ok, task = coroutine.resume(co)
+			if ok then
+				return task
 			end
 		end
 	end
-	return tasks
 end
 
 return class
