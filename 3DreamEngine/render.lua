@@ -105,15 +105,14 @@ function lib:render(canvases, cam, dynamic)
 	
 	self.delton:stop()
 	
-	--current state
-	local lastMaterial
-	local lastReflection
-	local sessionID = math.random()
-	
 	--start both passes
 	for pass = 1, canvases.alphaPass and 2 or 1 do
+		--current state
 		local shader
 		local shaderObject
+		local lastMaterial
+		local lastReflection
+		local sessionID = math.random()
 		
 		--setup final scene
 		local scene = self:buildScene(false, dynamic, pass == 2, cam, nil, frustumCheck, false, canvases, light)
@@ -221,6 +220,7 @@ function lib:render(canvases, cam, dynamic)
 			
 			--reflection
 			if shaderObject.reflection then
+				--todo hmm
 				local ref = task:getReflection() or (type(self.defaultReflection) == "table" and self.defaultReflection)
 				local tex = ref and (ref.image or ref.canvas) or self.defaultReflection and self.defaultReflectionCanvas or self.textures.skyFallback
 				if lastReflection ~= tex then

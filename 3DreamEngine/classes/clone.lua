@@ -18,4 +18,8 @@ function class:clone()
 	return setmetatable(n, getmetatable(self))
 end
 
+function class:instance()
+	return setmetatable({}, { __index = self })
+end
+
 return class

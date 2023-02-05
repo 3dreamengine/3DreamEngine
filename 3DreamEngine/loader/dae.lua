@@ -367,7 +367,7 @@ return function(self, obj, path)
 		
 		for i, mesh in ipairs(meshes or {}) do
 			local n = i == 1 and name or name .. "." .. i
-			local newMesh = mesh:clone()
+			local newMesh = mesh:instance()
 			o.meshes[n] = newMesh
 			
 			if controller then
