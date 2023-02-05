@@ -154,8 +154,6 @@ function sh:buildPixel(mat)
 		blend
 	) * 2.0 - 1.0;
 	normal = normalize(TBN * normal);
-#else
-	normal = normalize(varyingNormal);
 #endif
 	]]
 end

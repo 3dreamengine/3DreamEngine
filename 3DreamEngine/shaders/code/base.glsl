@@ -8,16 +8,14 @@ extern highp vec3 viewPos;         //camera position
 //varyings
 varying highp vec3 vertexPos;      //vertex position for pixel shader
 varying highp vec3 varyingNormal;  //vertex normal for pixel shader
+varying highp vec3 varyingTangent; //vertex tangent for pixel shader
+varying highp vec3 varyingBitangent; //vertex bi tangent for pixel shader
 varying float depth;               //depth
 
 extern float translucency;
 
 //shader specific defines
 #import defines
-
-#ifdef TANGENT
-varying mat3 TBN;
-#endif
 
 #ifdef DEPTH_AVAILABLE
 extern Image depthTexture;
@@ -30,18 +28,33 @@ vec3 getLight(vec3 lightColor, vec3 viewVec, vec3 lightVec, vec3 normal, vec3 al
 
 void effect() {
 	vec3 viewVec = normalize(vertexPos - viewPos);
+
+	//outputs
 	vec2 distortion = vec2(0.0);
 	vec3 color = vec3(0.0);
 	vec3 light = vec3(0.0);
-	
+
+	//surface
+	vec3 normal = normalize(varyingNormal);
+	vec3 tangent = normalize(varyingTangent);
+	vec3 bitangent = normalize(varyingBitangent);
+
 	//material
-	vec3 normal;
 	vec3 albedo = vec3(0.5);
 	float alpha = 1.0;
 	float roughness = 0.5;
 	float metallic = 0.0;
 	float ao = 1.0;
 	vec3 emission = vec3(0.0);
+
+	//proper backfaces
+	if (!gl_FrontFacing) {
+		normal = -normal;
+	}
+
+#ifdef TANGENT
+	mat3 TBN = mat3(tangent, bitangent, normal);
+#endif
 	
 #import pixelMaterial
 
@@ -59,13 +72,6 @@ void effect() {
 
 #ifndef ALPHA_PASS
 	alpha = 1.0;
-#endif
-	
-	//proper backfaces
-#ifdef TRANSLUCENCY
-	if (dot(normal, viewVec) > 0.0) {
-		normal = normalize(reflect(normal, normalize(varyingNormal)));
-	}
 #endif
 	
 #import pixel
@@ -164,23 +170,17 @@ vec4 position(mat4 _t, vec4 _v) {
 	depth = vPos.z;
 	
 	//raw normal vector without normal map;
-	varyingNormal = normalTransform * (VertexNormal - vec3(0.5));
+	varyingNormal = normalize(normalTransform * (VertexNormal - vec3(0.5)));
 	
 #ifdef TANGENT
-	vec3 T = normalize(normalTransform * (VertexTangent.xyz - vec3(0.5)));
-	vec3 N = normalize(varyingNormal);
+	varyingTangent = normalize(normalTransform * (VertexTangent.xyz - vec3(0.5)));
 	
 	//in case the UV is mirrored
-	vec3 B;
 	if (VertexTangent.w > 0.5) {
-		B = cross(T, N);
+		varyingBitangent = cross(varyingTangent, varyingNormal);
 	} else {
-		B = cross(N, T);
+		varyingBitangent = cross(varyingNormal, varyingTangent);
 	}
-	
-	//construct the tangent to world matrix
-	//in case no normal map is used, opengl will remove this
-	TBN = mat3(T, B, N);
 #endif
 	
 	//return the transformed position

@@ -32,9 +32,6 @@ function sh:buildPixel(mat)
 	roughness = VaryingMaterial.x;
 	metallic = VaryingMaterial.y;
 	emission = VaryingColor.rgb * VaryingMaterial.z;
-	
-	//normal
-	normal = normalize(varyingNormal);
 	]]
 end
 

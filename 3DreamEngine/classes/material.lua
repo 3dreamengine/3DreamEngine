@@ -62,7 +62,7 @@ end
 function class:setTranslucency(translucency)
 	self.translucency = translucency or 0.0
 	if self.translucency > 0.0 then
-		self:setMeshCullMode("none")
+		self:setCullMode("none")
 	end
 end
 

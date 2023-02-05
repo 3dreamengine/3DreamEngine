@@ -73,8 +73,6 @@ function sh:buildPixel(mat)
 #ifdef NORMAL_TEXTURE
 	normal = Texel(normalTexture, VaryingTexCoord.xy).xyz * vec3(2.0) - vec3(1.0);
 	normal = normalize(TBN * normal);
-#else
-	normal = normalize(varyingNormal);
 #endif
 	]]
 end
