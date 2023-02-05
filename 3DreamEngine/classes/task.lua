@@ -21,11 +21,11 @@ function class:getSize()
 	return self[4]
 end
 
-function class:setShaderID(sh)
+function class:setShader(sh)
 	self[5] = sh
 end
 
-function class:getShaderID()
+function class:getShader()
 	return self[5]
 end
 

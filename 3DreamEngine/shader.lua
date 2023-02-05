@@ -78,9 +78,9 @@ function lib:getShader(name)
 end
 
 --inbuilt shader
-for _,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/inbuilt")) do
+for _, s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/inbuilt")) do
 	if s:sub(-4) == ".lua" then
-		lib:registerShader(lib.root .. "/shaders/inbuilt/" .. s:sub(1, #s-4))
+		lib:registerShader(lib.root .. "/shaders/inbuilt/" .. s:sub(1, #s - 4))
 	end
 end
 
@@ -91,14 +91,14 @@ lib.defaultWorldShader = lib:getShader("PBR")
 
 --load code snippets
 local codes = { }
-for _,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/code")) do
-	codes[s:sub(1, #s-5)] = love.filesystem.read(lib.root .. "/shaders/code/" .. s)
+for _, s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/code")) do
+	codes[s:sub(1, #s - 5)] = love.filesystem.read(lib.root .. "/shaders/code/" .. s)
 end
 
 --light shaders
 lib.lightShaders = { }
-for _,s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/light")) do
-	local name = s:sub(1, #s-4)
+for _, s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/light")) do
+	local name = s:sub(1, #s - 4)
 	lib.lightShaders[name] = require(lib.root .. "/shaders/light/" .. name)
 end
 
@@ -115,7 +115,7 @@ function lib:getBasicShader(s)
 end
 
 local function generateHeader(text)
-	return "//########################################//\n//" .. string.rep(" ", math.floor((40 - #text)/2)) .. text .. "//\n//########################################//"
+	return "//########################################//\n//" .. string.rep(" ", math.floor((40 - #text) / 2)) .. text .. "//\n//########################################//"
 end
 
 local function generateFooter()
@@ -136,12 +136,12 @@ function lib.loadShader(self)
 	self.mainShaders = { }
 	self.particlesShader = { }
 	self.mainShaderCount = 0
-
+	
 	--the ambient occlusion shader
 	if self.AO_enabled then
 		local code = (
-			"#define SAMPLE_COUNT " .. self.AO_quality .. "\n" ..
-			love.filesystem.read(self.root .. "/shaders/SSAO.glsl")
+				"#define SAMPLE_COUNT " .. self.AO_quality .. "\n" ..
+						love.filesystem.read(self.root .. "/shaders/SSAO.glsl")
 		):gsub("	", "")
 		self.shaders.SSAO = love.graphics.newShader(code)
 		
@@ -151,7 +151,7 @@ function lib.loadShader(self)
 		for i = 1, self.AO_quality do
 			local r = i / self.AO_quality * math.pi * 2
 			local d = (0.5 + i % 4) / 4
-			f[#f+1] = {math.cos(r)*d*range / love.graphics.getWidth(), math.sin(r)*d*range / love.graphics.getHeight(), (1-d)^2 / self.AO_quality}
+			f[#f + 1] = { math.cos(r) * d * range / love.graphics.getWidth(), math.sin(r) * d * range / love.graphics.getHeight(), (1 - d) ^ 2 / self.AO_quality }
 		end
 		self.shaders.SSAO:send("samples", table.unpack(f))
 	end
@@ -185,47 +185,23 @@ function lib:getFinalShader(canvases)
 	return self.finalShaders[ID]
 end
 
-function lib:getRenderShaderID(task, shadows)
-	local mesh = task:getMesh()
-	local mat = mesh.material
-	
-	--todo reflections can now support different models, for example for BB reflections
-	local reflections = not shadows and (task:getReflection() or self.defaultReflection)
-	
-	local pixelShader = mat.pixelShader or mesh.pixelShader or self.defaultPixelShader
-	local vertexShader = mat.vertexShader or mesh.vertexShader or self.defaultVertexShader
-	local worldShader = mat.worldShader or mesh.worldShader or self.defaultWorldShader
-	
-	--construct full ID
-	return string.char(
-		reflections and 1 or 0,
-		(mesh.instanceMesh and 1 or 0) + (mat.discard and 2 or 0) + (mat.dither and 4 or 0) + (mat.translucency > 0 and 8 or 0),
-		pixelShader.id % 256, math.floor(pixelShader.id / 256),
-		vertexShader.id % 256, math.floor(vertexShader.id / 256),
-		worldShader.id % 256, math.floor(worldShader.id / 256),
-		pixelShader:getId(mat, shadows),
-		vertexShader:getId(mat, shadows),
-		worldShader:getId(mat, shadows)
-	)
-end
-
-function lib:getRenderShader(ID, mesh, pass, canvases, light, shadows, sun)
+function lib:getGlobalSettingsIdentifier(alpha, canvases, shadowPass, sun)
 	--collect additional defines
 	local settings = 0
-	if shadows then
+	if shadowPass then
 		settings = settings + 2 ^ 0
 		if sun then
 			settings = settings + 2 ^ 1
 		end
 	else
 		--settings
-		if pass == 1 then
-			settings = settings + 2 ^ 2
-		elseif pass == 2 then
+		if alpha then
 			if canvases.refractions then
 				settings = settings + 2 ^ 3
 			end
 			settings = settings + 2 ^ 4
+		else
+			settings = settings + 2 ^ 2
 		end
 		
 		--canvas settings
@@ -240,18 +216,42 @@ function lib:getRenderShader(ID, mesh, pass, canvases, light, shadows, sun)
 		end
 	end
 	
-	local shaderID = ID .. (light and light.ID or "") .. string.char(settings)
+	return settings
+end
+
+function lib:getRenderShader(task, globalIdentifier, alpha, canvases, light, shadowPass, isSun)
+	local mesh = task:getMesh()
+	local mat = mesh.material
+	
+	--todo go full task refl
+	local reflections = not shadowPass and (task:getReflection() or self.defaultReflection)
+	
+	local pixelShader = mat.pixelShader or mesh.pixelShader or self.defaultPixelShader
+	local vertexShader = mat.vertexShader or mesh.vertexShader or self.defaultVertexShader
+	local worldShader = mat.worldShader or mesh.worldShader or self.defaultWorldShader
+	
+	--construct full ID
+	local shaderID = string.char(
+			reflections and 1 or 0 + (mesh.instanceMesh and 2 or 0) + (mat.discard and 4 or 0) + (mat.dither and 8 or 0) + (mat.translucency > 0 and 16 or 0),
+			pixelShader.id % 256, math.floor(pixelShader.id / 256),
+			vertexShader.id % 256, math.floor(vertexShader.id / 256),
+			worldShader.id % 256, math.floor(worldShader.id / 256),
+			pixelShader:getId(mat, shadowPass),
+			vertexShader:getId(mat, shadowPass),
+			worldShader:getId(mat, shadowPass),
+			globalIdentifier
+	)
+	
+	if light then
+		shaderID = shaderID .. light.ID
+	end
 	
 	if not self.mainShaders[shaderID] then
-		local mat = mesh.material
-		--todo not correct, the task may contain custom reflections
-		local reflection = not shadows and (mesh.reflection or self.defaultReflection)
-		
 		--additional data
 		local info = {
-			reflection = reflection,
+			reflection = reflections,
 			material = mat,
-			shadows = shadows,
+			shadows = shadowPass,
 			uniforms = { },
 			
 			pixelShader = mat.pixelShader or mesh.pixelShader or self.defaultPixelShader,
@@ -287,20 +287,20 @@ function lib:getRenderShader(ID, mesh, pass, canvases, light, shadows, sun)
 		end
 		
 		--collect additional defines
-		if shadows then
+		if shadowPass then
 			table.insert(defines, "#define IS_SHADOW")
-			if sun then
+			if isSun then
 				table.insert(defines, "#define IS_SUN")
 			end
 		else
 			--settings
-			if pass == 1 then
-				table.insert(defines, "#define DEPTH_ENABLED")
-			elseif pass == 2 then
+			if alpha then
 				if canvases.refractions then
 					table.insert(defines, "#define REFRACTIONS_ENABLED")
 				end
 				table.insert(defines, "#define ALPHA_PASS")
+			else
+				table.insert(defines, "#define DEPTH_ENABLED")
 			end
 			
 			--canvas settings
@@ -319,7 +319,7 @@ function lib:getRenderShader(ID, mesh, pass, canvases, light, shadows, sun)
 		table.insert(defines, codes.functions)
 		
 		--additional code
-		if not shadows then
+		if not shadowPass then
 			--construct forward lighting system
 			if #light.lights > 0 then
 				local def, p = self:getLightComponents(light)
@@ -339,7 +339,7 @@ function lib:getRenderShader(ID, mesh, pass, canvases, light, shadows, sun)
 			
 			--reflection
 			table.insert(defines, generateHeader("reflection"))
-			if reflection then
+			if reflections then
 				table.insert(defines, codes.reflections)
 			else
 				table.insert(defines, codes.ambientOnly)
@@ -348,19 +348,19 @@ function lib:getRenderShader(ID, mesh, pass, canvases, light, shadows, sun)
 		end
 		
 		--material shader
-		insertHeader(defines, "pixel shader", info.pixelShader:buildDefines(mat, shadows))
-		insertHeader(defines, "vertex shader", info.vertexShader:buildDefines(mat, shadows))
+		insertHeader(defines, "pixel shader", info.pixelShader:buildDefines(mat, shadowPass))
+		insertHeader(defines, "vertex shader", info.vertexShader:buildDefines(mat, shadowPass))
 		
-		insertHeader(pixelMaterial, "pixel shader", info.pixelShader:buildPixel(mat, shadows))
-		insertHeader(pixelMaterial, "vertex shader", info.vertexShader:buildPixel(mat, shadows))
+		insertHeader(pixelMaterial, "pixel shader", info.pixelShader:buildPixel(mat, shadowPass))
+		insertHeader(pixelMaterial, "vertex shader", info.vertexShader:buildPixel(mat, shadowPass))
 		
-		insertHeader(vertex, "vertex shader", info.vertexShader:buildVertex(mat, shadows))
-		insertHeader(vertex, "pixel shader", info.pixelShader:buildVertex(mat, shadows))
+		insertHeader(vertex, "vertex shader", info.vertexShader:buildVertex(mat, shadowPass))
+		insertHeader(vertex, "pixel shader", info.pixelShader:buildVertex(mat, shadowPass))
 		
 		--world
-		insertHeader(defines, "world shader", info.worldShader:buildDefines(mat, shadows))
-		insertHeader(pixel, "world shader", info.worldShader:buildPixel(mat, shadows))
-		insertHeader(vertex, "world shader", info.worldShader:buildVertex(mat, shadows))
+		insertHeader(defines, "world shader", info.worldShader:buildDefines(mat, shadowPass))
+		insertHeader(pixel, "world shader", info.worldShader:buildPixel(mat, shadowPass))
+		insertHeader(vertex, "world shader", info.worldShader:buildVertex(mat, shadowPass))
 		
 		--build code
 		local code = codes.base
@@ -383,25 +383,25 @@ end
 function lib:getParticlesShaderID(pass, canvases, emissive, distortion, single)
 	local id = 0
 	if emissive then
-		id = id + 2^0
+		id = id + 2 ^ 0
 	end
 	if distortion and pass == 2 then
-		id = id + 2^1
+		id = id + 2 ^ 1
 	end
 	if self.fog_enabled and canvases.mode ~= "normal" then
-		id = id + 2^2
+		id = id + 2 ^ 2
 	end
 	if self.gamma then
-		id = id + 2^3
+		id = id + 2 ^ 3
 	end
 	if canvases.refractions and pass == 2 then
-		id = id + 2^5
+		id = id + 2 ^ 5
 	end
 	if pass == 1 and canvases.mode ~= "direct" then
-		id = id + 2^6
+		id = id + 2 ^ 6
 	end
 	if single then
-		id = id + 2^7
+		id = id + 2 ^ 7
 	end
 	return string.char(id)
 end
@@ -490,7 +490,7 @@ function lib:getLightComponents(light, basic)
 	
 	--defines and code
 	local IDs = { }
-	for	_, light in ipairs(light.lights) do
+	for _, light in ipairs(light.lights) do
 		
 		IDs[light.light_typ] = (IDs[light.light_typ] or -1) + 1
 		local id = light.light_typ .. "_" .. IDs[light.light_typ]

@@ -1,18 +1,24 @@
 local lib = _3DreamEngine
 
 ---@return DreamScene
-function lib:newScene(typ, dynamic, alpha, cam, blacklist, frustumCheck, noSmallObjects)
+function lib:newScene(shadowPass, dynamic, alpha, cam, blacklist, frustumCheck, noSmallObjects, canvases, light, isSun)
 	local m = setmetatable({ }, self.meta.scene)
 	
 	m.tasks = { }
 	
-	m.typ = typ
+	m.shadowPass = shadowPass
 	m.dynamic = dynamic
 	m.alpha = alpha
 	m.cam = cam
 	m.blacklist = blacklist or { }
 	m.frustumCheck = frustumCheck
 	m.noSmallObjects = noSmallObjects
+	m.canvases = canvases
+	m.light = light
+	m.isSun = isSun
+	
+	--setting specific identifier
+	m.settingsIdentifier = self:getGlobalSettingsIdentifier(alpha, canvases, shadowPass, isSun)
 	
 	return m
 end
@@ -81,6 +87,7 @@ function class:addObject(object, parentTransform, dynamic)
 	--apply transformation
 	local transform
 	if parentTransform then
+		--todo profiling: 12%
 		if object.transform then
 			transform = parentTransform * object.transform
 		else
@@ -113,6 +120,7 @@ function class:addObject(object, parentTransform, dynamic)
 	
 	--meshes
 	for _, m in pairs(object.meshes) do
+		--todo profiling: 80%
 		self:addMesh(m, transform, object.reflection)
 	end
 end
@@ -123,13 +131,12 @@ function class:addMesh(mesh, transform, reflection)
 	end
 	
 	--not visible
-	if self.typ == "render" then
-		if not mesh.renderVisibility then
+	if self.shadowPass then
+		if mesh.material.alpha or not mesh.shadowVisibility or mesh.material.shadow == false then
 			return
 		end
 	else
-		--shadow pass
-		if mesh.material.alpha or not mesh.shadowVisibility or mesh.material.shadow == false then
+		if not mesh.renderVisibility then
 			return
 		end
 	end
@@ -170,26 +177,24 @@ function class:addMesh(mesh, transform, reflection)
 	--todo here custom reflections (closest globe or default) and lights can be used
 	
 	--add to list
-	local shaderID = lib:getRenderShaderID(task, self.typ == "shadow")
-	self:addTo(task, shaderID, mesh.material)
+	local shader = lib:getRenderShader(task, self.settingsIdentifier, self.alpha, self.canvases, self.light, self.shadowPass, self.isSun)
+	self:addTo(task, shader, mesh.material)
 end
 
-function class:addTo(task, shaderID, material)
-	task:setShaderID(shaderID)
+function class:addTo(task, shader, material)
+	task:setShader(shader)
 	
 	if self.alpha then
 		table.insert(self.tasks, task)
 	else
 		--create lists
-		if not self.tasks[shaderID] then
-			self.tasks[shaderID] = { }
+		if not self.tasks[shader] then
+			self.tasks[shader] = { [material] = { task } }
+		elseif not self.tasks[shader][material] then
+			self.tasks[shader][material] = { task }
+		else
+			table.insert(self.tasks[shader][material], task)
 		end
-		if not self.tasks[shaderID][material] then
-			self.tasks[shaderID][material] = { }
-		end
-		
-		--task batch
-		table.insert(self.tasks[shaderID][material], task)
 	end
 end
 

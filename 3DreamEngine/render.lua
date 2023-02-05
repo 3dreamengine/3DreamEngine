@@ -12,11 +12,11 @@ lib.stats = {
 	draws = 0,
 }
 
-function lib:buildScene(typ, dynamic, alpha, cam, blacklist, frustumCheck, noSmallObjects)
+function lib:buildScene(shadowPass, dynamic, alpha, cam, blacklist, frustumCheck, noSmallObjects, canvases, light, isSun)
 	self.delton:start("scene")
 	
 	--use a scene here
-	local scene = self:newScene(typ, dynamic, alpha, cam, blacklist, frustumCheck, noSmallObjects)
+	local scene = self:newScene(shadowPass, dynamic, alpha, cam, blacklist, frustumCheck, noSmallObjects, canvases, light, isSun)
 	
 	for _, object in ipairs(self.scene) do
 		scene:add(object)
@@ -114,10 +114,9 @@ function lib:render(canvases, cam, dynamic)
 	for pass = 1, canvases.alphaPass and 2 or 1 do
 		local shader
 		local shaderObject
-		local lastShader
 		
 		--setup final scene
-		local scene = self:buildScene("render", dynamic, pass == 2, cam, nil, frustumCheck)
+		local scene = self:buildScene(false, dynamic, pass == 2, cam, nil, frustumCheck, false, canvases, light)
 		
 		--only first pass writes depth
 		love.graphics.setDepthMode("less", pass == 1)
@@ -145,7 +144,7 @@ function lib:render(canvases, cam, dynamic)
 		self.delton:start("render")
 		for task in scene do
 			local mesh = task:getMesh()
-			local shaderID = task:getShaderID()
+			local nextShaderObject = task:getShader()
 			
 			--reflections
 			local ref = task:getReflection()
@@ -154,13 +153,11 @@ function lib:render(canvases, cam, dynamic)
 			end
 			
 			--set active shader
-			if lastShader ~= shaderID then
-				lastShader = shaderID
+			if shaderObject ~= nextShaderObject then
 				lastMaterial = false
 				lastReflection = false
-				self.delton:start("shader")
 				
-				shaderObject = self:getRenderShader(shaderID, mesh, pass, canvases, light, false)
+				shaderObject = nextShaderObject
 				shader = shaderObject.shader
 				if shaderObject.sessionID ~= sessionID then
 					shaderObject.session = { }
@@ -198,7 +195,6 @@ function lib:render(canvases, cam, dynamic)
 					checkAndSendCached(shaderObject, "ambient", self.sun_ambient)
 				end
 				
-				self.delton:stop()
 				self.stats.shadersInUse = self.stats.shadersInUse + 1
 			end
 			
@@ -402,12 +398,11 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects, smoo
 	end
 	
 	--get scene
-	local scene = self:buildScene("shadows", dynamic, false, cam, blacklist, frustumCheck, noSmallObjects)
+	local scene = self:buildScene(true, dynamic, false, cam, blacklist, frustumCheck, noSmallObjects, { }, nil, cam.sun)
 	
 	--current state
 	local shader
 	local shaderObject
-	local lastShader
 	local lastMaterial
 	
 	love.graphics.push("all")
@@ -428,16 +423,16 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects, smoo
 	--start rendering
 	for task in scene do
 		local mesh = task:getMesh()
-		local shaderID = task:getShaderID()
+		local nextShaderObject = task:getShader()
 		
 		--set active shader
-		if lastShader ~= shaderID then
-			lastShader = shaderID
+		if shaderObject ~= nextShaderObject then
 			lastMaterial = false
 			
-			shaderObject = self:getRenderShader(shaderID, mesh, nil, { }, nil, true, cam.sun)
+			shaderObject = nextShaderObject
 			shader = shaderObject.shader
 			shaderObject.session = { }
+			
 			love.graphics.setShader(shader)
 			
 			--camera
