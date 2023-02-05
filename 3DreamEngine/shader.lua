@@ -232,7 +232,7 @@ function lib:getRenderShader(task, globalIdentifier, alpha, canvases, light, sha
 	
 	--construct full ID
 	local shaderID = string.char(
-			reflections and 1 or 0 + (mesh.instanceMesh and 2 or 0) + (mat.discard and 4 or 0) + (mat.dither and 8 or 0) + (mat.translucency > 0 and 16 or 0),
+			(reflections and 1 or 0) + (mesh.instanceMesh and 2 or 0) + (mat.discard and 4 or 0) + (mat.dither and 8 or 0) + (mat.translucency > 0 and 16 or 0),
 			pixelShader.id % 256, math.floor(pixelShader.id / 256),
 			vertexShader.id % 256, math.floor(vertexShader.id / 256),
 			worldShader.id % 256, math.floor(worldShader.id / 256),
