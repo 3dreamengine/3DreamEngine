@@ -264,7 +264,6 @@ end
 function lib:draw(object, x, y, z, sx, sy, sz)
 	--prepare transform matrix
 	local transform
-	local dynamic = false
 	if x then
 		--simple transform with arguments, ignores object transformation matrix
 		transform = mat4({
@@ -273,11 +272,10 @@ function lib:draw(object, x, y, z, sx, sy, sz)
 			0, 0, sz or sx or 1, z,
 			0, 0, 0, 1
 		})
-		dynamic = true
 	end
 	
 	--add to scene
-	table.insert(self.scene, object)
+	table.insert(self.scene, { object, transform })
 end
 
 ---Add a light

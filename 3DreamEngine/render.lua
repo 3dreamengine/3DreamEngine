@@ -18,8 +18,12 @@ function lib:buildScene(shadowPass, dynamic, alpha, cam, blacklist, frustumCheck
 	--use a scene here
 	local scene = self:newScene(shadowPass, dynamic, alpha, cam, blacklist, frustumCheck, noSmallObjects, canvases, light, isSun)
 	
-	for _, object in ipairs(self.scene) do
-		scene:add(object)
+	for _, pair in pairs(self.scene) do
+		if pair[2] then
+			scene:addObject(pair[1], pair[2], true)
+		else
+			scene:add(pair[1])
+		end
 	end
 	
 	local tasks = scene:getIterator()

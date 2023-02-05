@@ -77,6 +77,18 @@ function class:clone()
 	return setmetatable(n, getmetatable(self))
 end
 
+---Creates an recursive instance, objects can now be transformed individually, all other changes remain synced
+---Much faster than a full copy
+---@return DreamObject
+function class:instance()
+	local instance = setmetatable({}, { __index = self })
+	instance.objects = { }
+	for i, v in pairs(self.objects) do
+		instance.objects[i] = v:instance()
+	end
+	return instance
+end
+
 ---The main skeleton is usually the one used by all meshes, but may be nil or unused
 ---@return DreamSkeleton
 function class:getMainSkeleton()

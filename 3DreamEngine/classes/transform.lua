@@ -92,8 +92,14 @@ end
 
 function class:setDirty()
 	self.inverseTransform = false
-	self.globalTransform = false -- todo
 	self.dynamic = true
+end
+
+---getGlobalTransform
+---@return "mat4" @ returns the last global transform. Needs to be rendered once, and if rendered multiple times, the result is undefined
+---@beta may change
+function class:getGlobalTransform()
+	return self.globalTransform
 end
 
 function class:lookTowards(direction, up)

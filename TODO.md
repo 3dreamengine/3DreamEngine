@@ -8,6 +8,10 @@ Each class is serializable, which can be used for the internal file format but a
 
 But currently I broke it again...
 
+# Improve Doc
+
+Light sources and a lot of other classes completely missing
+
 # Improve godrays
 
 The current light disk approach performs barely acceptable, but can be further enhanced:
@@ -18,19 +22,20 @@ The current light disk approach performs barely acceptable, but can be further e
 * The lookup table has small y resolution for everything within the disk
 * This lookup table is generated for each light source, and THEN is a common godray step performed
 
-# Scene Graph
+# Performance
 
-Currently, the graph (scene) is loosely connected.
-This has no real benefits, but a few downsides instead.
-Instead, a full scene graph may be used (which also replaces the current scenes system)
-
-* If each object (instance) is unique, the local transformation and everything around it can be cached.
-* The local transformation is known before/independent on the last scene render
+* Finish LODs + example
+* Simplify Vertical particles
+  * Prevents optimizations for very little effect
 
 # Buffer builder
 
 * Create Meshes from several meshes
+    * Supports adding full objects, but also primitives
+        * Supports removing elements (see lovelyMeshBake)
     * Allows tiled worlds etc. with high performance
+    * Maybe let all other things, like particle fields, particle batch, ... extend from that idea
+    * Even a text object is effectively a buffer builder but with "addChar()"
 
 # Particle field
 
@@ -43,14 +48,3 @@ Instead, a full scene graph may be used (which also replaces the current scenes 
 * Non axis aligned box reflections
 * Easier to use reflection globes
 * Globe blending and proper multi globe
-
-# Text
-
-* `dream:drawText()` as a wrapper to `love.graphics.print` and `printf`
-
-# Performance
-
-* Final Scene creation should make use of hierarchical information for frustum culling
-* Finish LODs
-* Simplify Vertical particles
-    * Prevents optimizations for very little effect

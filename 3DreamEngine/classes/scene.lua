@@ -67,7 +67,7 @@ function class:withinFrustum(object, task)
 end
 
 function class:add(object)
-	self:addObject(object, nil, false)
+	self:addObject(object, false, false)
 end
 
 function class:addObject(object, parentTransform, dynamic)
@@ -87,7 +87,6 @@ function class:addObject(object, parentTransform, dynamic)
 	--apply transformation
 	local transform
 	if parentTransform then
-		--todo profiling: 12%
 		if object.transform then
 			transform = parentTransform * object.transform
 		else
@@ -96,6 +95,9 @@ function class:addObject(object, parentTransform, dynamic)
 	else
 		transform = object.transform
 	end
+	
+	--store final world transform for potential later use cases
+	object.globalTransform = transform
 	
 	--handle LOD
 	--todo lod should be mesh-related, with it's parent object as distance metric, pass a lazy distance metric
