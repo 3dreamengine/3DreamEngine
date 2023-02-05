@@ -12,64 +12,21 @@ lib.stats = {
 	draws = 0,
 }
 
---sorting function for the alpha pass
-local function sortFunction(a, b)
-	return a:getDistance() > b:getDistance()
-end
-
 function lib:buildScene(typ, dynamic, alpha, cam, blacklist, frustumCheck, noSmallObjects)
 	self.delton:start("scene")
 	
-	--preprocess scenes to group together shader
-	local groups = { }
-	for sc, _ in pairs(self.scenes) do
-		for dyn = dynamic == false and 2 or 1, dynamic == true and 1 or 2 do
-			for shaderID, shaderGroup in pairs(sc.tasks[typ][dyn][alpha and 1 or 2]) do
-				for materialID, materialGroup in pairs(shaderGroup) do
-					if not groups[shaderID] then
-						groups[shaderID] = { }
-					end
-					if groups[shaderID][materialID] then
-						table.insert(groups[shaderID][materialID], materialGroup)
-					else
-						groups[shaderID][materialID] = { materialGroup }
-					end
-				end
-			end
-		end
+	--use a scene here
+	local scene = self:newScene(typ, dynamic, alpha, cam, blacklist, frustumCheck, noSmallObjects)
+	
+	for _, object in ipairs(self.scene) do
+		scene:add(object)
 	end
 	
-	--build sorted scene list
-	local scene = { }
-	for shaderID, shaderGroup in pairs(groups) do
-		for materialID, materialGroups in pairs(shaderGroup) do
-			for _, materialGroup in ipairs(materialGroups) do
-				for _, task in pairs(materialGroup) do
-					local mesh = task:getMesh()
-					if mesh:getMesh() and (not blacklist or not blacklist[mesh]) and (not noSmallObjects or mesh.farShadowVisibility ~= false) then
-						if not frustumCheck or not mesh.boundingBox.initialized or self:inFrustum(cam, task:getPosition(), task:getSize(), mesh.rID) then
-							task:setShaderID(shaderID)
-							table.insert(scene, task)
-						end
-					end
-				end
-			end
-		end
-	end
-	
-	--sort tables for materials requiring sorting
-	if alpha then
-		self.delton:start("sort")
-		for _, task in ipairs(scene) do
-			local dist = (task:getPosition() - cam.position):lengthSquared()
-			task:setDistance(dist)
-		end
-		table.sort(scene, sortFunction)
-		self.delton:stop()
-	end
+	local tasks = scene:flatten()
 	
 	self.delton:stop()
-	return scene
+	
+	return tasks
 end
 
 --sends fog relevant data to the given shader

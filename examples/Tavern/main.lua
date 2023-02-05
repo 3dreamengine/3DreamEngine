@@ -27,8 +27,6 @@ dream:init()
 
 --load scene
 local tavern = dream:loadObject(projectDir .. "scene", { cleanup = false })
-local scene = dream:newScene()
-scene:addObject(tavern)
 
 --a helper class
 local cameraController = require("extensions/utils/cameraController")
@@ -141,7 +139,7 @@ function love.draw()
 	love.graphics.setColor(1, 1, 1, 1)
 	
 	--draw the scene
-	dream:drawScene(scene)
+	dream:draw(tavern)
 	
 	--draw the particles
 	dream:drawParticleBatch(particleBatch)
@@ -278,9 +276,6 @@ function love.keypressed(key)
 		dream.canvases:setMode("normal")
 		dream:init()
 	end
-	
-	scene = dream:newScene()
-	scene:addObject(tavern)
 end
 
 function love.resize()

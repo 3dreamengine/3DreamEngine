@@ -1,9 +1,19 @@
 local lib = _3DreamEngine
 
 ---@return DreamScene
-function lib:newScene()
+function lib:newScene(typ, dynamic, alpha, cam, blacklist, frustumCheck, noSmallObjects)
 	local m = setmetatable({ }, self.meta.scene)
-	m:clear()
+	
+	m.tasks = { }
+	
+	m.typ = typ
+	m.dynamic = dynamic
+	m.alpha = alpha
+	m.cam = cam
+	m.blacklist = blacklist or { }
+	m.frustumCheck = frustumCheck
+	m.noSmallObjects = noSmallObjects
+	
 	return m
 end
 
@@ -42,33 +52,32 @@ local class = {
 	links = { "scene" },
 }
 
-function class:clear()
-	--static tasks
-	self.tasks = {
-		render = {
-			{
-				{}, {}
-			},
-			{
-				{}, {}
-			},
-		},
-		shadows = {
-			{
-				{}, {}
-			},
-			{
-				{}, {}
-			},
-		},
-	}
-end
-
 function class:preload()
 	--todo
 end
 
-function class:addObject(object, parentTransform, dynamic, reflection)
+function class:withinFrustum(object, task)
+	return not self.frustumCheck or not object.boundingBox.initialized or lib:inFrustum(self.cam, task:getPosition(), task:getSize(), object.rID)
+end
+
+function class:add(object)
+	self:addObject(object, nil, false)
+end
+
+function class:addObject(object, parentTransform, dynamic)
+	if self.blacklist[object] then
+		return
+	end
+	
+	if object.dynamic ~= nil then
+		dynamic = object.dynamic
+	end
+	
+	--wrong dynamic layer
+	if self.dynamic ~= nil and self.dynamic ~= dynamic then
+		return
+	end
+	
 	--apply transformation
 	local transform
 	if parentTransform then
@@ -82,6 +91,7 @@ function class:addObject(object, parentTransform, dynamic, reflection)
 	end
 	
 	--handle LOD
+	--todo lod should be mesh-related, with it's parent object as distance metric, pass a lazy distance metric
 	if object.LOD_min or object.LOD_max then
 		local pos = getPosition(object, transform)
 		local size = getSize(object, transform)
@@ -96,25 +106,35 @@ function class:addObject(object, parentTransform, dynamic, reflection)
 		end
 	end
 	
-	if object.dynamic ~= nil then
-		dynamic = object.dynamic
-	end
-	
-	--pass down some additional data
-	reflection = object.reflection or reflection
-	
 	--children
 	for _, o in pairs(object.objects) do
-		self:addObject(o, transform, dynamic, reflection)
+		self:addObject(o, transform, dynamic)
 	end
 	
 	--meshes
 	for _, m in pairs(object.meshes) do
-		self:addMesh(m, transform, dynamic, reflection)
+		self:addMesh(m, transform, object.reflection)
 	end
 end
 
-function class:addMesh(mesh, transform, dynamic, reflection)
+function class:addMesh(mesh, transform, reflection)
+	if self.blacklist[mesh] then
+		return
+	end
+	
+	--not visible
+	if self.typ == "render" then
+		if not mesh.renderVisibility then
+			return
+		end
+	else
+		--shadow pass
+		if mesh.material.alpha or not mesh.shadowVisibility or mesh.material.shadow == false then
+			return
+		end
+	end
+	
+	--todo cache
 	local pos = getPosition(mesh, transform)
 	local size = getSize(mesh, transform)
 	
@@ -128,36 +148,79 @@ function class:addMesh(mesh, transform, dynamic, reflection)
 		reflection,
 	}, lib.meta.task)
 	
+	--todo
 	mesh.rID = mesh.rID or math.random()
 	
-	--insert into respective rendering queues
-	local dyn = dynamic and 1 or 2
-	local alpha = mesh.material.alpha and 1 or 2
-	
-	--render pass
-	if mesh.renderVisibility then
-		local shaderID = lib:getRenderShaderID(task, false)
-		self:addTo(task, self.tasks.render[dyn][alpha], shaderID, mesh.material)
+	--wrong alpha
+	if (self.alpha and true) ~= (mesh.material.alpha and true) then
+		return
 	end
 	
-	--shadow pass
-	if alpha == 2 and mesh.shadowVisibility and mesh.material.shadow ~= false then
-		local shaderID = lib:getRenderShaderID(task, true)
-		self:addTo(task, self.tasks.shadows[dyn][alpha], shaderID, mesh.material)
+	--too small for this shadow type
+	--todo still mesh, especially because the size is known here theoretically
+	if self.noSmallObjects and mesh.farShadowVisibility ~= false then
+		return
+	end
+	
+	--not visible from current perspective
+	if not self:withinFrustum(mesh, task) then
+		return false
+	end
+	
+	--todo here custom reflections (closest globe or default) and lights can be used
+	
+	--add to list
+	local shaderID = lib:getRenderShaderID(task, self.typ == "shadow")
+	self:addTo(task, shaderID, mesh.material)
+end
+
+function class:addTo(task, shaderID, material)
+	task:setShaderID(shaderID)
+	
+	if self.alpha then
+		table.insert(self.tasks, task)
+	else
+		--create lists
+		if not self.tasks[shaderID] then
+			self.tasks[shaderID] = { }
+		end
+		if not self.tasks[shaderID][material] then
+			self.tasks[shaderID][material] = { }
+		end
+		
+		--task batch
+		table.insert(self.tasks[shaderID][material], task)
 	end
 end
 
-function class:addTo(task, tasks, shaderID, material)
-	--create lists
-	if not tasks[shaderID] then
-		tasks[shaderID] = { }
+--sorting function for the alpha pass
+local function sortFunction(a, b)
+	return a:getDistance() > b:getDistance()
+end
+
+function class:flatten()
+	--and flatten, perform frustum etc on addObject
+	local tasks = { }
+	if self.alpha then
+		tasks = self.tasks
+		
+		for _, task in ipairs(tasks) do
+			local dist = (task:getPosition() - self.cam.position):lengthSquared()
+			task:setDistance(dist)
+		end
+		
+		table.sort(tasks, sortFunction)
+	else
+		--todo iterator to avoid copy
+		for _, shaderGroup in pairs(self.tasks) do
+			for _, materialGroup in pairs(shaderGroup) do
+				for _, task in pairs(materialGroup) do
+					table.insert(tasks, task)
+				end
+			end
+		end
 	end
-	if not tasks[shaderID][material] then
-		tasks[shaderID][material] = { }
-	end
-	
-	--task batch
-	table.insert(tasks[shaderID][material], task)
+	return tasks
 end
 
 return class

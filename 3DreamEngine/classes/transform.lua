@@ -92,6 +92,7 @@ end
 
 function class:setDirty()
 	self.inverseTransform = false
+	self.globalTransform = false -- todo
 	self.dynamic = true
 end
 

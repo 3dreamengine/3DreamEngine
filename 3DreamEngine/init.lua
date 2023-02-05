@@ -128,9 +128,6 @@ lib.reflectionCanvases:setMode("direct")
 --default camera
 lib.camera = lib:newCamera()
 
---default scene
-lib.scene = lib:newScene()
-
 --hardcoded mipmap count, do not change
 lib.reflectionsLevels = 6
 
@@ -144,6 +141,8 @@ lib:registerMeshFormat("material", require(lib.root .. "/meshFormats/material"))
 
 --some functions require temporary canvases
 lib.canvasCache = { }
+
+lib.scene = { }
 
 if love.graphics then
 	--default objects
@@ -237,11 +236,7 @@ end
 ---Clears the current scene
 function lib:prepare()
 	self.lighting = { }
-	
-	self.scenes = { }
-	
-	lib:drawScene(self.scene)
-	self.scene:clear()
+	self.scene = { }
 	
 	self.particleBatches = { {}, {} }
 	self.particles = { {}, {} }
@@ -282,9 +277,7 @@ function lib:draw(object, x, y, z, sx, sy, sz)
 	end
 	
 	--add to scene
-	self.delton:start("draw")
-	self.scene:addObject(object, transform, dynamic)
-	self.delton:stop()
+	table.insert(self.scene, object)
 end
 
 ---Add a light
@@ -300,12 +293,6 @@ end
 ---@param brightness number
 function lib:addNewLight(typ, position, color, brightness)
 	self:addLight(self:newLight(typ, position, color, brightness))
-end
-
----Will render this scene
----@param scene DreamScene
-function lib:drawScene(scene)
-	self.scenes[scene] = true
 end
 
 ---Will render this batch

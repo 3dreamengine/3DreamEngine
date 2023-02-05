@@ -244,6 +244,7 @@ function lib:getRenderShader(ID, mesh, pass, canvases, light, shadows, sun)
 	
 	if not self.mainShaders[shaderID] then
 		local mat = mesh.material
+		--todo not correct, the task may contain custom reflections
 		local reflection = not shadows and (mesh.reflection or self.defaultReflection)
 		
 		--additional data
