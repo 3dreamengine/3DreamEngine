@@ -29,11 +29,11 @@ end
 --creates a subset of light sources, optimized for the current scene
 function lib:getLightOverview(cam)
 	--select the most important lights
-	for d, s in ipairs(self.lighting) do
-		s.active = false
-		s.priority = s.brightness * (s.shadow and 2.0 or 1.0)
-		if s.typ ~= "sun" then
-			s.priority = s.priority / (1.0 + (cam.position - vec3(s.x, s.y, s.z)):length())
+	for _, light in ipairs(self.lighting) do
+		light.active = false
+		light.priority = light.brightness * (light.shadow and 2.0 or 1.0)
+		if light.typ ~= "sun" then
+			light.priority = light.priority / (1.0 + (cam.position - vec3(light.x, light.y, light.z)):length())
 		end
 	end
 	table.sort(self.lighting, sortPriority)
@@ -42,16 +42,16 @@ function lib:getLightOverview(cam)
 	--todo cleanup
 	local lights = { }
 	local types = { }
-	for d, s in ipairs(self.lighting) do
-		local typ = s.typ .. "_" .. (s.shadow and (
-				"shadow" .. (s.shadow.smooth and "_smooth" or "") .. (s.shadow.dynamic and "_dynamic" or "")
+	for _, light in ipairs(self.lighting) do
+		local typ = light.typ .. "_" .. (light.shadow and (
+				"shadow" .. (light.shadow.smooth and "_smooth" or "") .. (light.shadow.dynamic and "_dynamic" or "")
 		) or "simple")
-		s.light_typ = typ
+		light.light_typ = typ
 		
 		if (types[typ] or 0) < self.max_lights then
 			types[typ] = (types[typ] or 0) + 1
-			table.insert(lights, s)
-			s.active = true
+			table.insert(lights, light)
+			light.active = true
 		end
 	end
 	
@@ -62,20 +62,16 @@ function lib:getLightOverview(cam)
 	}
 end
 
-function lib:sendLightUniforms(light, shader, overwriteTyp)
-	--general settings
-	local lightColor = { }
-	local lightPos = { }
-	
+function lib:sendLightUniforms(lightOverview, shader, overwriteTyp)
 	--global uniforms
-	for typ, count in pairs(light.types) do
-		self.lightShaders[typ]:sendGlobalUniforms(shader, count, light.lights)
+	for typ, count in pairs(lightOverview.types) do
+		self.lightShaders[typ]:sendGlobalUniforms(shader, count, lightOverview.lights)
 	end
 	
 	--uniforms
-	local IDs = { }
-	for _, light in ipairs(light.lights) do
-		IDs[light.light_typ] = (IDs[light.light_typ] or -1) + 1
-		self.lightShaders[overwriteTyp or light.light_typ]:sendUniforms(shader, light, light.light_typ .. "_" .. IDs[light.light_typ])
+	local uniformIds = { }
+	for _, light in ipairs(lightOverview.lights) do
+		uniformIds[light.light_typ] = (uniformIds[light.light_typ] or -1) + 1
+		self.lightShaders[overwriteTyp or light.light_typ]:sendUniforms(shader, light, light.light_typ .. "_" .. uniformIds[light.light_typ])
 	end
 end
