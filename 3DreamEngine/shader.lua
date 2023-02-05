@@ -102,7 +102,7 @@ for _, s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/light
 	lib.lightShaders[name] = require(lib.root .. "/shaders/light/" .. name)
 end
 
---return and load shader if nececary
+--return and load shader if necessary
 lib.shaders = { }
 function lib:getBasicShader(s)
 	if not lib.shaders[s] then
@@ -161,7 +161,7 @@ end
 function lib:getFinalShader(canvases)
 	local parts = { }
 	
-	table.insert(parts, self.autoExposure_enabled and "#define AUTOEXPOSURE_ENABLED" or nil)
+	table.insert(parts, self.autoExposure_enabled and "#define AUTO_EXPOSURE_ENABLED" or nil)
 	table.insert(parts, self.exposure and "#define EXPOSURE_ENABLED" or nil)
 	table.insert(parts, self.bloom_enabled and "#define BLOOM_ENABLED" or nil)
 	
@@ -471,12 +471,12 @@ function lib:getParticlesShader(pass, canvases, light, emissive, distortion, sin
 	return self.particlesShader[ID]
 end
 
-function lib:getLightComponents(light, basic)
+function lib:getLightComponents(lightOverview, basic)
 	local lcInit = { }
 	local lc = { }
 	
 	--global defines and code
-	for typ, _ in pairs(light.types) do
+	for typ, _ in pairs(lightOverview.types) do
 		local id = "light " .. typ
 		assert(self.lightShaders[typ], "Light of type '" .. typ .. "' does not exist!")
 		insertHeader(lcInit, id, self.lightShaders[typ]:constructDefinesGlobal(self))
@@ -490,7 +490,7 @@ function lib:getLightComponents(light, basic)
 	
 	--defines and code
 	local IDs = { }
-	for _, light in ipairs(light.lights) do
+	for _, light in ipairs(lightOverview.lights) do
 		
 		IDs[light.light_typ] = (IDs[light.light_typ] or -1) + 1
 		local id = light.light_typ .. "_" .. IDs[light.light_typ]

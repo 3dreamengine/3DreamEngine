@@ -17,7 +17,7 @@ varying vec3 viewVec;
 extern mat4 transformInverse;
 #endif
 
-#ifdef AUTOEXPOSURE_ENABLED
+#ifdef AUTO_EXPOSURE_ENABLED
 varying float eyeAdaption;
 #endif
 
@@ -141,7 +141,7 @@ vec4 effect(vec4 _, Image canvas_color, vec2 tc, vec2 sc) {
 #endif
 	
 	//eye adaption
-#ifdef AUTOEXPOSURE_ENABLED
+#ifdef AUTO_EXPOSURE_ENABLED
 	color.rgb *= eyeAdaption;
 #endif
 	
@@ -160,7 +160,7 @@ vec4 effect(vec4 _, Image canvas_color, vec2 tc, vec2 sc) {
 
 #ifdef VERTEX
 	vec4 position(mat4 transform_projection, vec4 VertexPosition) {
-#ifdef AUTOEXPOSURE_ENABLED
+#ifdef AUTO_EXPOSURE_ENABLED
 		eyeAdaption = Texel(canvas_exposure, vec2(0.5, 0.5)).r;
 #endif
 		vec4 pos = transform_projection * VertexPosition;
