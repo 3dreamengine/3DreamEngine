@@ -3,6 +3,7 @@
 particlesystem.lua - generates particle meshes based on .mat instructions
 --]]
 
+---@type Dream
 local lib = _3DreamEngine
 
 --load a list of particle objects and prepare them

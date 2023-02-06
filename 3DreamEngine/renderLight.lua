@@ -3,6 +3,7 @@
 a collection of lighting helper functions for the rendering process
 --]]
 
+---@type Dream
 local lib = _3DreamEngine
 
 local function sortPriority(a, b)

@@ -3,6 +3,7 @@
 settings.lua - a bunch of setter and getter to set global settings
 --]]
 
+---@type Dream
 local lib = _3DreamEngine
 
 ---Sets the max count of simple lights

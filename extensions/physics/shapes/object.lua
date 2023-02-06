@@ -1,3 +1,4 @@
+---@type Dream
 local lib = _3DreamEngine
 
 local function newObjectInner(physics, obj, transform, colliders, shapeMode)

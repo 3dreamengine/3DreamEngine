@@ -3,6 +3,7 @@
 classes.lua - contains meta tables and constructors for all 3Dream classes
 --]]
 
+---@type Dream
 local lib = _3DreamEngine
 
 lib.classes = { }

@@ -3,6 +3,7 @@
 3doExport.lua - 3do file exporter
 --]]
 
+---@type Dream
 local lib = _3DreamEngine
 
 function lib:export3do(obj)

@@ -3,6 +3,7 @@
 resources.lua - resource loader
 --]]
 
+---@type Dream
 local lib = _3DreamEngine
 
 --master resource loader

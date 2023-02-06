@@ -1,4 +1,5 @@
 local job = { }
+---@type Dream
 local lib = _3DreamEngine
 
 local lastSide = 0

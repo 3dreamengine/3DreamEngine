@@ -1,3 +1,4 @@
+---@type Dream
 local lib = _3DreamEngine
 
 --todo particles do not significantly differ from objects, are they not added as tasks this a task?

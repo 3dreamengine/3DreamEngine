@@ -3,6 +3,7 @@
 materials.lua - load and process materials
 --]]
 
+---@type Dream
 local lib = _3DreamEngine
 
 function lib:registerMaterial(material, name)

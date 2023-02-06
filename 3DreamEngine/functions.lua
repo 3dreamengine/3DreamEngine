@@ -3,6 +3,7 @@
 functions.lua - contains library relevant functions
 --]]
 
+---@type Dream
 local lib = _3DreamEngine
 
 ---Returns the look-at transformation matrix

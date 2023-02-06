@@ -2,6 +2,7 @@
 #part of the 3DreamEngine by Luke100000
 --]]
 
+---@type Dream
 local lib = _3DreamEngine
 
 --rendering stats

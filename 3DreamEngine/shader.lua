@@ -3,6 +3,7 @@
 shader.lua - loads the shaders
 --]]
 
+---@type Dream
 local lib = _3DreamEngine
 
 local testForOpenES = true

@@ -1,3 +1,4 @@
+---@type Dream
 local lib = _3DreamEngine
 
 ---A new raytrace collision mesh, containing only relevant data

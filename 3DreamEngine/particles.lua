@@ -3,6 +3,7 @@
 particles.lua - particle spritebatches
 --]]
 
+---@type Dream
 local lib = _3DreamEngine
 
 if not love.graphics then

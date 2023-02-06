@@ -3,6 +3,7 @@
 loader.lua - loads objects
 --]]
 
+---@type Dream
 local lib = _3DreamEngine
 
 --tags that will get recognized

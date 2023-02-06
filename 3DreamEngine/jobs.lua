@@ -3,6 +3,7 @@
 jobs.lua - processes all kind of side tasks (shadows, blurring ambient lighting, rendering sky dome, ...)
 --]]
 
+---@type Dream
 local lib = _3DreamEngine
 
 --load jobs

@@ -1,4 +1,5 @@
 local job = { }
+---@type Dream
 local lib = _3DreamEngine
 
 function job:init()

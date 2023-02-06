@@ -2,6 +2,7 @@
 #glTF
 --]]
 
+---@type Dream
 local lib = _3DreamEngine
 
 local cache = { }
