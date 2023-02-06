@@ -19,16 +19,16 @@ function class:getInstancesCount()
 	return self.instancesCount
 end
 
-function class:updateBoundingBox()
-	lib.meta.mesh.updateBoundingBox(self)
+function class:updateBoundingSphere()
+	lib.classes.mesh.updateBoundingSphere(self)
 	
-	self.originalBoundingBox = self.boundingBox
+	self.originalBoundingSphere = self.boundingSphere
 	
-	--todo
+	--todo similar algo like updateBoundingSphere for objects
 end
 
 function class:resize(count)
-	self.originalBoundingBox = self.boundingBox:clone()
+	self.originalBoundingSphere = self.boundingSphere:clone()
 	
 	--create mesh containing the transforms
 	local new = love.graphics.newMesh({
@@ -70,12 +70,11 @@ function class:addInstance(rotation, position, index)
 	self.instanceMesh:setVertex(index, instance)
 end
 
----@private
-function class:extendBoundingBoxByVertex(instance)
-	--todo
-	self.boundingBox = self.boundingBox:merge(lib:newBoundingBox(
-			rotation * self.originalBoundingBox.first + position,
-			rotation * self.originalBoundingBox.second + position
+local function getLossySize(mat3)
+	return math.sqrt(math.max(
+			(mat3[1] ^ 2 + mat3[4] ^ 2 + mat3[7] ^ 2),
+			(mat3[2] ^ 2 + mat3[5] ^ 2 + mat3[8] ^ 2),
+			(mat3[3] ^ 2 + mat3[6] ^ 2 + mat3[9] ^ 2)
 	))
 end
 
@@ -85,6 +84,7 @@ function class:setInstances(instances)
 	self:resize(#instances)
 	self.instanceMesh:setVertices(instances)
 	self.instancesCount = #instances
+	self:updateBoundingSphere()
 end
 
 return class

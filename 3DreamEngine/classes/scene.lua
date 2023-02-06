@@ -26,18 +26,18 @@ end
 
 local function getPosition(object, transform)
 	if transform then
-		local a = object.boundingBox.center
+		local a = object.boundingSphere.center
 		return vec3(
 				transform[1] * a[1] + transform[2] * a[2] + transform[3] * a[3] + transform[4],
 				transform[5] * a[1] + transform[6] * a[2] + transform[7] * a[3] + transform[8],
 				transform[9] * a[1] + transform[10] * a[2] + transform[11] * a[3] + transform[12])
 	else
-		return object.boundingBox.center
+		return object.boundingSphere.center
 	end
 end
 
 local function getSize(object, transform)
-	return object.boundingBox.size * (transform and transform:getLossySize() or 1)
+	return object.boundingSphere.size * (transform and transform:getLossySize() or 1)
 end
 
 local function isWithingLOD(LOD_min, LOD_max, pos, size)
@@ -64,7 +64,7 @@ function class:preload()
 end
 
 function class:withinFrustum(object, task)
-	return not self.frustumCheck or not object.boundingBox.initialized or lib:inFrustum(self.cam, task:getPosition(), task:getSize(), object.rID)
+	return not self.frustumCheck or not object.boundingSphere.initialized or lib:inFrustum(self.cam, task:getPosition(), task:getSize(), object.rID)
 end
 
 function class:add(object)

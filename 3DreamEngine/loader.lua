@@ -384,9 +384,9 @@ function lib:processObject(obj)
 	end
 	
 	
-	--calculate bounding box
-	if not obj.boundingBox.initialized then
-		obj:updateBoundingBox()
+	--calculate bounding sphere
+	if not obj.boundingSphere.initialized then
+		obj:updateBoundingSphere()
 	end
 	
 	

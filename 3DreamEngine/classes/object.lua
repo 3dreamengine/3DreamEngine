@@ -27,7 +27,7 @@ function lib:newObject(name)
 		
 		mainSkeleton = false,
 		
-		boundingBox = self:newEmptyBoundingBox(),
+		boundingSphere = self:newEmptyBoundingSphere(),
 		
 		loaded = true,
 	}, self.meta.object)
@@ -108,34 +108,22 @@ function class:getLOD()
 	return self.LOD_min, self.LOD_max
 end
 
-function class:updateBoundingBox()
+function class:updateBoundingSphere()
+	--update bounding sphere of meshes
 	for _, s in pairs(self.meshes) do
-		if not s.boundingBox.initialized then
-			s:updateBoundingBox()
+		if not s.boundingSphere.initialized then
+			s:updateBoundingSphere()
 		end
 	end
 	
+	--update bounding spheres of objects
 	for _, s in pairs(self.objects) do
-		if not s.boundingBox.initialized then
-			s:updateBoundingBox()
+		if not s.boundingSphere.initialized then
+			s:updateBoundingSphere()
 		end
 	end
 	
-	--calculate total bounding box
-	self.boundingBox = lib:newEmptyBoundingBox()
-	self.boundingBox:setInitialized(true)
-	for _, s in pairs(self.objects) do
-		local sz = vec3(s.boundingBox.size, s.boundingBox.size, s.boundingBox.size)
-		
-		self.boundingBox.first = s.boundingBox.first:min(self.boundingBox.first - sz)
-		self.boundingBox.second = s.boundingBox.second:max(self.boundingBox.second + sz)
-		self.boundingBox.center = (self.boundingBox.second + self.boundingBox.first) / 2
-	end
-	
-	for _, s in pairs(self.objects) do
-		local o = s.boundingBox.center - self.boundingBox.center
-		self.boundingBox.size = math.max(self.boundingBox.size, s.boundingBox.size + o:lengthSquared())
-	end
+	--todo while currently not used, object bounding sphere might get interesting
 end
 
 function class:clearMeshes()
@@ -257,9 +245,9 @@ function class:merge()
 	
 	final.meshes = { merged = mesh }
 	
-	--todo the bounding box should remain unchanged?
+	--todo the bounding sphere should remain unchanged?
 	local t = love.timer.getTime()
-	final:updateBoundingBox()
+	final:updateBoundingSphere()
 	print(love.timer.getTime() - t, "bb")
 	
 	return final
@@ -364,7 +352,7 @@ function class:encode(meshCache, dataStrings)
 		
 		["name"] = self.name,
 		
-		["boundingBox"] = self.boundingBox,
+		["boundingSphere"] = self.boundingSphere,
 		
 		["transform"] = self.transform,
 		
@@ -399,7 +387,7 @@ function class:decode(meshData)
 	end
 	
 	--recreate vecs and mats
-	self.boundingBox:decode()
+	self.boundingSphere:decode()
 	
 	--recreate objects
 	for d, s in pairs(self.objects) do

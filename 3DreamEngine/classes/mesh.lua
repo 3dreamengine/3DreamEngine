@@ -9,7 +9,7 @@ function lib:newMesh(name, material)
 	local mesh = {
 		name = name,
 		material = material,
-		boundingBox = self:newEmptyBoundingBox(),
+		boundingSphere = self:newEmptyBoundingSphere(),
 		
 		meshDrawMode = "triangles",
 		mesh = false,
@@ -29,7 +29,7 @@ end
 ---@class DreamMesh
 ---@field name string
 ---@field meshFormat DreamMeshFormat
----@field boundingBox DreamBoundingBox
+---@field boundingSphere DreamBoundingSphere
 ---@field meshDrawMode "MeshDrawMode"
 ---@field meshFormat DreamMeshFormat
 ---@field mesh DreamMesh
@@ -139,29 +139,58 @@ function class:tostring()
 	return self.name .. (#tags > 0 and (" (" .. table.concat(tags, ", ") .. ")") or "")
 end
 
-function class:updateBoundingBox()
+---@private
+function class:getFarthestVertex(from)
+	local best = from
+	local bestDistance = 0
+	for i = 1, self.vertices:getSize() do
+		local point = self.vertices:get(i)
+		local dist = (point - from):lengthSquared()
+		if dist > bestDistance then
+			bestDistance = dist
+			best = point
+		end
+	end
+	return best
+end
+
+function class:updateBoundingSphere()
 	if not self.vertices then
 		return
 	end
 	
-	self.boundingBox = lib:newEmptyBoundingBox()
-	self.boundingBox:setInitialized(true)
+	self.boundingSphere = lib:newEmptyBoundingSphere()
+	self.boundingSphere:setInitialized(true)
 	
-	--get aabb
+	--Ritter's bounding sphere
+	--pick a random point
+	local x = self.vertices:get(1)
+	
+	--find the farthest point
+	local y = self:getFarthestVertex(x)
+	
+	--find the farthest point from y
+	local z = self:getFarthestVertex(y)
+	
+	--the initial guess is in the middle of those two points
+	local center = (y + z) / 2
+	local size = (y - z):length() / 2
+	
+	--now include all other points
+	local size2 = size ^ 2
 	for i = 1, self.vertices:getSize() do
 		local pos = self.vertices:getVector(i)
-		self.boundingBox.first = self.boundingBox.first:min(pos)
-		self.boundingBox.second = self.boundingBox.second:max(pos)
+		local diff = pos - center
+		local dist = diff:lengthSquared()
+		if dist > size2 then
+			dist = math.sqrt(dist)
+			size = (size + dist) / 2
+			center = (size * center + (dist - size) * pos) / dist
+			size2 = size ^ 2
+		end
 	end
-	self.boundingBox.center = (self.boundingBox.second + self.boundingBox.first) / 2
 	
-	--get size
-	local max = 0
-	for i = 1, self.vertices:getSize() do
-		local pos = self.vertices:getVector(i)
-		max = math.max(max, pos:lengthSquared())
-	end
-	self.boundingBox.size = math.max(math.sqrt(max), self.boundingBox.size)
+	self.boundingSphere = lib:newBoundingSphere(center, size)
 end
 
 --clean most primary buffers
@@ -485,7 +514,7 @@ function class:encode(meshCache, dataStrings)
 		["name"] = self.name,
 		["meshFormat"] = self.meshFormat,
 		
-		["boundingBox"] = self.boundingBox,
+		["boundingSphere"] = self.boundingSphere,
 		
 		["renderVisibility"] = self.renderVisibility,
 		["shadowVisibility"] = self.shadowVisibility,
@@ -599,8 +628,8 @@ function class:encode(meshCache, dataStrings)
 end
 
 function class:decode(meshData)
-	setmetatable(self.boundingBox, lib.meta.boundingBox)
-	self.boundingBox:decode()
+	setmetatable(self.boundingSphere, lib.meta.boundingSphere)
+	self.boundingSphere:decode()
 	
 	--look for meshes and link
 	for _, s in pairs(self) do

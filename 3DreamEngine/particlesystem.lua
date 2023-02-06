@@ -242,13 +242,7 @@ function lib:addParticleSystems(obj)
 								po.transform = mesh.transform
 								pm.isParticle = true
 								
-								local sz = particle.boundingBox.size * t.maxScale
-								local margin = vec3(sz, sz, sz)
-								
 								pm:setInstances(transforms)
-								
-								pm.boundingBox = self:newBoundingBox(vec3(x, y, z) - margin, po.boundingBox.first + delta + margin * 2)
-								po:updateBoundingBox()
 							end
 						end
 					end

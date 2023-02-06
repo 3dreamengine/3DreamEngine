@@ -1,7 +1,7 @@
 --[[
 #raytrace extension
 Takes a non-cleaned (face map still present) mesh, creates a BSP-tree,
-uses the objects bounding box as a pre-test, transforms accordingly to the objects transformations
+uses the objects bounding sphere as a pre-test, transforms accordingly to the objects transformations
 and returns either a boolean or, slightly slower, a position of intersection.
 While rather fast, it is recommended to use a lower poly approximation mesh whenever possible.
 
@@ -178,10 +178,10 @@ local function nearestPointToLine(a, b, p)
 end
 
 local function raytraceMesh(mesh, localOrigin, localDirection)
-	--bounding box check
-	local center = mesh.boundingBox.center
+	--bounding sphere check
+	local center = mesh.boundingSphere.center
 	local nearest = nearestPointToLine(localOrigin, localOrigin + localDirection, center)
-	if (nearest - center):lengthSquared() > mesh.boundingBox.size ^ 2 then
+	if (nearest - center):lengthSquared() > mesh.boundingSphere.size ^ 2 then
 		return false
 	end
 	
