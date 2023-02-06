@@ -140,7 +140,7 @@ function class:tostring()
 end
 
 function class:updateBoundingBox()
-	if self.instanceMesh or not self.vertices then
+	if not self.vertices then
 		return
 	end
 	
@@ -400,47 +400,6 @@ function class:create()
 	if worldShader.initMesh then
 		worldShader:initMesh(self)
 	end
-end
-
---todo custom class
-function class:createInstances(count)
-	self.originalBoundingBox = self.boundingBox:clone()
-	
-	--create mesh containing the transforms
-	self.instanceMesh = love.graphics.newMesh({
-		{ "InstanceRotation0", "float", 3 },
-		{ "InstanceRotation1", "float", 3 },
-		{ "InstanceRotation2", "float", 3 },
-		{ "InstancePosition", "float", 3 },
-	}, count)
-	
-	self.instancesCount = 0
-end
-
---todo custom class
-function class:addInstance(rotation, position, index)
-	if not index then
-		self.instancesCount = self.instancesCount + 1
-		index = self.instancesCount
-		assert(index <= self.instanceMesh:getVertexCount(), "Instance mesh too small!")
-	end
-	self.instanceMesh:setVertex(index, {
-		rotation[1], rotation[2], rotation[3],
-		rotation[4], rotation[5], rotation[6],
-		rotation[7], rotation[8], rotation[9],
-		position[1], position[2], position[3]
-	})
-	self.boundingBox = self.boundingBox:merge(lib:newBoundingBox(
-			rotation * self.originalBoundingBox.first + position,
-			rotation * self.originalBoundingBox.second + position
-	))
-end
-
---todo custom class
-function class:addInstances(instances)
-	self:createInstances(#instances)
-	self.instanceMesh:setVertices(instances)
-	self.instancesCount = #instances
 end
 
 local function vertexHash(v)

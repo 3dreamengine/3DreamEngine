@@ -36,7 +36,8 @@ end
 local function createInstanced(n)
 	math.randomseed(1)
 	local newMonkey = monkey:clone()
-	newMonkey.meshes.Suzanne:createInstances(n)
+	newMonkey.meshes.Suzanne = dream:newInstancedMesh(newMonkey.meshes.Suzanne)
+	newMonkey.meshes.Suzanne:resize(n)
 	for _ = 1, n do
 		newMonkey.meshes.Suzanne:addInstance(mat3:getIdentity(), getPos())
 	end

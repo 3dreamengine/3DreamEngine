@@ -44,6 +44,7 @@ function class:refresh()
 end
 
 function class:setLocal(center, first, second)
+	--todo change to matrix
 	self.center = center
 	self.first = first
 	self.second = second

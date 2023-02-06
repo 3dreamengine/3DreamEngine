@@ -235,7 +235,7 @@ function lib:addParticleSystems(obj)
 								--prepare new mesh
 								local pname = meshName .. "_ps_" .. psID .. "_" .. pID .. "_" .. ID
 								local po = lib:newObject(pname)
-								local pm = particle:clone()
+								local pm = lib:newInstancedMesh(particle:clone())
 								po.meshes[pname] = pm
 								obj.objects[pname] = po
 								
@@ -245,7 +245,7 @@ function lib:addParticleSystems(obj)
 								local sz = particle.boundingBox.size * t.maxScale
 								local margin = vec3(sz, sz, sz)
 								
-								pm:addInstances(transforms)
+								pm:setInstances(transforms)
 								
 								pm.boundingBox = self:newBoundingBox(vec3(x, y, z) - margin, po.boundingBox.first + delta + margin * 2)
 								po:updateBoundingBox()
