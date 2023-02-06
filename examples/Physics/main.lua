@@ -54,7 +54,7 @@ local mapMesh = utils.map.createFromWorld(world)
 local gameObjects = {  }
 local function addObject(object, x, y, z, shape)
 	local o = {
-		object = object,
+		object = object:instance(),
 		collider = world:add(shape or physics:newPhysicsObject(object), "dynamic", x, y, z), --newObject is slow, but required since our crates are random in size
 		transform = object:getTransform()
 	}
@@ -99,7 +99,7 @@ function love.draw()
 		o.object:translateWorld(pos)
 		
 		--if this is a chicken, animate it
-		if o.object == objects.chicken then
+		if o == player then
 			local v = o.collider:getVelocity()
 			o.walkingAnim = (o.walkingAnim or 0) + love.timer.getDelta() * vec3(v.x, 0, v.z):length()
 			o.avgVelocity = (o.avgVelocity or v) * (1 - love.timer.getDelta() * 5) + v * love.timer.getDelta() * 5

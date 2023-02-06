@@ -47,6 +47,12 @@ for i = 1, 3 do
 	lights[i].shadow:setSmooth(true)
 end
 
+local torches = {
+	torch:instance():translate(0, 0, -1.9):scale(0.075):rotateY(-math.pi/2),
+	torch:instance():translate(1.25, 0, 1.9):scale(0.075):rotateY(math.pi/2),
+	torch:instance():translate(-1.25, 0, 1.9):scale(0.075):rotateY(math.pi/2),
+}
+
 local hideTooltips = false
 
 function love.draw()
@@ -84,12 +90,9 @@ function love.draw()
 	dream:drawParticleBatch(particleBatch)
 	
 	--torches
-	torch:resetTransform()
-	torch:rotateY(-math.pi/2)
-	dream:draw(torch, 0, 0, -1.9, 0.075)
-	torch:rotateY(-math.pi)
-	dream:draw(torch, 1.25, 0, 1.9, 0.075)
-	dream:draw(torch, -1.25, 0, 1.9, 0.075)
+	for _, torch in ipairs(torches) do
+		dream:draw(torch)
+	end
 
 	dream:present()
 	
