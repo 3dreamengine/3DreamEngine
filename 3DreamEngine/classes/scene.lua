@@ -168,7 +168,7 @@ function class:addMesh(mesh, transform, reflection)
 	
 	--too small for this shadow type
 	--todo still mesh, especially because the size is known here theoretically
-	if self.noSmallObjects and mesh.farShadowVisibility ~= false then
+	if self.noSmallObjects and mesh.farShadowVisibility == false then
 		return
 	end
 	
