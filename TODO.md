@@ -2,6 +2,15 @@
 
 A list of upcoming changes and features.
 
+# Remove dynamic shadows
+
+The idea (splitting static and dynamic shadows) performs surprisingly well but
+
+* It's a lot of code to keep track of dynamic objects, and it's not even accurate for vertex shaders applying transforms
+* It requires 2x shadow shaders
+* It requires a lot of branching in the shadow rendering, which caused typos in the past already
+* It's over optimization. The CPU bottleneck is the main issue, masking this with selective rendering is not really a fix
+
 # Fix 3DO
 
 Each class is serializable, which can be used for the internal file format but also to shader objects between threads efficiently (since the buffers are not copied).
@@ -18,15 +27,14 @@ The current light disk approach performs barely acceptable, but can be further e
 
 * Tweak the disk, make rays texture less sharp
 * Instead of calculating pixels on the entire screen, convert the disks border into a radian stripe and only calculate that
-* Then use this 2D stripe for the rest of the screen, lookup using atan
-* The lookup table has small y resolution for everything within the disk
-* This lookup table is generated for each light source, and THEN is a common godray step performed
+* Then use this 1D stripe for the rest of the screen, lookup using atan, no godray within the disk
+* This lookup table is generated for each light source (e.g.: 8px output), and then applied all at once, thus allowing easy multi source godrays if required
 
 # Performance
 
 * Finish LODs + example
 * Simplify Vertical particles
-  * Prevents optimizations for very little effect
+    * Prevents optimizations for very little effect
 
 # Buffer builder
 
