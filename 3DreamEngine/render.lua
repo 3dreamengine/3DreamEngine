@@ -660,11 +660,12 @@ function lib:present(camera, canvases, lite)
 				-b[9], -b[10], -b[11], -b[12]
 		)
 		
+		local ma = camera.transformProj
 		camera.transformProjOrigin = mat4(
-				a1 * b[1], a1 * b[2], a1 * b[3], 0.0,
-				a6 * b[5], a6 * b[6], a6 * b[7], 0.0,
-				a11 * b[9], a11 * b[10], a11 * b[11], a12,
-				-b[9], -b[10], -b[11], 0.0
+				ma[1], ma[2], ma[3], 0.0,
+				ma[5], ma[6], ma[7], 0.0,
+				ma[9], ma[10], ma[11], a12,
+				ma[13], ma[14], ma[15], 0.0
 		)
 		
 		camera.aspect = aspect
