@@ -42,7 +42,6 @@ local ones = {
 }
 local function getInput(input, mesh, face)
 	if input then
-		error()
 		local b = mesh[input.buffer or "colors"]
 		if not b then
 			error("Buffer " .. tostring(input.buffer or "colors") .. " does not exist!")
@@ -97,7 +96,7 @@ function lib:addParticleSystems(obj)
 		
 		--place them
 		for psID, ps in ipairs(particleSystems) do
-			assert(#ps.loadedObjects > 0, "particle systems imported objects are empty")
+			assert(#ps.loadedObjects > 0, "Particle systems imported objects are empty")
 			
 			--list particles to spawn
 			for pID, particle in ipairs(ps.loadedObjects) do
@@ -131,7 +130,7 @@ function lib:addParticleSystems(obj)
 					local am = math.floor(area * maxDensity * particleDensity + math.random())
 					
 					--add objects
-					for i = 1, am do
+					for _ = 1, am do
 						local u = math.random()
 						local v = math.random()
 						
