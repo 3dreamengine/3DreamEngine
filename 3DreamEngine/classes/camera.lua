@@ -11,10 +11,14 @@ function lib:newCamera(transform, transformProj, position, normal)
 		--extracted from transform matrix
 		normal = normal or vec3(0, 0, 0),
 		position = position or vec3(0, 0, 0),
+		viewPosition = position or vec3(0, 0, 0),
+		
+		orthographic = false,
 		
 		fov = 90,
 		near = 0.01,
 		far = 1000,
+		size = 10,
 		aspect = 1.0,
 	}, self.meta.camera)
 end
@@ -56,6 +60,24 @@ function class:getFar()
 	return self.far
 end
 
+---Sets the horizontal orthographic viewport size
+---@param size number
+function class:setSize(size)
+	self.size = size
+end
+function class:getSize()
+	return self.size
+end
+
+---Sets projection transform to orthographic, does not work with sky-boxes
+---@param orthographic boolean
+function class:setOrthographic(orthographic)
+	self.orthographic = orthographic
+end
+function class:isOrthographic()
+	return self.orthographic
+end
+
 ---@return "vec3"
 function class:getNormal()
 	return self.normal
@@ -66,14 +88,14 @@ function class:getPosition()
 	return self.position
 end
 
----Applies a perspective transform, called internally
-function class:applyPerspectiveTransform(canvases)
+---Returns the final camera-perspective transform
+---@private
+function class:getPerspectiveTransform(canvases)
 	local n = self.near
 	local f = self.far
 	local fov = self.fov
 	local scale = math.tan(fov * math.pi / 360)
-	local aspect = canvases.width / canvases.height
-	local r = scale * n * aspect
+	local r = scale * n * self.aspect
 	local t = scale * n
 	local m = canvases.mode == "direct" and 1 or -1
 	
@@ -86,22 +108,56 @@ function class:applyPerspectiveTransform(canvases)
 	local a11 = -(f + n) * fn1
 	local a12 = -2 * f * n * fn1
 	
-	self.transformProj = mat4(
-			a1 * b[1], a1 * b[2], a1 * b[3], a1 * b[4],
-			a6 * b[5], a6 * b[6], a6 * b[7], a6 * b[8],
-			a11 * b[9], a11 * b[10], a11 * b[11], a11 * b[12] + a12,
-			-b[9], -b[10], -b[11], -b[12]
-	)
+	return mat4({
+		a1 * b[1], a1 * b[2], a1 * b[3], a1 * b[4],
+		a6 * b[5], a6 * b[6], a6 * b[7], a6 * b[8],
+		a11 * b[9], a11 * b[10], a11 * b[11], a11 * b[12] + a12,
+		-b[9], -b[10], -b[11], -b[12]
+	})
+end
+
+---Returns the final camera-orthographic transform
+---@private
+function class:getOrthographicTransform(canvases)
+	self.viewPosition = self.position - self.normal * 10000
+	
+	local zoom = 10
+	local left = -self.aspect * zoom
+	local right = self.aspect * zoom
+	local bottom = -zoom
+	local top = zoom
+	local n = 0
+	local f = self.far
+	
+	local m = canvases.mode == "direct" and 1 or -1
+	local mat = mat4({
+		2 / (right - left), 0, 0, -(right + left) / (right - left),
+		0, 2 / (top - bottom) * m, 0, -(top + bottom) / (top - bottom) * m,
+		0, 0, -2 / (f - n), -(f + n) / (f - n),
+		0, 0, 0, 1
+	})
+	
+	local b = self.transform:invert()
+	return mat * b
+end
+
+---@private
+function class:applyProjectionTransform(canvases)
+	self.aspect = canvases.width / canvases.height
+	
+	if self.orthographic then
+		self.transformProj = self:getOrthographicTransform(canvases)
+	else
+		self.transformProj = self:getPerspectiveTransform(canvases)
+	end
 	
 	local ma = self.transformProj
-	self.transformProjOrigin = mat4(
-			ma[1], ma[2], ma[3], 0.0,
-			ma[5], ma[6], ma[7], 0.0,
-			ma[9], ma[10], ma[11], a12,
-			ma[13], ma[14], ma[15], 0.0
-	)
-	
-	self.aspect = aspect
+	self.transformProjOrigin = mat4({
+		ma[1], ma[2], ma[3], 0.0,
+		ma[5], ma[6], ma[7], 0.0,
+		ma[9], ma[10], ma[11], -1,
+		ma[13], ma[14], ma[15], 0.0
+	})
 end
 
 return class

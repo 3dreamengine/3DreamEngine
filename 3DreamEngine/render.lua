@@ -193,7 +193,7 @@ function lib:render(canvases, cam, dynamic)
 					
 					--camera
 					shader:send("transformProj", cam.transformProj)
-					checkAndSendCached(shaderObject, "viewPos", cam.position)
+					checkAndSendCached(shaderObject, "viewPos", cam.viewPosition)
 					
 					checkAndSendCached(shaderObject, "ambient", self.sun_ambient)
 				end
@@ -289,7 +289,7 @@ function lib:render(canvases, cam, dynamic)
 				love.graphics.setShader(shader)
 				
 				shader:send("transformProj", cam.transformProj)
-				if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", cam.position) end
+				if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", cam.viewPosition) end
 				checkAndSendCached(shaderObject, "exposure", self.exposure)
 				checkAndSendCached(shaderObject, "ambient", self.sun_ambient)
 				
@@ -334,7 +334,7 @@ function lib:render(canvases, cam, dynamic)
 				love.graphics.setShader(shader)
 				
 				shader:send("transformProj", cam.transformProj)
-				if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", cam.position) end
+				if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", cam.viewPosition) end
 				checkAndSendCached(shaderObject, "exposure", self.exposure)
 				checkAndSendCached(shaderObject, "ambient", self.sun_ambient)
 				
@@ -442,7 +442,7 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects, smoo
 			--camera
 			shader:send("transformProj", cam.transformProj)
 			if hasUniform(shaderObject, "viewPos") then
-				shader:send("viewPos", cam.position)
+				shader:send("viewPos", cam.viewPosition)
 			end
 			
 			shaderObject.pixelShader:perShader(shaderObject)
@@ -605,7 +605,7 @@ function lib:renderFull(cam, canvases)
 		checkAndSend(shader, "canvas_exposure", self.canvas_exposure)
 		
 		checkAndSend(shader, "transformInverse", cam.transformProj:invert())
-		checkAndSend(shader, "viewPos", cam.position)
+		checkAndSend(shader, "viewPos", cam.viewPosition)
 		
 		checkAndSend(shader, "exposure", self.exposure)
 		
@@ -632,10 +632,10 @@ function lib:present(camera, canvases, lite)
 	camera = camera or self.camera
 	camera.position = vec3(camera.transform[4], camera.transform[8], camera.transform[12])
 	camera.normal = vec3(-camera.transform[3], -camera.transform[7], -camera.transform[11]):normalize()
-	
-	--perspective transform
-	camera:applyPerspectiveTransform(canvases)
+	camera.viewPosition = camera.position
 	self.lastUsedCam = camera
+	
+	camera:applyProjectionTransform(canvases)
 	
 	--process render jobs
 	if not lite then
