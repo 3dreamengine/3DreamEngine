@@ -156,7 +156,7 @@ vec4 position(mat4 _t, vec4 _v) {
 	
 	vertexPos = instanceRotation * VertexPosition.xyz + InstancePosition;
 	
-	normalTransform = instanceRotation * normalTransform;
+	normalTransform = normalTransform * instanceRotation;
 #else
 	vertexPos = VertexPosition.xyz;
 #endif

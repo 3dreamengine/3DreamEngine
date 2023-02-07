@@ -136,7 +136,7 @@ function class:getFarthestVertex(from)
 	local best = from
 	local bestDistance = 0
 	for i = 1, self.vertices:getSize() do
-		local point = self.vertices:get(i)
+		local point = self.vertices:getVector(i)
 		local dist = (point - from):lengthSquared()
 		if dist > bestDistance then
 			bestDistance = dist
@@ -153,7 +153,7 @@ function class:updateBoundingSphere()
 	
 	--Ritter's bounding sphere
 	--pick a random point
-	local x = self.vertices:get(1)
+	local x = self.vertices:getVector(1)
 	
 	--find the farthest point
 	local y = self:getFarthestVertex(x)

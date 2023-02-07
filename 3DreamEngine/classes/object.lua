@@ -236,14 +236,8 @@ function class:merge()
 	end
 	
 	local final = lib:newObject(self.name)
-	
 	final.meshes = { merged = mesh }
-	
-	--todo the bounding sphere should remain unchanged?
-	local t = love.timer.getTime()
 	final:updateBoundingSphere()
-	print(love.timer.getTime() - t, "bb")
-	
 	return final
 end
 

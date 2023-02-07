@@ -75,29 +75,29 @@ function class:resize(count)
 end
 
 ---addInstance
----@param rotation "mat3"
----@param position "vec3"
+---@param transform "mat4" @ a mat3x4 matrix, instances do not support shearing, e.g. the last row
 ---@param index number @ Optional index, else it will append
-function class:addInstance(rotation, position, index)
+function class:addInstance(transform, index)
 	if not index then
 		self.instancesCount = self.instancesCount + 1
 		index = self.instancesCount
+		--todo just increase size?
 		assert(index <= self.instanceMesh:getVertexCount(), "Instance mesh too small!")
 	end
 	
 	local instance = {
-		rotation[1], rotation[2], rotation[3],
-		rotation[4], rotation[5], rotation[6],
-		rotation[7], rotation[8], rotation[9],
-		position[1], position[2], position[3]
+		transform[1], transform[5], transform[9],
+		transform[2], transform[6], transform[10],
+		transform[3], transform[7], transform[11],
+		transform[4], transform[8], transform[12]
 	}
 	
 	self.instanceMesh:setVertex(index, instance)
 	self:extendBoundingSphere(instance)
 end
 
----Place instances from an array of mat4x3 transformations, represented as a flat array (mat3 rotation, vec3 position)
----@param instances number[][]
+---Place instances from an array of mat3x4 transformations, represented as a flat array (mat3 rotation, vec3 position)
+---@param instances number[][][]
 function class:setInstances(instances)
 	self:resize(#instances)
 	self.instanceMesh:setVertices(instances)
