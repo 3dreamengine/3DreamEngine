@@ -59,6 +59,8 @@ local function createMerged(n)
 		newMonkey.objects[i] = monkey:instance()
 		newMonkey.objects[i]:setTransform(randomTransform())
 	end
+	
+	--Internally, this merge call is the same as the builder solution but slightly faster
 	return newMonkey:merge()
 end
 
@@ -129,14 +131,17 @@ function love.keypressed(key)
 	end
 	if key == "1" then
 		mode = "slow"
+		rebuild()
 	elseif key == "2" then
 		mode = "instances"
+		rebuild()
 	elseif key == "3" then
 		mode = "merged"
+		rebuild()
 	elseif key == "4" then
 		mode = "builder"
+		rebuild()
 	end
-	rebuild()
 end
 
 function love.resize()

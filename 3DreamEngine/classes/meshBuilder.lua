@@ -234,8 +234,9 @@ function class:defragment()
 	self.indexCache = lib:cache()
 end
 
-function class:resizeVertex()
-	self.vertexCapacity = self.vertexCapacity * 2
+function class:resizeVertex(size)
+	local oldSize =  self.vertexCapacity
+	self.vertexCapacity = size or (self.vertexCapacity * 2)
 	
 	local oldByteData = self.byteData
 	local oldVertices = self.vertices
@@ -246,15 +247,16 @@ function class:resizeVertex()
 	
 	--copy old part
 	if oldByteData then
-		ffi.copy(self.vertices, oldVertices, ffi.sizeof(self.vertexIdentifier) * self.vertexCapacity / 2)
+		ffi.copy(self.vertices, oldVertices, ffi.sizeof(self.vertexIdentifier) * math.min(oldSize, self.vertexCapacity))
 	end
 	
 	--new mesh
 	self.mesh = love.graphics.newMesh(self.meshFormat.meshLayout, self.byteData, "triangles", "static")
 end
 
-function class:resizeIndices()
-	self.indexCapacity = self.indexCapacity * 2
+function class:resizeIndices(size)
+	local oldSize =  self.indexCapacity
+	self.indexCapacity = size or (self.indexCapacity * 2)
 	
 	local oldVertexMapByteData = self.vertexMapByteData
 	local oldIndices = self.indices
@@ -265,7 +267,7 @@ function class:resizeIndices()
 	
 	--copy old part
 	if oldVertexMapByteData then
-		ffi.copy(self.indices, oldIndices, ffi.sizeof("uint32_t") * self.indexCapacity / 2)
+		ffi.copy(self.indices, oldIndices, ffi.sizeof("uint32_t") *  math.min(oldSize, self.indexCapacity))
 	end
 end
 

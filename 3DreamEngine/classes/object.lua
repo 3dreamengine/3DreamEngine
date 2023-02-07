@@ -157,89 +157,54 @@ function class:meshesToCollisionMeshes()
 	self.meshes = { }
 end
 
-local function getAllMeshes(object, list)
+local function getAllMeshes(object, list, transform)
 	if not object.LOD_max or object.LOD_max >= math.huge then
 		for _, o in pairs(object.objects) do
-			getAllMeshes(o, list)
+			getAllMeshes(o, list, o:getTransform() * transform)
 		end
-		for _, m in pairs(object.meshes) do
-			if m.vertices then
-				table.insert(list, m)
+		for _, mesh in pairs(object.meshes) do
+			if mesh.vertices then
+				table.insert(list, { mesh, transform })
 			end
 		end
 	end
 end
 
----Get all child meshes, recursively
+---Get all pairs of (DreamMesh, mat4 transform), recursively, as a flat array
 function class:getAllMeshes()
 	local list = { }
-	getAllMeshes(self, list)
+	getAllMeshes(self, list, mat4:getIdentity())
 	return list
 end
 
----Merge all meshes, recursively, of an object and concatenate all buffer together
---It uses a material of one random mesh and therefore requires only identical materials
---It returns a new object with only one mesh named merged
+---Merge all meshes, recursively, of an object
+---It uses a material of one random mesh and therefore requires only identical materials
+---It returns a new object with only one mesh named "merged"
 function class:merge()
-	--todo replace with mesh builder?
-	--apply the current transform
-	local appliedSource = self:clone()
-	appliedSource:applyTransform()
+	local meshes = self:getAllMeshes()
 	
-	--get valid meshes
-	local meshes = appliedSource:getAllMeshes()
-	local sourceMesh = meshes[next(meshes)]
-	local mesh = lib:newMesh("merged", sourceMesh.material)
+	assert(#meshes > 0, "Object has no meshes")
 	
-	assert(sourceMesh.vertices, "At least the vertex buffer is required.")
+	--get size beforehand to avoid resizes
+	local mesh = lib:newMeshBuilder(meshes[1][1].material)
+	local vertexSize = 0
+	local vertexMapSize = 0
+	for _, pair in ipairs(meshes) do
+		vertexSize = vertexSize + pair[1].vertices:getSize()
+		vertexMapSize = vertexMapSize + pair[1].faces:getSize() * 3
+	end
+	mesh:resizeVertex(vertexSize)
+	mesh:resizeIndices(vertexMapSize)
 	
-	--look for the max size
-	local size = 0
-	local faces = 0
-	for _, source in pairs(meshes) do
-		size = size + source.vertices:getSize()
-		faces = faces + source.faces:getSize()
+	--add the meshes
+	for _, pair in ipairs(meshes) do
+		mesh:addMesh(unpack(pair))
 	end
 	
-	--check which buffers are necessary
-	local found = { }
-	for name, buffer in pairs(sourceMesh) do
-		if type(buffer) == "table" and (buffer.class == "buffer" or buffer.class == "dynamicBuffer") then
-			if name ~= "faces" then
-				table.insert(found, name)
-				mesh[name] = lib:newBuffer(buffer:getType(), buffer:getDataType(), size)
-			end
-		end
-	end
-	
-	--merge buffers
-	local startIndices = { }
-	local index = 0
-	for d, source in ipairs(meshes) do
-		startIndices[d] = index
-		
-		for _, name in ipairs(found) do
-			mesh[name]:copyFrom(source[name], index)
-		end
-		
-		index = index + source.vertices:getSize()
-	end
-	
-	--merge faces
-	mesh.faces = lib:newBuffer("vec3", "float", faces)
-	local faceId = 0
-	for d, m in ipairs(meshes) do
-		local i = startIndices[d]
-		for _, face in m.faces:ipairs() do
-			faceId = faceId + 1
-			mesh.faces:set(faceId, { face.x + i, face.y + i, face.z + i })
-		end
-	end
-	
-	local final = lib:newObject(self.name)
-	final.meshes = { merged = mesh }
-	final:updateBoundingSphere()
-	return final
+	--create object
+	local merged = lib:newObject("merged")
+	merged.meshes["merged"] = mesh
+	return merged
 end
 
 ---Apply the current transformation to the meshes
