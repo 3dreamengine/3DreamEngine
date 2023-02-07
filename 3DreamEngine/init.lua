@@ -40,6 +40,7 @@ lib.xmlTreeHandler = require(lib.root .. "/libs/xml2lua/tree")
 lib.json = require(lib.root .. "/libs/json")
 lib.inspect = require(lib.root .. "/libs/inspect")
 lib.base64 = require(lib.root .. "/libs/base64")
+lib.cache = require(lib.root .. "/libs/cache")
 
 table.unpack = table.unpack or unpack
 
