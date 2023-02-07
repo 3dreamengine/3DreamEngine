@@ -10,7 +10,7 @@ return function(self, obj, path)
 	
 	--initial mesh
 	local material = self:newMaterial()
-	local mesh = self:newMesh("object", material)
+	local mesh = self:newMesh(material)
 	obj.meshes["object"] = mesh
 	
 	for l in love.filesystem.lines(path) do
@@ -66,8 +66,9 @@ return function(self, obj, path)
 			else
 				meshID = l:sub(3)
 			end
-			obj.meshes[meshID] = obj.meshes[meshID] or self:newMesh(meshID, material)
+			obj.meshes[meshID] = obj.meshes[meshID] or self:newMesh(material)
 			mesh = obj.meshes[meshID]
+			mesh:setName(meshID)
 		end
 	end
 end

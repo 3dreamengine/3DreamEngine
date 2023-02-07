@@ -40,10 +40,10 @@ function f:create(mesh)
 		v.VertexMaterialY = metallics
 		v.VertexMaterialZ = emission.x * 0.299 + emission.y * 0.587 + emission.z * 0.114
 		
-		v.colorX = color.x * 127 + 127
-		v.colorY = color.y * 127 + 127
-		v.colorZ = color.z * 127 + 127
-		v.colorW = color.w * 127 + 127
+		v.VertexColorX = color.x * 255
+		v.VertexColorY = color.y * 255
+		v.VertexColorZ = color.z * 255
+		v.VertexColorW = color.w * 255
 	end
 	
 	return byteData

@@ -9,7 +9,7 @@ function lib:newLinkedObject(original, source)
 end
 
 ---@return DreamObject | DreamClonable | DreamTransformable | DreamHasShaders
-function lib:newObject(name)
+function lib:newObject()
 	return setmetatable({
 		objects = { },
 		meshes = { },
@@ -23,7 +23,7 @@ function lib:newObject(name)
 		args = { },
 		tags = { },
 		
-		name = name,
+		name = "unnamed",
 		
 		mainSkeleton = false,
 		
@@ -202,9 +202,17 @@ function class:merge()
 	end
 	
 	--create object
-	local merged = lib:newObject("merged")
+	local merged = lib:newObject()
 	merged.meshes["merged"] = mesh
 	return merged
+end
+
+---@param name string
+function class:setName(name)
+	self.name = lib:removePostfix(name)
+end
+function class:getName()
+	return self.name
 end
 
 ---Apply the current transformation to the meshes
@@ -340,7 +348,7 @@ function class:decode(meshData)
 	
 	--recreate objects
 	for d, s in pairs(self.objects) do
-		self.objects[d] = table.merge(lib:newObject(s.name), s)
+		self.objects[d] = table.merge(lib:newObject(), s)
 		self.objects[d]:decode(meshData)
 	end
 	

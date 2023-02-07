@@ -46,6 +46,8 @@ local sortFunction = function(a, b)
 	return distA > distB
 end
 
+local instanceMesh
+
 local meta = {
 	--clear the batch
 	clear = function(self)
@@ -86,7 +88,7 @@ local meta = {
 		
 		--increase mesh data if required
 		if not instanceMesh or instanceMesh:getVertexCount() < #self.instances then
-			local instanceMesh = love.graphics.newMesh(instanceFormat, math.ceil(#self.instances / minIncreaseStep) * minIncreaseStep, "triangles", "dynamic")
+			instanceMesh = love.graphics.newMesh(instanceFormat, math.ceil(#self.instances / minIncreaseStep) * minIncreaseStep, "triangles", "dynamic")
 			
 			--attach instance mesh
 			for _, s in pairs({ "InstanceCenter", "InstanceRotation", "InstanceSize", "InstanceTexScale", "InstanceTexOffset", "InstanceEmission", "InstanceDistortion", "InstanceColor" }) do

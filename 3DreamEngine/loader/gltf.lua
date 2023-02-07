@@ -202,7 +202,7 @@ local function loadPrimitive(node)
 	
 	if meshDrawModes[mode] then
 		local material = node.material and cached(loadMaterial, file.materials[node.material + 1]) or lib:newMaterial()
-		local mesh = lib:newMesh("mesh", material)
+		local mesh = lib:newMesh(material)
 		
 		mesh.meshDrawMode = meshDrawModes[mode]
 		for attribute, attributes in pairs(node.attributes) do
@@ -284,7 +284,8 @@ local function loadSkin(node)
 end
 
 local function loadObject(node)
-	local object = lib:newObject(node.name)
+	local object = lib:newObject()
+	object:setName(node.name)
 	local empty = true
 	
 	object.transform = loadTransform(node)

@@ -120,7 +120,8 @@ end
 local function addMesh(self, mat, id, inputs, vertexMapping, meshData, vcount)
 	--create mesh
 	local material = mat and self.materialLibrary[mat.name] or mat or self:newMaterial()
-	local m = self:newMesh(id, material)
+	local m = self:newMesh(material)
+	m:setName(id)
 	
 	m.vertexMapping = vertexMapping
 	
@@ -359,7 +360,8 @@ return function(self, obj, path)
 	end
 	
 	local function addNewObject(name, meshes, transform, controller, skeleton)
-		local o = self:newObject(name)
+		local o = self:newObject()
+		o:setName(name)
 		o.transform = transform
 		
 		--todo names are not unique as per specification

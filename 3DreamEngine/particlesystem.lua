@@ -234,7 +234,8 @@ function lib:addParticleSystems(obj)
 								
 								--prepare new mesh
 								local pname = meshName .. "_ps_" .. psID .. "_" .. pID .. "_" .. ID
-								local po = lib:newObject(pname)
+								local po = lib:newObject()
+								po:setName(pname)
 								local pm = lib:newInstancedMesh(particle:clone())
 								po.meshes[pname] = pm
 								obj.objects[pname] = po

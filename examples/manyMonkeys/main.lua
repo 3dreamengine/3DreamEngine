@@ -26,7 +26,7 @@ end
 
 local function createSlow(n)
 	--Create an empty object and add instances of the monkey to it
-	local newMonkey = dream:newObject("merged")
+	local newMonkey = dream:newObject()
 	for i = 1, n do
 		newMonkey.objects[i] = monkey:instance()
 		newMonkey.objects[i]:setTransform(randomTransform())
@@ -54,7 +54,7 @@ end
 
 local function createMerged(n)
 	--Similar to the slow approach we create an object, fill it, but then call merge to create a new, merged object with a single mesh
-	local newMonkey = dream:newObject("merged")
+	local newMonkey = dream:newObject()
 	for i = 1, n do
 		newMonkey.objects[i] = monkey:instance()
 		newMonkey.objects[i]:setTransform(randomTransform())
@@ -66,7 +66,7 @@ end
 
 local function createBuilder(n)
 	--Create a fresh mesh builder
-	local newMonkey = dream:newObject("merged")
+	local newMonkey = dream:newObject()
 	newMonkey.meshes["builder"] = dream:newMeshBuilder(material)
 	
 	for _ = 1, n do

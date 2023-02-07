@@ -207,7 +207,8 @@ return function(self, obj, path)
 	local function generate(m, name, t)
 		local material = self:newMaterial()
 		material:setPixelShader("simple")
-		local mesh = self:newMesh(name, material)
+		local mesh = self:newMesh(material)
+		mesh:setName(name)
 		obj.meshes[name] = mesh
 		
 		local faces = mesh:getOrCreateBuffer("faces")

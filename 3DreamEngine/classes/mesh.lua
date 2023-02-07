@@ -4,12 +4,11 @@ local lib = _3DreamEngine
 local ffi = require("ffi")
 
 ---newMesh
----@param name string
 ---@param material DreamMaterial
 ---@return DreamMesh | DreamClonable | DreamHasShaders
-function lib:newMesh(name, material)
+function lib:newMesh(material)
 	local mesh = {
-		name = name,
+		name = "unnamed",
 		material = material,
 		boundingSphere = self:newEmptyBoundingSphere(),
 		

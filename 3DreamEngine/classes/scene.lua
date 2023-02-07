@@ -24,20 +24,20 @@ function lib:newScene(shadowPass, dynamic, alpha, cam, blacklist, frustumCheck, 
 	return m
 end
 
-local function getPosition(object, transform)
+local function getPosition(mesh, transform)
 	if transform then
-		local a = object.boundingSphere.center
+		local a = mesh.boundingSphere.center
 		return vec3(
 				transform[1] * a[1] + transform[2] * a[2] + transform[3] * a[3] + transform[4],
 				transform[5] * a[1] + transform[6] * a[2] + transform[7] * a[3] + transform[8],
 				transform[9] * a[1] + transform[10] * a[2] + transform[11] * a[3] + transform[12])
 	else
-		return object.boundingSphere.center
+		return mesh.boundingSphere.center
 	end
 end
 
-local function getSize(object, transform)
-	return object.boundingSphere.size * (transform and transform:getLossySize() or 1)
+local function getSize(mesh, transform)
+	return mesh.boundingSphere.size * (transform and transform:getLossySize() or 1)
 end
 
 local function isWithingLOD(LOD_min, LOD_max, pos, size)
@@ -103,6 +103,8 @@ function class:addObject(object, parentTransform, dynamic)
 	--handle LOD
 	--todo lod should be mesh-related, with it's parent object as distance metric, pass a lazy distance metric
 	if object.LOD_min or object.LOD_max then
+		--[[
+		--todo with the removal of  boundingspheres for objects, we can now use the matrices translate components
 		local pos = getPosition(object, transform)
 		local size = getSize(object, transform)
 		local LOD_min = object.LOD_min or -math.huge
@@ -114,6 +116,7 @@ function class:addObject(object, parentTransform, dynamic)
 		if not found then
 			return
 		end
+		--]]
 	end
 	
 	--children

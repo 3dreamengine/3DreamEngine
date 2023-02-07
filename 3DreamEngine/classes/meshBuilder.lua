@@ -8,7 +8,7 @@ local ffi = require("ffi")
 ---@return DreamMeshBuilder | DreamMesh | DreamClonable | DreamHasShaders
 function lib:newMeshBuilder(material)
 	assert(material, "Required material")
-	local mesh = lib:newMesh("todo", material)
+	local mesh = lib:newMesh(material)
 	
 	--min level of integrity before defragmentation starts
 	mesh.minIntegrity = 0.9

@@ -124,10 +124,9 @@ function lib:loadObject(path, args)
 	args = prepareArgs(args)
 	
 	local n = string.split(path, "/")
-	local name = self:removePostfix(n[#n] or path)
 	local dir = #n > 1 and table.concat(n, "/", 1, #n - 1) or ""
 	
-	local obj = self:newObject(name)
+	local obj = self:newObject()
 	obj.args = args
 	obj.dir = dir
 	
@@ -352,7 +351,8 @@ function lib:processObject(obj)
 				--create new object
 				local parent = obj.objects[object.name]
 				if not parent then
-					parent = self:newObject(object.name)
+					parent = self:newObject()
+					parent:setName(object.name)
 					parent.transform = object.transform
 					obj.objects[object.name] = parent
 				end
