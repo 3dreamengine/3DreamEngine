@@ -25,13 +25,14 @@ function class:create(mesh)
 end
 
 local cachedStructs = { }
-function lib:getCStruct()
+function class:getCStruct()
 	--give a unique hash for the structs name
 	local md5 = love.data.hash("md5", lib.packTable.pack(self.meshLayout))
-	local hash = love.data.encode("string", "hex", md5)
+	local identifier = "mesh_vertex_" .. love.data.encode("string", "hex", md5)
 	
 	--build a C struct to make sure data match
-	if not cachedStructs[hash] then
+	local vars = { "X", "Y", "Z", "W" }
+	if not cachedStructs[identifier] then
 		local types = { }
 		local str = "typedef struct {" .. "\n"
 		for _, format in ipairs(self.meshLayout) do
@@ -45,16 +46,16 @@ function lib:getCStruct()
 			
 			for i = 1, format[3] do
 				table.insert(types, format[2])
-				str = str .. "x" .. attrCount .. (i == format[3] and ";" or ", ")
+				str = str .. format[1] .. (format[3] == 1 and " " or vars[i]) .. (i == format[3] and ";" or ", ")
 			end
 			str = str .. "\n"
 		end
-		str = str .. "} mesh_vertex_" .. hash .. ";"
+		str = str .. "} " .. identifier .. ";"
 		ffi.cdef(str)
-		cachedStructs[hash] = types
+		cachedStructs[identifier] = types
 	end
 	
-	return hash, cachedStructs[hash]
+	return identifier, cachedStructs[identifier]
 end
 
 return class

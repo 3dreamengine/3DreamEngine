@@ -1,6 +1,8 @@
 ---@type Dream
 local lib = _3DreamEngine
 
+local ffi = require("ffi")
+
 local f = lib:newMeshFormat({
 	{ "VertexPosition", "float", 4 }, -- x, y, z
 	{ "VertexNormal", "byte", 4 }, -- normal
@@ -9,17 +11,31 @@ local f = lib:newMeshFormat({
 
 local empty = { 1, 0, 1, 1 }
 function f:create(mesh)
+	local identifier = self:getCStruct()
+	local byteData = love.data.newByteData(ffi.sizeof(identifier) * mesh.vertices:getSize())
+	local vertices = ffi.cast(identifier .. "*", byteData:getFFIPointer())
+	
 	for i = 1, mesh.vertices:getSize() do
 		local vertex = mesh.vertices:getOrDefault(i, empty)
 		local normal = mesh.normals:getOrDefault(i, empty)
 		local texCoord = mesh.texCoords:getOrDefault(i, empty)
 		
-		mesh.mesh:setVertex(i,
-				vertex[1], vertex[2], vertex[3], 1,
-				normal[1] * 0.5 + 0.5, normal[2] * 0.5 + 0.5, normal[3] * 0.5 + 0.5, 0.0,
-				texCoord[1] --todo not really standard, use 2D and multi texture
-		)
+		local v = vertices[i - 1]
+		
+		v.VertexPositionX = vertex.x
+		v.VertexPositionY = vertex.y
+		v.VertexPositionZ = vertex.z
+		v.VertexPositionW = 1
+		
+		v.VertexMaterial = texCoord.x
+		
+		v.VertexNormalX = normal.x * 127 + 127
+		v.VertexNormalY = normal.y * 127 + 127
+		v.VertexNormalZ = normal.z * 127 + 127
+		v.VertexNormalW = 0
 	end
+	
+	return byteData
 end
 
 return f

@@ -389,14 +389,12 @@ function class:create()
 	
 	--create mesh
 	local meshFormat = lib.meshFormats[self:getPixelShader().meshFormat]
-	local meshLayout = meshFormat.meshLayout
-	self.mesh = love.graphics.newMesh(meshLayout, self.vertices:getSize(), self.meshDrawMode, "static")
+	local byteData = meshFormat:create(self)
+	self.mesh = love.graphics.newMesh(meshFormat.meshLayout, byteData, "triangles", "static")
 	
 	--vertex map
 	self.mesh:setVertexMap(vertexMap)
 	
-	--fill vertices
-	meshFormat:create(self)
 	
 	--initialize pixel shader
 	local pixelShader = self:getPixelShader()
@@ -551,11 +549,11 @@ function class:encode(meshCache, dataStrings)
 					m.vertexMap = #dataStrings
 				end
 				
-				local hash, types = lib:newMeshFormat(f):getCStruct()
+				local identifier, types = lib:newMeshFormat(f):getCStruct()
 				
 				--byte data
-				local byteData = love.data.newByteData(mesh:getVertexCount() * ffi.sizeof("mesh_vertex_" .. hash))
-				local meshData = ffi.cast("mesh_vertex_" .. hash .. "*", byteData:getPointer())
+				local byteData = love.data.newByteData(mesh:getVertexCount() * ffi.sizeof(identifier))
+				local meshData = ffi.cast(identifier .. "*", byteData:getPointer())
 				
 				--fill data
 				for i = 1, mesh:getVertexCount() do

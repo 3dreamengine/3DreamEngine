@@ -1,6 +1,8 @@
 ---@type Dream
 local lib = _3DreamEngine
 
+local ffi = require("ffi")
+
 local f = lib:newMeshFormat({
 	{ "VertexPosition", "float", 4 }, -- x, y, z
 	{ "VertexTexCoord", "float", 2 }, -- UV
@@ -12,19 +14,38 @@ local empty = vec4(1, 0, 1, 1)
 function f:create(mesh)
 	mesh:recalculateTangents()
 	
+	local identifier = self:getCStruct()
+	local byteData = love.data.newByteData(ffi.sizeof(identifier) * mesh.vertices:getSize())
+	local vertices = ffi.cast(identifier .. "*", byteData:getFFIPointer())
+	
 	for i = 1, mesh.vertices:getSize() do
 		local vertex = mesh.vertices:getOrDefault(i, empty)
 		local normal = mesh.normals:getOrDefault(i, empty)
 		local texCoord = mesh.texCoords:getOrDefault(i, empty)
 		local tangent = mesh.tangents:getOrDefault(i, empty)
 		
-		mesh.mesh:setVertex(i,
-				vertex.x, vertex.y, vertex.z, 1,
-				texCoord.x, texCoord.y,
-				normal.x * 0.5 + 0.5, normal.y * 0.5 + 0.5, normal.z * 0.5 + 0.5, 0.0,
-				tangent.x * 0.5 + 0.5, tangent.y * 0.5 + 0.5, tangent.z * 0.5 + 0.5, tangent.w or 0.0
-		)
+		local v = vertices[i - 1]
+		
+		v.VertexPositionX = vertex.x
+		v.VertexPositionY = vertex.y
+		v.VertexPositionZ = vertex.z
+		v.VertexPositionW = 1
+		
+		v.VertexTexCoordX = texCoord.x
+		v.VertexTexCoordY = texCoord.y
+		
+		v.VertexNormalX = normal.x * 127 + 127
+		v.VertexNormalY = normal.y * 127 + 127
+		v.VertexNormalZ = normal.z * 127 + 127
+		v.VertexNormalW = 0
+		
+		v.VertexTangentX = tangent.x * 127 + 127
+		v.VertexTangentY = tangent.y * 127 + 127
+		v.VertexTangentZ = tangent.z * 127 + 127
+		v.VertexTangentW = 0
 	end
+	
+	return byteData
 end
 
 return f
