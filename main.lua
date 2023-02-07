@@ -11,22 +11,21 @@ end
 --set background and font
 love.graphics.setBackgroundColor(0.35, 0.35, 0.35)
 local font = love.graphics.newFont(24)
-local font_small = love.graphics.newFont(16)
+local smallFont = love.graphics.newFont(16)
 
 --descriptions to show on hover
 local descriptions = {
 	["AlphaBlending"] = "Refraction showcase",
+	["blacksmith"] = "Single room demo. PBR with 3 light-sources. Toggle different features to see real time differences.",
 	["camera"] = "PBR showcase",
-	["Lamborghini"] = "PBR rendered Lamborghini with emission texture.",
-	["Tavern"] = "PBR rendered Tavern with 9 fully soft shadowed static light sources. Toggle different features to see real time differences.",
-	["monkey"] = "Good old Suzanne. Simpliest usage example.",
-	["blacksmith"] = "Single room demo. PBR with 3 lightsources. Toggle different features to see real time differences.",
-	["firstpersongame"] = "Not really a game, demo scene to see particle systems, outdoor lighting, daytime and rain.",
-	["particlesystem"] = "Small particle system example.",
-	["game"] = "Unfinished collision demo.",
-	["knight"] = "MagicaVoxel demo.",
-	["manyMonkeys"] = "Demo on how to use instancing and object merging to achieve higher performance.",
 	["Cameras"] = "Multiple cameras and target canvases in a minimalistic scene",
+	["firstpersongame"] = "Not really a game, demo scene to see particle systems, outdoor lighting, daytime and rain.",
+	["knight"] = "MagicaVoxel demo.",
+	["Lamborghini"] = "PBR rendered Lamborghini with emission texture.",
+	["manyMonkeys"] = "Demo on how to use instancing, object merging or buffer builders to achieve higher performance.",
+	["monkey"] = "Good old Suzanne. Simpliest usage example.",
+	["Physics"] = "A showcase of the Box2D physics wrapper.",
+	["Tavern"] = "PBR rendered Tavern with fully soft shadowed static light sources, particles, and raytracing. Toggle different features to see real time differences.",
 }
 
 local mousereleased = false
@@ -80,7 +79,7 @@ function love.draw()
 		if hover and descriptions[s] then
 			love.graphics.push("all")
 			love.graphics.setColor(0.0, 0.0, 0.0)
-			love.graphics.setFont(font_small)
+			love.graphics.setFont(smallFont)
 			love.graphics.printf(descriptions[s], 330, 200, 400, "left")
 			love.graphics.pop()
 		end
@@ -98,5 +97,5 @@ function love.draw()
 end
 
 function love.mousereleased(x, y, b)
-	mousereleased = true
+	mousereleased = b == 1
 end
