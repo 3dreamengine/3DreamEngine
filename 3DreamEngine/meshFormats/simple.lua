@@ -1,14 +1,12 @@
 ---@type Dream
 local lib = _3DreamEngine
 
-local f = lib:newMeshFormat()
-
-f.meshLayout = {
+local f = lib:newMeshFormat({
 	{ "VertexPosition", "float", 4 }, -- x, y, z
 	{ "VertexNormal", "byte", 4 }, -- normal
 	{ "VertexMaterial", "float", 3 }, -- roughness, metallic, emissive
 	{ "VertexColor", "byte", 4 }, -- color
-}
+})
 
 local empty = vec4(1, 0, 1, 1)
 function f:create(mesh)

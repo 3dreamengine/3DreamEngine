@@ -491,8 +491,6 @@ function class:getOrCreateBuffer(name)
 	return self[name]
 end
 
-local cachedMeshFormatStructs = { }
-
 function class:encode(meshCache, dataStrings)
 	local ffi = require("ffi")
 	
@@ -553,42 +551,7 @@ function class:encode(meshCache, dataStrings)
 					m.vertexMap = #dataStrings
 				end
 				
-				--give a unique hash for the vertex format
-				local md5 = love.data.hash("md5", lib.packTable.pack(f))
-				local hash = love.data.encode("string", "hex", md5)
-				
-				--build a C struct to make sure data match
-				local attrCount = 0
-				local types = { }
-				if cachedMeshFormatStructs[hash] then
-					attrCount = cachedMeshFormatStructs[hash].attrCount
-					types = cachedMeshFormatStructs[hash].types
-				else
-					local str = "typedef struct {" .. "\n"
-					for _, ff in ipairs(f) do
-						if ff[2] == "float" then
-							str = str .. "float "
-						elseif ff[2] == "byte" then
-							str = str .. "unsigned char "
-						else
-							error("unknown data type " .. ff[2])
-						end
-						
-						for i = 1, ff[3] do
-							attrCount = attrCount + 1
-							types[attrCount] = ff[2]
-							str = str .. "x" .. attrCount .. (i == ff[3] and ";" or ", ")
-						end
-						str = str .. "\n"
-					end
-					str = str .. "} mesh_vertex_" .. hash .. ";"
-					ffi.cdef(str)
-					
-					cachedMeshFormatStructs[hash] = {
-						attrCount = attrCount,
-						types = types,
-					}
-				end
+				local hash, types = lib:newMeshFormat(f):getCStruct()
 				
 				--byte data
 				local byteData = love.data.newByteData(mesh:getVertexCount() * ffi.sizeof("mesh_vertex_" .. hash))
@@ -597,8 +560,9 @@ function class:encode(meshCache, dataStrings)
 				--fill data
 				for i = 1, mesh:getVertexCount() do
 					local v = { mesh:getVertex(i) }
-					for i2 = 1, attrCount do
-						meshData[i - 1]["x" .. i2] = (types[i2] == "byte" and math.floor(v[i2] * 255) or v[i2])
+					for index, type in ipairs(types) do
+						--todo why, just use love2d mesh as a wrapper
+						meshData[i - 1]["x" .. index] = (type == "byte" and math.floor(v[index] * 255) or v[index])
 					end
 				end
 				
