@@ -1,4 +1,7 @@
-local f = { }
+---@type Dream
+local lib = _3DreamEngine
+
+local f = lib:newMeshFormat()
 
 f.meshLayout = {
 	{ "VertexPosition", "float", 4 }, -- x, y, z

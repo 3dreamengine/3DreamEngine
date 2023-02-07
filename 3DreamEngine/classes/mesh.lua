@@ -18,9 +18,6 @@ function lib:newMesh(name, material)
 		
 		renderVisibility = true,
 		shadowVisibility = true,
-		
-		--todo split instance mesh up into custom mesh class
-		instancesCount = 0,
 	}
 	
 	return setmetatable(mesh, self.meta.mesh)
@@ -31,20 +28,13 @@ end
 ---@field meshFormat DreamMeshFormat
 ---@field boundingSphere DreamBoundingSphere
 ---@field meshDrawMode "MeshDrawMode"
----@field meshFormat DreamMeshFormat
 ---@field mesh DreamMesh
 ---@field skeleton DreamSkeleton
 ---@field renderVisibility boolean @ visible in render pass
 ---@field shadowVisibility boolean @ visible in shadow pass
----@field instancesCount number @ number of instances in this instance mesh, if it is one
 local class = {
 	links = { "clone", "shader", "mesh" },
 }
-
---todo move
-function class:getInstancesCount()
-	return self.instancesCount
-end
 
 ---Sets the meshes material
 ---@param material DreamMaterial
@@ -390,7 +380,6 @@ function class:create()
 	
 	--set up vertex map
 	local vertexMap = { }
-	--todo can also be encoded as vec3 buffer, which is then casted to an int buffer
 	for i = 1, self.faces:getSize() do
 		local f = self.faces:get(i)
 		table.insert(vertexMap, f.x)
