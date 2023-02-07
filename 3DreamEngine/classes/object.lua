@@ -27,8 +27,6 @@ function lib:newObject(name)
 		
 		mainSkeleton = false,
 		
-		boundingSphere = self:newEmptyBoundingSphere(),
-		
 		loaded = true,
 	}, self.meta.object)
 end
@@ -118,12 +116,8 @@ function class:updateBoundingSphere()
 	
 	--update bounding spheres of objects
 	for _, s in pairs(self.objects) do
-		if not s.boundingSphere.initialized then
-			s:updateBoundingSphere()
-		end
+		s:updateBoundingSphere()
 	end
-	
-	--todo while currently not used, object bounding sphere might get interesting
 end
 
 function class:clearMeshes()
@@ -352,8 +346,6 @@ function class:encode(meshCache, dataStrings)
 		
 		["name"] = self.name,
 		
-		["boundingSphere"] = self.boundingSphere,
-		
 		["transform"] = self.transform,
 		
 		["animations"] = self.animations,
@@ -385,9 +377,6 @@ function class:decode(meshData)
 	if self.transform then
 		self.transform = mat4(self.transform)
 	end
-	
-	--recreate vecs and mats
-	self.boundingSphere:decode()
 	
 	--recreate objects
 	for d, s in pairs(self.objects) do

@@ -385,9 +385,7 @@ function lib:processObject(obj)
 	
 	
 	--calculate bounding sphere
-	if not obj.boundingSphere.initialized then
-		obj:updateBoundingSphere()
-	end
+	obj:updateBoundingSphere()
 	
 	
 	--split animations
