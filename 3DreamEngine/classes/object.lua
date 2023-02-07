@@ -181,6 +181,7 @@ end
 --It uses a material of one random mesh and therefore requires only identical materials
 --It returns a new object with only one mesh named merged
 function class:merge()
+	--todo replace with mesh builder?
 	--apply the current transform
 	local appliedSource = self:clone()
 	appliedSource:applyTransform()

@@ -12,7 +12,8 @@ dream:init()
 
 --load our base object
 local monkey = dream:loadObject("examples/monkey/object")
-monkey.meshes.Suzanne.material.color = { 0.4, 0.15, 0.05, 1 }
+local material = monkey.meshes.Suzanne.material
+material.color = { 0.4, 0.15, 0.05, 1 }
 
 --generates a pseudorandom position
 local function randomTransform()
@@ -61,8 +62,22 @@ local function createMerged(n)
 	return newMonkey:merge()
 end
 
+local function createBuilder(n)
+	--Create a fresh mesh builder
+	local newMonkey = dream:newObject("merged")
+	newMonkey.meshes["builder"] = dream:newMeshBuilder(material)
+	
+	for _ = 1, n do
+		--Add the Suzanne mesh with the transform
+		newMonkey.meshes["builder"]:addMesh(monkey.meshes.Suzanne, randomTransform())
+	end
+	
+	--When rendering the first time, the buffer will automatically sync changed parts
+	return newMonkey
+end
+
 local count = 1024
-local mode = "slow"
+local mode = "builder"
 local object
 
 local function rebuild()
@@ -71,8 +86,10 @@ local function rebuild()
 		object = createSlow(count)
 	elseif mode == "instances" then
 		object = createInstanced(count)
-	else
+	elseif mode == "merged" then
 		object = createMerged(count)
+	elseif mode == "builder" then
+		object = createBuilder(count)
 	end
 end
 rebuild()
@@ -98,7 +115,7 @@ function love.draw()
 	love.graphics.printf("This demo contains 3 ways of rendering the same object. The first approach is the straight forward one, with high CPU load. The second one uses instances, which are usually much faster for many objects (grass, foliage, or 500 monkeys), the third methode merges the objects. While not faster than instancing with a far greater initial build time, this approach allows you to merge different shapes too, as long as they share the same material and shader.", 100, 5, love.graphics.getWidth() - 200, "center")
 	
 	--instructions
-	love.graphics.print("FPS: " .. love.timer.getFPS() .. "\n\nUse number keys to switch mode, use arrow keys to change number of monkeys.\n1) Slow\n2) Instances\n3) Merged (will require build time)\n\nCount: " .. count, 5, love.graphics.getHeight() - 150)
+	love.graphics.print("FPS: " .. love.timer.getFPS() .. "\n\nUse number keys to switch mode, use arrow keys to change number of monkeys.\n1) Slow\n2) Instances\n3) Merged (requires build time)\n4) Buffer-builder (requires build time)\n\nCount: " .. count, 5, love.graphics.getHeight() - 150)
 end
 
 function love.keypressed(key)
@@ -116,6 +133,8 @@ function love.keypressed(key)
 		mode = "instances"
 	elseif key == "3" then
 		mode = "merged"
+	elseif key == "4" then
+		mode = "builder"
 	end
 	rebuild()
 end

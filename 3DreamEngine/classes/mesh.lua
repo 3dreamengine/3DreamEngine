@@ -388,12 +388,18 @@ function class:createVertexMap()
 	return vertexMapByteData
 end
 
----Makes this mesh render-able.
+---Returns the required mesh format set by the current pixel shader
+---@return DreamMeshFormat
+function class:getMeshFormat()
+	return lib.meshFormats[self:getPixelShader().meshFormat]
+end
+
+---Makes this mesh render-able
 function class:create()
 	assert(self.faces, "Face array is required")
 	
 	--create mesh
-	local meshFormat = lib.meshFormats[self:getPixelShader().meshFormat]
+	local meshFormat = self:getMeshFormat()
 	local byteData = meshFormat:create(self)
 	self.mesh = love.graphics.newMesh(meshFormat.meshLayout, byteData, "triangles", "static")
 	

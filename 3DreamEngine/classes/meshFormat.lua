@@ -7,8 +7,13 @@ local ffi = require("ffi")
 ---@return DreamMeshFormat
 function lib:newMeshFormat(meshLayout)
 	local f = {
-		meshLayout = meshLayout
+		meshLayout = meshLayout,
+		attributes = { }
 	}
+	
+	for _, format in ipairs(meshLayout) do
+		f.attributes[format[1]] = true
+	end
 	
 	return setmetatable(f, self.meta.meshFormat)
 end
