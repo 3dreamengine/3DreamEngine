@@ -1,6 +1,7 @@
 --window title
 love.window.setTitle("Instancing and Merging Monkey Example")
 
+--disable vsync to properly measure FPS
 love.window.setVSync(false)
 
 --load the 3D lib
@@ -9,51 +10,55 @@ local dream = require("3DreamEngine")
 --initialize engine
 dream:init()
 
---load our object (since merging is destructive we load a separate one here)
+--load our base object
 local monkey = dream:loadObject("examples/monkey/object")
-local monkeyForBaking = dream:loadObject("examples/monkey/object", { cleanup = false, mesh = false })
 monkey.meshes.Suzanne.material.color = { 0.4, 0.15, 0.05, 1 }
-monkeyForBaking.meshes.Suzanne.material.color = { 0.4, 0.15, 0.05, 1 }
 
-local function getPos()
-	return vec3(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * 15
+--generates a pseudorandom position
+local function randomTransform()
+	return mat4:getIdentity()
+			   :translate(vec3(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * 15)
+			   :rotateX(math.random() * math.pi * 2)
+			   :rotateY(math.random() * math.pi * 2)
+			   :rotateZ(math.random() * math.pi * 2)
 end
 
 local function createSlow(n)
-	monkey.meshes.Suzanne.instanceMesh = nil
-	math.randomseed(1)
+	--Create an empty object and add instances of the monkey to it
 	local newMonkey = dream:newObject("merged")
 	for i = 1, n do
-		newMonkey.objects[i] = monkey:clone()
-		newMonkey.objects[i]:translate(getPos())
-		newMonkey.objects[i]:rotateX(math.random() * math.pi * 2)
-		newMonkey.objects[i]:rotateY(math.random() * math.pi * 2)
-		newMonkey.objects[i]:rotateZ(math.random() * math.pi * 2)
+		newMonkey.objects[i] = monkey:instance()
+		newMonkey.objects[i]:setTransform(randomTransform())
 	end
 	return newMonkey
 end
 
 local function createInstanced(n)
-	math.randomseed(1)
+	--Create a copy/clone of the monkey to keep the original clean
 	local newMonkey = monkey:clone()
+	
+	--Replace the mesh with an instanced version
 	newMonkey.meshes.Suzanne = dream:newInstancedMesh(newMonkey.meshes.Suzanne)
+	
+	--Since we know the size beforehand, set it directly to avoid later resizes
 	newMonkey.meshes.Suzanne:resize(n)
+	
+	--And add instances
 	for _ = 1, n do
-		newMonkey.meshes.Suzanne:addInstance(mat3:getIdentity(), getPos())
+		newMonkey.meshes.Suzanne:addInstance(randomTransform())
 	end
+	
 	return newMonkey
 end
 
 local function createMerged(n)
-	math.randomseed(1)
+	--Similar to the slow approach we create an object, fill it, but then call merge to create a new, merged object with a single mesh
 	local newMonkey = dream:newObject("merged")
 	for i = 1, n do
-		newMonkey.objects[i] = monkeyForBaking:clone()
-		newMonkey.objects[i]:translate(getPos())
+		newMonkey.objects[i] = monkey:instance()
+		newMonkey.objects[i]:setTransform(randomTransform())
 	end
-	newMonkey = newMonkey:merge()
-	newMonkey:clearMeshes()
-	return newMonkey
+	return newMonkey:merge()
 end
 
 local count = 1024
@@ -61,6 +66,7 @@ local mode = "slow"
 local object
 
 local function rebuild()
+	math.randomseed(1)
 	if mode == "slow" then
 		object = createSlow(count)
 	elseif mode == "instances" then
