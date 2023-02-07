@@ -24,7 +24,32 @@ function class:updateBoundingSphere()
 	
 	self.originalBoundingSphere = self.boundingSphere
 	
-	--todo similar algo like updateBoundingSphere for objects
+	self.boundingSphere = lib:newEmptyBoundingSphere()
+	
+	if self.instanceMesh then
+		for i = 1, self.instanceMesh:getVertexCount() do
+			self:extendBoundingSphere({ self.instanceMesh:getVertex(i) })
+		end
+	end
+end
+
+local function getLossySize(mat3)
+	return math.sqrt(math.max(
+			(mat3[1] ^ 2 + mat3[4] ^ 2 + mat3[7] ^ 2),
+			(mat3[2] ^ 2 + mat3[5] ^ 2 + mat3[8] ^ 2),
+			(mat3[3] ^ 2 + mat3[6] ^ 2 + mat3[9] ^ 2)
+	))
+end
+
+function class:extendBoundingSphere(instance)
+	local rotation = mat3(instance)
+	local position = vec3(instance[10], instance[11], instance[12])
+	local bs = lib:newBoundingSphere(
+			rotation * self.originalBoundingSphere.center + position,
+			self.originalBoundingSphere.size * getLossySize(rotation)
+	
+	)
+	self.boundingSphere = self.boundingSphere:merge(bs)
 end
 
 function class:resize(count)
@@ -68,14 +93,7 @@ function class:addInstance(rotation, position, index)
 	}
 	
 	self.instanceMesh:setVertex(index, instance)
-end
-
-local function getLossySize(mat3)
-	return math.sqrt(math.max(
-			(mat3[1] ^ 2 + mat3[4] ^ 2 + mat3[7] ^ 2),
-			(mat3[2] ^ 2 + mat3[5] ^ 2 + mat3[8] ^ 2),
-			(mat3[3] ^ 2 + mat3[6] ^ 2 + mat3[9] ^ 2)
-	))
+	self:extendBoundingSphere(instance)
 end
 
 ---Place instances from an array of mat4x3 transformations, represented as a flat array (mat3 rotation, vec3 position)
