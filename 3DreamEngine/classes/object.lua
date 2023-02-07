@@ -109,7 +109,7 @@ end
 function class:updateBoundingSphere()
 	--update bounding sphere of meshes
 	for _, s in pairs(self.meshes) do
-		if not s.boundingSphere.initialized then
+		if not s.boundingSphere:isInitialized() then
 			s:updateBoundingSphere()
 		end
 	end

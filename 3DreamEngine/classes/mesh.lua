@@ -159,9 +159,6 @@ function class:updateBoundingSphere()
 		return
 	end
 	
-	self.boundingSphere = lib:newEmptyBoundingSphere()
-	self.boundingSphere:setInitialized(true)
-	
 	--Ritter's bounding sphere
 	--pick a random point
 	local x = self.vertices:get(1)

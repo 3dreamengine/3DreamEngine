@@ -64,7 +64,7 @@ function class:preload()
 end
 
 function class:withinFrustum(object, task)
-	return not self.frustumCheck or not object.boundingSphere.initialized or lib:inFrustum(self.cam, task:getPosition(), task:getSize(), object.rID)
+	return not self.frustumCheck or not object.boundingSphere:isInitialized() or lib:inFrustum(self.cam, task:getPosition(), task:getSize(), object.rID)
 end
 
 function class:add(object)
