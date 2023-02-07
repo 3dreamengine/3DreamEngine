@@ -1,6 +1,8 @@
 ---@type Dream
 local lib = _3DreamEngine
 
+local ffi = require("ffi")
+
 ---newMesh
 ---@param name string
 ---@param material DreamMaterial
@@ -374,18 +376,21 @@ function class:recalculateTangents()
 	end
 end
 
+function class:createVertexMap()
+	local vertexMapByteData = love.data.newByteData(ffi.sizeof("uint32_t") * self.faces:getSize() * 3)
+	local indices = ffi.cast("uint32_t*", vertexMapByteData:getFFIPointer())
+	for i = 1, self.faces:getSize() do
+		local f = self.faces:get(i)
+		indices[i * 3 - 3] = f.x - 1
+		indices[i * 3 - 2] = f.y - 1
+		indices[i * 3 - 1] = f.z - 1
+	end
+	return vertexMapByteData
+end
+
 ---Makes this mesh render-able.
 function class:create()
 	assert(self.faces, "Face array is required")
-	
-	--set up vertex map
-	local vertexMap = { }
-	for i = 1, self.faces:getSize() do
-		local f = self.faces:get(i)
-		table.insert(vertexMap, f.x)
-		table.insert(vertexMap, f.y)
-		table.insert(vertexMap, f.z)
-	end
 	
 	--create mesh
 	local meshFormat = lib.meshFormats[self:getPixelShader().meshFormat]
@@ -393,8 +398,7 @@ function class:create()
 	self.mesh = love.graphics.newMesh(meshFormat.meshLayout, byteData, "triangles", "static")
 	
 	--vertex map
-	self.mesh:setVertexMap(vertexMap)
-	
+	self.mesh:setVertexMap(self:createVertexMap(), "uint32")
 	
 	--initialize pixel shader
 	local pixelShader = self:getPixelShader()
@@ -490,8 +494,6 @@ function class:getOrCreateBuffer(name)
 end
 
 function class:encode(meshCache, dataStrings)
-	local ffi = require("ffi")
-	
 	local data = {
 		["name"] = self.name,
 		["meshFormat"] = self.meshFormat,
