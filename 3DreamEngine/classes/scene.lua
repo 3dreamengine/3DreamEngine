@@ -36,10 +36,6 @@ local function getPosition(mesh, transform)
 	end
 end
 
-local function getSize(mesh, transform)
-	return mesh.boundingSphere.size * (transform and transform:getLossySize() or 1)
-end
-
 local function isWithingLOD(LOD_min, LOD_max, pos, size)
 	local camPos = lib.camera.position
 	if camPos then
@@ -61,10 +57,6 @@ local class = {
 
 function class:preload()
 	--todo
-end
-
-function class:withinFrustum(object, task)
-	return not self.frustumCheck or not object.boundingSphere:isInitialized() or lib:inFrustum(self.cam, task:getPosition(), task:getSize(), object.rID)
 end
 
 function class:add(object)
@@ -100,11 +92,13 @@ function class:addObject(object, parentTransform, dynamic)
 	--store final world transform for potential later use cases
 	object.globalTransform = transform
 	
+	local scale = transform and transform:getLossySize() or 1
+	
 	--handle LOD
 	--todo lod should be mesh-related, with it's parent object as distance metric, pass a lazy distance metric
 	if object.LOD_min or object.LOD_max then
 		--[[
-		--todo with the removal of  boundingspheres for objects, we can now use the matrices translate components
+		--todo with the removal of  bounding-spheres for objects, we can now use the matrices translate components
 		local pos = getPosition(object, transform)
 		local size = getSize(object, transform)
 		local LOD_min = object.LOD_min or -math.huge
@@ -126,12 +120,11 @@ function class:addObject(object, parentTransform, dynamic)
 	
 	--meshes
 	for _, m in pairs(object.meshes) do
-		--todo profiling: 80%
-		self:addMesh(m, transform, object.reflection)
+		self:addMesh(m, transform, object.reflection or lib.defaultReflection, scale)
 	end
 end
 
-function class:addMesh(mesh, transform, reflection)
+function class:addMesh(mesh, transform, reflection, scale)
 	if self.blacklist[mesh] then
 		return
 	end
@@ -149,20 +142,7 @@ function class:addMesh(mesh, transform, reflection)
 	
 	--todo cache
 	local pos = getPosition(mesh, transform)
-	local size = getSize(mesh, transform)
-	
-	--create task object
-	local task = setmetatable({
-		mesh,
-		transform,
-		pos,
-		size,
-		false,
-		reflection,
-	}, lib.meta.task)
-	
-	--todo
-	mesh.rID = mesh.rID or math.random()
+	local size = mesh.boundingSphere.size * scale
 	
 	--wrong alpha
 	if (self.alpha and true) ~= (mesh.material.alpha and true) then
@@ -170,26 +150,38 @@ function class:addMesh(mesh, transform, reflection)
 	end
 	
 	--too small for this shadow type
-	--todo still mesh, especially because the size is known here theoretically
+	--todo still meh, especially because the size is known here theoretically
 	if self.noSmallObjects and mesh.farShadowVisibility == false then
 		return
 	end
 	
 	--not visible from current perspective
-	if not self:withinFrustum(mesh, task) then
+	mesh.rID = mesh.rID or math.random()
+	if self.frustumCheck and size > 0 and not lib:inFrustum(self.cam, pos, size, mesh.rID) then
 		return false
 	end
 	
 	--todo here custom reflections (closest globe or default) and lights can be used
 	
+	local shader = lib:getRenderShader(mesh, reflection, self.settingsIdentifier, self.alpha, self.canvases, self.light, self.shadowPass, self.isSun)
+	
+	local dist = self.alpha and (pos - self.cam.position):lengthSquared() or 0
+	
+	--create task object
+	local task = setmetatable({
+		mesh,
+		transform,
+		pos,
+		shader,
+		reflection,
+		dist
+	}, lib.meta.task)
+	
 	--add to list
-	local shader = lib:getRenderShader(task, self.settingsIdentifier, self.alpha, self.canvases, self.light, self.shadowPass, self.isSun)
 	self:addTo(task, shader, mesh.material)
 end
 
 function class:addTo(task, shader, material)
-	task:setShader(shader)
-	
 	if self.alpha then
 		table.insert(self.tasks, task)
 	else
@@ -211,11 +203,6 @@ end
 
 function class:getIterator()
 	if self.alpha then
-		for _, task in ipairs(self.tasks) do
-			local dist = (task:getPosition() - self.cam.position):lengthSquared()
-			task:setDistance(dist)
-		end
-		
 		table.sort(self.tasks, sortFunction)
 		
 		local i = 0

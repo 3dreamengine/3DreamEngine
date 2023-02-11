@@ -220,12 +220,9 @@ function lib:getGlobalSettingsIdentifier(alpha, canvases, shadowPass, sun)
 	return settings
 end
 
-function lib:getRenderShader(task, globalIdentifier, alpha, canvases, light, shadowPass, isSun)
-	local mesh = task:getMesh()
+function lib:getRenderShader(mesh, reflection, globalIdentifier, alpha, canvases, light, shadowPass, isSun)
 	local mat = mesh.material
-	
-	--todo go full task refl
-	local reflections = not shadowPass and (task:getReflection() or self.defaultReflection)
+	reflection = not shadowPass and reflection
 	
 	local pixelShader = mat.pixelShader or mesh.pixelShader or self.defaultPixelShader
 	local vertexShader = mat.vertexShader or mesh.vertexShader or self.defaultVertexShader
@@ -233,7 +230,7 @@ function lib:getRenderShader(task, globalIdentifier, alpha, canvases, light, sha
 	
 	--construct full ID
 	local shaderID = string.char(
-			(reflections and 1 or 0) + (mesh.instanceMesh and 2 or 0) + (mat.discard and 4 or 0) + (mat.dither and 8 or 0) + (mat.translucency > 0 and 16 or 0),
+			(reflection and 1 or 0) + (mesh.instanceMesh and 2 or 0) + (mat.discard and 4 or 0) + (mat.dither and 8 or 0) + (mat.translucency > 0 and 16 or 0),
 			pixelShader.id % 256, math.floor(pixelShader.id / 256),
 			vertexShader.id % 256, math.floor(vertexShader.id / 256),
 			worldShader.id % 256, math.floor(worldShader.id / 256),
@@ -250,7 +247,7 @@ function lib:getRenderShader(task, globalIdentifier, alpha, canvases, light, sha
 	if not self.mainShaders[shaderID] then
 		--additional data
 		local info = {
-			reflection = reflections,
+			reflection = reflection,
 			material = mat,
 			shadows = shadowPass,
 			uniforms = { },
@@ -340,7 +337,7 @@ function lib:getRenderShader(task, globalIdentifier, alpha, canvases, light, sha
 			
 			--reflection
 			table.insert(defines, generateHeader("reflection"))
-			if reflections then
+			if reflection then
 				table.insert(defines, codes.reflections)
 			else
 				table.insert(defines, codes.ambientOnly)

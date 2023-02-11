@@ -150,12 +150,6 @@ function lib:render(canvases, cam, dynamic)
 			local mesh = task:getMesh()
 			local nextShaderObject = task:getShader()
 			
-			--reflections
-			local ref = task:getReflection()
-			if ref and ref.canvas then
-				self.reflections[ref] = ref.position or task:getPosition(mesh)
-			end
-			
 			--set active shader
 			if shaderObject ~= nextShaderObject then
 				lastMaterial = false
@@ -225,10 +219,13 @@ function lib:render(canvases, cam, dynamic)
 			
 			--reflection
 			if shaderObject.reflection then
-				--todo hmm
-				local ref = task:getReflection() or (type(self.defaultReflection) == "table" and self.defaultReflection)
-				local tex = ref and (ref.image or ref.canvas) or self.defaultReflection and self.defaultReflectionCanvas or self.textures.skyFallback
+				local ref = task:getReflection()
+				local tex = type(ref) == "table" and (ref.image or ref.canvas) or (self.defaultReflection and self.defaultReflectionCanvas) or self.textures.skyFallback
 				if lastReflection ~= tex then
+					if type(ref) == "table" and ref.canvas then
+						self.reflections[ref] = ref.position or task:getPosition()
+					end
+					
 					lastReflection = tex
 					
 					shader:send("backgroundTexture", tex)
