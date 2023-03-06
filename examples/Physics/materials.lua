@@ -1,4 +1,4 @@
-local dream = require("3DreamEngine")
+local dream = require("3DreamEngine.init")
 
 do
 	local material = dream:newMaterial("Material")

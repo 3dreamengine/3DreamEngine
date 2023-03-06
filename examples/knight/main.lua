@@ -1,5 +1,5 @@
 --load the 3D lib
-local dream = require("3DreamEngine")
+local dream = require("3DreamEngine.init")
 love.window.setTitle("Knight Example")
 
 --settings

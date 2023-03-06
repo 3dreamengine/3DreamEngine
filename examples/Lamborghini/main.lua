@@ -1,4 +1,4 @@
-local dream = require("3DreamEngine")
+local dream = require("3DreamEngine.init")
 love.window.setTitle("Lamborghini Example")
 
 --settings

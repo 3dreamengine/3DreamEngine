@@ -1,5 +1,5 @@
 --load the matrix and the 3D lib
-local dream = require("3DreamEngine")
+local dream = require("3DreamEngine.init")
 love.window.setTitle("Alpha Blend Example")
 love.mouse.setRelativeMode(true)
 

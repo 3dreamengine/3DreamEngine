@@ -5,7 +5,7 @@ love.window.setTitle("Instancing and Merging Monkey Example")
 love.window.setVSync(false)
 
 --load the 3D lib
-local dream = require("3DreamEngine")
+local dream = require("3DreamEngine.init")
 
 --initialize engine
 dream:init()
