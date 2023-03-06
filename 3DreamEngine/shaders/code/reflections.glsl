@@ -17,5 +17,5 @@ vec3 reflection(vec3 ref, float roughness) {
 	} else {
 		r = ref;
 	}
-	return gammaCorrectedTexel(backgroundTexture, r * vec3(1.0, -1.0, 1.0), roughness * reflectionsLevels).rgb;
+	return gammaCorrectedTexel(backgroundTexture, r * vec3(1.0, 1.0, -1.0), roughness * reflectionsLevels).rgb;
 }

@@ -150,7 +150,7 @@ function love.keypressed(key)
 	end
 	
 	if key == "f3" then
-		dream:take3DScreenshot(vec3(cameraController.x, cameraController.y, cameraController.z), 256)
+		dream:take3DScreenshot(vec3(cameraController.x, cameraController.y, cameraController.z), 128)
 	end
 end
 

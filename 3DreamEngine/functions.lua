@@ -25,6 +25,19 @@ function lib:lookAt(eye, at, up)
 	)
 end
 
+---Returns camera transforms for all faces of a cubemap
+---@param pos "vec3"
+function lib:getCubemapFaceTransforms(pos)
+	return {
+		lib:lookAt(pos, pos + self.lookNormals[1], vec3(0, 1, 0)),
+		lib:lookAt(pos, pos + self.lookNormals[2], vec3(0, 1, 0)),
+		lib:lookAt(pos, pos + self.lookNormals[3], vec3(0, 0, 1)),
+		lib:lookAt(pos, pos + self.lookNormals[4], vec3(0, 0, -1)),
+		lib:lookAt(pos, pos + self.lookNormals[5], vec3(0, 1, 0)),
+		lib:lookAt(pos, pos + self.lookNormals[6], vec3(0, 1, 0)),
+	}
+end
+
 function lib:HSVtoRGB(h, s, v)
 	local i = math.floor(h * 6)
 	local f = h * 6 - i
@@ -491,20 +504,11 @@ function lib:takeScreenshot()
 end
 
 function lib:take3DScreenshot(pos, resolution, path)
-	local lookNormals = self.lookNormals
 	resolution = resolution or 512
-	local canvases = self:newCanvasSet(self.canvases, resolution, resolution)
 	local results = love.graphics.newCanvas(resolution, resolution, { format = "rgba16f", type = "cube", mipmaps = "manual" })
 	
 	--view matrices
-	local transformations = {
-		self:lookAt(pos, pos + lookNormals[1], vec3(0, -1, 0)),
-		self:lookAt(pos, pos + lookNormals[2], vec3(0, -1, 0)),
-		self:lookAt(pos, pos + lookNormals[3], vec3(0, 0, -1)),
-		self:lookAt(pos, pos + lookNormals[4], vec3(0, 0, 1)),
-		self:lookAt(pos, pos + lookNormals[5], vec3(0, -1, 0)),
-		self:lookAt(pos, pos + lookNormals[6], vec3(0, -1, 0)),
-	}
+	local transformations = lib:getCubemapFaceTransforms(pos)
 	
 	--render all faces
 	for face = 1, 6 do
@@ -514,8 +518,8 @@ function lib:take3DScreenshot(pos, resolution, path)
 		love.graphics.clear()
 		
 		--render
-		local cam = self:newCamera(transformations[face], self.cubeMapProjection, pos, lookNormals[face])
-		lib:renderFull(cam, canvases, true)
+		local cam = self:newCamera(transformations[face], self.cubeMapProjection, pos, self.lookNormals[face])
+		lib:renderFull(cam, self.reflectionCanvases, true)
 		
 		love.graphics.pop()
 	end
@@ -548,10 +552,10 @@ end
 lib.lookNormals = {
 	vec3(1, 0, 0),
 	vec3(-1, 0, 0),
-	vec3(0, -1, 0),
 	vec3(0, 1, 0),
-	vec3(0, 0, 1),
+	vec3(0, -1, 0),
 	vec3(0, 0, -1),
+	vec3(0, 0, 1),
 }
 
 --cubemap projection

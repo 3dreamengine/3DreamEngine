@@ -36,12 +36,12 @@ end
 
 --view matrices
 local transformations = {
-	{ lookAt(lib.lookNormals[1], vec3(0, -1, 0)) },
-	{ lookAt(lib.lookNormals[2], vec3(0, -1, 0)) },
-	{ lookAt(lib.lookNormals[3], vec3(0, 0, -1)) },
-	{ lookAt(lib.lookNormals[4], vec3(0, 0, 1)) },
-	{ lookAt(lib.lookNormals[5], vec3(0, -1, 0)) },
-	{ lookAt(lib.lookNormals[6], vec3(0, -1, 0)) },
+	{ lookAt(lib.lookNormals[1], vec3(0, 1, 0)) },
+	{ lookAt(lib.lookNormals[2], vec3(0, 1, 0)) },
+	{ lookAt(lib.lookNormals[3], vec3(0, 0, 1)) },
+	{ lookAt(lib.lookNormals[4], vec3(0, 0, -1)) },
+	{ lookAt(lib.lookNormals[5], vec3(0, 1, 0)) },
+	{ lookAt(lib.lookNormals[6], vec3(0, 1, 0)) },
 }
 
 function job:execute(light)

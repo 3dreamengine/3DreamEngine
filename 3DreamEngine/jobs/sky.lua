@@ -26,17 +26,7 @@ function job:queue()
 	end
 end
 
-local pos = vec3(0.0, 0.0, 0.0)
-local lookNormals = lib.lookNormals
-local transformations = {
-	lib:lookAt(pos, lookNormals[1], vec3(0, -1, 0)),
-	lib:lookAt(pos, lookNormals[2], vec3(0, -1, 0)),
-	lib:lookAt(pos, lookNormals[3], vec3(0, 0, -1)),
-	lib:lookAt(pos, lookNormals[4], vec3(0, 0, 1)),
-	lib:lookAt(pos, lookNormals[5], vec3(0, -1, 0)),
-	lib:lookAt(pos, lookNormals[6], vec3(0, -1, 0)),
-}
-
+local transformations = lib:getCubemapFaceTransforms(vec3(0.0, 0.0, 0.0))
 local projections = { }
 for side = 1, 6 do
 	projections[side] = lib.cubeMapProjection * transformations[side]

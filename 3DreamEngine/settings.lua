@@ -146,7 +146,7 @@ function lib:getFogHeight()
 	return self.fog_min, self.fog_max
 end
 
----Sets the reflection type used for reflections, "sky" uses the Sky dome and only makes sense when using an animated, custom dome, Texture can be a 2D HDRi or a CubeImage, or an 3Dream Reflection object
+---Sets the reflection type used for reflections, "sky" uses the Sky dome and only makes sense when using an animated, custom dome. Texture can be a 2D HDRi or a CubeImage, or an 3Dream Reflection object
 ---@param texture Texture|DreamReflection|"false"|"sky"
 function lib:setDefaultReflection(texture)
 	if texture == "sky" then

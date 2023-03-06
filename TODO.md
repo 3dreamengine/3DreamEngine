@@ -2,6 +2,17 @@
 
 A list of upcoming changes and features.
 
+# Merge particles with default pipeline
+
+A particle is just a object with a transform and a material with diffuse, emission and distortion texture as well as custom shader
+particle uses internally a particle builder
+Similar, a particles batch is just an instanceBuilder with custom material and shader
+No overhead since fast drawMesh(mesh, transform) can be used too
+
+# Draw task
+
+Sometimes the whole object is unnecessary, if you just want to draw a mesh at a certain position
+
 # Remove dynamic shadows
 
 The idea (splitting static and dynamic shadows) performs surprisingly well but
@@ -13,9 +24,7 @@ The idea (splitting static and dynamic shadows) performs surprisingly well but
 
 # Fix 3DO
 
-Each class is serializable, which can be used for the internal file format but also to shader objects between threads efficiently (since the buffers are not copied).
-
-But currently I broke it again...
+Each class is serializable, also expand that to vectors (e.g. save __class = "vec3")
 
 # Improve Doc
 
@@ -38,12 +47,10 @@ The current light disk approach performs barely acceptable, but can be further e
 
 # Buffer builder
 
-* Create Meshes from several meshes
-    * Supports adding full objects, but also primitives
-        * Supports removing elements (see lovelyMeshBake)
-    * Allows tiled worlds etc. with high performance
-    * Maybe let all other things, like particle fields, particle batch, ... extend from that idea
-    * Even a text object is effectively a buffer builder but with "addChar()"
+* Add addVertex, addFace
+* Make a particle batch as a subclass of instanced builder
+* Make an experimental particle batch as a subclass of mesh builder to compare performance, especially in static mode
+* Add a text buffer, which basically extends a mesh builder by adding a custom material and 
 
 # Particle field
 

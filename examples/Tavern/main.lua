@@ -254,7 +254,7 @@ function love.keypressed(key)
 	end
 	
 	if key == "f3" then
-		dream:take3DScreenshot(vec3(player.x, player.y, player.z), 128)
+		dream:take3DScreenshot(vec3(cameraController.x, cameraController.y, cameraController.z), 128)
 	end
 	
 	if key == "g" then

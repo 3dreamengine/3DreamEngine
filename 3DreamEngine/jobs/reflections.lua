@@ -28,15 +28,7 @@ function job:queue()
 end
 
 function job:execute(reflection, pos)
-	local lookNormals = lib.lookNormals
-	local transformations = {
-		lib:lookAt(pos, pos + lookNormals[1], vec3(0, -1, 0)),
-		lib:lookAt(pos, pos + lookNormals[2], vec3(0, -1, 0)),
-		lib:lookAt(pos, pos + lookNormals[3], vec3(0, 0, -1)),
-		lib:lookAt(pos, pos + lookNormals[4], vec3(0, 0, 1)),
-		lib:lookAt(pos, pos + lookNormals[5], vec3(0, -1, 0)),
-		lib:lookAt(pos, pos + lookNormals[6], vec3(0, -1, 0)),
-	}
+	local transformations = lib:getCubemapFaceTransforms(pos)
 	
 	--prepare
 	love.graphics.push("all")
@@ -53,7 +45,7 @@ function job:execute(reflection, pos)
 	--render
 	reflection.lastSide = reflection.lastSide + 1
 	for face = reflection.lazy and reflection.lastSide or 1, reflection.lazy and reflection.lastSide or 6 do
-		local cam = lib:newCamera(transformations[face], lib.cubeMapProjection, pos, lookNormals[face])
+		local cam = lib:newCamera(transformations[face], lib.cubeMapProjection, pos, lib.lookNormals[face])
 		love.graphics.setCanvas({{canvas, face = face}, depth = true})
 		love.graphics.clear()
 		lib:renderFull(cam, lib.reflectionCanvases, dynamics)

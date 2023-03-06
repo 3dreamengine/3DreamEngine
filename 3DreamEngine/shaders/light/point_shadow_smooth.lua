@@ -14,7 +14,7 @@ function sh:constructDefinesGlobal(dream)
 		float depth = length(lightVec);
 		
 		//direction
-		vec3 n = normalize(-lightVec * vec3(1.0, -1.0, 1.0));
+		vec3 n = normalize(-lightVec * vec3(1.0, 1.0, -1.0));
 		
 		//fetch
 		float sampleDepth = texture(tex, n).x;
