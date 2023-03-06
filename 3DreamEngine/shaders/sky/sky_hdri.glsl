@@ -1,7 +1,7 @@
 #ifdef PIXEL
-extern float exposure;
+uniform float exposure;
 
-extern Image MainTex;
+uniform Image MainTex;
 
 void effect() {
 	vec4 c = Texel(MainTex, VaryingTexCoord.xy);
@@ -11,7 +11,7 @@ void effect() {
 #endif
 
 #ifdef VERTEX
-extern highp mat4 transformProj;
+uniform highp mat4 transformProj;
 
 vec4 position(mat4 transform_projection, vec4 VertexPosition) {
 	return transformProj * vec4(VertexPosition.xyz, 1.0);

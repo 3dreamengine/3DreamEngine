@@ -74,7 +74,7 @@ function sh:buildPixel(material)
 		
 		//for solid, non direct render passes you have access to the depth texture
 		#ifdef DEPTH_AVAILABLE
-		extern Image depthTexture;
+		uniform Image depthTexture;
 		#endif
 		
 		// if this shader is a pixel shader:

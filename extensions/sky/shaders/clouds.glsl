@@ -2,17 +2,17 @@ varying vec3 vertexPos;
 
 varying vec3 cloudsVec;
 
-extern vec3 sunColor;
-extern vec3 ambientColor;
-extern vec3 sunVec;
-extern float sunStrength;
+uniform vec3 sunColor;
+uniform vec3 ambientColor;
+uniform vec3 sunVec;
+uniform float sunStrength;
 
-extern CubeImage clouds;
+uniform CubeImage clouds;
 
-extern mat3 cloudsTransform;
+uniform mat3 cloudsTransform;
 
 #ifdef PIXEL
-extern float time;
+uniform float time;
 
 void effect() {
 	vec3 dir = normalize(vertexPos);
@@ -29,7 +29,7 @@ void effect() {
 #endif
 
 #ifdef VERTEX
-extern highp mat4 transformProj;
+uniform highp mat4 transformProj;
 
 vec4 position(mat4 transform_projection, vec4 VertexPosition) {
 	vertexPos = VertexPosition.xyz;

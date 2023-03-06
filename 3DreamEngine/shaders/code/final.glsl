@@ -1,20 +1,20 @@
-extern Image canvas_depth;
+uniform Image canvas_depth;
 
-extern Image canvas_bloom;
-extern Image canvas_ao;
+uniform Image canvas_bloom;
+uniform Image canvas_ao;
 
-extern Image canvas_alpha;
-extern Image canvas_distortion;
+uniform Image canvas_alpha;
+uniform Image canvas_distortion;
 
-extern Image canvas_exposure;
+uniform Image canvas_exposure;
 
-extern vec3 viewPos;
+uniform vec3 viewPos;
 
-extern float exposure;
+uniform float exposure;
 
 #ifdef FOG_ENABLED
 varying vec3 viewVec;
-extern mat4 transformInverse;
+uniform mat4 transformInverse;
 #endif
 
 #ifdef AUTO_EXPOSURE_ENABLED

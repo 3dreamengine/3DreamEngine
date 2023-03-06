@@ -40,7 +40,7 @@ function sh:buildDefines(mat)
 		
 		const int MAX_JOINTS = ]] .. self.maxJoints .. [[;
 		
-		extern mat4 jointTransforms[MAX_JOINTS];
+		uniform mat4 jointTransforms[MAX_JOINTS];
 		
 		attribute vec4 VertexJoint;
 		attribute vec4 VertexWeight;

@@ -56,22 +56,22 @@ end
 
 function sh:constructDefines(ID)
 	return ([[
-	extern float ss_factor_#ID#;
-	extern float ss_distance_#ID#;
-	extern float ss_fade_#ID#;
+	uniform float ss_factor_#ID#;
+	uniform float ss_distance_#ID#;
+	uniform float ss_fade_#ID#;
 	
-	extern vec3 ss_pos_#ID#;
+	uniform vec3 ss_pos_#ID#;
 	
-	extern mat4 ss_proj1_#ID#;
-	extern mat4 ss_proj2_#ID#;
-	extern mat4 ss_proj3_#ID#;
+	uniform mat4 ss_proj1_#ID#;
+	uniform mat4 ss_proj2_#ID#;
+	uniform mat4 ss_proj3_#ID#;
 	
-	extern Image ss_tex1_#ID#;
-	extern Image ss_tex2_#ID#;
-	extern Image ss_tex3_#ID#;
+	uniform Image ss_tex1_#ID#;
+	uniform Image ss_tex2_#ID#;
+	uniform Image ss_tex3_#ID#;
 	
-	extern vec3 ss_vec_#ID#;
-	extern vec3 ss_color_#ID#;
+	uniform vec3 ss_vec_#ID#;
+	uniform vec3 ss_color_#ID#;
 	]]):gsub("#ID#", ID)
 end
 

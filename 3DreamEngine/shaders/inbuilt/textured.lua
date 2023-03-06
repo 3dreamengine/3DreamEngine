@@ -23,22 +23,22 @@ function sh:buildDefines(mat, shadow)
 		]] .. (mat.materialTexture and "#define MATERIAL_TEXTURE\n" or "") .. [[
 		
 		#ifdef PIXEL
-		extern Image albedoTexture;
-		extern vec4 albedoColor;
+		uniform Image albedoTexture;
+		uniform vec4 albedoColor;
 		
 		#ifdef MATERIAL_TEXTURE
-		extern Image materialTexture;
+		uniform Image materialTexture;
 		#endif
-		extern vec2 materialColor;
+		uniform vec2 materialColor;
 		
 		#ifdef NORMAL_TEXTURE
-		extern Image normalTexture;
+		uniform Image normalTexture;
 		#endif
 		
 		#ifdef EMISSION_TEXTURE
-		extern Image emissionTexture;
+		uniform Image emissionTexture;
 		#endif
-		extern vec3 emissionColor;
+		uniform vec3 emissionColor;
 		
 		#endif
 	]]

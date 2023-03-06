@@ -1,20 +1,20 @@
 varying vec3 vertexPos;
 varying vec3 starsVec;
 
-extern CubeImage stars;
-extern float starsStrength;
-extern mat3 starsTransform;
+uniform CubeImage stars;
+uniform float starsStrength;
+uniform mat3 starsTransform;
 
-extern Image rainbow;
-extern float rainbowStrength;
-extern float rainbowSize;
-extern float rainbowThickness;
-extern vec3 rainbowDir;
+uniform Image rainbow;
+uniform float rainbowStrength;
+uniform float rainbowSize;
+uniform float rainbowThickness;
+uniform vec3 rainbowDir;
 
 #ifdef PIXEL
-extern float time;
+uniform float time;
 
-extern Image MainTex;
+uniform Image MainTex;
 
 void effect() {
 	vec3 dir = normalize(vertexPos);
@@ -43,7 +43,7 @@ void effect() {
 #endif
 
 #ifdef VERTEX
-extern highp mat4 transformProj;
+uniform highp mat4 transformProj;
 
 vec4 position(mat4 transform_projection, vec4 VertexPosition) {
 	vertexPos = VertexPosition.xyz;

@@ -1,6 +1,6 @@
 //11-tap 1.6 Sigma
 
-extern vec2 dir;
+uniform vec2 dir;
 
 vec4 effect(vec4 color, Image texture, vec2 tc, vec2 sc) {
 	vec4 sum = Texel(texture, tc) * 0.245484;

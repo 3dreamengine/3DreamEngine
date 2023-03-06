@@ -1,7 +1,7 @@
 varying vec3 pos;
 
 #ifdef PIXEL
-extern CubeImage MainTex;
+uniform CubeImage MainTex;
 
 void effect() {
 	// todo why is Z inverted
@@ -11,7 +11,7 @@ void effect() {
 #endif
 
 #ifdef VERTEX
-extern mat4 transformProj;
+uniform mat4 transformProj;
 
 vec4 position(mat4 transform_projection, vec4 VertexPosition) {
 	pos = VertexPosition.xyz;

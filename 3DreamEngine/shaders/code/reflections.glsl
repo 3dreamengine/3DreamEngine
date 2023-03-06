@@ -1,10 +1,10 @@
-extern samplerCube backgroundTexture;
-extern float reflectionsLevels;
+uniform samplerCube backgroundTexture;
+uniform float reflectionsLevels;
 
-extern bool reflectionsBoxed;
-extern vec3 reflectionsCenter;
-extern vec3 reflectionsFirst;
-extern vec3 reflectionsSecond;
+uniform bool reflectionsBoxed;
+uniform vec3 reflectionsCenter;
+uniform vec3 reflectionsFirst;
+uniform vec3 reflectionsSecond;
 
 vec3 reflection(vec3 ref, float roughness) {
 	vec3 r;

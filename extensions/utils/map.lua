@@ -12,8 +12,8 @@ local meshFormat = {
 local pixelCode = [[
 	varying vec2 VaryingHeight;
 	
-	extern float cameraHeight;
-	extern float inverseCameraSpan;
+	uniform float cameraHeight;
+	uniform float inverseCameraSpan;
 	
     vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords) {
     	float shade;

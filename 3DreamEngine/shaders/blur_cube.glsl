@@ -1,17 +1,17 @@
 #pragma language glsl3
 
-extern vec3 dirX;
-extern vec3 dirY;
-extern vec3 normal;
+uniform vec3 dirX;
+uniform vec3 dirY;
+uniform vec3 normal;
 
-extern float scale;
-extern float lod;
+uniform float scale;
+uniform float lod;
 
-extern CubeImage tex;
+uniform CubeImage tex;
 
-extern float strength;
+uniform float strength;
 
-extern float dir;
+uniform float dir;
 
 vec4 effect(vec4 color, Image lol, vec2 tc, vec2 sc) {
 	tc = (sc * scale - vec2(0.5)) * 2.0;

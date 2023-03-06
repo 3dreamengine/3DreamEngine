@@ -14,9 +14,9 @@ function sh:buildDefines(mat, shadow)
 	else
 		return [[
 			#ifdef PIXEL
-			extern Image brdfLUT;
+			uniform Image brdfLUT;
 			
-			extern float ior;
+			uniform float ior;
 			#endif
 			
 			//PBR lighting

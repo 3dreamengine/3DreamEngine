@@ -1,9 +1,9 @@
 #pragma language glsl3
 
 //camera uniforms
-extern highp mat4 transformProj;   //projective transformation
-extern highp mat4 transform;       //model transformation
-extern highp vec3 viewPos;         //camera position
+uniform highp mat4 transformProj;   //projective transformation
+uniform highp mat4 transform;       //model transformation
+uniform highp vec3 viewPos;         //camera position
 
 //varyings
 varying highp vec3 vertexPos;      //vertex position for pixel shader
@@ -12,13 +12,13 @@ varying highp vec3 varyingTangent; //vertex tangent for pixel shader
 varying highp vec3 varyingBitangent; //vertex bi tangent for pixel shader
 varying float depth;               //depth
 
-extern float translucency;
+uniform float translucency;
 
 //shader specific defines
 #import defines
 
 #ifdef DEPTH_AVAILABLE
-extern Image depthTexture;
+uniform Image depthTexture;
 #endif
 
 

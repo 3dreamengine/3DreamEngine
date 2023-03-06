@@ -11,14 +11,14 @@ varying float depth;
 
 
 #ifdef PIXEL
-extern highp vec3 viewPos;
+uniform highp vec3 viewPos;
 
 #ifdef EMISSION_TEXTURE
-extern Image emissionTexture;
+uniform Image emissionTexture;
 #endif
 
 #ifdef DISTORTION_TEXTURE
-extern Image distortionTexture;
+uniform Image distortionTexture;
 #endif
 
 #import fog
@@ -26,9 +26,9 @@ extern Image distortionTexture;
 //uniforms required by the lighting
 #import lightingSystemInit
 
-extern vec3 ambient;
+uniform vec3 ambient;
 
-extern Image MainTex;
+uniform Image MainTex;
 
 void effect() {
 	vec3 viewVec = normalize(vertexPos - viewPos);
@@ -101,9 +101,9 @@ void effect() {
 #ifdef VERTEX
 
 #ifdef SINGLE
-extern vec3 InstanceCenter;
-extern float InstanceEmission;
-extern float InstanceDistortion;
+uniform vec3 InstanceCenter;
+uniform float InstanceEmission;
+uniform float InstanceDistortion;
 #else
 attribute vec3 InstanceCenter;
 attribute float InstanceEmission;
@@ -115,9 +115,9 @@ attribute vec2 InstanceTexOffset;
 attribute vec4 InstanceColor;
 #endif
 
-extern mat4 transformProj;
-extern vec3 up;
-extern vec3 right;
+uniform mat4 transformProj;
+uniform vec3 up;
+uniform vec3 right;
 
 vec4 position(mat4 transform_projection, vec4 VertexPosition) {
 #ifdef SINGLE

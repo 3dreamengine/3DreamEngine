@@ -1,10 +1,10 @@
-extern float fog_density;
-extern float fog_scatter;
-extern vec3 fog_color;
-extern vec3 fog_sun;
-extern vec3 fog_sunColor;
-extern float fog_max;
-extern float fog_min;
+uniform float fog_density;
+uniform float fog_scatter;
+uniform vec3 fog_color;
+uniform vec3 fog_sun;
+uniform vec3 fog_sunColor;
+uniform float fog_max;
+uniform float fog_min;
 
 vec4 getFog(float depth, vec3 viewVec, vec3 viewPos) {
 	if (fog_max > fog_min) {

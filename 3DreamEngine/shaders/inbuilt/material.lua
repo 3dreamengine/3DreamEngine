@@ -18,7 +18,7 @@ function sh:buildDefines(mat, shadow)
 		//additional vertex attributes
 		#ifdef VERTEX
 		attribute float VertexMaterial;
-		extern Image lookupTexture;
+		uniform Image lookupTexture;
 		#endif
 	]]
 end

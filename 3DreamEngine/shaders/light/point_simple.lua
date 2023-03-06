@@ -4,11 +4,11 @@ sh.batchable = true
 
 function sh:constructDefinesGlobal(dream)
 	return [[
-		extern int point_simple_count;
+		uniform int point_simple_count;
 		
-		extern vec3 point_simple_pos[]] .. dream.max_lights .. [[];
-		extern vec3 point_simple_color[]] .. dream.max_lights .. [[];
-		extern float point_simple_attenuation[]] .. dream.max_lights .. [[];
+		uniform vec3 point_simple_pos[]] .. dream.max_lights .. [[];
+		uniform vec3 point_simple_color[]] .. dream.max_lights .. [[];
+		uniform float point_simple_attenuation[]] .. dream.max_lights .. [[];
 	]]
 end
 

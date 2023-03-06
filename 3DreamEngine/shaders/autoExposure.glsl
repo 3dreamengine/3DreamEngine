@@ -1,6 +1,6 @@
-extern float targetBrightness;
-extern float adaptionSpeed;
-extern float filterPrecision;
+uniform float targetBrightness;
+uniform float adaptionSpeed;
+uniform float filterPrecision;
 
 #ifdef PIXEL
 vec4 effect(vec4 color, Image texture, vec2 tc, vec2 sc) {

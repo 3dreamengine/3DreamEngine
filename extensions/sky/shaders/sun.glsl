@@ -1,7 +1,7 @@
 varying float height;
 
 #ifdef PIXEL
-extern Image MainTex;
+uniform Image MainTex;
 
 void effect() {
 	float brightness = 4.0 * clamp(height * 10.0, 0.0, 1.0);
@@ -11,12 +11,12 @@ void effect() {
 #endif
 
 #ifdef VERTEX
-extern mat4 transformProj;
+uniform mat4 transformProj;
 
-extern vec3 InstanceCenter;
+uniform vec3 InstanceCenter;
 
-extern vec3 up;
-extern vec3 right;
+uniform vec3 up;
+uniform vec3 right;
 
 vec4 position(mat4 transform_projection, vec4 VertexPosition) {
 	vec3 vPos = InstanceCenter + (right * VertexPosition.x + up * VertexPosition.y);

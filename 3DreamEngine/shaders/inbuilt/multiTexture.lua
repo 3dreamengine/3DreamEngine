@@ -46,32 +46,32 @@ function sh:buildDefines(mat, shadow)
 		]] .. ((not shadow and mat.dither) and "#define DITHER\n" or "") .. [[
 		
 		#ifdef PIXEL
-		extern Image blendTexture;
-		extern float multiTextureBlendScale;
+		uniform Image blendTexture;
+		uniform float multiTextureBlendScale;
 		
-		extern Image albedoTexture1;
-		extern Image albedoTexture2;
-		extern vec4 albedoColor1;
-		extern vec4 albedoColor2;
+		uniform Image albedoTexture1;
+		uniform Image albedoTexture2;
+		uniform vec4 albedoColor1;
+		uniform vec4 albedoColor2;
 		
 		#ifdef MATERIAL_TEXTURE
-		extern Image materialTexture1;
-		extern Image materialTexture2;
+		uniform Image materialTexture1;
+		uniform Image materialTexture2;
 		#endif
-		extern vec2 materialColor1;
-		extern vec2 materialColor2;
+		uniform vec2 materialColor1;
+		uniform vec2 materialColor2;
 		
 		#ifdef NORMAL_TEXTURE
-		extern Image normalTexture1;
-		extern Image normalTexture2;
+		uniform Image normalTexture1;
+		uniform Image normalTexture2;
 		#endif
 		
 		#ifdef EMISSION_TEXTURE
-		extern Image emissionTexture1;
-		extern Image emissionTexture2;
+		uniform Image emissionTexture1;
+		uniform Image emissionTexture2;
 		#endif
-		extern vec3 emissionColor1;
-		extern vec3 emissionColor2;
+		uniform vec3 emissionColor1;
+		uniform vec3 emissionColor2;
 		
 		#endif
 		

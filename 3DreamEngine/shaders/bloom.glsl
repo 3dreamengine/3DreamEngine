@@ -1,5 +1,5 @@
 float threshold = 1.0;
-extern float strength;
+uniform float strength;
 
 vec4 effect(vec4 color, Image texture, vec2 tc, vec2 sc) {
 	vec4 col = Texel(texture, tc);

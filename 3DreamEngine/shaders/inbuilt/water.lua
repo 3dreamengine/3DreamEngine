@@ -28,39 +28,39 @@ function sh:buildDefines(mat, shadow)
 		#define TANGENT
 		
 		//#ifdef PIXEL
-		extern Image albedoTexture;
-		extern vec4 albedoColor;
+		uniform Image albedoTexture;
+		uniform vec4 albedoColor;
 		
 		#ifdef MATERIAL_TEXTURE
-		extern Image materialTexture;
+		uniform Image materialTexture;
 		#endif
-		extern vec2 materialColor;
+		uniform vec2 materialColor;
 		
-		extern Image normalTexture;
+		uniform Image normalTexture;
 		
 		#ifdef EMISSION_TEXTURE
-		extern Image emissionTexture;
+		uniform Image emissionTexture;
 		#endif
-		extern vec3 emissionColor;
+		uniform vec3 emissionColor;
 		
-		extern Image noiseTexture;
+		uniform Image noiseTexture;
 		
-		extern float time;
+		uniform float time;
 		
 		//water
-		extern float waterSpeed;
-		extern float waterScale;
-		extern float waterHeight;
-		extern float surfaceDistortion;
+		uniform float waterSpeed;
+		uniform float waterScale;
+		uniform float waterHeight;
+		uniform float surfaceDistortion;
 		
-		extern float foamScale;
-		extern float foamSpeed;
+		uniform float foamScale;
+		uniform float foamSpeed;
 		
-		extern vec3 liquidAlbedo;
-		extern float liquidAlpha;
-		extern vec3 liquidEmission;
-		extern float liquidRoughness;
-		extern float liquidMetallic;
+		uniform vec3 liquidAlbedo;
+		uniform float liquidAlpha;
+		uniform vec3 liquidEmission;
+		uniform float liquidRoughness;
+		uniform float liquidMetallic;
 		
 		//#endif
 	]]

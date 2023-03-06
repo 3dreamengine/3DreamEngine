@@ -2,18 +2,18 @@
 
 #define MAX_SOURCES 8
 
-extern vec2 sizes[MAX_SOURCES];
-extern vec3 positions[MAX_SOURCES];
-extern vec3 colors[MAX_SOURCES];
-extern int sourceCount;
-extern int sampleCount;
+uniform vec2 sizes[MAX_SOURCES];
+uniform vec3 positions[MAX_SOURCES];
+uniform vec3 colors[MAX_SOURCES];
+uniform int sourceCount;
+uniform int sampleCount;
 
-extern Image noise;
+uniform Image noise;
 
-extern float density;
-extern float noiseStrength;
-extern float decay;
-extern vec2 scale;
+uniform float density;
+uniform float noiseStrength;
+uniform float decay;
+uniform vec2 scale;
 
 #ifdef PIXEL
 vec4 effect(vec4 color, Image depth_tex, vec2 tco, vec2 sc) {

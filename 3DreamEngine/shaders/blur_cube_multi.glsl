@@ -1,13 +1,13 @@
 #pragma language glsl3
 
-extern float scale;
-extern float lod;
+uniform float scale;
+uniform float lod;
 
-extern CubeImage tex;
+uniform CubeImage tex;
 
-extern float strength;
+uniform float strength;
 
-extern float dir;
+uniform float dir;
 
 vec4 fetch(float p, vec2 tc, vec3 normal, vec3 dirX, vec3 dirY) {
 	vec3 vec = normalize(normal + tc.x * dirX + tc.y * dirY);

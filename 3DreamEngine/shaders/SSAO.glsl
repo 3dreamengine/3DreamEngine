@@ -1,4 +1,4 @@
-extern mediump vec3 samples[SAMPLE_COUNT];
+uniform mediump vec3 samples[SAMPLE_COUNT];
 
 vec4 effect(vec4 color, Image texture, vec2 tc, vec2 sc) {
 	float sum = 0.0;

@@ -8,8 +8,8 @@ end
 
 function sh:constructDefines(ID)
 	return ([[
-		extern vec3 sun_simple_vec_#ID#;
-		extern vec3 sun_simple_color_#ID#;
+		uniform vec3 sun_simple_vec_#ID#;
+		uniform vec3 sun_simple_color_#ID#;
 	]]):gsub("#ID#", ID)
 end
 

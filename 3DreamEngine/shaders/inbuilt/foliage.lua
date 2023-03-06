@@ -20,17 +20,17 @@ end
 function sh:buildDefines(mat)
 	return [[
 #ifdef PIXEL
-	extern float windShaderFade;
+	uniform float windShaderFade;
 #endif
 
 #ifdef VERTEX
-	extern float windShaderTime;
-	extern float windShaderStrength;
-	extern float windShaderScale;
-	extern float windShaderHeight;
-	extern float windShaderGrass;
+	uniform float windShaderTime;
+	uniform float windShaderStrength;
+	uniform float windShaderScale;
+	uniform float windShaderHeight;
+	uniform float windShaderGrass;
 	
-	extern Image noiseTexture;
+	uniform Image noiseTexture;
 #endif
 	]]
 end
