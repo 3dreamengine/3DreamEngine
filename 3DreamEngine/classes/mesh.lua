@@ -4,14 +4,14 @@ local mat3, mat4 = lib.mat3, lib.mat4
 
 local ffi = require("ffi")
 
----newMesh
+---Creates a new empty mesh
 ---@param material DreamMaterial
 ---@return DreamMesh
 function lib:newMesh(material)
 	local mesh = {
 		name = "unnamed",
 		material = material,
-		boundingSphere = self:newEmptyBoundingSphere(),
+		boundingSphere = self:newBoundingSphere(),
 		
 		meshDrawMode = "triangles",
 		mesh = false,
@@ -37,7 +37,7 @@ end
 ---@field public renderVisibility boolean @ visible in render pass
 ---@field public shadowVisibility boolean @ visible in shadow pass
 local class = {
-	links = { "clone", "hasShaders", "mesh" },
+	links = { "clonable", "hasShaders", "mesh" },
 }
 
 ---Sets the meshes material
@@ -107,6 +107,7 @@ function class:getWorldShader()
 	return self.material.worldShader or self.worldShader or lib.defaultWorldShader
 end
 
+---@private
 function class:tostring()
 	local tags = { }
 	
@@ -148,6 +149,7 @@ function class:getFarthestVertex(from)
 	return best
 end
 
+---Updates the bounding sphere based on mesh data
 function class:updateBoundingSphere()
 	if not self.vertices then
 		return
@@ -194,8 +196,8 @@ function class:cleanup()
 	end
 end
 
----Preload all required textures, meshes and resources now
----@param force boolean @ even bypass threaded resource loading
+---Load textures and similar
+---@param force boolean @ Bypass threaded loading and immediately load things
 function class:preload(force)
 	if self.preloaded then
 		return
@@ -403,7 +405,7 @@ function class:create()
 	--create mesh
 	local meshFormat = self:getMeshFormat()
 	local byteData = meshFormat:create(self)
-	self.mesh = love.graphics.newMesh(meshFormat.meshLayout, byteData, "triangles", "static")
+	self.mesh = love.graphics.newMesh(meshFormat.vertexFormat, byteData, "triangles", "static")
 	
 	--vertex map
 	self.mesh:setVertexMap(self:createVertexMap(), "uint32")
@@ -501,6 +503,7 @@ function class:getOrCreateBuffer(name)
 	return self[name]
 end
 
+---@private
 function class:encode(meshCache, dataStrings)
 	local data = {
 		["name"] = self.name,

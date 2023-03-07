@@ -18,16 +18,17 @@ for i = 1, math.max(1, require("love.system").getProcessorCount() - 2) do
 end
 
 --input channels and result
-lib.channel_busy = love.thread.getChannel("3DreamEngine_channel_jobs_channel_busy")
-lib.channel_jobs = love.thread.getChannel("3DreamEngine_channel_jobs")
-lib.channel_results = love.thread.getChannel("3DreamEngine_channel_results")
+lib.busyChannel = love.thread.getChannel("3DreamEngine_.jobsChannel_channel_busy")
+lib.jobsChannel = love.thread.getChannel("3DreamEngine_.jobsChannel")
+lib.resultsChannel = love.thread.getChannel("3DreamEngine_channel_results")
 
---returns statistics of the loader threads
+---Returns statistics of the loader threads
+---@return number, number, number @ todo, in progress, awaiting upload to GPU
 function lib:getLoaderThreadUsage()
-	local todo = self.channel_jobs:getCount() + self.channel_jobs:getCount()
-	local working = self.channel_busy:getCount()
-	local done = self.channel_results:getCount()
-	return todo + working + done, todo, working, done
+	local todo = self..jobsChannel:getCount() + self..jobsChannel:getCount()
+	local working = self.busyChannel:getCount()
+	local done = self.resultsChannel:getCount()
+	return todo, working, done
 end
 
 --scan for image files and adds path to image library
@@ -58,7 +59,7 @@ scan("")
 local bufferData, buffer
 local fastLoadingJob = false
 
---updates active resource tasks (mesh loading, texture loading, ...)
+---Updates active resource tasks (mesh loading, texture loading, ...)
 function lib:update()
 	--recreate buffer object if necessary
 	local bufferSize = self.textures_bufferSize
@@ -113,7 +114,7 @@ function lib:update()
 	end
 	
 	--fetch new job
-	local msg = self.channel_results:pop()
+	local msg = self.resultsChannel:pop()
 	if msg then
 		--image
 		local width, height = msg[3]:getDimensions()
@@ -149,9 +150,13 @@ function lib:update()
 	end
 end
 
+---Clear all loaded textures, releasing VRAM but forcing a reload when used
 function lib:clearLoadedTextures()
 	self.texturesLoaded = { }
 end
+
+--todo related to smooth loading and thus being removed
+---@deprecated
 function lib:clearLoadedCanvases()
 	for d, s in pairs(self.texturesLoaded) do
 		if type(s) == "userdata" and s:typeOf("Canvas") then
@@ -160,15 +165,20 @@ function lib:clearLoadedCanvases()
 	end
 end
 
---get image path if present
+---Get image path if present
+---@param path string @ Slash separated path without extension to image
+---@return string
 function lib:getImagePath(path)
 	return images[path]
 end
+
+---Returns a dictionary, mapping every image without extension to its best file with extension
+---@return table<string, string>
 function lib:getImagePaths()
 	return images
 end
 
---get a texture, load it threaded if enabled and therefore may return nil first
+---Get a texture, load it threaded if enabled and therefore may return nil first
 function lib:getImage(path, force)
 	if type(path) == "userdata" then
 		return path
@@ -199,13 +209,16 @@ function lib:getImage(path, force)
 		self.texturesLoaded[path.path] = false
 		
 		--request texture load
-		self.channel_jobs:push(path)
+		self.jobsChannel:push(path)
 	end
 	
 	return tex
 end
 
---combine 3 textures to use only one texture
+---Lazily combine 3 textures to use only one texture
+---@param metallic string @ path
+---@param roughness string @ path
+---@param AO string @ path
 function lib:combineTextures(metallic, roughness, AO)
 	return {
 		task = "combine",

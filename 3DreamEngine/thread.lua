@@ -1,6 +1,6 @@
-local channel_busy = love.thread.getChannel("3DreamEngine_channel_jobs_channel_busy")
-local channel_jobs = love.thread.getChannel("3DreamEngine_channel_jobs")
-local channel_results = love.thread.getChannel("3DreamEngine_channel_results")
+local busyChannel = love.thread.getChannel("3DreamEngine_.jobsChannel_channel_busy")
+local jobsChannel = love.thread.getChannel("3DreamEngine_.jobsChannel")
+local resultsChannel = love.thread.getChannel("3DreamEngine_channel_results")
 
 require("love.image")
 
@@ -40,9 +40,9 @@ local function combineImages(red, green, blue)
 end
 
 while true do
-	local msg = channel_jobs:demand()
+	local msg = jobsChannel:demand()
 	if msg then
-		channel_busy:push(true)
+		busyChannel:push(true)
 		if msg.task == "image" then
 			local info = love.filesystem.getInfo(msg.path)
 			assert(info, "Image " .. msg.path .. " does not exist!")
@@ -50,7 +50,7 @@ while true do
 			--load image
 			local isCompressed = love.image.isCompressed(msg.path)
 			local imageData = isCompressed and love.image.newCompressedData(msg.path) or love.image.newImageData(msg.path)
-			channel_results:push({ "image", msg.path, imageData, isCompressed })
+			resultsChannel:push({ "image", msg.path, imageData, isCompressed })
 		elseif msg.task == "combine" then
 			--todo re-add cache
 			local red = type(msg.metallic) == "userdata" and msg.metallic or msg.metallic and love.image.newImageData(msg.metallic)
@@ -59,8 +59,8 @@ while true do
 			local combined = combineImages(red, green, blue)
 			
 			--send result
-			channel_results:push({ "image", msg.path, combined })
+			resultsChannel:push({ "image", msg.path, combined })
 		end
-		channel_busy:pop()
+		busyChannel:pop()
 	end
 end

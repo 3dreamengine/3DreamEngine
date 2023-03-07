@@ -1,9 +1,14 @@
 ---@type Dream
 local lib = _3DreamEngine
 
---todo particles do not significantly differ from objects, are they not added as tasks this a task?
+--todo particles do not significantly differ from objects, add them to the renderTasks list and treat them as meshes
+--todo ultimately rename to billboard, use default shader and pipeline
 
---Returns a particle instance used to draw a particle
+---Returns a particle instance used to draw a particle
+---@deprecated
+---@param texture Drawable
+---@param emissionTexture Drawable
+---@param distortionTexture Drawable
 ---@return DreamParticle
 function lib:newParticle(texture, emissionTexture, distortionTexture)
 	assert(texture, "texture required")
@@ -21,6 +26,7 @@ function lib:newParticle(texture, emissionTexture, distortionTexture)
 	return setmetatable(p, self.meta.particle)
 end
 
+---Deprecated, will get removed in favor of more appropriate solutions
 ---@class DreamParticle
 local class = {
 	links = { "particle" },

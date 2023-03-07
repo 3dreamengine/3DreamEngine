@@ -2,6 +2,7 @@
 local lib = _3DreamEngine
 local vec3 = lib.vec3
 
+--todo
 ---@class DreamAnimationFrame
 local DreamAnimationFrameStub = {
 	position = lib.vec3(),
@@ -10,9 +11,9 @@ local DreamAnimationFrameStub = {
 }
 assert(DreamAnimationFrameStub)
 
----Creates a new, empty animation
----@param frameTable table<string, DreamAnimationFrame[]> |
----@return DreamAnimation | DreamClonable
+---Creates a new, empty animation from a dictionary of joint names and animation frames
+---@param frameTable table<string, DreamAnimationFrame[]>
+---@return DreamAnimation
 function lib:newAnimation(frameTable)
 	local maxTime = 0
 	for _, frames in pairs(frameTable) do
@@ -42,20 +43,21 @@ function lib:newAnimation(frameTable)
 	}, self.meta.animation)
 end
 
----@class DreamAnimation
+---A animation contains transformation tracks for a set of joints
+---@class DreamAnimation : DreamClonable
 local class = {
-	links = { "clone", "animation" }
+	links = { "clonable", "animation" }
 }
 
 ---Linear interpolation between two frames
 ---@param first DreamAnimationFrame
----@param Second DreamAnimationFrame
+---@param second DreamAnimationFrame
 ---@param blend number
-function class.interpolateFrames(first, Second, blend)
+function class.interpolateFrames(first, second, blend)
 	return {
-		position = first.position * (1.0 - blend) + Second.position * blend,
-		rotation = first.rotation:nLerp(Second.rotation, blend),
-		scale = first.scale * (1.0 - blend) + Second.scale * blend,
+		position = first.position * (1.0 - blend) + second.position * blend,
+		rotation = first.rotation:nLerp(second.rotation, blend),
+		scale = first.scale * (1.0 - blend) + second.scale * blend,
 	}
 end
 
@@ -95,6 +97,7 @@ function class:getPose(time)
 	return pose
 end
 
+---@private
 function class:decode()
 	for _, frames in pairs(self.frames) do
 		for _, frame in ipairs(frames) do

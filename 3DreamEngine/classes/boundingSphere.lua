@@ -2,29 +2,25 @@
 local lib = _3DreamEngine
 local vec3 = lib.vec3
 
-function lib:newEmptyBoundingSphere()
-	return setmetatable({
-		first = vec3(math.huge, math.huge, math.huge),
-		second = vec3(-math.huge, -math.huge, -math.huge),
-		center = vec3(0.0, 0.0, 0.0),
-		size = 0
-	}, self.meta.boundingSphere)
-end
-
+---Creates a new bounding sphere
+---@param center DreamVec3  @ optional
+---@param size number  @ optional
 function lib:newBoundingSphere(center, size)
 	return setmetatable({
-		center = center,
-		size = size
+		center = center or vec3(0.0, 0.0, 0.0),
+		size = size or 0
 	}, self.meta.boundingSphere)
 end
 
+---A bounding sphere is a sphere enclosing e.g. mesh data and may be used for frustum culling
 ---@class DreamBoundingSphere
 ---@field public center DreamVec3
----@field public size number"
+---@field public size number
 local class = {
-	links = { "clone", "boundingSphere" },
+	links = { "clonable", "boundingSphere" },
 }
 
+---@private
 function class:decode()
 	self.center = vec3(self.center)
 end
@@ -81,6 +77,7 @@ function class:getSize()
 	return self.size
 end
 
+---@private
 function class:tostring()
 	return string.format("boundingSphere(center = %s, size = %f)", self.center, self.size)
 end

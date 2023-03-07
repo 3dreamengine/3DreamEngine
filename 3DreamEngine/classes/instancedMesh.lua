@@ -2,15 +2,15 @@
 local lib = _3DreamEngine
 local vec3, mat3 = lib.vec3, lib.mat3
 
----newMesh
----@param mesh DreamMesh
----@return DreamInstancedMesh | DreamMesh | DreamClonable | DreamHasShaders
+---@param mesh DreamMesh @ The source mesh to create instances from
+---@return DreamInstancedMesh
 function lib:newInstancedMesh(mesh)
 	mesh.instancesCount = 0
 	
 	return setmetatable(mesh, self.meta.instancedMesh)
 end
 
+---Uses a mesh to create instances from it. Especially helpful when rendering many small instances
 ---@class DreamInstancedMesh : DreamMesh
 local class = {
 	links = { "mesh", "instancedMesh" },
@@ -20,39 +20,8 @@ function class:getInstancesCount()
 	return self.instancesCount
 end
 
-function class:updateBoundingSphere()
-	lib.classes.mesh.updateBoundingSphere(self)
-	
-	self.originalBoundingSphere = self.boundingSphere
-	
-	self.boundingSphere = lib:newEmptyBoundingSphere()
-	
-	if self.instanceMesh then
-		for i = 1, self.instanceMesh:getVertexCount() do
-			self:extendBoundingSphere({ self.instanceMesh:getVertex(i) })
-		end
-	end
-end
-
-local function getLossySize(mat3)
-	return math.sqrt(math.max(
-			(mat3[1] ^ 2 + mat3[4] ^ 2 + mat3[7] ^ 2),
-			(mat3[2] ^ 2 + mat3[5] ^ 2 + mat3[8] ^ 2),
-			(mat3[3] ^ 2 + mat3[6] ^ 2 + mat3[9] ^ 2)
-	))
-end
-
-function class:extendBoundingSphere(instance)
-	local rotation = mat3(instance)
-	local position = vec3(instance[10], instance[11], instance[12])
-	local bs = lib:newBoundingSphere(
-			rotation * self.originalBoundingSphere.center + position,
-			self.originalBoundingSphere.size * getLossySize(rotation)
-	
-	)
-	self.boundingSphere = self.boundingSphere:merge(bs)
-end
-
+---Resize the instanced mesh, preserving previous entries
+---@param count number
 function class:resize(count)
 	self.originalBoundingSphere = self.boundingSphere:clone()
 	
@@ -66,16 +35,16 @@ function class:resize(count)
 	
 	--copy existing buffer
 	if self.instanceMesh then
-		for i = 1, self.instanceMesh:getVertexCount() do
+		for i = 1, math.min(self.instanceMesh:getVertexCount(), count) do
 			new:setVertex(i, self.instanceMesh:getVertex(i))
 		end
 	end
 	
 	self.instanceMesh = new
-	self.instancesCount = 0
+	self.instancesCount = math.min(count, self.instancesCount)
 end
 
----addInstance
+---Add another instance
 ---@param transform DreamMat4 @ a mat3x4 matrix, instances do not support shearing, e.g. the last row
 ---@param index number @ Optional index, else it will append
 function class:addInstance(transform, index)
@@ -97,13 +66,49 @@ function class:addInstance(transform, index)
 	self:extendBoundingSphere(instance)
 end
 
----Place instances from an array of mat3x4 transformations, represented as a flat array (mat3 rotation, vec3 position)
+---Place instances from an array of mat3x4 transformations, represented as a flat array (mat3 rotation, vec3 position, basically a transposed DreamMat4 with missing last row)
 ---@param instances number[][][]
 function class:setInstances(instances)
 	self:resize(#instances)
 	self.instanceMesh:setVertices(instances)
 	self.instancesCount = #instances
 	self:updateBoundingSphere()
+end
+
+---Updates the bounding sphere from scratch, called internally when needed
+function class:updateBoundingSphere()
+	lib.classes.mesh.updateBoundingSphere(self)
+	
+	self.originalBoundingSphere = self.boundingSphere
+	
+	self.boundingSphere = lib:newBoundingSphere()
+	
+	if self.instanceMesh then
+		for i = 1, self.instanceMesh:getVertexCount() do
+			self:extendBoundingSphere({ self.instanceMesh:getVertex(i) })
+		end
+	end
+end
+
+local function getLossySize(mat)
+	return math.sqrt(math.max(
+			(mat[1] ^ 2 + mat[4] ^ 2 + mat[7] ^ 2),
+			(mat[2] ^ 2 + mat[5] ^ 2 + mat[8] ^ 2),
+			(mat[3] ^ 2 + mat[6] ^ 2 + mat[9] ^ 2)
+	))
+end
+
+---Extend the bounding sphere by another instance, called internally
+---@param instance DreamMat4
+function class:extendBoundingSphere(instance)
+	local rotation = mat3(instance)
+	local position = vec3(instance[10], instance[11], instance[12])
+	local bs = lib:newBoundingSphere(
+			rotation * self.originalBoundingSphere.center + position,
+			self.originalBoundingSphere.size * getLossySize(rotation)
+	
+	)
+	self.boundingSphere = self.boundingSphere:merge(bs)
 end
 
 return class

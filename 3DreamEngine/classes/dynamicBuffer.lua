@@ -1,6 +1,7 @@
 ---@type Dream
 local lib = _3DreamEngine
 
+---A dynamic buffer is a slower, more dynamic lua array implementation
 ---@return DreamBuffer
 function lib:newDynamicBuffer()
 	return setmetatable({
@@ -52,6 +53,7 @@ function class:getSize()
 	return #self.buffer
 end
 
+---@private
 function class:tostring()
 	return "Dynamic Buffer"
 end

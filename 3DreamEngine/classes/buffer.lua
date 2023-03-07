@@ -29,6 +29,8 @@ local sizeLookup = {
 	[16] = "mat4",
 }
 
+---Converts given float array into a buffer
+---@param array number[]
 ---@return DreamBuffer
 function lib:newBufferFromArray(array)
 	local buffer = self:newBuffer(sizeLookup[#array[1]], "float", #array)
@@ -46,11 +48,17 @@ function lib:newBufferFromArray(array)
 	return buffer
 end
 
+---New empty buffer with the same memory layout as the existing buffer
+---@param buffer DreamBuffer
 ---@return DreamBuffer
 function lib:newBufferLike(buffer)
 	return self:newBuffer(buffer:getType(), buffer:getDataType(), buffer:getSize())
 end
 
+---New Buffer from string
+---@param type string @ "vec2", "vec3", "vec4", or "mat4"
+---@param dataType string @ C type, e.g. "float"
+---@param str string
 ---@return DreamBuffer
 function lib:bufferFromString(type, dataType, str)
 	local buffer = self:newBuffer(type, dataType, #str / (ffi.sizeof(dataType) * sizes[type]))
@@ -59,6 +67,10 @@ function lib:bufferFromString(type, dataType, str)
 	return buffer
 end
 
+---New compact data buffer
+---@param type string @ "vec2", "vec3", "vec4", or "mat4"
+---@param dataType string @ C type, e.g. "float"
+---@param length number
 ---@return DreamBuffer
 function lib:newBuffer(type, dataType, length)
 	local id = ("dream_" .. type .. "_" .. dataType):gsub(" ", "_")
@@ -75,6 +87,7 @@ function lib:newBuffer(type, dataType, length)
 	}, self.meta.buffer)
 end
 
+---A buffer is a continues collection of primitives (vectors, scalars or matrices) used to store vertex information and co.
 ---@class DreamBuffer
 local class = {
 	links = { "buffer" },
@@ -190,6 +203,7 @@ function class:toArray()
 	return array
 end
 
+---@private
 function class:tostring()
 	return string.format("Static %s %s Buffer of size %d", self.dataType, self.type, self.length)
 end

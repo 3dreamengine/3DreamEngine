@@ -3,7 +3,7 @@ local class = {
 	links = { },
 }
 
----Clone
+---Slow and deep clone
 function class:clone()
 	local n = { }
 	
@@ -18,6 +18,7 @@ function class:clone()
 	return setmetatable(n, getmetatable(self))
 end
 
+---Creates an fast instance
 function class:instance()
 	return setmetatable({}, { __index = self })
 end

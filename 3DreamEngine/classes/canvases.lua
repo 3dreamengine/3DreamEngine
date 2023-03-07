@@ -15,6 +15,7 @@ function lib:newCanvases()
 	}, self.meta.canvases)
 end
 
+---Canvases are target frame buffers storing intermediate and final rendering steps as well as graphics settings
 ---@class DreamCanvases
 local class = {
 	links = { "canvases" },
@@ -141,6 +142,7 @@ function class:init(w, h)
 end
 
 ---Unload canvases
+---@private
 function class:unloadCanvasSet()
 	for k, s in pairs(self) do
 		if type(s) == "userdata" and s.release then

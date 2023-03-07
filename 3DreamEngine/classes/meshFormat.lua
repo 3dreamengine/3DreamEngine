@@ -3,21 +3,23 @@ local lib = _3DreamEngine
 
 local ffi = require("ffi")
 
----newMesh
+---Creates a new mesh format
+---@param vertexFormat table @ A vertex format as specified in https://love2d.org/wiki/love.graphics.newMesh
 ---@return DreamMeshFormat
-function lib:newMeshFormat(meshLayout)
+function lib:newMeshFormat(vertexFormat)
 	local f = {
-		meshLayout = meshLayout,
+		vertexFormat = vertexFormat,
 		attributes = { }
 	}
 	
-	for _, format in ipairs(meshLayout) do
+	for _, format in ipairs(vertexFormat) do
 		f.attributes[format[1]] = true
 	end
 	
 	return setmetatable(f, self.meta.meshFormat)
 end
 
+---Mesh formats contain the code required to populate the final render-able mesh and should overwrite the create methods. Use cases for custom mesh formats are additional attributes. Special shaders are required to make use of custom mesh formats.
 ---@class DreamMeshFormat
 local class = {
 	links = { "meshFormat" },
@@ -32,7 +34,7 @@ end
 local cachedStructs = { }
 function class:getCStruct()
 	--give a unique hash for the structs name
-	local md5 = love.data.hash("md5", lib.packTable.pack(self.meshLayout))
+	local md5 = love.data.hash("md5", lib.packTable.pack(self.vertexFormat))
 	local identifier = "mesh_vertex_" .. love.data.encode("string", "hex", md5)
 	
 	--build a C struct to make sure data match
@@ -40,7 +42,7 @@ function class:getCStruct()
 	if not cachedStructs[identifier] then
 		local types = { }
 		local str = "typedef struct {" .. "\n"
-		for _, format in ipairs(self.meshLayout) do
+		for _, format in ipairs(self.vertexFormat) do
 			if format[2] == "float" then
 				str = str .. "float "
 			elseif format[2] == "byte" then

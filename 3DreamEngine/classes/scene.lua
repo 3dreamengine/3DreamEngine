@@ -2,6 +2,7 @@
 local lib = _3DreamEngine
 
 ---@return DreamScene
+---@private
 function lib:newScene(shadowPass, dynamic, alpha, cam, blacklist, frustumCheck, noSmallObjects, canvases, light, isSun)
 	local m = setmetatable({ }, self.meta.scene)
 	
@@ -157,7 +158,7 @@ function class:addMesh(mesh, transform, reflection, scale)
 	
 	--not visible from current perspective
 	mesh.rID = mesh.rID or math.random()
-	if self.frustumCheck and size > 0 and not lib:inFrustum(self.cam, pos, size, mesh.rID) then
+	if self.frustumCheck and size > 0 and not self.cam:inFrustum(pos, size, mesh.rID) then
 		return false
 	end
 	

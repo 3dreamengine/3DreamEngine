@@ -14,13 +14,14 @@ lib.stats = {
 	draws = 0,
 }
 
+---@private
 function lib:buildScene(shadowPass, dynamic, alpha, cam, blacklist, frustumCheck, noSmallObjects, canvases, light, isSun)
 	self.delton:start("scene")
 	
 	--use a scene here
 	local scene = self:newScene(shadowPass, dynamic, alpha, cam, blacklist, frustumCheck, noSmallObjects, canvases, light, isSun)
 	
-	for _, pair in pairs(self.scene) do
+	for _, pair in pairs(self.renderTasks) do
 		if pair[2] then
 			scene:addObject(pair[1], pair[2], true)
 		else
@@ -79,7 +80,8 @@ local function checkAndSendCached(shaderObject, name, value)
 	end
 end
 
---render the scene onto a canvas set using a specific view camera
+---Render the scene onto a canvas set using a specific view camera
+---@private
 function lib:render(canvases, cam, dynamic)
 	self.delton:start("prepare")
 	
@@ -390,7 +392,8 @@ function lib:render(canvases, cam, dynamic)
 	love.graphics.pop()
 end
 
---only renders a depth variant
+---Only renders a depth variant
+---@private
 function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects, smoothShadows)
 	self.delton:start("renderShadows")
 	
@@ -487,7 +490,8 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects, smoo
 	return scene
 end
 
---full render, including bloom, fxaa and exposure
+---Full render, including bloom, fxaa and exposure
+---@private
 function lib:renderFull(cam, canvases)
 	love.graphics.push("all")
 	if canvases.mode ~= "direct" then
@@ -617,6 +621,10 @@ function lib:renderFull(cam, canvases)
 	end
 end
 
+---Render or present the scene, depending on the canvas settings
+---@param camera DreamCamera @ defaults to internal camera `dream.camera`
+---@param canvases DreamCanvases @ defaults to internal canvases `dream.canvases`
+---@param lite boolean @ when lite is enabled, no side tasks like shadow or reflection generations are executed
 function lib:present(camera, canvases, lite)
 	self.delton:start("present")
 	

@@ -41,6 +41,7 @@ if _DEBUGMODE and love.graphics then
 	end
 end
 
+--todo move
 local lastShaderID = 0
 function lib:newShader(path)
 	local shader = require(path)
@@ -58,6 +59,10 @@ function lib:newShader(path)
 end
 
 lib.shaderRegister = { }
+
+---Register a shader to the shader registry, materials files can then reference them
+---@param shader DreamShader
+---@param name string
 function lib:registerShader(shader, name)
 	if type(shader) == "string" then
 		name = name or shader:match("[^%/]*$")
@@ -68,6 +73,8 @@ function lib:registerShader(shader, name)
 	return self.shaderRegister[name]
 end
 
+---Gets a shader from the library
+---@param name string
 function lib:getShader(name)
 	if type(name) == "table" then
 		return name
@@ -103,8 +110,10 @@ for _, s in ipairs(love.filesystem.getDirectoryItems(lib.root .. "/shaders/light
 	lib.lightShaders[name] = require(lib.root .. "/shaders/light/" .. name)
 end
 
---return and load shader if necessary
 lib.shaders = { }
+
+--return and load shader if necessary
+---@private
 function lib:getBasicShader(s)
 	if not lib.shaders[s] then
 		local r = love.filesystem.read
@@ -132,7 +141,8 @@ local function insertHeader(t, name, code)
 end
 
 --load all setting depending shaders
-function lib.loadShader(self)
+---@private
+function lib:loadShaders()
 	self.finalShaders = { }
 	self.mainShaders = { }
 	self.particlesShader = { }
@@ -158,7 +168,8 @@ function lib.loadShader(self)
 	end
 end
 
---the final canvas combines all resources into one result
+---The final canvas combines all resources into one result
+---@private
 function lib:getFinalShader(canvases)
 	local parts = { }
 	
@@ -186,6 +197,7 @@ function lib:getFinalShader(canvases)
 	return self.finalShaders[ID]
 end
 
+---@private
 function lib:getGlobalSettingsIdentifier(alpha, canvases, shadowPass, sun)
 	--collect additional defines
 	local settings = 0
@@ -220,6 +232,7 @@ function lib:getGlobalSettingsIdentifier(alpha, canvases, shadowPass, sun)
 	return settings
 end
 
+---@private
 function lib:getRenderShader(mesh, reflection, globalIdentifier, alpha, canvases, light, shadowPass, isSun)
 	local mat = mesh.material
 	reflection = not shadowPass and reflection
@@ -378,6 +391,7 @@ function lib:getRenderShader(mesh, reflection, globalIdentifier, alpha, canvases
 	return self.mainShaders[shaderID]
 end
 
+---@private
 function lib:getParticlesShaderID(pass, canvases, emissive, distortion, single)
 	local id = 0
 	if emissive then
@@ -404,6 +418,7 @@ function lib:getParticlesShaderID(pass, canvases, emissive, distortion, single)
 	return string.char(id)
 end
 
+---@private
 function lib:getParticlesShader(pass, canvases, light, emissive, distortion, single)
 	local ID = light.ID .. self:getParticlesShaderID(pass, canvases, emissive, distortion, single)
 	
@@ -469,6 +484,7 @@ function lib:getParticlesShader(pass, canvases, light, emissive, distortion, sin
 	return self.particlesShader[ID]
 end
 
+---@private
 function lib:getLightComponents(lightOverview, basic)
 	local lcInit = { }
 	local lc = { }

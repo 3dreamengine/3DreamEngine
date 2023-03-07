@@ -3,14 +3,17 @@ local lib = _3DreamEngine
 
 local vec3, mat4 = lib.vec3, lib.mat4
 
----@return DreamObject | DreamClonable | DreamTransformable | DreamHasShaders
+--todo linked objects are basically just instances, and should be instances for the sake of recursive instancing
+---@deprecated
+---@return DreamObject
 function lib:newLinkedObject(original, source)
 	return setmetatable({
 		linked = source
 	}, { __index = original })
 end
 
----@return DreamObject | DreamClonable | DreamTransformable | DreamHasShaders
+---Create an empty object
+---@return DreamObject
 function lib:newObject()
 	return setmetatable({
 		objects = { },
@@ -33,7 +36,7 @@ function lib:newObject()
 	}, self.meta.object)
 end
 
----@class DreamObject
+---@class DreamObject : DreamClonable, DreamTransformable, DreamHasShaders
 ---@field public objects DreamObject[]
 ---@field public meshes DreamMesh[]
 ---@field public positions DreamPosition[]
@@ -43,7 +46,7 @@ end
 ---@field public reflections DreamReflection[]
 ---@field public animations DreamAnimation[]
 local class = {
-	links = { "clone", "transformable", "hasShaders", "object" },
+	links = { "clonable", "transformable", "hasShaders", "object" },
 }
 
 local function count(t)
@@ -303,6 +306,7 @@ function class:setMaterial(material)
 	end
 end
 
+---@private
 function class:encode(meshCache, dataStrings)
 	local data = {
 		["objects"] = { },
@@ -342,6 +346,7 @@ function class:encode(meshCache, dataStrings)
 	return data
 end
 
+---@private
 function class:decode(meshData)
 	--recreate transform
 	if self.transform then
@@ -502,6 +507,7 @@ function class:print()
 	end
 end
 
+---@private
 function class:tostring()
 	local tags = { }
 	
@@ -516,6 +522,34 @@ function class:tostring()
 		table.insert(tags, tostring(tag))
 	end
 	return string.format("%s: %d objects, %d meshes, %d physics, %d lights%s%s", self.name, count(self.objects), count(self.meshes), count(self.collisionMeshes or { }), count(self.lights), #tags > 0 and ", " or "", table.concat(tags, ", "))
+end
+
+---Exports this object in the custom, compact and fast 3DO format
+---@deprecated @ broken
+function class:export3do()
+	--todo optional return string as well as raw mesh byte data array for memory efficient inter-thread communication
+	local meshCache = { }
+	local dataStrings = { }
+	
+	--encode
+	local data = self:encode(meshCache, dataStrings)
+	
+	--save the length of each data segment
+	data.dataStringsLengths = { }
+	for _, s in pairs(dataStrings) do
+		table.insert(data.dataStringsLengths, #s)
+	end
+	
+	--export
+	local headerData = love.data.compress("string", "lz4", lib.packTable.pack(data), 9)
+	local headerLength = #headerData
+	local l1 = math.floor(headerLength) % 256
+	local l2 = math.floor(headerLength / 256) % 256
+	local l3 = math.floor(headerLength / 256 ^ 2) % 256
+	local l4 = math.floor(headerLength / 256 ^ 3) % 256
+	local final = "3DO" .. lib.version_3DO .. "    " .. string.char(l1, l2, l3, l4) .. headerData .. table.concat(dataStrings, "")
+	love.filesystem.createDirectory(self.dir)
+	love.filesystem.write(self.dir .. "/" .. self.name .. ".3do", final)
 end
 
 return class

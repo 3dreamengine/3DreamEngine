@@ -25,7 +25,7 @@ lib.defaultArgs = {
 	cleanup = false,
 	mesh = true,
 	export3do = false,
-	skip3do = false,
+	skip3do = false, --todo remove
 	particleSystems = true,
 	scene = false,
 	decodeBlenderNames = true,
@@ -67,7 +67,7 @@ lib.supportedFiles = {
 	"dae", --dae file
 }
 
---add to object library instead
+---Loads and adds that object as a library, see https://3dreamengine.github.io/3DreamEngine/docu/introduction
 function lib:loadLibrary(path, args, prefix)
 	args = prepareArgs(args)
 	args.loadAsLibrary = true
@@ -82,12 +82,14 @@ function lib:loadLibrary(path, args, prefix)
 	end
 end
 
+---Register object in the object library. Objects loaded with the `LINK` tag are then replaced with the entry from the library
+---@param object DreamObject
+---@param name string
 function lib:registerObject(object, name)
 	self.objectLibrary[name] = object
 end
 
---loads an scene
---this is just a wrapper for loadObject with the scene flag enabled
+---Loads an scene, see https://3dreamengine.github.io/3DreamEngine/docu/introduction
 function lib:loadScene(path, args)
 	args = args and table.copy(args) or { }
 	args.scene = true
@@ -178,15 +180,12 @@ function lib:loadObject(path, args)
 	
 	
 	--create meshes, link library entries, ...
-	for _, o in pairs(obj.objects) do
-		self:finishObject(o)
-	end
 	self:finishObject(obj)
 	
 	self.deltonLoad:stop()
 	
 	--3do exporter
-	--todo temporary disable
+	--todo temporary disable, and I feel like automatically doing stuff is not preferred
 	if obj.args.export3do and false then
 		self:export3do(obj)
 		
@@ -199,6 +198,7 @@ end
 
 ---@param name string @ the full object or mesh identifier
 ---@return string, table @ the actual name and the extracted tags
+---@private
 function lib:parseTags(name)
 	name = self:removePostfix(name)
 	if type(name) == "string" then
@@ -223,6 +223,9 @@ function lib:parseTags(name)
 	end
 end
 
+---Process and populate the object
+---@param obj DreamObject
+---@private
 function lib:processObject(obj)
 	for id, object in pairs(obj.objects) do
 		--pase tags
@@ -412,7 +415,14 @@ function lib:processObject(obj)
 	end
 end
 
+---Finish object
+---@param obj DreamObject
+---@private
 function lib:finishObject(obj)
+	for _, o in pairs(obj.objects) do
+		self:finishObject(o)
+	end
+	
 	--link objects
 	for index, link in ipairs(obj.links) do
 		local lo = self.objectLibrary[link.source]

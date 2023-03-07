@@ -6,6 +6,7 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 --]]
 
+---The main class
 ---@class Dream
 local lib = { }
 
@@ -84,9 +85,8 @@ require(lib.root .. "/renderLight")
 require(lib.root .. "/renderGodrays")
 require(lib.root .. "/renderSky")
 require(lib.root .. "/jobs")
-require(lib.root .. "/particlesystem")
+require(lib.root .. "/particleSystem")
 require(lib.root .. "/particles")
-require(lib.root .. "/3doExport")
 
 --file loader
 lib.loader = { }
@@ -149,14 +149,14 @@ lib.version_3DO = 6
 
 --default meshFormats
 lib.meshFormats = { }
-lib:registerMeshFormat("textured", require(lib.root .. "/meshFormats/textured"))
-lib:registerMeshFormat("simple", require(lib.root .. "/meshFormats/simple"))
-lib:registerMeshFormat("material", require(lib.root .. "/meshFormats/material"))
+lib:registerMeshFormat(require(lib.root .. "/meshFormats/textured"), "textured")
+lib:registerMeshFormat(require(lib.root .. "/meshFormats/simple"), "simple")
+lib:registerMeshFormat(require(lib.root .. "/meshFormats/material"), "material")
 
 --some functions require temporary canvases
 lib.canvasCache = { }
 
-lib.scene = { }
+lib.renderTasks = { }
 
 if love.graphics then
 	--default objects
@@ -227,7 +227,7 @@ function lib:init(w, h)
 	self:clearLoadedCanvases()
 	
 	--reset shader
-	self:loadShader()
+	self:loadShaders()
 	
 	--reset lighting
 	for _, l in pairs(self.lighting or { }) do
@@ -250,7 +250,7 @@ end
 ---Clears the current scene
 function lib:prepare()
 	self.lighting = { }
-	self.scene = { }
+	self.renderTasks = { }
 	
 	self.particleBatches = { {}, {} }
 	self.particles = { {}, {} }
@@ -289,7 +289,7 @@ function lib:draw(object, x, y, z, sx, sy, sz)
 	end
 	
 	--add to scene
-	table.insert(self.scene, { object, transform })
+	table.insert(self.renderTasks, { object, transform })
 end
 
 ---Add a light

@@ -2,12 +2,19 @@
 local lib = _3DreamEngine
 local vec3, mat4 = lib.vec3, lib.mat4
 
+---Creates a new camera
+---@param transform DreamMat4
+---@param transformProj DreamMat4
+---@param position DreamVec3
+---@param normal DreamVec3
 ---@return DreamCamera
 function lib:newCamera(transform, transformProj, position, normal)
 	local m = transform or position and mat4.getTranslate(position) or mat4.getIdentity()
 	return setmetatable({
 		transform = m,
 		transformProj = transformProj and (transformProj * m),
+		
+		--todo remove
 		transformProjOrigin = transformProj and (transformProj * mat4(m[1], m[2], m[3], 0.0, m[5], m[6], m[7], 0.0, m[9], m[10], m[11], 0.0, 0.0, 0.0, 0.0, 1.0)),
 		
 		--extracted from transform matrix
@@ -32,6 +39,7 @@ local class = {
 }
 
 ---Updates the frustum planes, required for plane frustum check, called internally
+---@private
 function class:updateFrustumPlanes()
 	self.planes = lib:getFrustumPlanes(self.transformProj)
 end
@@ -117,6 +125,43 @@ function class:getPerspectiveTransform(canvases)
 		a11 * b[9], a11 * b[10], a11 * b[11], a11 * b[12] + a12,
 		-b[9], -b[10], -b[11], -b[12]
 	})
+end
+
+--todo the frustum culling code fails for close objects, a constant factor "fix" it but it's not fixing the actual problem
+local perspectiveWarpFactor = 1.5
+
+local cache = { }
+
+--todo octant test
+---Checks if the giving sphere is in the cameras frustum
+---@param pos DreamVec3
+---@param radius number
+---@param id any
+function class:inFrustum(pos, radius, id)
+	radius = radius * perspectiveWarpFactor
+	
+	local c = cache[id]
+	if c then
+		local plane = self.planes[c]
+		local dist = plane[1] * pos[1] + plane[2] * pos[2] + plane[3] * pos[3] + plane[4]
+		if dist + radius < 0.0 then
+			return false
+		end
+		cache[id] = nil
+	end
+	
+	--todo missing z plane?
+	for i = 1, 4 do
+		if i ~= c then
+			local plane = self.planes[i]
+			local dist = plane[1] * pos[1] + plane[2] * pos[2] + plane[3] * pos[3] + plane[4]
+			if dist + radius < 0.0 then
+				cache[id] = i
+				return false
+			end
+		end
+	end
+	return true
 end
 
 ---Returns the final camera-orthographic transform

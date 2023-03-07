@@ -5,7 +5,8 @@
 ---@type Dream
 local lib = _3DreamEngine
 
---todo remove transformScale
+---Renders the sky box
+---@private
 function lib:renderSky(transformProj, camTransform, transformScale)
 	if transformScale then
 		transformProj = transformProj * lib.mat4.getScale(transformScale)

@@ -48,6 +48,7 @@ end
 
 local instanceMesh
 
+--todo class
 local meta = {
 	--clear the batch
 	clear = function(self)

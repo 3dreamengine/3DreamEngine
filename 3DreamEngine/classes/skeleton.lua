@@ -1,6 +1,8 @@
 ---@type Dream
 local lib = _3DreamEngine
 
+---New skeleton from a hierarchical bone structure
+---@param root DreamBone
 ---@return DreamSkeleton
 function lib:newSkeleton(root)
 	return setmetatable({
@@ -9,12 +11,13 @@ function lib:newSkeleton(root)
 	}, self.meta.skeleton)
 end
 
+---Contains a hierarchical bone structure and the final transformation matrices for skinning when a pose has been applied
 ---@class DreamSkeleton
 local class = {
 	links = { "skeleton" },
 }
 
---apply the pose to the joints
+---Apply the pose to the joints
 ---@private
 function class:applyPoseToNode(node, pose, parentTransform)
 	if pose[node.name] then

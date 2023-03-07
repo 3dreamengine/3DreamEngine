@@ -5,6 +5,8 @@
 ---@type Dream
 local lib = _3DreamEngine
 
+---Renders the god rays
+---@private
 function lib:renderGodrays(light, canvases, cam)
 	local positions = { }
 	local colors = { }

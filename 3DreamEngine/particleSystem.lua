@@ -1,13 +1,13 @@
 --[[
 #part of the 3DreamEngine by Luke100000
-particlesystem.lua - generates particle meshes based on .mat instructions
+particleSystem.lua - generates particle meshes based on .mat instructions
 --]]
 
 ---@type Dream
 local lib = _3DreamEngine
 local vec3, mat3 = lib.vec3, lib.mat3
 
---load a list of particle objects and prepare them
+--Load a list of particle objects and prepare them
 local function loadParticles(self, particleSystems)
 	for _, ps in ipairs(particleSystems) do
 		--default values
@@ -32,7 +32,7 @@ local function loadParticles(self, particleSystems)
 	end
 end
 
---fetches an input from the color buffer
+---Dummy provider if no buffer is used
 local ones = {
 	get = function()
 		return 1
@@ -41,6 +41,8 @@ local ones = {
 		return 1
 	end,
 }
+
+---Returns an input provider
 local function getInput(input, mesh, face)
 	if input then
 		local b = mesh[input.buffer or "colors"]
@@ -70,8 +72,9 @@ local function getInput(input, mesh, face)
 	end
 end
 
---add particle system objects
---for every mesh (which is not a particle mesh itself) with a material with attached particle systems create a new object (the particles)
+---For every mesh (which is not a particle mesh itself) with a material with attached particle systems create a new object (the particles)
+---@param obj DreamObject
+---@private
 function lib:addParticleSystems(obj)
 	local meshes = { }
 	for oName, o in pairs(obj.meshes) do

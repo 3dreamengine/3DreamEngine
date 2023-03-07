@@ -3,9 +3,9 @@ local lib = _3DreamEngine
 
 local ffi = require("ffi")
 
----newMesh
+---Creates a new mesh builder
 ---@param material DreamMaterial
----@return DreamMeshBuilder | DreamMesh | DreamClonable | DreamHasShaders
+---@return DreamMeshBuilder
 function lib:newMeshBuilder(material)
 	assert(material, "Required material")
 	local mesh = lib:newMesh(material)
@@ -37,6 +37,7 @@ function lib:newMeshBuilder(material)
 	return setmetatable(mesh, self.meta.meshBuilder)
 end
 
+---Mesh builder are buffers populated with primitives or objects on the CPU, then rendered altogether. They outperform individual draw calls and can be multi threaded and/or cached.
 ---@class DreamMeshBuilder : DreamMesh
 local class = {
 	links = { "mesh", "meshBuilder" },
@@ -251,7 +252,7 @@ function class:resizeVertex(size)
 	end
 	
 	--new mesh
-	self.mesh = love.graphics.newMesh(self.meshFormat.meshLayout, self.byteData, "triangles", "static")
+	self.mesh = love.graphics.newMesh(self.meshFormat.vertexFormat, self.byteData, "triangles", "static")
 end
 
 function class:resizeIndices(size)

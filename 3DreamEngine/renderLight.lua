@@ -12,6 +12,8 @@ end
 
 local lastID = 0
 local IDs = { }
+
+---@private
 function lib:getLightSetupID(lights, types)
 	local ID = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 	if lights then
@@ -27,7 +29,8 @@ function lib:getLightSetupID(lights, types)
 	return string.char(unpack(ID))
 end
 
---creates a subset of light sources, optimized for the current scene
+---Creates a subset of light sources, optimized for the current scene
+---@private
 function lib:getLightOverview(cam)
 	--select the most important lights
 	for _, light in ipairs(self.lighting) do
@@ -63,6 +66,7 @@ function lib:getLightOverview(cam)
 	}
 end
 
+---@private
 function lib:sendLightUniforms(lightOverview, shader, overwriteTyp)
 	--global uniforms
 	for typ, count in pairs(lightOverview.types) do

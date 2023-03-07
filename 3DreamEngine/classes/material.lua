@@ -2,6 +2,7 @@
 local lib = _3DreamEngine
 
 ---Creates an empty material
+---@param name string
 ---@return DreamMaterial
 function lib:newMaterial(name)
 	return setmetatable({
@@ -12,7 +13,7 @@ function lib:newMaterial(name)
 		alpha = false,
 		discard = false,
 		alphaCutoff = 0.5, --todo
-		name = name or "None",
+		name = name or "Unnamed",
 		ior = 1.0,
 		translucency = 0.0,
 		library = false,
@@ -20,10 +21,19 @@ function lib:newMaterial(name)
 	}, self.meta.material)
 end
 
+---A material holds textures, render settings, shader information and similar and is assigned to a mesh.
 ---@class DreamMaterial
 local class = {
-	links = { "clone", "hasShaders", "material" },
+	links = { "clonable", "hasShaders", "material" },
 }
+
+---@param name string
+function class:setName(name)
+	self.name = lib:removePostfix(name)
+end
+function class:getName()
+	return self.name
+end
 
 --todo merge alpha, solid and discard
 function class:setAlpha(alpha)
@@ -49,7 +59,7 @@ function class:getDither()
 	return self.dither
 end
 
---alias CullMode "back"|"front"|"none
+---@alias CullMode "back"|"front"|"none
 
 ---Sets the culling mode
 ---@param cullMode CullMode
@@ -134,6 +144,8 @@ function class:getCullMode()
 	return self.cullMode
 end
 
+---Load textures and similar
+---@param force boolean @ Bypass threaded loading and immediately load things
 function class:preload(force)
 	if self.preloaded then
 		return
@@ -150,6 +162,77 @@ function class:preload(force)
 	--todo
 	
 	self.preloaded = true
+end
+
+---Populate from a lua file returning a material
+---@param file string
+function class:loadFromFile(file)
+	local matLoaded = love.filesystem.load(file)()
+	table.merge(self, matLoaded)
+	
+	self.pixelShader = lib:getShader(self.pixelShader)
+	self.vertexShader = lib:getShader(self.vertexShader)
+	self.worldShader = lib:getShader(self.worldShader)
+end
+
+--link textures to material
+local function texSetter(mat, typ, tex)
+	--use the setter function to overwrite color
+	local func = "set" .. typ:sub(1, 1):upper() .. typ:sub(2) .. "Texture"
+	if mat[func] then
+		mat[func](mat, tex)
+	else
+		mat[typ .. "Texture"] = tex
+	end
+end
+
+---Looks for and assigns textures in a specific directory using an optional filter
+---@param directory string
+---@param filter string
+function class:lookForTextures(directory, filter)
+	for _, typ in ipairs({ "albedo", "normal", "roughness", "metallic", "emission", "ao", "material" }) do
+		local custom = self[typ .. "Texture"]
+		self[typ .. "Texture"] = nil
+		
+		if type(custom) == "userdata" then
+			--already an image
+			texSetter(self, typ, custom)
+		elseif type(custom) == "string" then
+			--path or name specified
+			local path = lib:getImagePath(custom) or
+					lib:getImagePath(directory .. "/" .. custom) or
+					(love.filesystem.getInfo(custom, "file")) and custom or
+					(love.filesystem.getInfo(directory .. "/" .. custom, "file")) and (directory .. "/" .. custom)
+			
+			if path then
+				texSetter(self, typ, path)
+			end
+		elseif lib:getImagePath(directory .. "/" .. typ) then
+			--recommending file naming is used
+			texSetter(self, typ, lib:getImagePath(directory .. "/" .. typ))
+		else
+			--let's look for possible matches
+			for name, path in pairs(lib:getImagePaths()) do
+				if name:sub(1, #directory) == directory then
+					local fn = name:sub(#directory + 2):lower()
+					if fn:find(typ) and (not filter or fn:find(filter:lower())) then
+						texSetter(self, typ, path)
+						break
+					end
+				end
+			end
+		end
+	end
+	
+	--combiner
+	if not self["materialTexture"] then
+		if self["metallicTexture"] or self["roughnessTexture"] or self["aoTex"] then
+			self:setMaterialTexture(lib:combineTextures(self["metallicTexture"], self["roughnessTexture"], self["aoTex"]))
+		end
+	end
+	
+	--convert shader id to actual shader object
+	--todo has nothing to do with name
 end
 
 return class

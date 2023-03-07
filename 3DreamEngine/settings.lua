@@ -6,7 +6,7 @@ settings.lua - a bunch of setter and getter to set global settings
 ---@type Dream
 local lib = _3DreamEngine
 
----Sets the max count of simple lights
+---Sets the max count of simple light sources
 ---@param count number
 function lib:setMaxLights(count)
 	self.max_lights = count
@@ -42,6 +42,8 @@ end
 function lib:setExposure(enable)
 	self.exposure = enable or false
 end
+
+---@deprecated
 function lib:getExposure()
 	return self.exposure
 end
@@ -88,6 +90,9 @@ function lib:setAO(samples, resolution, blur)
 		self.AO_enabled = false
 	end
 end
+
+---Get the state of ambient occlusion
+---@return boolean, number, number @ enabled, quality, resolution
 function lib:getAO()
 	return self.AO_enabled, self.AO_quality, self.AO_resolution
 end
@@ -108,14 +113,17 @@ function lib:setBloom(quality, resolution, size, strength)
 		self.bloom_enabled = false
 	end
 end
+
+---Get the state of bloom
+---@return boolean, number, number, number, number @ enabled, quality, resolution, size, strength
 function lib:getBloom()
 	return self.bloom_enabled, self.bloom_quality, self.bloom_resolution, self.bloom_size, self.bloom_strength
 end
 
----Fog settings
+---Depth based fog
 ---@param density number
 ---@param color DreamVec3
----@param scatter number @ Volumetric light scatter effect on sun light
+---@param scatter number @ Light scatter effect on sun light
 function lib:setFog(density, color, scatter)
 	if density then
 		self.fog_enabled = true
@@ -126,11 +134,14 @@ function lib:setFog(density, color, scatter)
 		self.fog_enabled = false
 	end
 end
+
+---Get the state of fog
+---@return boolean, number, DreamVec3, number @ enabled, density, color, scatter
 function lib:getFog()
 	return self.fog_enabled, self.fog_density, self.fog_color, self.fog_scatter
 end
 
----Fog height, where min is full density and max zero density
+---Fog height, where min is full density and max zero density, Y-aligned
 ---@param min number
 ---@param max number
 function lib:setFogHeight(min, max)
@@ -142,12 +153,15 @@ function lib:setFogHeight(min, max)
 		self.fog_max = -1
 	end
 end
+
+---Get the height, or (1, -1) if disabled
+---@return number, number  @ min and max
 function lib:getFogHeight()
 	return self.fog_min, self.fog_max
 end
 
 ---Sets the reflection type used for reflections, "sky" uses the Sky dome and only makes sense when using an animated, custom dome. Texture can be a 2D HDRi or a CubeImage, or an 3Dream Reflection object
----@param texture Texture|DreamReflection|"false"|"sky"
+---@param texture Texture|DreamReflection|boolean|string
 function lib:setDefaultReflection(texture)
 	if texture == "sky" then
 		--use sky
@@ -261,6 +275,7 @@ end
 
 
 --todo consider removal or improving, in its current state they are useless
+---@deprecated
 function lib:setGodrays(quality)
 	if quality then
 		self.godrays_enabled = true
@@ -269,6 +284,7 @@ function lib:setGodrays(quality)
 		self.godrays_enabled = false
 	end
 end
+---@deprecated
 function lib:getGodrays()
 	return self.godrays_enabled, self.godrays_quality
 end
@@ -321,9 +337,9 @@ function lib:getDefaultWorldShader()
 	return self.defaultWorldShader
 end
 
----Register a new format, see 3DreamEngine/meshFormats/ for examples
----@param name string
+---Register a new format, see `3DreamEngine/meshFormats/*` for examples
 ---@param format DreamMeshFormat
-function lib:registerMeshFormat(name, format)
+---@param name string
+function lib:registerMeshFormat(format, name)
 	self.meshFormats[name] = format
 end

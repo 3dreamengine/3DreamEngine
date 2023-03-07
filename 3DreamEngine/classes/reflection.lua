@@ -35,17 +35,23 @@ function lib:newReflection(static, resolution, roughness, lazy)
 	}, self.meta.reflection)
 end
 
+---A reflection globe, updated when visible. Dynamic globes are slow and should be used with care. In many cases, static globes are sufficient.
 ---@class DreamReflection
 local class = {
 	links = { "reflection" },
 }
 
+---Request a rerender, especially relevant if the globe is static
 function class:refresh()
 	self.done = false
 end
 
+---Set the bounds of the globe. A local globe is more accurate for objects close to the bounds.
+---@param center DreamVec3
+---@param first DreamVec3
+---@param second DreamVec3
 function class:setLocal(center, first, second)
-	--todo change to matrix
+	--todo change to matrix and offset (where offset, e.g. center is probably redundant)
 	self.center = center
 	self.first = first
 	self.second = second
@@ -54,7 +60,7 @@ function class:getLocal()
 	return self.center, self.first, self.second
 end
 
----Lazy reflections spread the load over several frames
+---Lazy reflections spread the load over several frames and are therefore much faster at the cost of a bit of flickering
 ---@param lazy boolean
 function class:setLazy(lazy)
 	self.lazy = lazy
@@ -63,6 +69,7 @@ function class:getLazy()
 	return self.lazy
 end
 
+---@private
 function class:decode()
 	self.center = vec3(self.center)
 	self.first = vec3(self.first)

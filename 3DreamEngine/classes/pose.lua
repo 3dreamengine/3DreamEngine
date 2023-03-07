@@ -1,14 +1,16 @@
 ---@type Dream
 local lib = _3DreamEngine
 
----@return DreamPose | DreamClonable
+---@return DreamPose
+---@private
 function lib:newPose()
 	return setmetatable({}, self.meta.pose)
 end
 
----@class DreamPose
+---A pose is a snapshot of an animation, contains transformations of joints and can be applied to a skeleton.
+---@class DreamPose : DreamClonable
 local class = {
-	links = { "clone", "pose" },
+	links = { "clonable", "pose" },
 }
 
 ---Blend with another pose

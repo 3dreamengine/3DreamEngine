@@ -1,7 +1,10 @@
 ---@type Dream
 local lib = _3DreamEngine
 
----@return DreamPosition | DreamClonable
+---@param position DreamVec3
+---@param size number
+---@param value string
+---@return DreamPosition
 function lib:newPosition(position, size, value)
 	local l = {
 		name = "unnamed",
@@ -13,11 +16,13 @@ function lib:newPosition(position, size, value)
 	return setmetatable(l, self.meta.position)
 end
 
----@class DreamPosition
+---New position, mostly used internally for objects marked with the `POS` tag.
+---@class DreamPosition : DreamClonable
 local class = {
-	links = { "position", "clone" },
+	links = { "position", "clonable" },
 }
 
+---@private
 function class:tostring()
 	return string.format("%s with value %s (%.3f size) at %s", self.name, self.value, self.size, self.position)
 end
@@ -54,6 +59,7 @@ function class:getSize()
 	return self.size
 end
 
+---@private
 function class:decode()
 	self.position = lib.vec3(self.position)
 end

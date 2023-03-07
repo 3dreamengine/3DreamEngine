@@ -16,7 +16,8 @@ end
 local times
 local operations
 
---resets job handler
+---Resets job handler
+---@private
 function lib:initJobs()
 	times = { }
 	operations = { }
@@ -30,10 +31,12 @@ function lib:initJobs()
 end
 
 --enqueues a new operation
+---@private
 function lib:addOperation(...)
 	table.insert(operations, { ... })
 end
 
+---@private
 function lib:executeJobs()
 	--queue jobs
 	for _, s in pairs(self.jobs) do

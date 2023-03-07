@@ -28,6 +28,7 @@ end
 
 ---Returns camera transforms for all faces of a cubemap
 ---@param pos DreamVec3
+---@private
 function lib:getCubemapFaceTransforms(pos)
 	return {
 		lib:lookAt(pos, pos + self.lookNormals[1], vec3(0, 1, 0)),
@@ -139,6 +140,7 @@ end
 
 ---Create frustum planes
 ---@param m DreamMat4
+---@private
 function lib:getFrustumPlanes(m)
 	local planes = { vec4(), vec4(), vec4(), vec4(), vec4(), vec4() }
 	for i = 1, 4 do
@@ -150,39 +152,6 @@ function lib:getFrustumPlanes(m)
 		planes[6][i] = m[12 + i] - m[8 + i]
 	end
 	return planes
-end
-
---todo the frustum culling code fails for close objects, a constant factor "fix" it but it's not fixing the actual problem
-local perspectiveWarpFactor = 1.5
-
---todo octant test
---optimized plane frustum check
-local cache = { }
-function lib:inFrustum(cam, pos, radius, id)
-	radius = radius * perspectiveWarpFactor
-	
-	local c = cache[id]
-	if c then
-		local plane = cam.planes[c]
-		local dist = plane[1] * pos[1] + plane[2] * pos[2] + plane[3] * pos[3] + plane[4]
-		if dist + radius < 0.0 then
-			return false
-		end
-		cache[id] = nil
-	end
-	
-	--todo missing z plane?
-	for i = 1, 4 do
-		if i ~= c then
-			local plane = cam.planes[i]
-			local dist = plane[1] * pos[1] + plane[2] * pos[2] + plane[3] * pos[3] + plane[4]
-			if dist + radius < 0.0 then
-				cache[id] = i
-				return false
-			end
-		end
-	end
-	return true
 end
 
 function lib:getBarycentric(x, y, x1, y1, x2, y2, x3, y3)
@@ -323,6 +292,11 @@ function lib:getBarycentricClamped(x, y, x1, y1, x2, y2, x3, y3)
 	return 1 - t1 - t2, t1, t2
 end
 
+---Two-pass Gaussian blur
+---@param canvas Canvas
+---@param strength number
+---@param iterations number
+---@param mask table @ optional
 function lib:blurCanvas(canvas, strength, iterations, mask)
 	local temp = self:getTemporaryCanvas(canvas)
 	local sh = lib:getBasicShader("blur")
@@ -385,7 +359,7 @@ local blurVecs = {
 	},
 }
 
---if the system supports 6+ multicanvas (which most modern systems do) we can use the faster variant
+---@private
 function lib:getTemporaryCanvas(canvas, half)
 	local id = canvas:getWidth() .. canvas:getFormat() .. canvas:getHeight() .. (half and "H" or "F")
 	if not self.canvasCache[id] then
@@ -410,17 +384,26 @@ local function setMultiCubeMap(cube, level)
 	})
 end
 
-if love.graphics and love.graphics.getSystemLimits().multicanvas >= 6 then
-	function lib:blurCubeMap(cube, layers, strength, mask, blurFirst)
+local useMulti = love.graphics and love.graphics.getSystemLimits().multicanvas >= 6
+
+---Blur a cubemap close to realtime
+---@param cube Canvas
+---@param layers number
+---@param strength number
+---@param mask table @ optional
+---@param blurFirst boolean already blur the first layer, as usually used for ambient lighting maps
+function lib:blurCubeMap(cube, layers, strength, mask, blurFirst)
+	love.graphics.push("all")
+	love.graphics.reset()
+	
+	if mask then
+		love.graphics.setColorMask(unpack(mask))
+	end
+	love.graphics.setBlendMode("replace", "premultiplied")
+	
+	if useMulti then
 		local temp = self:getTemporaryCanvas(cube, not blurFirst)
 		local shader = self:getBasicShader("blur_cube_multi")
-		
-		love.graphics.push("all")
-		love.graphics.reset()
-		if mask then
-			love.graphics.setColorMask(unpack(mask))
-		end
-		love.graphics.setBlendMode("replace", "premultiplied")
 		
 		love.graphics.setShader(shader)
 		shader:send("strength", strength or 0.1)
@@ -441,20 +424,9 @@ if love.graphics and love.graphics.getSystemLimits().multicanvas >= 6 then
 			setMultiCubeMap(cube, level)
 			love.graphics.rectangle("fill", 0, 0, res, res)
 		end
-		
-		love.graphics.pop()
-	end
-else
-	function lib:blurCubeMap(cube, layers, strength, mask, blurFirst)
+	else
 		local temp = self:getTemporaryCanvas(cube, not blurFirst)
 		local shader = self:getBasicShader("blur_cube")
-		
-		love.graphics.push("all")
-		love.graphics.reset()
-		if mask then
-			love.graphics.setColorMask(unpack(mask))
-		end
-		love.graphics.setBlendMode("replace", "premultiplied")
 		
 		love.graphics.setShader(shader)
 		shader:send("strength", strength or 0.1)
@@ -480,13 +452,13 @@ else
 				love.graphics.rectangle("fill", 0, 0, res, res)
 			end
 		end
-		
-		love.graphics.pop()
 	end
+	love.graphics.pop()
 end
 
+---Takes a threaded screenshot and saves it into the screenshot directory in the saves directories
 function lib:takeScreenshot()
-	if love.keyboard.isDown("lctrl") then
+	if love.keyboard.isDown("lshift") then
 		love.system.openURL(love.filesystem.getSaveDirectory() .. "/screenshots")
 	else
 		love.filesystem.createDirectory("screenshots")
@@ -504,6 +476,10 @@ function lib:takeScreenshot()
 	end
 end
 
+---Takes a 3D screenshot and saves it as a custom CIMG cubemap image with pre blurred reflection mipmaps, may be used for static reflection globes
+---@param pos DreamVec3
+---@param resolution number
+---@param path string
 function lib:take3DScreenshot(pos, resolution, path)
 	resolution = resolution or 512
 	local results = love.graphics.newCanvas(resolution, resolution, { format = "rgba16f", type = "cube", mipmaps = "manual" })
@@ -520,7 +496,7 @@ function lib:take3DScreenshot(pos, resolution, path)
 		
 		--render
 		local cam = self:newCamera(transformations[face], self.cubeMapProjection, pos, self.lookNormals[face])
-		lib:renderFull(cam, self.reflectionCanvases, true)
+		lib:renderFull(cam, self.reflectionCanvases)
 		
 		love.graphics.pop()
 	end
@@ -534,6 +510,11 @@ function lib:take3DScreenshot(pos, resolution, path)
 	return results
 end
 
+--todo verify
+---Converts a 2:1 HDRI to a 1:6 flattened cubemap
+---@param hdri Drawable
+---@param resolution number
+---@return Canvas
 function lib:HDRItoCubemap(hdri, resolution)
 	local shader = self:getBasicShader("HDRItoCubemap")
 	local canvas = love.graphics.newCanvas(resolution * 6, resolution)
@@ -576,7 +557,8 @@ do
 	)
 end
 
-function lib:removePostfix(t)
-	local f = t:find(".", 0, true)
-	return f and t:sub(1, f - 1) or t
+---@private
+function lib:removePostfix(str)
+	local f = str:find(".", 0, true)
+	return f and str:sub(1, f - 1) or str
 end
