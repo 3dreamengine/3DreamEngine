@@ -1,5 +1,7 @@
 ---@type Dream
 local lib = _3DreamEngine
+local vec2, vec3, vec4 = lib.vec2, lib.vec3, lib.vec4
+local mat4 = lib.mat4
 
 local ffi = require("ffi")
 

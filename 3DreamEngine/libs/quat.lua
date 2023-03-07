@@ -111,7 +111,7 @@ function quat.toMatrix(p)
 	local ySquared = p[2] * p[2]
 	local zSquared = p[3] * p[3]
 	
-	local c = mat4({
+	local c = quat.mat4({
 		1 - 2 * (ySquared + zSquared),
 		2 * (xy - zw),
 		2 * (xz + yw),

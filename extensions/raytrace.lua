@@ -10,6 +10,8 @@ Doug Baldwin and Michael Weber, Fast Ray-Triangle Intersections by Coordinate Tr
 http://jcgt.org/published/0005/03/03/
 --]]
 
+local vec3 = _3DreamEngine.vec3
+
 --smallest subset after partitioning
 local threshold = 50
 

@@ -1,5 +1,6 @@
 ---@type Dream
 local lib = _3DreamEngine
+local mat3, mat4 = lib.mat3, lib.mat4
 
 local ffi = require("ffi")
 

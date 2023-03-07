@@ -42,7 +42,7 @@ Undocumented features are subject to change. They will receive proper documentat
 
 ```lua
 --load 3DreamEngine
-dream = require("3DreamEngine")
+local dream = require("3DreamEngine")
 
 --optionally set settings
 dream:setBloom(3)
@@ -51,10 +51,10 @@ dream:setBloom(3)
 dream:init()
 
 --loads a object
-yourObject = dream:loadObject("examples/monkey/object")
+local yourObject = dream:loadObject("examples/monkey/object")
 
 --creates a light
-light = dream:newLight("point", vec3(3, 2, 1), vec3(1.0, 0.75, 0.2), 50.0)
+local light = dream:newLight("point", dream.vec3(3, 2, 1), dream.vec3(1.0, 0.75, 0.2), 50.0)
 
 --add shadow to light source
 light:addNewShadow()

@@ -27,7 +27,7 @@ end
 local function getPosition(mesh, transform)
 	if transform then
 		local a = mesh.boundingSphere.center
-		return vec3(
+		return lib.vec3(
 				transform[1] * a[1] + transform[2] * a[2] + transform[3] * a[3] + transform[4],
 				transform[5] * a[1] + transform[6] * a[2] + transform[7] * a[3] + transform[8],
 				transform[9] * a[1] + transform[10] * a[2] + transform[11] * a[3] + transform[12])

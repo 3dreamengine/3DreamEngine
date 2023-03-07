@@ -1,10 +1,11 @@
 ---@type Dream
 local lib = _3DreamEngine
+local vec3 = lib.vec3
 
 ---@class DreamAnimationFrame
 local DreamAnimationFrameStub = {
-	position = vec3(),
-	rotation = quat(),
+	position = lib.vec3(),
+	rotation = lib.quat(),
 	scale = 1,
 }
 assert(DreamAnimationFrameStub)
@@ -98,7 +99,7 @@ function class:decode()
 	for _, frames in pairs(self.frames) do
 		for _, frame in ipairs(frames) do
 			frame.position = vec3(frame.position)
-			frame.rotation = quat(frame.rotation)
+			frame.rotation = lib.quat(frame.rotation)
 		end
 	end
 end

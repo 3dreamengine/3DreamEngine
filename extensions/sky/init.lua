@@ -4,6 +4,7 @@ provides some basic features to simulate dynamic weather
 --]]
 
 local dream = _3DreamEngine
+local vec3, mat4 = dream.vec3, dream.mat4
 
 local sky = { }
 

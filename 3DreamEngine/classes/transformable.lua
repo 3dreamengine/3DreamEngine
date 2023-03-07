@@ -1,4 +1,6 @@
-local I = mat4.getIdentity()
+local I = _3DreamEngine.mat4.getIdentity()
+
+local vec3, mat4 = _3DreamEngine.vec3, _3DreamEngine.mat4
 
 ---@class DreamTransformable
 local class = { }

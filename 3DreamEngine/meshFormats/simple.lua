@@ -10,7 +10,7 @@ local f = lib:newMeshFormat({
 	{ "VertexColor", "byte", 4 }, -- color
 })
 
-local empty = vec4(1, 0, 1, 1)
+local empty = lib.vec4(1, 0, 1, 1)
 function f:create(mesh)
 	local identifier = self:getCStruct()
 	local byteData = love.data.newByteData(ffi.sizeof(identifier) * mesh.vertices:getSize())

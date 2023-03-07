@@ -1,6 +1,8 @@
 local job = { }
+
 ---@type Dream
 local lib = _3DreamEngine
+local vec3 = lib.vec3
 
 function job:init()
 
@@ -24,7 +26,7 @@ local function lookAt(at, up)
 	local xaxis = zaxis:cross(up):normalize()
 	local yaxis = xaxis:cross(zaxis)
 	
-	local c = mat4({
+	local c = lib.mat4({
 		xaxis.x, xaxis.y, xaxis.z, 0,
 		yaxis.x, yaxis.y, yaxis.z, 0,
 		-zaxis.x, -zaxis.y, -zaxis.z, 0,

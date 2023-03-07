@@ -1,4 +1,4 @@
-local identityMatrix = mat4.getIdentity()
+local identityMatrix = _3DreamEngine.mat4.getIdentity()
 
 ---@class DreamTask
 local class = {

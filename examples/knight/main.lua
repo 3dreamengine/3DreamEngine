@@ -1,5 +1,7 @@
 --load the 3D lib
 local dream = require("3DreamEngine.init")
+local vec3 = dream.vec3
+
 love.window.setTitle("Knight Example")
 
 --settings

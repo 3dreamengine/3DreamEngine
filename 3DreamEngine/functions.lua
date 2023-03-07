@@ -5,6 +5,7 @@ functions.lua - contains library relevant functions
 
 ---@type Dream
 local lib = _3DreamEngine
+local vec3, vec4 = lib.vec3, lib.vec4
 
 ---Returns the look-at transformation matrix
 ---@param eye "vec3"
@@ -17,7 +18,7 @@ function lib:lookAt(eye, at, up)
 	local xaxis = zaxis:cross(up):normalize()
 	local yaxis = xaxis:cross(zaxis)
 	
-	return mat4(
+	return self.mat4(
 			xaxis.x, xaxis.y, xaxis.z, -xaxis:dot(eye),
 			yaxis.x, yaxis.y, yaxis.z, -yaxis:dot(eye),
 			-zaxis.x, -zaxis.y, -zaxis.z, zaxis:dot(eye),
@@ -567,7 +568,7 @@ do
 	local r = scale * n
 	local l = -r
 	
-	lib.cubeMapProjection = mat4(
+	lib.cubeMapProjection = lib.mat4(
 			2 * n / (r - l), 0, (r + l) / (r - l), 0,
 			0, -2 * n / (r - l), (r + l) / (r - l), 0,
 			0, 0, -(f + n) / (f - n), -2 * f * n / (f - n),

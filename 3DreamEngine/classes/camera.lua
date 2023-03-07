@@ -1,5 +1,6 @@
 ---@type Dream
 local lib = _3DreamEngine
+local vec3, mat4 = lib.vec3, lib.mat4
 
 ---@return DreamCamera
 function lib:newCamera(transform, transformProj, position, normal)

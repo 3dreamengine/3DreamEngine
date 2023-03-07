@@ -2,6 +2,11 @@
 #dae - COLLADA
 --]]
 
+local lib = _3DreamEngine
+local vec2, vec3, vec4 = lib.vec2, lib.vec3, lib.vec4
+local mat3, mat4 = lib.mat3, lib.mat4
+local quat = lib.quat
+
 --load space seperated arrays as floats or as strings
 local function loadFloatArray(arr)
 	local t = { }

@@ -10,7 +10,7 @@ local f = lib:newMeshFormat({
 	{ "VertexTangent", "byte", 4 }, -- normal tangent
 })
 
-local empty = vec4(1, 0, 1, 1)
+local empty = lib.vec4(1, 0, 1, 1)
 function f:create(mesh)
 	mesh:recalculateTangents()
 	

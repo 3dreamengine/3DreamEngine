@@ -19,18 +19,24 @@ if lib.root:sub(-4) == "init" then
 	lib.root = lib.root:sub(1, -6)
 end
 
-
 --load libraries
-_G.mat2 = require(lib.root .. "/libs/luaMatrices/mat2")
-_G.mat3 = require(lib.root .. "/libs/luaMatrices/mat3")
-_G.mat4 = require(lib.root .. "/libs/luaMatrices/mat4")
-require(lib.root .. "/libs/luaMatrices/mat4Extended")
+lib.mat2 = require(lib.root .. "/libs/luaMatrices/mat2")
+lib.mat3 = require(lib.root .. "/libs/luaMatrices/mat3")
+lib.mat4 = require(lib.root .. "/libs/luaMatrices/mat4")
+require(lib.root .. "/libs/luaMatrices/mat4Extended")(lib.mat4)
 
-_G.vec2 = require(lib.root .. "/libs/luaVectors/vec2")
-_G.vec3 = require(lib.root .. "/libs/luaVectors/vec3")
-_G.vec4 = require(lib.root .. "/libs/luaVectors/vec4")
+lib.vec2 = require(lib.root .. "/libs/luaVectors/vec2")
+lib.vec3 = require(lib.root .. "/libs/luaVectors/vec3")
+lib.vec4 = require(lib.root .. "/libs/luaVectors/vec4")
 
-_G.quat = require(lib.root .. "/libs/quat")
+lib.quat = require(lib.root .. "/libs/quat")
+
+--provide access to other libs
+for _, v1 in ipairs({ "mat2", "mat3", "mat4", "vec2", "vec3", "vec4", "quat" }) do
+	for _, v2 in ipairs({ "mat2", "mat3", "mat4", "vec2", "vec3", "vec4", "quat" }) do
+		lib[v1][v2] = lib[v2]
+	end
+end
 
 lib.utils = require(lib.root .. "/libs/utils")
 lib.cimg = require(lib.root .. "/libs/cimg")
@@ -267,7 +273,7 @@ function lib:draw(object, x, y, z, sx, sy, sz)
 	local transform
 	if x then
 		--simple transform with arguments, ignores object transformation matrix
-		transform = mat4({
+		transform = self.mat4({
 			sx or 1, 0, 0, x,
 			0, sy or sx or 1, 0, y,
 			0, 0, sz or sx or 1, z,

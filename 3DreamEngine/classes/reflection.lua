@@ -1,5 +1,6 @@
 ---@type Dream
 local lib = _3DreamEngine
+local vec3 = lib.vec3
 
 ---@return DreamReflection
 function lib:newReflection(static, resolution, roughness, lazy)

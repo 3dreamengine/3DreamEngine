@@ -1,4 +1,5 @@
 local job = { }
+
 ---@type Dream
 local lib = _3DreamEngine
 
@@ -52,7 +53,7 @@ function job:execute(light)
 			--camera orientation
 			shadowCam.position = position
 			shadowCam.normal = normal
-			shadowCam.transform = lib:lookAt(shadowCam.position + shadowCam.normal * (f * 0.5), shadowCam.position, vec3(0.0, 1.0, 0.0))
+			shadowCam.transform = lib:lookAt(shadowCam.position + shadowCam.normal * (f * 0.5), shadowCam.position, lib.vec3(0.0, 1.0, 0.0))
 			shadowCam.rendered = false
 			
 			--orthographic projected multiplied by the cameras view matrix
@@ -62,7 +63,7 @@ function job:execute(light)
 			local a12 = -(f + n) / (f - n)
 			
 			local b = shadowCam.transform
-			shadowCam.transformProj = mat4({
+			shadowCam.transformProj = lib.mat4({
 				a1 * b[1],   a1 * b[2],    a1 * b[3],    a1 * b[4],
 				a6 * b[5],   a6 * b[6],    a6 * b[7],    a6 * b[8],
 				a11 * b[9],  a11 * b[10],  a11 * b[11],  a11 * b[12] + a12,

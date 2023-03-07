@@ -4,6 +4,7 @@
 
 ---@type Dream
 local lib = _3DreamEngine
+local vec3, mat4, quat = lib.vec3, lib.mat4, lib.quat
 
 local cache = { }
 local rootObject

@@ -1,6 +1,8 @@
 ---@type Dream
 local lib = _3DreamEngine
 
+local vec3, mat4 = lib.vec3, lib.mat4
+
 ---@return DreamObject | DreamClonable | DreamTransformable | DreamHasShaders
 function lib:newLinkedObject(original, source)
 	return setmetatable({

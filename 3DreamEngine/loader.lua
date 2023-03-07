@@ -5,6 +5,7 @@ loader.lua - loads objects
 
 ---@type Dream
 local lib = _3DreamEngine
+local vec3 = lib.vec3
 
 --tags that will get recognized
 lib.meshTags = {
@@ -360,7 +361,7 @@ function lib:processObject(obj)
 				--make sure to transform accordingly
 				local difference = 0
 				if object.transform then
-					parent.transform = parent.transform or mat4.getIdentity()
+					parent.transform = parent.transform or lib.mat4.getIdentity()
 					for i = 1, 16 do
 						difference = math.max(difference, math.abs(object.transform[i] - parent.transform[i]))
 					end

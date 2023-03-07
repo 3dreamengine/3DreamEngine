@@ -75,7 +75,7 @@ function sh:perMaterial(shaderObject, material)
 
 end
 
-local ID = mat4.getIdentity()
+local ID = _3DreamEngine.mat4.getIdentity()
 function sh:perTask(shaderObject, task)
 	local bt = task:getMesh().skeleton and task:getMesh().skeleton.transforms
 	assert(bt, "Missing bone transforms")

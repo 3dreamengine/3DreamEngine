@@ -1,5 +1,6 @@
 ---@type Dream
 local lib = _3DreamEngine
+local vec3, mat3 = lib.vec3, lib.mat3
 
 ---newMesh
 ---@param mesh DreamMesh

@@ -4,6 +4,7 @@
 
 ---@type Dream
 local lib = _3DreamEngine
+local vec3 = lib.vec3
 
 --rendering stats
 lib.stats = {

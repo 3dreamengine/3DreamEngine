@@ -55,7 +55,7 @@ function class:getSize()
 end
 
 function class:decode()
-	self.position = vec3(self.position)
+	self.position = lib.vec3(self.position)
 end
 
 return class

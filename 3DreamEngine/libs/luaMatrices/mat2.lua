@@ -93,7 +93,7 @@ function methods:trace()
 end
 
 function methods:invert()
-	return mat2({
+	return matrix.mat2({
 		self[4], -self[2],
 		-self[3], self[1]
 	}) / self:det()
@@ -165,7 +165,7 @@ function metatable.__mul(a, b)
 			a[4] * b
 		})
 	elseif b.type == "vec2" then
-		return vec2({
+		return matrix.vec2({
 			a[1] * b[1] + a[2] * b[2],
 			a[3] * b[1] + a[4] * b[2],
 		})

@@ -86,7 +86,7 @@ function matrix.getRotate(u, a)
 	local sin = math.sin(a)
 	local cos = math.cos(a)
 	
-	return mat3 {
+	return matrix.mat3 {
 		l * l * (1 - cos) + cos, m * l * (1 - cos) - n * sin, n * l * (1 - cos) + m * sin,
 		l * m * (1 - cos) + n * sin, m * m * (1 - cos) + cos, n * m * (1 - cos) - l * sin,
 		l * n * (1 - cos) - m * sin, m * n * (1 - cos) + l * sin, n * n * (1 - cos) + cos
@@ -156,7 +156,7 @@ end
 function methods:subm(offsetX, offsetY)
 	offsetX = offsetX or 0
 	offsetY = offsetY or 0
-	return mat2({
+	return matrix.mat2({
 		self[1 + offsetX + offsetY * 3], self[2 + offsetX + offsetY * 3],
 		self[4 + offsetX + offsetY * 3], self[5 + offsetX + offsetY * 3],
 	})
@@ -184,7 +184,7 @@ function methods:invert()
 	local G = (self[2] * self[6] - self[3] * self[5])
 	local H = -(self[1] * self[6] - self[3] * self[4])
 	local I = (self[1] * self[5] - self[2] * self[4])
-	return mat3({ A, D, G, B, E, H, C, F, I }) / self:det()
+	return matrix.mat3({ A, D, G, B, E, H, C, F, I }) / self:det()
 end
 
 function metatable.__add(a, b)
@@ -293,13 +293,13 @@ function metatable.__mul(a, b)
 			a[9] * b,
 		})
 	elseif b.type == "vec3" then
-		return vec3({
+		return matrix.vec3({
 			a[1] * b[1] + a[2] * b[2] + a[3] * b[3],
 			a[4] * b[1] + a[5] * b[2] + a[6] * b[3],
 			a[7] * b[1] + a[8] * b[2] + a[9] * b[3],
 		})
 	elseif b.type == "vec2" then
-		return vec2({
+		return matrix.vec2({
 			a[1] * b[1] + a[2] * b[2] + a[3],
 			a[4] * b[1] + a[5] * b[2] + a[6],
 		})

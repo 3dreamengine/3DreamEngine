@@ -1,12 +1,13 @@
 ---@type PhysicsExtension
 local physicsExtension = _G._PhysicsExtension
+local lib = _G._3DreamEngine
 
 ---@class DreamCollider
 local methods = { }
 
 function methods:getPosition()
 	local x, y = self.body:getWorldCenter()
-	return vec3(x, self.y, y)
+	return lib.vec3(x, self.y, y)
 end
 
 function methods:getBody()
@@ -15,7 +16,7 @@ end
 
 function methods:getVelocity()
 	local cx, cy = self.body:getLinearVelocity()
-	return vec3(cx, self.vy, cy)
+	return lib.vec3(cx, self.vy, cy)
 end
 
 function methods:applyForce(fx, fy, fz)

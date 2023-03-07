@@ -100,7 +100,7 @@ function matrix.getRotate(u, a)
 	local s = math.sin(a)
 	local c = math.cos(a)
 	
-	local m = mat3 {
+	local m = matrix.mat3 {
 		ux * ux * (1 - c) + c, uy * ux * (1 - c) - uz * s, uz * ux * (1 - c) + uy * s, 0.0,
 		ux * uy * (1 - c) + uz * s, uy * uy * (1 - c) + c, uz * uy * (1 - c) - ux * s, 0.0,
 		ux * uz * (1 - c) - uy * s, uy * uz * (1 - c) + ux * s, uz * uz * (1 - c) + c, 0.0,
@@ -229,13 +229,13 @@ function methods:subm(size, offsetX, offsetY)
 	offsetY = offsetY or 0
 	local c
 	if size == 3 then
-		c = mat3({
+		c = matrix.mat3({
 			self[1 + offsetX + offsetY * 4], self[2 + offsetX + offsetY * 4], self[3 + offsetX + offsetY * 4],
 			self[5 + offsetX + offsetY * 4], self[6 + offsetX + offsetY * 4], self[7 + offsetX + offsetY * 4],
 			self[9 + offsetX + offsetY * 4], self[10 + offsetX + offsetY * 4], self[11 + offsetX + offsetY * 4],
 		})
 	elseif size == 2 then
-		c = mat2({
+		c = matrix.mat2({
 			self[1 + offsetX + offsetY * 4], self[2 + offsetX + offsetY * 4],
 			self[5 + offsetX + offsetY * 4], self[6 + offsetX + offsetY * 4],
 		})
@@ -361,20 +361,20 @@ function metatable.__mul(a, b)
 			a[13] * b, a[14] * b, a[15] * b, a[16] * b,
 		})
 	elseif b.type == "vec4" then
-		c = vec4({
+		c = matrix.vec4({
 			a[1] * b[1] + a[2] * b[2] + a[3] * b[3] + a[4] * b[4],
 			a[5] * b[1] + a[6] * b[2] + a[7] * b[3] + a[8] * b[4],
 			a[9] * b[1] + a[10] * b[2] + a[11] * b[3] + a[12] * b[4],
 			a[13] * b[1] + a[14] * b[2] + a[15] * b[3] + a[16] * b[4],
 		})
 	elseif b.type == "vec3" then
-		c = vec3({
+		c = matrix.vec3({
 			a[1] * b[1] + a[2] * b[2] + a[3] * b[3] + a[4],
 			a[5] * b[1] + a[6] * b[2] + a[7] * b[3] + a[8],
 			a[9] * b[1] + a[10] * b[2] + a[11] * b[3] + a[12],
 		})
 	elseif b.type == "vec2" then
-		c = vec2({
+		c = matrix.vec2({
 			a[1] * b[1] + a[2] * b[2] + a[4],
 			a[5] * b[1] + a[6] * b[2] + a[8],
 		})

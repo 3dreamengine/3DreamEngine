@@ -6,6 +6,7 @@ love.window.setVSync(false)
 
 --load the 3D lib
 local dream = require("3DreamEngine.init")
+local vec3 = dream.vec3
 
 --initialize engine
 dream:init()
@@ -17,7 +18,7 @@ material.color = { 0.4, 0.15, 0.05, 1 }
 
 --generates a pseudorandom position
 local function randomTransform()
-	return mat4:getIdentity()
+	return dream.mat4:getIdentity()
 			   :translate(vec3(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * 15)
 			   :rotateX(math.random() * math.pi * 2)
 			   :rotateY(math.random() * math.pi * 2)

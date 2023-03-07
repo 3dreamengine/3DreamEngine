@@ -26,7 +26,7 @@ function job:queue()
 	end
 end
 
-local transformations = lib:getCubemapFaceTransforms(vec3(0.0, 0.0, 0.0))
+local transformations = lib:getCubemapFaceTransforms(lib.vec3(0.0, 0.0, 0.0))
 local projections = { }
 for side = 1, 6 do
 	projections[side] = lib.cubeMapProjection * transformations[side]
