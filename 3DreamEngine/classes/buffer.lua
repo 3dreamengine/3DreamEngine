@@ -89,14 +89,14 @@ function class:getDataType()
 end
 
 ---Append a value to the buffer
----@param data number|"vec2"|"vec2"|"vec2"
+---@param data number
 function class:append(data)
 	error("Can not insert into static buffer!")
 end
 
 ---Set a value in the buffer
 ---@param index number
----@param data number|"vec2"|"vec2"|"vec2"
+---@param data number
 function class:set(index, data)
 	assert(index > 0 and index <= self.length)
 	self.buffer[index - 1] = data
@@ -119,7 +119,7 @@ end
 
 ---Get a casted value from the buffer
 ---@param index number
----@return number|"vec2"|"vec2"|"vec2"
+---@return number
 function class:getVector(index)
 	assert(index > 0 and index <= self.length)
 	local v = self.buffer[index - 1]

@@ -19,7 +19,7 @@ function lib:newBoundingSphere(center, size)
 end
 
 ---@class DreamBoundingSphere
----@field public center "vec3"
+---@field public center DreamVec3
 ---@field public size number"
 local class = {
 	links = { "clone", "boundingSphere" },
@@ -71,7 +71,7 @@ function class:isInitialized()
 	return self.size > 0
 end
 
----@return "vec3"
+---@return DreamVec3
 function class:getCenter()
 	return self.center
 end

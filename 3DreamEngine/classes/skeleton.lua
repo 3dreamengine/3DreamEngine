@@ -43,7 +43,7 @@ end
 
 ---Get the transformation matrix for a given joint name
 ---@param name string
----@return "mat4"
+---@return DreamMat4
 function class:getTransform(name)
 	return self.transforms[name]
 end

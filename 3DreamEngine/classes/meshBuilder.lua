@@ -48,7 +48,7 @@ end
 
 ---Adds a mesh with given transform to the builder
 ---@param mesh DreamMesh
----@param transform "mat4"
+---@param transform DreamMat4
 function class:addMesh(mesh, transform)
 	--create the vertexByteData
 	if not mesh.vertexByteData then

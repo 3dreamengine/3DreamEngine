@@ -20,15 +20,22 @@ if lib.root:sub(-4) == "init" then
 end
 
 --load libraries
+---@type DreamMat2
 lib.mat2 = require(lib.root .. "/libs/luaMatrices/mat2")
+---@type DreamMat3
 lib.mat3 = require(lib.root .. "/libs/luaMatrices/mat3")
+---@type DreamMat4
 lib.mat4 = require(lib.root .. "/libs/luaMatrices/mat4")
 require(lib.root .. "/libs/luaMatrices/mat4Extended")(lib.mat4)
 
+---@type DreamVec2
 lib.vec2 = require(lib.root .. "/libs/luaVectors/vec2")
+---@type DreamVec3
 lib.vec3 = require(lib.root .. "/libs/luaVectors/vec3")
+---@type DreamVec4
 lib.vec4 = require(lib.root .. "/libs/luaVectors/vec4")
 
+---type DreamQuat
 lib.quat = require(lib.root .. "/libs/quat")
 
 --provide access to other libs
@@ -293,8 +300,8 @@ end
 
 ---Add a new simple light
 ---@param typ string
----@param position "vec3"
----@param color "vec3"
+---@param position DreamVec3
+---@param color DreamVec3
 ---@param brightness number
 function lib:addNewLight(typ, position, color, brightness)
 	self:addLight(self:newLight(typ, position, color, brightness))

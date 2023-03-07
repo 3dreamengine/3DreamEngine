@@ -98,7 +98,7 @@ function class:setDirty()
 end
 
 ---getGlobalTransform
----@return "mat4" @ returns the last global transform. Needs to be rendered once, and if rendered multiple times, the result is undefined
+---@return DreamMat4 @ returns the last global transform. Needs to be rendered once, and if rendered multiple times, the result is undefined
 ---@beta may change
 function class:getGlobalTransform()
 	return self.globalTransform

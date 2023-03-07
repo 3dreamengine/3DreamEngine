@@ -76,7 +76,7 @@ function class:resize(count)
 end
 
 ---addInstance
----@param transform "mat4" @ a mat3x4 matrix, instances do not support shearing, e.g. the last row
+---@param transform DreamMat4 @ a mat3x4 matrix, instances do not support shearing, e.g. the last row
 ---@param index number @ Optional index, else it will append
 function class:addInstance(transform, index)
 	if not index then

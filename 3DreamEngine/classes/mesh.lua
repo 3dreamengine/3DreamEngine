@@ -259,7 +259,7 @@ function class:getMesh(name)
 end
 
 ---Apply a transformation matrix to all vertices
----@param transform "mat4"
+---@param transform DreamMat4
 function class:applyTransform(transform)
 	if self.vertices then
 		local oldVertices = self.vertices
@@ -300,7 +300,7 @@ end
 ---Returns the final joint transformation based on vertex weights
 ---@param skeleton DreamSkeleton
 ---@param jointIndex number
----@return "mat4"
+---@return DreamMat4
 function class:getJointMatrix(skeleton, jointIndex)
 	assert(skeleton.transforms, "No pose has been applied to skeleton!")
 	local m = mat4()

@@ -81,12 +81,12 @@ function class:isOrthographic()
 	return self.orthographic
 end
 
----@return "vec3"
+---@return DreamVec3
 function class:getNormal()
 	return self.normal
 end
 
----@return "vec3"
+---@return DreamVec3
 function class:getPosition()
 	return self.position
 end

@@ -114,7 +114,7 @@ end
 
 ---Fog settings
 ---@param density number
----@param color "Vec3"
+---@param color DreamVec3
 ---@param scatter number @ Volumetric light scatter effect on sun light
 function lib:setFog(density, color, scatter)
 	if density then
@@ -189,7 +189,7 @@ end
 ---@param sky table @ rgb color
 ---@param sky boolean @ false to disable sky, use in enclosed areas
 ---@param sky Texture @ 2D HDRI or Cubemap
----@param sky fun(transformProj: "mat4", camTransform: "mat4") @ a custom function
+---@param sky fun(transformProj: DreamMat4, camTransform: DreamMat4) @ a custom function
 ---@param exposure table @ only for HDRI skies, default 1.0
 function lib:setSky(sky, exposure)
 	if type(sky) == "table" then

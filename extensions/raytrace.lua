@@ -290,8 +290,8 @@ local raytracer = { }
 
 ---Trace a ray, return closest collision
 ---@param object DreamObject
----@param origin "vec3"
----@param direction "vec3"
+---@param origin DreamVec3
+---@param direction DreamVec3
 ---@param onlyRaytraceMeshes boolean @ only use raytrace meshes
 ---@return DreamRaytraceResult | "false"
 function raytracer:cast(object, origin, direction, onlyRaytraceMeshes)

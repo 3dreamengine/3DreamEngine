@@ -1,7 +1,6 @@
 local abs = math.abs
 local vec
 local metatable
-local methods
 
 vec = {
 	__call = function(self, x, y, z, w)
@@ -15,7 +14,8 @@ vec = {
 	end,
 }
 
-methods = {
+---@class DreamVec4
+local methods = {
 	clone = function(a)
 		return vec(a[1], a[2], a[3], a[4])
 	end,

@@ -8,9 +8,9 @@ local lib = _3DreamEngine
 local vec3, vec4 = lib.vec3, lib.vec4
 
 ---Returns the look-at transformation matrix
----@param eye "vec3"
----@param at "vec3"
----@param up "vec3" @ default vec3(0.0, 1.0, 0.0)
+---@param eye DreamVec3
+---@param at DreamVec3
+---@param up DreamVec3 @ default vec3(0.0, 1.0, 0.0)
 function lib:lookAt(eye, at, up)
 	up = up or vec3(0.0, 1.0, 0.0)
 	
@@ -27,7 +27,7 @@ function lib:lookAt(eye, at, up)
 end
 
 ---Returns camera transforms for all faces of a cubemap
----@param pos "vec3"
+---@param pos DreamVec3
 function lib:getCubemapFaceTransforms(pos)
 	return {
 		lib:lookAt(pos, pos + self.lookNormals[1], vec3(0, 1, 0)),
@@ -96,7 +96,7 @@ function lib:RGBtoHSV(r, g, b)
 end
 
 ---Convert a 3D point to 2D screen coordinates
----@param point "vec3"
+---@param point DreamVec3
 ---@param camera DreamCamera
 ---@param canvases DreamCanvases
 function lib:pointToPixel(point, camera, canvases)
@@ -109,7 +109,7 @@ function lib:pointToPixel(point, camera, canvases)
 end
 
 ---Convert 3D screen coordinates to 3D point, if the depth is unknown pass 1
----@param point "vec3"
+---@param point DreamVec3
 ---@param camera DreamCamera
 ---@param canvases DreamCanvases
 function lib:pixelToPoint(point, camera, canvases)
@@ -138,7 +138,7 @@ function lib:pixelToPoint(point, camera, canvases)
 end
 
 ---Create frustum planes
----@param m "mat4"
+---@param m DreamMat4
 function lib:getFrustumPlanes(m)
 	local planes = { vec4(), vec4(), vec4(), vec4(), vec4(), vec4() }
 	for i = 1, 4 do
