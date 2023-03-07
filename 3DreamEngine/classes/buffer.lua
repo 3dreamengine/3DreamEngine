@@ -102,7 +102,7 @@ end
 
 ---Get a raw value from the buffer
 ---@param index number
----@return "ctype"|number
+---@return number
 function class:get(index)
 	assert(index > 0 and index <= self.length)
 	return self.buffer[index - 1]
@@ -110,7 +110,7 @@ end
 
 ---Get a raw value from the buffer without risking a out of bounds
 ---@param index number
----@return "ctype"|number
+---@return number
 function class:getOrDefault(index, default)
 	return index > 0 and index <= self.length and self.buffer[index - 1] or default
 end

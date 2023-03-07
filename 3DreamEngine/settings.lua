@@ -187,7 +187,7 @@ end
 
 ---Sets the sky HDRI, cubemap or just sky dome
 ---@param sky table @ rgb color
----@param sky "false" @ no sky, use in enclosed areas
+---@param sky boolean @ false to disable sky, use in enclosed areas
 ---@param sky Texture @ 2D HDRI or Cubemap
 ---@param sky fun(transformProj: "mat4", camTransform: "mat4") @ a custom function
 ---@param exposure table @ only for HDRI skies, default 1.0
@@ -323,7 +323,7 @@ end
 
 ---Register a new format, see 3DreamEngine/meshFormats/ for examples
 ---@param name string
----@param format "MeshFormat"
+---@param format DreamMeshFormat
 function lib:registerMeshFormat(name, format)
 	self.meshFormats[name] = format
 end

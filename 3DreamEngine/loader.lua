@@ -110,7 +110,7 @@ A mesh/object name may contain additional tags, denoted as `TAG:VALUE_` or `TAG_
 Loader Args
 	`mesh (true)` create a mesh after loading
 	`particleSystems (true)` generate particleSystems as defined in the material
-	`cleanup (true)` deloads raw buffers (positions, normals, ...) after finishing loading
+	`cleanup (true)` unloads raw buffers (positions, normals, ...) after finishing loading
 	`export3do (false)` loads the object as usual, then export the entire object as a 3DO file
 	`animations (nil)` when using COLLADA format, split the animation into `{key = {from, to}}`, where `from` and `to` are timestamps in seconds
 	`decodeBlenderNames (true)` remove the vertex objects postfix added on export, e.g. `name` instead of `name_Cube`
@@ -118,7 +118,7 @@ Loader Args
 
 ---Load an object
 ---@param path string @ Path to object without extension
----@param args "Args"
+---@param args table
 function lib:loadObject(path, args)
 	--set default args
 	args = prepareArgs(args)
@@ -393,7 +393,7 @@ function lib:processObject(obj)
 		local animation = obj.animations[next(obj.animations)]
 		if animation then
 			obj.animations = { }
-			for anim, time in pairs(obj.args.animations) do
+			for _, time in pairs(obj.args.animations) do
 				local newFrames = { }
 				for joint, frames in pairs(animation.frames) do
 					newFrames[joint] = { }

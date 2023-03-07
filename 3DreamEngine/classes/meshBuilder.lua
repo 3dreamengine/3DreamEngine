@@ -39,7 +39,7 @@ end
 
 ---@class DreamMeshBuilder : DreamMesh
 local class = {
-	links = { "clone", "shader", "mesh", "meshBuilder" },
+	links = { "mesh", "meshBuilder" },
 }
 
 function class:updateBoundingSphere()

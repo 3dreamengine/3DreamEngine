@@ -5,7 +5,7 @@ local ffi = require("ffi")
 
 ---newMesh
 ---@param material DreamMaterial
----@return DreamMesh | DreamClonable | DreamHasShaders
+---@return DreamMesh
 function lib:newMesh(material)
 	local mesh = {
 		name = "unnamed",
@@ -24,17 +24,19 @@ function lib:newMesh(material)
 	return setmetatable(mesh, self.meta.mesh)
 end
 
----@class DreamMesh
----@field name string
----@field meshFormat DreamMeshFormat
----@field boundingSphere DreamBoundingSphere
----@field meshDrawMode "MeshDrawMode"
----@field mesh DreamMesh
----@field skeleton DreamSkeleton
----@field renderVisibility boolean @ visible in render pass
----@field shadowVisibility boolean @ visible in shadow pass
+---@alias MeshDrawMode "fan"|"strip"|"triangles"|"points"
+
+---@class DreamMesh : DreamClonable, DreamHasShaders
+---@field public name string
+---@field public meshFormat DreamMeshFormat
+---@field public boundingSphere DreamBoundingSphere
+---@field public meshDrawMode MeshDrawMode
+---@field public mesh DreamMesh
+---@field public skeleton DreamSkeleton
+---@field public renderVisibility boolean @ visible in render pass
+---@field public shadowVisibility boolean @ visible in shadow pass
 local class = {
-	links = { "clone", "shader", "mesh" },
+	links = { "clone", "hasShaders", "mesh" },
 }
 
 ---Sets the meshes material

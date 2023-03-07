@@ -1,7 +1,7 @@
 ---@type Dream
 local lib = _3DreamEngine
 
----@return DreamCamera | DreamTransformable
+---@return DreamCamera
 function lib:newCamera(transform, transformProj, position, normal)
 	local m = transform or position and mat4.getTranslate(position) or mat4.getIdentity()
 	return setmetatable({
@@ -24,9 +24,10 @@ function lib:newCamera(transform, transformProj, position, normal)
 	}, self.meta.camera)
 end
 
----@class DreamCamera
+---Contains transformation and lens information used to render the scene
+---@class DreamCamera : DreamTransformable
 local class = {
-	links = { "transform", "camera" },
+	links = { "transformable", "camera" },
 }
 
 ---Updates the frustum planes, required for plane frustum check, called internally

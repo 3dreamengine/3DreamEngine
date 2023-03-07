@@ -32,16 +32,16 @@ function lib:newObject()
 end
 
 ---@class DreamObject
----@field objects DreamObject[]
----@field meshes DreamMesh[]
----@field positions DreamPosition[]
----@field lights DreamLight[]
----@field collisionMeshes DreamCollisionMesh[]
----@field raytraceMeshes DreamRaytraceMesh[]
----@field reflections DreamReflection[]
----@field animations DreamAnimation[]
+---@field public objects DreamObject[]
+---@field public meshes DreamMesh[]
+---@field public positions DreamPosition[]
+---@field public lights DreamLight[]
+---@field public collisionMeshes DreamCollisionMesh[]
+---@field public raytraceMeshes DreamRaytraceMesh[]
+---@field public reflections DreamReflection[]
+---@field public animations DreamAnimation[]
 local class = {
-	links = { "clone", "transform", "shader", "object" },
+	links = { "clone", "transformable", "hasShaders", "object" },
 }
 
 local function count(t)

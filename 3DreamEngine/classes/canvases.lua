@@ -20,8 +20,10 @@ local class = {
 	links = { "canvases" },
 }
 
+---@alias CanvasMode "normal"|"direct"|"lite"
+
 ---Set the output mode, normal contains all features, direct do not use a canvas at all and directly renders and lite uses a canvas but on a faster feature set
----@param mode "normal"|"direct"|"lite"
+---@param mode CanvasMode
 function class:setMode(mode)
 	assert(mode == "normal" or mode == "direct" or mode == "lite")
 	self.format = mode == "normal" and "rgba16f" or "rgba8"
@@ -31,8 +33,10 @@ function class:getMode()
 	return self.mode
 end
 
+---@alias PixelFormat string
+
 ---Sets the pixel format manually
----@param format "PixelFormat"
+---@param format PixelFormat
 function class:setFormat(format)
 	self.format = format
 end

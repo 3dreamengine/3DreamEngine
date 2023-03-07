@@ -12,7 +12,7 @@ end
 
 ---@class DreamInstancedMesh : DreamMesh
 local class = {
-	links = { "clone", "shader", "mesh", "instancedMesh" },
+	links = { "mesh", "instancedMesh" },
 }
 
 function class:getInstancesCount()

@@ -22,7 +22,7 @@ end
 
 ---@class DreamMaterial
 local class = {
-	links = { "clone", "shader", "material" },
+	links = { "clone", "hasShaders", "material" },
 }
 
 --todo merge alpha, solid and discard
@@ -49,8 +49,10 @@ function class:getDither()
 	return self.dither
 end
 
+--alias CullMode "back"|"front"|"none
+
 ---Sets the culling mode
----@param cullMode "CullMode"
+---@param cullMode CullMode
 function class:setCullMode(cullMode)
 	self.cullMode = cullMode
 end

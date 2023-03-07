@@ -18,8 +18,8 @@ function lib:newBoundingSphere(center, size)
 end
 
 ---@class DreamBoundingSphere
----@field center "vec3"
----@field size number"
+---@field public center "vec3"
+---@field public size number"
 local class = {
 	links = { "clone", "boundingSphere" },
 }
