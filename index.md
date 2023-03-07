@@ -1,6 +1,8 @@
 # Content
 
-Most functions are annotated using EmmyLua doc strings.
+Most functions are annotated using EmmyLua doc.
+
+## Usage
 
 - [Introduction](https://3dreamengine.github.io/3DreamEngine/docu/introduction)
   Main components and design choices of the engine. You should read that.
@@ -17,25 +19,31 @@ Most functions are annotated using EmmyLua doc strings.
 - [Performance](https://3dreamengine.github.io/3DreamEngine/docu/performance)
   Tips and tricks to double the FPS!
 
-* Extensions
-    - [Sky](https://3dreamengine.github.io/3DreamEngine/docu/extensions/sky)
-      Tips and tricks to double the FPS!
+## Documentation
 
-    - [Raytrace](https://3dreamengine.github.io/3DreamEngine/docu/extensions/raytrace)
-      Fast ray-mesh intersection extension, designed for object selection, bullet calculations, ...
+## Extensions
 
-    - [Physics](https://3dreamengine.github.io/3DreamEngine/docu/extensions/physics)
-      Y-axis extension to box2d. Quite fast, works perfectly on prims, works mostly on more complex shapes.
+- [Sky](https://3dreamengine.github.io/3DreamEngine/docu/extensions/sky)
+  Dynamic Sky
 
-    - [Sounds](https://3dreamengine.github.io/3DreamEngine/docu/extensions/sounds)
-      3D sound + sound resource manager. WIP.
+- [Raytrace](https://3dreamengine.github.io/3DreamEngine/docu/extensions/raytrace)
+  Fast ray-mesh intersection extension, designed for object selection, bullet calculations, ...
+
+- [Physics](https://3dreamengine.github.io/3DreamEngine/docu/extensions/physics)
+  Y-axis extension to Box2D. Works fine on primitives, not recommended for complex shapes.
+
+- [Sounds](https://3dreamengine.github.io/3DreamEngine/docu/extensions/sounds)
+  3D sound + sound resource manager. WIP.
+
+## Libraries
 
 There are a few libraries included you can use. Check their files for supported functions
 
-* vec2, vec3, vec4 with common functions and metatables
-* mat2, mat3, mat4
-* quaternions
-* a XML parser by Paul Chakravarti (`dream.xml2lua` and `dream.xmlTreeHandler`)
-* a JSON parser by rxi (`dream.json`)
-* utils.lua which expands luas table, string and math libraries by common functions (`dream.utils`)
-* inspect by Enrique García Cota (`dream.inspect`)
+* Vec2, vec3, vec4 with common functions and metatables
+* Mat2, mat3, mat4
+* Quaternions
+* A XML parser by Paul Chakravarti (`dream.xml2lua` and `dream.xmlTreeHandler`)
+* A JSON parser by rxi (`dream.json`)
+* Utils.lua which expands luas table, string and math libraries by common functions (`dream.utils`)
+* Inspect by Enrique García Cota (`dream.inspect`)
+
