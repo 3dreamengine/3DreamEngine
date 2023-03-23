@@ -368,12 +368,12 @@ return function(self, obj, path, header, blob)
 			for node, target in pairs(targets) do
 				frames[node] = { }
 				for i, time in ipairs(target[next(target)].times) do
-					table.insert(frames[node], { --todo class
-						time = time,
-						rotation = target["rotation"] and quat(target["rotation"].values[i]) or quat(0, 0, 0, 1),
-						position = target["translation"] and target["translation"].values[i] or vec3(0, 0, 0),
-						scale = target["scale"] and target["scale"].values[i] or vec3(1, 1, 1),
-					})
+					table.insert(frames[node], self:newAnimationFrame(
+							time,
+							target["translation"] and target["translation"].values[i] or vec3(0, 0, 0),
+							target["rotation"] and quat(target["rotation"].values[i]) or quat(0, 0, 0, 1),
+							target["scale"] and target["scale"].values[i] or vec3(1, 1, 1)
+					))
 				end
 			end
 			

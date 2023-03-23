@@ -36,7 +36,7 @@ lib.vec3 = require(lib.root .. "/libs/luaVectors/vec3")
 ---@type DreamVec4
 lib.vec4 = require(lib.root .. "/libs/luaVectors/vec4")
 
----type DreamQuat
+---@type DreamQuat
 lib.quat = require(lib.root .. "/libs/quat")
 
 --provide access to other libs

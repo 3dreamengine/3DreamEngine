@@ -486,12 +486,12 @@ return function(self, obj, path)
 				frames[name] = { }
 				for i = 1, #sources.OUTPUT / 16 do
 					local m = mat4(unpack(sources.OUTPUT, i * 16 - 15, i * 16))
-					table.insert(frames[name], {
-						time = sources.INPUT[i],
-						rotation = quat.fromMatrix(m:subm()),
-						position = vec3(m[4], m[8], m[12]),
-						scale = 1,
-					})
+					table.insert(frames[name], self:newAnimationFrame(
+							sources.INPUT[i],
+							vec3(m[4], m[8], m[12]),
+							quat.fromMatrix(m:subm()),
+							1
+					))
 				end
 			end
 		end

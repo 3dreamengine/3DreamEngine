@@ -14,6 +14,9 @@ Creates a new, empty animation from a dictionary of joint names and animation fr
 
 _________________
 
+## Fields
+`frames` (<string, [AnimationFrame](https://3dreamengine.github.io/3DreamEngine/docu/classes/animationframe)[]>) 
+
 ## Methods
 ### `Animation.interpolateFrames(first, second, blend)`
 `static`  
@@ -34,8 +37,13 @@ Returns a new animated pose at a specific time stamp
 `time` (number) 
 
 #### Returns
-(table) 
+([Pose](https://3dreamengine.github.io/3DreamEngine/docu/classes/pose)) 
 
+
+_________________
+
+### `Animation:getLength()`
+Returns the length in seconds
 
 _________________
 

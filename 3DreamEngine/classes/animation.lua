@@ -2,15 +2,6 @@
 local lib = _3DreamEngine
 local vec3 = lib.vec3
 
---todo
----@class DreamAnimationFrame
-local DreamAnimationFrameStub = {
-	position = lib.vec3(),
-	rotation = lib.quat(),
-	scale = 1,
-}
-assert(DreamAnimationFrameStub)
-
 ---Creates a new, empty animation from a dictionary of joint names and animation frames
 ---@param frameTable table<string, DreamAnimationFrame[]>
 ---@return DreamAnimation
@@ -45,6 +36,7 @@ end
 
 ---A animation contains transformation tracks for a set of joints
 ---@class DreamAnimation : DreamClonable
+---@field public frames table<string, DreamAnimationFrame[]>
 local class = {
 	links = { "clonable", "animation" }
 }
@@ -63,7 +55,7 @@ end
 
 ---Returns a new animated pose at a specific time stamp
 ---@param time number
----@return table
+---@return DreamPose
 function class:getPose(time)
 	local pose = lib:newPose()
 	
@@ -95,6 +87,11 @@ function class:getPose(time)
 	end
 	
 	return pose
+end
+
+---Returns the length in seconds
+function class:getLength()
+	return self.length
 end
 
 ---@private

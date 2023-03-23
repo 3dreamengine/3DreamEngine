@@ -12,6 +12,20 @@ Creates a new, empty animation from a dictionary of joint names and animation fr
 
 _________________
 
+### `Dream:newAnimationFrame(time, position, rotation, scale)`
+
+#### Arguments
+`time` (any) 
+
+`position` (any) 
+
+`rotation` (any) 
+
+`scale` (any) 
+
+
+_________________
+
 ### `Dream:newBoundingSphere(center, size)`
 Creates a new bounding sphere
 #### Arguments

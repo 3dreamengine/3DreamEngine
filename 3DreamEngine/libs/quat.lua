@@ -1,6 +1,7 @@
 --https://rosettacode.org/wiki/Quaternion_type#Lua
 --modified by Luke100000
 
+---@class DreamQuat
 local quat = { }
 local meta = { }
 

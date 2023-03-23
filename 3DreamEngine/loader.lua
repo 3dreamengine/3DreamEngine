@@ -403,7 +403,7 @@ function lib:processObject(obj)
 					newFrames[joint] = { }
 					for _, frame in ipairs(frames) do
 						if frame.time >= time[1] and frame.time <= time[2] then
-							local f = table.flatCopy(frame)
+							local f = frame:clone()
 							f.time = f.time - time[1]
 							table.insert(newFrames[joint], f)
 						end
