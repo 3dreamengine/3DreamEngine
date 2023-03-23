@@ -26,6 +26,7 @@ function lib:newMeshBuilder(material)
 	mesh.indexTotal = 0
 	
 	--use chunks to keep track of used areas
+	--todo add flag or separate class disabling removes, which would increase performance
 	mesh.lastChunkId = 0
 	mesh.chunks = { }
 	mesh.vertexCache = lib:cache()
@@ -198,6 +199,7 @@ function class:getIndexIntegrity()
 	return self.indexTotal / self.indexIndex
 end
 
+---Defragment mesh now, shifting all data to the very left and updating the chunk pointers
 function class:defragment()
 	local oldByteData = self.byteData
 	local oldVertices = self.vertices

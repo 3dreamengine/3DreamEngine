@@ -125,6 +125,11 @@ function class:addObject(object, parentTransform, dynamic)
 	end
 end
 
+---addMesh
+---@param mesh DreamMesh
+---@param transform DreamMat4
+---@param reflection DreamReflection @ optional
+---@param scale number @ optional
 function class:addMesh(mesh, transform, reflection, scale)
 	if self.blacklist[mesh] then
 		return
@@ -143,7 +148,7 @@ function class:addMesh(mesh, transform, reflection, scale)
 	
 	--todo cache
 	local pos = getPosition(mesh, transform)
-	local size = mesh.boundingSphere.size * scale
+	local size = mesh.boundingSphere.size * (scale or transform and transform:getLossySize() or 1)
 	
 	--wrong alpha
 	if (self.alpha and true) ~= (mesh.material.alpha and true) then

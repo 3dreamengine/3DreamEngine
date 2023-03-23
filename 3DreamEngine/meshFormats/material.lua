@@ -16,9 +16,9 @@ function f:create(mesh)
 	local vertices = ffi.cast(identifier .. "*", byteData:getFFIPointer())
 	
 	for i = 1, mesh.vertices:getSize() do
-		local vertex = mesh.vertices:getOrDefault(i, empty)
-		local normal = mesh.normals:getOrDefault(i, empty)
-		local texCoord = mesh.texCoords:getOrDefault(i, empty)
+		local vertex = mesh:getOrCreateBuffer("vertices"):getOrDefault(i, empty)
+		local normal = mesh:getOrCreateBuffer("normals"):getOrDefault(i, empty)
+		local texCoord = mesh:getOrCreateBuffer("texCoords"):getOrDefault(i, empty)
 		
 		local v = vertices[i - 1]
 		

@@ -40,6 +40,8 @@ local class = {
 	links = { "clonable", "hasShaders", "named", "mesh" },
 }
 
+class.isMesh = true
+
 ---Sets the meshes material
 ---@param material DreamMaterial
 function class:setMaterial(material)

@@ -57,7 +57,7 @@ Returns the fraction of data in use for the index buffer
 _________________
 
 ### `MeshBuilder:defragment()`
-
+Defragment mesh now, shifting all data to the very left and updating the chunk pointers
 
 _________________
 

@@ -265,7 +265,7 @@ function lib:prepare()
 end
 
 ---draw
----@param object DreamObject
+---@param object DreamObject | DreamMesh
 ---@param x number
 ---@param y number
 ---@param z number

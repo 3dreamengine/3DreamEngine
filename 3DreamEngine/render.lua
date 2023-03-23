@@ -22,7 +22,9 @@ function lib:buildScene(shadowPass, dynamic, alpha, cam, blacklist, frustumCheck
 	local scene = self:newScene(shadowPass, dynamic, alpha, cam, blacklist, frustumCheck, noSmallObjects, canvases, light, isSun)
 	
 	for _, pair in pairs(self.renderTasks) do
-		if pair[2] then
+		if pair[1].isMesh then
+			scene:addMesh(pair[1], pair[2])
+		elseif pair[2] then
 			scene:addObject(pair[1], pair[2], true)
 		else
 			scene:add(pair[1])
@@ -263,14 +265,16 @@ function lib:render(canvases, cam, dynamic)
 				objectMesh:attachAttribute("InstanceRotation2", instanceMesh, "perinstance")
 				objectMesh:attachAttribute("InstancePosition", instanceMesh, "perinstance")
 				love.graphics.drawInstanced(objectMesh, mesh:getInstancesCount())
-			else
+			elseif objectMesh then
 				love.graphics.draw(objectMesh)
 			end
 			
 			--stats
-			self.stats.draws = self.stats.draws + 1
-			mesh.meshVertexCount = mesh.meshVertexCount or objectMesh:getVertexCount()
-			self.stats.vertices = self.stats.vertices + mesh.meshVertexCount
+			if objectMesh then
+				self.stats.draws = self.stats.draws + 1
+				mesh.meshVertexCount = mesh.meshVertexCount or objectMesh:getVertexCount()
+				self.stats.vertices = self.stats.vertices + mesh.meshVertexCount
+			end
 		end
 		self.delton:stop()
 		
@@ -479,7 +483,7 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects, smoo
 			objectMesh:attachAttribute("InstanceRotation2", instanceMesh, "perinstance")
 			objectMesh:attachAttribute("InstancePosition", instanceMesh, "perinstance")
 			love.graphics.drawInstanced(objectMesh, instanceMesh:getVertexCount())
-		else
+		elseif objectMesh then
 			love.graphics.draw(objectMesh)
 		end
 	end

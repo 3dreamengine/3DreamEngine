@@ -8,7 +8,10 @@ local vec3, mat4 = dream.vec3, dream.mat4
 
 local sky = { }
 
-local root = (...)
+local root = (...):gsub("%.", "/")
+if root:sub(-4) == "init" then
+	root = root:sub(1, -6)
+end
 
 --get color of sun based on sunrise sky texture
 sky.sunlight = require(root .. "/sunlight")

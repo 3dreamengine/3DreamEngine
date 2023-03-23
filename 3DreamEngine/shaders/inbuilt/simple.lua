@@ -14,7 +14,7 @@ function sh:buildDefines(mat, shadow)
 		
 		//additional vertex attributes
 		#ifdef VERTEX
-		attribute vec3 VertexMaterial;
+		attribute vec4 VertexMaterial;
 		#endif
 	]]
 end
@@ -34,7 +34,7 @@ end
 
 function sh:buildVertex(mat)
 	return [[
-	VaryingMaterial = VertexMaterial;
+	VaryingMaterial = VertexMaterial.xyz;
 	]]
 end
 
