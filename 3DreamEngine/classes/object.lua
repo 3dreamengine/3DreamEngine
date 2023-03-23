@@ -36,7 +36,7 @@ function lib:newObject()
 	}, self.meta.object)
 end
 
----@class DreamObject : DreamClonable, DreamTransformable, DreamHasShaders
+---@class DreamObject : DreamClonable, DreamTransformable, DreamHasShaders, DreamIsNamed
 ---@field public objects DreamObject[]
 ---@field public meshes DreamMesh[]
 ---@field public positions DreamPosition[]
@@ -46,7 +46,7 @@ end
 ---@field public reflections DreamReflection[]
 ---@field public animations DreamAnimation[]
 local class = {
-	links = { "clonable", "transformable", "hasShaders", "object" },
+	links = { "clonable", "transformable", "hasShaders", "named", "object" },
 }
 
 local function count(t)
@@ -210,14 +210,6 @@ function class:merge()
 	local merged = lib:newObject()
 	merged.meshes["merged"] = mesh
 	return merged
-end
-
----@param name string
-function class:setName(name)
-	self.name = lib:removePostfix(name)
-end
-function class:getName()
-	return self.name
 end
 
 ---Apply the current transformation to the meshes

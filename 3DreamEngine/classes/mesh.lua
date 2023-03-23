@@ -27,7 +27,7 @@ end
 
 ---@alias MeshDrawMode "fan"|"strip"|"triangles"|"points"
 
----@class DreamMesh : DreamClonable, DreamHasShaders
+---@class DreamMesh : DreamClonable, DreamHasShaders, DreamIsNamed
 ---@field public name string
 ---@field public meshFormat DreamMeshFormat
 ---@field public boundingSphere DreamBoundingSphere
@@ -37,7 +37,7 @@ end
 ---@field public renderVisibility boolean @ visible in render pass
 ---@field public shadowVisibility boolean @ visible in shadow pass
 local class = {
-	links = { "clonable", "hasShaders", "mesh" },
+	links = { "clonable", "hasShaders", "named", "mesh" },
 }
 
 ---Sets the meshes material
@@ -77,14 +77,6 @@ function class:setFarShadowVisibility(visibility)
 end
 function class:getFarShadowVisibility()
 	return self.farShadowVisibility
-end
-
----@param name string
-function class:setName(name)
-	self.name = lib:removePostfix(name)
-end
-function class:getName()
-	return self.name
 end
 
 ---@param skeleton DreamSkeleton

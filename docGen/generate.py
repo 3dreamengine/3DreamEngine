@@ -18,6 +18,7 @@ blacklist = {
     "DreamTransformable",
     "DreamScene",
     "DreamTask",
+    "DreamIsNamed",
 }
 
 special_constructors = {

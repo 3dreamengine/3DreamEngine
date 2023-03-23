@@ -29,22 +29,14 @@ function lib:newLight(typ, position, color, brightness)
 end
 
 ---A light source.
----@class DreamLight
+---@class DreamLight : DreamClonable, DreamIsNamed
 local class = {
-	links = { "light", "clonable" },
+	links = { "light", "clonable", "named" },
 }
 
 ---@private
 function class:tostring()
 	return string.format("%s (%.3f brightness)", self.name, self.brightness)
-end
-
----@param name string
-function class:setName(name)
-	self.name = lib:removePostfix(name)
-end
-function class:getName()
-	return self.name
 end
 
 ---The size mostly affects smooth lighting

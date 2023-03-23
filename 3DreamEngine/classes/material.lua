@@ -22,18 +22,10 @@ function lib:newMaterial(name)
 end
 
 ---A material holds textures, render settings, shader information and similar and is assigned to a mesh.
----@class DreamMaterial
+---@class DreamMaterial : DreamClonable, DreamHasShaders, DreamIsNamed
 local class = {
-	links = { "clonable", "hasShaders", "material" },
+	links = { "clonable", "hasShaders", "named", "material" },
 }
-
----@param name string
-function class:setName(name)
-	self.name = lib:removePostfix(name)
-end
-function class:getName()
-	return self.name
-end
 
 --todo merge alpha, solid and discard
 function class:setAlpha(alpha)

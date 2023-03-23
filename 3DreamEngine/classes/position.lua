@@ -17,22 +17,14 @@ function lib:newPosition(position, size, value)
 end
 
 ---New position, mostly used internally for objects marked with the `POS` tag.
----@class DreamPosition : DreamClonable
+---@class DreamPosition : DreamClonable, DreamIsNamed
 local class = {
-	links = { "position", "clonable" },
+	links = { "position", "clonable", "named" },
 }
 
 ---@private
 function class:tostring()
 	return string.format("%s with value %s (%.3f size) at %s", self.name, self.value, self.size, self.position)
-end
-
-function class:setName(name)
-	self.name = lib:removePostfix(name)
-end
-
-function class:getName()
-	return self.name
 end
 
 function class:setPosition(position)
