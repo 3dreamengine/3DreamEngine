@@ -1,5 +1,5 @@
 # Mesh
-Extends Clonable, HasShaders
+Extends Clonable, HasShaders, IsNamed
 
 
 ## Constructors
@@ -88,19 +88,6 @@ _________________
 _________________
 
 ### `Mesh:getFarShadowVisibility()`
-
-
-_________________
-
-### `Mesh:setName(name)`
-
-#### Arguments
-`name` (string) 
-
-
-_________________
-
-### `Mesh:getName()`
 
 
 _________________
@@ -270,6 +257,22 @@ _________________
 
 #### Arguments
 `shader` (any) 
+
+
+_________________
+
+### `IsNamed:setName(name)`
+A name has no influence other than being able to print more nicely
+#### Arguments
+`name` (string) 
+
+
+_________________
+
+### `IsNamed:getName()`
+Gets the name, or "unnamed"
+#### Returns
+(string) 
 
 
 _________________

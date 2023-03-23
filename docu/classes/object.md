@@ -1,5 +1,5 @@
 # Object
-Extends Clonable, Transformable, HasShaders
+Extends Clonable, Transformable, HasShaders, IsNamed
 
 
 ## Constructors
@@ -127,19 +127,6 @@ _________________
 
 ### `Object:merge()`
 Merge all meshes, recursively, of an object
-
-_________________
-
-### `Object:setName(name)`
-
-#### Arguments
-`name` (string) 
-
-
-_________________
-
-### `Object:getName()`
-
 
 _________________
 
@@ -412,6 +399,22 @@ _________________
 
 #### Arguments
 `shader` (any) 
+
+
+_________________
+
+### `IsNamed:setName(name)`
+A name has no influence other than being able to print more nicely
+#### Arguments
+`name` (string) 
+
+
+_________________
+
+### `IsNamed:getName()`
+Gets the name, or "unnamed"
+#### Returns
+(string) 
 
 
 _________________

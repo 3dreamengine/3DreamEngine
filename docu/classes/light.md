@@ -1,4 +1,6 @@
 # Light
+Extends Clonable, IsNamed
+
 A light source.
 ## Constructors
 ### `Light:newLight(typ, position, color, brightness)`
@@ -19,19 +21,6 @@ Creates new light source
 _________________
 
 ## Methods
-### `Light:setName(name)`
-
-#### Arguments
-`name` (string) 
-
-
-_________________
-
-### `Light:getName()`
-
-
-_________________
-
 ### `Light:setSize(size)`
 The size mostly affects smooth lighting
 #### Arguments
@@ -154,6 +143,32 @@ _________________
 
 #### Returns
 ([Shadow](https://3dreamengine.github.io/3DreamEngine/docu/classes/shadow)) 
+
+
+_________________
+
+### `Clonable:clone()`
+Slow and deep clone
+
+_________________
+
+### `Clonable:instance()`
+Creates an fast instance
+
+_________________
+
+### `IsNamed:setName(name)`
+A name has no influence other than being able to print more nicely
+#### Arguments
+`name` (string) 
+
+
+_________________
+
+### `IsNamed:getName()`
+Gets the name, or "unnamed"
+#### Returns
+(string) 
 
 
 _________________

@@ -25,6 +25,7 @@ Most functions are annotated using EmmyLua doc.
 
 * [Animation](https://3dreamengine.github.io/3DreamEngine/docu/classes/animation)  
 * [AnimationFrame](https://3dreamengine.github.io/3DreamEngine/docu/classes/animationframe)  
+* [Bone](https://3dreamengine.github.io/3DreamEngine/docu/classes/bone)  
 * [BoundingSphere](https://3dreamengine.github.io/3DreamEngine/docu/classes/boundingsphere)  
 * [Buffer](https://3dreamengine.github.io/3DreamEngine/docu/classes/buffer)  
 * [Camera](https://3dreamengine.github.io/3DreamEngine/docu/classes/camera)  

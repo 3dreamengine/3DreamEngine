@@ -119,19 +119,6 @@ _________________
 
 _________________
 
-### `Mesh:setName(name)`
-
-#### Arguments
-`name` (string) 
-
-
-_________________
-
-### `Mesh:getName()`
-
-
-_________________
-
 ### `Mesh:setSkeleton(skeleton)`
 
 #### Arguments
@@ -297,6 +284,22 @@ _________________
 
 #### Arguments
 `shader` (any) 
+
+
+_________________
+
+### `IsNamed:setName(name)`
+A name has no influence other than being able to print more nicely
+#### Arguments
+`name` (string) 
+
+
+_________________
+
+### `IsNamed:getName()`
+Gets the name, or "unnamed"
+#### Returns
+(string) 
 
 
 _________________

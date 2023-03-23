@@ -1,4 +1,6 @@
 # Material
+Extends Clonable, HasShaders, IsNamed
+
 A material holds textures, render settings, shader information and similar and is assigned to a mesh.
 ## Constructors
 ### `Material:newMaterial(name)`
@@ -13,19 +15,6 @@ Creates an empty material
 _________________
 
 ## Methods
-### `Material:setName(name)`
-
-#### Arguments
-`name` (string) 
-
-
-_________________
-
-### `Material:getName()`
-
-
-_________________
-
 ### `Material:setAlpha(alpha)`
 
 #### Arguments
@@ -256,6 +245,56 @@ Looks for and assigns textures in a specific directory using an optional filter
 `directory` (string) 
 
 `filter` (string) 
+
+
+_________________
+
+### `Clonable:clone()`
+Slow and deep clone
+
+_________________
+
+### `Clonable:instance()`
+Creates an fast instance
+
+_________________
+
+### `HasShaders:setPixelShader(shader)`
+
+#### Arguments
+`shader` (any) 
+
+
+_________________
+
+### `HasShaders:setVertexShader(shader)`
+
+#### Arguments
+`shader` (any) 
+
+
+_________________
+
+### `HasShaders:setWorldShader(shader)`
+
+#### Arguments
+`shader` (any) 
+
+
+_________________
+
+### `IsNamed:setName(name)`
+A name has no influence other than being able to print more nicely
+#### Arguments
+`name` (string) 
+
+
+_________________
+
+### `IsNamed:getName()`
+Gets the name, or "unnamed"
+#### Returns
+(string) 
 
 
 _________________

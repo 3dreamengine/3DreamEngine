@@ -1,5 +1,5 @@
 # Position
-Extends Clonable
+Extends Clonable, IsNamed
 
 New position, mostly used internally for objects marked with the `POS` tag.
 ## Constructors
@@ -19,19 +19,6 @@ New position, mostly used internally for objects marked with the `POS` tag.
 _________________
 
 ## Methods
-### `Position:setName(name)`
-
-#### Arguments
-`name` (any) 
-
-
-_________________
-
-### `Position:getName()`
-
-
-_________________
-
 ### `Position:setPosition(position)`
 
 #### Arguments
@@ -78,5 +65,21 @@ _________________
 
 ### `Clonable:instance()`
 Creates an fast instance
+
+_________________
+
+### `IsNamed:setName(name)`
+A name has no influence other than being able to print more nicely
+#### Arguments
+`name` (string) 
+
+
+_________________
+
+### `IsNamed:getName()`
+Gets the name, or "unnamed"
+#### Returns
+(string) 
+
 
 _________________

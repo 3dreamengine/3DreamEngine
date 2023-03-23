@@ -26,6 +26,16 @@ _________________
 
 _________________
 
+### `Dream:newBone(id, transform)`
+
+#### Arguments
+`id` (any) 
+
+`transform` (any) 
+
+
+_________________
+
 ### `Dream:newBoundingSphere(center, size)`
 Creates a new bounding sphere
 #### Arguments

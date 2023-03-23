@@ -13,15 +13,6 @@ No overhead since fast drawMesh(mesh, transform) can be used too
 
 Sometimes the whole object is unnecessary, if you just want to draw a mesh at a certain position
 
-# Remove dynamic shadows
-
-The idea (splitting static and dynamic shadows) performs surprisingly well but
-
-* It's a lot of code to keep track of dynamic objects, and it's not even accurate for vertex shaders applying transforms
-* It requires 2x shadow shaders
-* It requires a lot of branching in the shadow rendering, which caused typos in the past already
-* It's over optimization. The CPU bottleneck is the main issue, masking this with selective rendering is not really a fix
-
 # Fix 3DO
 
 Each class is serializable, also expand that to vectors (e.g. save __class = "vec3")
