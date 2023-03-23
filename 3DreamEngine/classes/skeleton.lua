@@ -19,29 +19,30 @@ local class = {
 
 ---Apply the pose to the joints
 ---@private
-function class:applyPoseToNode(node, pose, parentTransform)
-	if pose[node.name] then
-		local poseTransform = pose[node.name].rotation:toMatrix()
-		local pos = pose[node.name].position
+---@param bone DreamBone
+---@param pose DreamPose
+---@param parentTransform DreamMat4
+function class:applyPoseToBone(bone, pose, parentTransform)
+	if pose[bone.id] then
+		local poseTransform = pose[bone.id].rotation:toMatrix()
+		local pos = pose[bone.id].position
 		poseTransform[4] = pos[1]
 		poseTransform[8] = pos[2]
 		poseTransform[12] = pos[3]
-		self.transforms[node.name] = parentTransform and (parentTransform * poseTransform) or poseTransform
+		self.transforms[bone.id] = parentTransform and (parentTransform * poseTransform) or poseTransform
 	else
-		self.transforms[node.name] = parentTransform and (parentTransform * node.transform) or node.transform
+		self.transforms[bone.id] = parentTransform and (parentTransform * bone.transform) or bone.transform
 	end
 	
-	if node.children then
-		for _, child in pairs(node.children) do
-			self:applyPoseToNode(child, pose, self.transforms[node.name])
-		end
+	for _, child in ipairs(bone.children) do
+		self:applyPoseToBone(child, pose, self.transforms[bone.id])
 	end
 end
 
 ---Apply the pose to the skeleton
 function class:applyPose(pose)
 	self.transforms = { }
-	self:applyPoseToNode(self.root, pose, false)
+	self:applyPoseToBone(self.root, pose, false)
 end
 
 ---Get the transformation matrix for a given joint name

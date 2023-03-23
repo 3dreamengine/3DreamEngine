@@ -345,18 +345,12 @@ return function(self, obj, path)
 	
 	local skeletons = { }
 	local function skeletonLoader(s)
-		--todo class
-		local bone = {
-			name = s._attr.sid,
-			transform = getTransform(s),
-		}
+		local bone = self:newBone(s._attr.sid, getTransform(s))
 		
 		if s.node then
-			bone.children = { }
 			for _, child in ipairs(s.node) do
 				if child._attr.type == "JOINT" then
-					local b = skeletonLoader(child)
-					bone.children[b.name] = b
+					table.insert(bone.children, skeletonLoader(child))
 				end
 			end
 		end

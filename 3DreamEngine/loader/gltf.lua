@@ -238,17 +238,11 @@ local function loadMeshes(node)
 end
 
 local function loadBone(node)
-	--todo class
-	local bone = {
-		name = node.name,
-		transform = loadTransform(node),
-	}
+	local bone = lib:newBone(node.name, loadTransform(node))
 	
 	if node.children then
-		bone.children = { }
 		for _, child in pairs(node.children) do
-			local cb = cached(loadBone, file.nodes[child + 1])
-			bone.children[cb.name] = cb
+			table.insert(bone.children, cached(loadBone, file.nodes[child + 1]))
 		end
 	end
 	
