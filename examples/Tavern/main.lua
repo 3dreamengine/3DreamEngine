@@ -10,7 +10,6 @@ love.mouse.setRelativeMode(true)
 
 --settings
 local projectDir = "examples/Tavern/"
-dream:setSmoothLoading(false)
 
 dream.canvases:setRefractions(true)
 

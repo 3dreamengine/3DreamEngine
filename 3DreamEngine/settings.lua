@@ -241,29 +241,6 @@ function lib:getResourceLoader()
 	return self.textures_threaded
 end
 
-
---todo consider removal, it is only recommended for large textures, and large textures should be VRAM compressed anyways
-function lib:setSmoothLoading(time)
-	if time then
-		self.textures_smoothLoading = true
-		self.textures_smoothLoadingTime = time
-	else
-		self.textures_smoothLoading = false
-	end
-end
-function lib:getSmoothLoading()
-	return self.textures_smoothLoading, self.textures_smoothLoadingTime
-end
-
-
---todo
-function lib:setSmoothLoadingBufferSize(size)
-	self.textures_bufferSize = size
-end
-function lib:getSmoothLoadingBufferSize()
-	return self.textures_bufferSize
-end
-
 ---Toggle mipmap generations for loaded images
 ---@param mode boolean
 function lib:setMipmaps(mode)

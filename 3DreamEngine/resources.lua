@@ -25,7 +25,7 @@ lib.resultsChannel = love.thread.getChannel("3DreamEngine_channel_results")
 ---Returns statistics of the loader threads
 ---@return number, number, number @ todo, in progress, awaiting upload to GPU
 function lib:getLoaderThreadUsage()
-	local todo = self..jobsChannel:getCount() + self..jobsChannel:getCount()
+	local todo = self .. jobsChannel:getCount() + self .. jobsChannel:getCount()
 	local working = self.busyChannel:getCount()
 	local done = self.resultsChannel:getCount()
 	return todo, working, done
@@ -55,94 +55,19 @@ local function scan(path)
 end
 scan("")
 
---buffer image for fastLoading
-local bufferData, buffer
-local fastLoadingJob = false
-
 ---Updates active resource tasks (mesh loading, texture loading, ...)
 function lib:update()
-	--recreate buffer object if necessary
-	local bufferSize = self.textures_bufferSize
-	if not bufferData or bufferData:getWidth() ~= self.textures_bufferSize then
-		bufferData = love.image.newImageData(bufferSize, bufferSize)
-		buffer = love.graphics.newImage(bufferData)
-	end
-	
-	--process current image
-	if fastLoadingJob then
-		local time = self.textures_smoothLoadingTime
-		while time >= 0 and fastLoadingJob do
-			local s = fastLoadingJob
-			local t = love.timer.getTime()
-			
-			--prepare buffer
-			bufferData:paste(s.data, 0, 0, s.x * bufferSize, s.y * bufferSize, math.min(bufferSize, s.width - bufferSize * s.x), math.min(bufferSize, s.height - bufferSize * s.y))
-			buffer:replacePixels(bufferData)
-			
-			--render
-			love.graphics.push("all")
-			love.graphics.reset()
-			love.graphics.setBlendMode("replace", "premultiplied")
-			love.graphics.setCanvas(s.canvas)
-			love.graphics.draw(buffer, s.x * bufferSize, s.y * bufferSize)
-			love.graphics.pop()
-			
-			--next chunk
-			s.x = s.x + 1
-			if s.x >= math.ceil(s.width / bufferSize) then
-				s.x = 0
-				s.y = s.y + 1
-				if s.y >= math.ceil(s.height / bufferSize) then
-					--accept as fully loaded
-					self.texturesLoaded[s.path] = s.canvas
-					
-					--force mipmap generation
-					if s.canvas:getMipmapCount() > 1 then
-						s.canvas:generateMipmaps()
-					end
-					
-					--close job
-					fastLoadingJob = false
-				end
-			end
-			
-			--time required
-			local delta = love.timer.getTime() - t
-			time = time - delta
-		end
-		return true
-	end
-	
 	--fetch new job
 	local msg = self.resultsChannel:pop()
 	if msg then
 		--image
-		local width, height = msg[3]:getDimensions()
-		if self.textures_smoothLoading and math.max(width, height) > bufferSize and not msg[4] then
-			local canvas = love.graphics.newCanvas(width, height, { mipmaps = self.textures_mipmaps and "manual" or "none" })
-			
-			--settings
-			canvas:setWrap("repeat", "repeat")
-			
-			--prepare loading job
-			fastLoadingJob = {
-				path = msg[2],
-				canvas = canvas,
-				data = msg[3],
-				x = 0,
-				y = 0,
-				width = width,
-				height = height,
-			}
-		else
-			local tex = love.graphics.newImage(msg[3], { mipmaps = self.textures_mipmaps })
-			
-			--settings
-			tex:setWrap("repeat", "repeat")
-			
-			--store
-			self.texturesLoaded[msg[2]] = tex
-		end
+		local tex = love.graphics.newImage(msg[3], { mipmaps = self.textures_mipmaps })
+		
+		--settings
+		tex:setWrap("repeat", "repeat")
+		
+		--store
+		self.texturesLoaded[msg[2]] = tex
 		
 		return true
 	else
