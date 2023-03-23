@@ -1,14 +1,6 @@
 # Buffer
 A buffer is a continues collection of primitives (vectors, scalars or matrices) used to store vertex information and co.
 ## Constructors
-### `Buffer:newDynamicBuffer()`
-A dynamic buffer is a slower, more dynamic lua array implementation
-#### Returns
-([Buffer](https://3dreamengine.github.io/3DreamEngine/docu/classes/buffer)) 
-
-
-_________________
-
 ### `Buffer:newBuffer(type, dataType, length)`
 New compact data buffer
 #### Arguments
@@ -18,6 +10,14 @@ New compact data buffer
 
 `length` (number) 
 
+#### Returns
+([Buffer](https://3dreamengine.github.io/3DreamEngine/docu/classes/buffer)) 
+
+
+_________________
+
+### `Buffer:newDynamicBuffer()`
+A dynamic buffer is a slower, more dynamic lua array implementation
 #### Returns
 ([Buffer](https://3dreamengine.github.io/3DreamEngine/docu/classes/buffer)) 
 

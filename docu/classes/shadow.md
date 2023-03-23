@@ -73,7 +73,7 @@ _________________
 _________________
 
 ### `Shadow:setStatic(static)`
-Static lights wont capture moving objects, no effect when dynamic mode active
+Static lights wont capture moving objects
 #### Arguments
 `static` (boolean) 
 
@@ -81,19 +81,6 @@ Static lights wont capture moving objects, no effect when dynamic mode active
 _________________
 
 ### `Shadow:isStatic()`
-
-
-_________________
-
-### `Shadow:setDynamic(dynamic)`
-Dynamic mode only re-renders dynamic objects and is much faster than a full render, but slower than fully static
-#### Arguments
-`dynamic` (boolean) 
-
-
-_________________
-
-### `Shadow:isDynamic()`
 
 
 _________________

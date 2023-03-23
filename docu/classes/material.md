@@ -249,3 +249,13 @@ Populate from a lua file returning a material
 
 
 _________________
+
+### `Material:lookForTextures(directory, filter)`
+Looks for and assigns textures in a specific directory using an optional filter
+#### Arguments
+`directory` (string) 
+
+`filter` (string) 
+
+
+_________________

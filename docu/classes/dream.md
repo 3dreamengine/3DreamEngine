@@ -1,6 +1,590 @@
 # Dream
 The main class
 ## Methods
+### `Dream:newAnimation(frameTable)`
+Creates a new, empty animation from a dictionary of joint names and animation frames
+#### Arguments
+`frameTable` (<string, [AnimationFrame](https://3dreamengine.github.io/3DreamEngine/docu/classes/animationframe)[]>) 
+
+#### Returns
+([Animation](https://3dreamengine.github.io/3DreamEngine/docu/classes/animation)) 
+
+
+_________________
+
+### `Dream:newBoundingSphere(center, size)`
+Creates a new bounding sphere
+#### Arguments
+`center` (Vec3)  optional
+
+`size` (number)  optional
+
+
+_________________
+
+### `Dream:newBufferFromArray(array)`
+Converts given float array into a buffer
+#### Arguments
+`array` (number[]) 
+
+#### Returns
+([Buffer](https://3dreamengine.github.io/3DreamEngine/docu/classes/buffer)) 
+
+
+_________________
+
+### `Dream:newBufferLike(buffer)`
+New empty buffer with the same memory layout as the existing buffer
+#### Arguments
+`buffer` ([Buffer](https://3dreamengine.github.io/3DreamEngine/docu/classes/buffer)) 
+
+#### Returns
+([Buffer](https://3dreamengine.github.io/3DreamEngine/docu/classes/buffer)) 
+
+
+_________________
+
+### `Dream:bufferFromString(type, dataType, str)`
+New Buffer from string
+#### Arguments
+`type` (string)  "vec2", "vec3", "vec4", or "mat4"
+
+`dataType` (string)  C type, e.g. "float"
+
+`str` (string) 
+
+#### Returns
+([Buffer](https://3dreamengine.github.io/3DreamEngine/docu/classes/buffer)) 
+
+
+_________________
+
+### `Dream:newBuffer(type, dataType, length)`
+New compact data buffer
+#### Arguments
+`type` (string)  "vec2", "vec3", "vec4", or "mat4"
+
+`dataType` (string)  C type, e.g. "float"
+
+`length` (number) 
+
+#### Returns
+([Buffer](https://3dreamengine.github.io/3DreamEngine/docu/classes/buffer)) 
+
+
+_________________
+
+### `Dream:newCamera(transform, transformProj, position, normal)`
+Creates a new camera
+#### Arguments
+`transform` (Mat4) 
+
+`transformProj` (Mat4) 
+
+`position` (Vec3) 
+
+`normal` (Vec3) 
+
+#### Returns
+([Camera](https://3dreamengine.github.io/3DreamEngine/docu/classes/camera)) 
+
+
+_________________
+
+### `Dream:newCanvases()`
+Creates a new set of canvas outputs
+#### Returns
+([Canvases](https://3dreamengine.github.io/3DreamEngine/docu/classes/canvases)) 
+
+
+_________________
+
+### `Dream:newCollisionMesh(mesh, shapeMode)`
+A new collision mesh, containing only relevant data for a collider
+#### Arguments
+`mesh` ([CollisionMesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/collisionmesh)) 
+
+`shapeMode` (string) 
+
+
+_________________
+
+### `Dream:newDynamicBuffer()`
+A dynamic buffer is a slower, more dynamic lua array implementation
+#### Returns
+([Buffer](https://3dreamengine.github.io/3DreamEngine/docu/classes/buffer)) 
+
+
+_________________
+
+### `Dream:newInstancedMesh(mesh)`
+
+#### Arguments
+`mesh` ([Mesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/mesh))  The source mesh to create instances from
+
+#### Returns
+([InstancedMesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/instancedmesh)) 
+
+
+_________________
+
+### `Dream:newLight(typ, position, color, brightness)`
+Creates new light source
+#### Arguments
+`typ` (string)  "point" or "sun"
+
+`position` (Vec3) 
+
+`color` (number[]) 
+
+`brightness` (number) 
+
+#### Returns
+([Light](https://3dreamengine.github.io/3DreamEngine/docu/classes/light)) 
+
+
+_________________
+
+### `Dream:newMaterial(name)`
+Creates an empty material
+#### Arguments
+`name` (string) 
+
+#### Returns
+([Material](https://3dreamengine.github.io/3DreamEngine/docu/classes/material)) 
+
+
+_________________
+
+### `Dream:newMesh(material)`
+Creates a new empty mesh
+#### Arguments
+`material` ([Material](https://3dreamengine.github.io/3DreamEngine/docu/classes/material)) 
+
+#### Returns
+([Mesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/mesh)) 
+
+
+_________________
+
+### `Dream:newMeshBuilder(material)`
+Creates a new mesh builder
+#### Arguments
+`material` ([Material](https://3dreamengine.github.io/3DreamEngine/docu/classes/material)) 
+
+#### Returns
+([MeshBuilder](https://3dreamengine.github.io/3DreamEngine/docu/classes/meshbuilder)) 
+
+
+_________________
+
+### `Dream:newMeshFormat(vertexFormat)`
+Creates a new mesh format
+#### Arguments
+`vertexFormat` (table)  A vertex format as specified in https://love2d.org/wiki/love.graphics.newMesh
+
+#### Returns
+([MeshFormat](https://3dreamengine.github.io/3DreamEngine/docu/classes/meshformat)) 
+
+
+_________________
+
+### `Dream:newLinkedObject()`
+`deprecated`  
+
+#### Returns
+([Object](https://3dreamengine.github.io/3DreamEngine/docu/classes/object)) 
+
+
+_________________
+
+### `Dream:newObject()`
+Create an empty object
+#### Returns
+([Object](https://3dreamengine.github.io/3DreamEngine/docu/classes/object)) 
+
+
+_________________
+
+### `Dream:newParticle(texture, emissionTexture, distortionTexture)`
+`deprecated`  
+Returns a particle instance used to draw a particle
+#### Arguments
+`texture` (Drawable) 
+
+`emissionTexture` (Drawable) 
+
+`distortionTexture` (Drawable) 
+
+#### Returns
+([Particle](https://3dreamengine.github.io/3DreamEngine/docu/classes/particle)) 
+
+
+_________________
+
+### `Dream:newPosition(position, size, value)`
+
+#### Arguments
+`position` (Vec3) 
+
+`size` (number) 
+
+`value` (string) 
+
+#### Returns
+([Position](https://3dreamengine.github.io/3DreamEngine/docu/classes/position)) 
+
+
+_________________
+
+### `Dream:newRaytraceMesh(mesh)`
+
+#### Arguments
+`mesh` ([RaytraceMesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/raytracemesh)) 
+
+
+_________________
+
+### `Dream:newReflection()`
+
+#### Returns
+([Reflection](https://3dreamengine.github.io/3DreamEngine/docu/classes/reflection)) 
+
+
+_________________
+
+### `Dream:newShader()`
+
+#### Returns
+([Shader](https://3dreamengine.github.io/3DreamEngine/docu/classes/shader)) 
+
+
+_________________
+
+### `Dream:newShadow()`
+
+#### Returns
+([Shadow](https://3dreamengine.github.io/3DreamEngine/docu/classes/shadow)) 
+
+
+_________________
+
+### `Dream:newSkeleton(root)`
+New skeleton from a hierarchical bone structure
+#### Arguments
+`root` ([Bone](https://3dreamengine.github.io/3DreamEngine/docu/classes/bone)) 
+
+#### Returns
+([Skeleton](https://3dreamengine.github.io/3DreamEngine/docu/classes/skeleton)) 
+
+
+_________________
+
+### `Dream:lookAt(eye, at, up)`
+Returns the look-at transformation matrix
+#### Arguments
+`eye` (Vec3) 
+
+`at` (Vec3) 
+
+`up` (Vec3)  default vec3(0.0, 1.0, 0.0)
+
+
+_________________
+
+### `Dream:HSVtoRGB(h, s, v)`
+
+#### Arguments
+`h` (any) 
+
+`s` (any) 
+
+`v` (any) 
+
+
+_________________
+
+### `Dream:RGBtoHSV(r, g, b)`
+
+#### Arguments
+`r` (any) 
+
+`g` (any) 
+
+`b` (any) 
+
+
+_________________
+
+### `Dream:pointToPixel(point, camera, canvases)`
+Convert a 3D point to 2D screen coordinates
+#### Arguments
+`point` (Vec3) 
+
+`camera` ([Camera](https://3dreamengine.github.io/3DreamEngine/docu/classes/camera)) 
+
+`canvases` ([Canvases](https://3dreamengine.github.io/3DreamEngine/docu/classes/canvases)) 
+
+
+_________________
+
+### `Dream:pixelToPoint(point, camera, canvases)`
+Convert 3D screen coordinates to 3D point, if the depth is unknown pass 1
+#### Arguments
+`point` (Vec3) 
+
+`camera` ([Camera](https://3dreamengine.github.io/3DreamEngine/docu/classes/camera)) 
+
+`canvases` ([Canvases](https://3dreamengine.github.io/3DreamEngine/docu/classes/canvases)) 
+
+
+_________________
+
+### `Dream:getBarycentric(x, y, x1, y1, x2, y2, x3, y3)`
+
+#### Arguments
+`x` (any) 
+
+`y` (any) 
+
+`x1` (any) 
+
+`y1` (any) 
+
+`x2` (any) 
+
+`y2` (any) 
+
+`x3` (any) 
+
+`y3` (any) 
+
+
+_________________
+
+### `Dream:getBarycentricClamped(x, y, x1, y1, x2, y2, x3, y3)`
+
+#### Arguments
+`x` (any) 
+
+`y` (any) 
+
+`x1` (any) 
+
+`y1` (any) 
+
+`x2` (any) 
+
+`y2` (any) 
+
+`x3` (any) 
+
+`y3` (any) 
+
+
+_________________
+
+### `Dream:blurCanvas(canvas, strength, iterations, mask)`
+Two-pass Gaussian blur
+#### Arguments
+`canvas` (Canvas) 
+
+`strength` (number) 
+
+`iterations` (number) 
+
+`mask` (table)  optional
+
+
+_________________
+
+### `Dream:blurCubeMap(cube, layers, strength, mask, blurFirst)`
+Blur a cubemap close to realtime
+#### Arguments
+`cube` (Canvas) 
+
+`layers` (number) 
+
+`strength` (number) 
+
+`mask` (table)  optional
+
+`blurFirst` (boolean) already blur the first layer, as usually used for ambient lighting maps
+
+
+_________________
+
+### `Dream:takeScreenshot()`
+Takes a threaded screenshot and saves it into the screenshot directory in the saves directories
+
+_________________
+
+### `Dream:take3DScreenshot(pos, resolution, path)`
+Takes a 3D screenshot and saves it as a custom CIMG cubemap image with pre blurred reflection mipmaps, may be used for static reflection globes
+#### Arguments
+`pos` (Vec3) 
+
+`resolution` (number) 
+
+`path` (string) 
+
+
+_________________
+
+### `Dream:HDRItoCubemap(hdri, resolution)`
+Converts a 2:1 HDRI to a 1:6 flattened cubemap
+#### Arguments
+`hdri` (Drawable) 
+
+`resolution` (number) 
+
+#### Returns
+(Canvas) 
+
+
+_________________
+
+### `Dream:resize(w, h)`
+Reload canvases
+#### Arguments
+`w` (number) 
+
+`h` (number) 
+
+
+_________________
+
+### `Dream:init(w, h)`
+Applies settings and load canvases
+#### Arguments
+`w` (number) 
+
+`h` (number) 
+
+
+_________________
+
+### `Dream:prepare()`
+Clears the current scene
+
+_________________
+
+### `Dream:draw(object, x, y, z, sx, sy, sz)`
+draw
+#### Arguments
+`object` ([Object](https://3dreamengine.github.io/3DreamEngine/docu/classes/object)) 
+
+`x` (number) 
+
+`y` (number) 
+
+`z` (number) 
+
+`sx` (number) 
+
+`sy` (number) 
+
+`sz` (number) 
+
+
+_________________
+
+### `Dream:draw(object)`
+draw
+#### Arguments
+`object` ([Object](https://3dreamengine.github.io/3DreamEngine/docu/classes/object)) 
+
+
+_________________
+
+### `Dream:addLight(light)`
+Add a light
+#### Arguments
+`light` ([Light](https://3dreamengine.github.io/3DreamEngine/docu/classes/light)) 
+
+
+_________________
+
+### `Dream:addNewLight(typ, position, color, brightness)`
+Add a new simple light
+#### Arguments
+`typ` (string) 
+
+`position` (Vec3) 
+
+`color` (Vec3) 
+
+`brightness` (number) 
+
+
+_________________
+
+### `Dream:drawParticleBatch(batch)`
+Will render this batch
+#### Arguments
+`batch` ([ParticleBatch](https://3dreamengine.github.io/3DreamEngine/docu/classes/particlebatch)) 
+
+
+_________________
+
+### `Dream:drawParticle(particle, quad, x, y, z)`
+Draw a single particle
+#### Arguments
+`particle` ([Particle](https://3dreamengine.github.io/3DreamEngine/docu/classes/particle)) 
+
+`quad` (Quad) 
+
+`x` (number) 
+
+`y` (number) 
+
+`z` (number) 
+
+
+_________________
+
+### `Dream:loadLibrary(path, args, prefix)`
+Loads and adds that object as a library, see https://3dreamengine.github.io/3DreamEngine/docu/introduction
+#### Arguments
+`path` (any) 
+
+`args` (any) 
+
+`prefix` (any) 
+
+
+_________________
+
+### `Dream:registerObject(object, name)`
+Register object in the object library. Objects loaded with the `LINK` tag are then replaced with the entry from the library
+#### Arguments
+`object` ([Object](https://3dreamengine.github.io/3DreamEngine/docu/classes/object)) 
+
+`name` (string) 
+
+
+_________________
+
+### `Dream:loadScene(path, args)`
+Loads an scene, see https://3dreamengine.github.io/3DreamEngine/docu/introduction
+#### Arguments
+`path` (any) 
+
+`args` (any) 
+
+
+_________________
+
+### `Dream:loadObject(path, args)`
+Load an object
+#### Arguments
+`path` (string)  Path to object without extension
+
+`args` (table) 
+
+
+_________________
+
 ### `Dream:registerMaterial(material, name)`
 Registers a material to the material library. Materials in loaded objects with the same name then use this one. Multiple registered aliases are valid.
 #### Arguments
@@ -29,6 +613,83 @@ _________________
 `emissionTexture` (any) 
 
 `distortionTexture` (any) 
+
+
+_________________
+
+### `Dream:present(camera, canvases, lite)`
+Render or present the scene, depending on the canvas settings
+#### Arguments
+`camera` ([Camera](https://3dreamengine.github.io/3DreamEngine/docu/classes/camera))  defaults to internal camera `dream.camera`
+
+`canvases` ([Canvases](https://3dreamengine.github.io/3DreamEngine/docu/classes/canvases))  defaults to internal canvases `dream.canvases`
+
+`lite` (boolean)  when lite is enabled, no side tasks like shadow or reflection generations are executed
+
+
+_________________
+
+### `Dream:getLoaderThreadUsage()`
+Returns statistics of the loader threads
+#### Returns
+(number, number, number)  todo, in progress, awaiting upload to GPU
+
+
+_________________
+
+### `Dream:update()`
+Updates active resource tasks (mesh loading, texture loading, ...)
+
+_________________
+
+### `Dream:clearLoadedTextures()`
+Clear all loaded textures, releasing VRAM but forcing a reload when used
+
+_________________
+
+### `Dream:clearLoadedCanvases()`
+`deprecated`  
+
+
+_________________
+
+### `Dream:getImagePath(path)`
+Get image path if present
+#### Arguments
+`path` (string)  Slash separated path without extension to image
+
+#### Returns
+(string) 
+
+
+_________________
+
+### `Dream:getImagePaths()`
+Returns a dictionary, mapping every image without extension to its best file with extension
+#### Returns
+(<string, string>) 
+
+
+_________________
+
+### `Dream:getImage(path, force)`
+Get a texture, load it threaded if enabled and therefore may return nil first
+#### Arguments
+`path` (any) 
+
+`force` (any) 
+
+
+_________________
+
+### `Dream:combineTextures(metallic, roughness, AO)`
+Lazily combine 3 textures to use only one texture
+#### Arguments
+`metallic` (string)  path
+
+`roughness` (string)  path
+
+`AO` (string)  path
 
 
 _________________
@@ -267,32 +928,6 @@ _________________
 
 _________________
 
-### `Dream:setSmoothLoading(time)`
-
-#### Arguments
-`time` (any) 
-
-
-_________________
-
-### `Dream:getSmoothLoading()`
-
-
-_________________
-
-### `Dream:setSmoothLoadingBufferSize(size)`
-
-#### Arguments
-`size` (any) 
-
-
-_________________
-
-### `Dream:getSmoothLoadingBufferSize()`
-
-
-_________________
-
 ### `Dream:setMipmaps(mode)`
 Toggle mipmap generations for loaded images
 #### Arguments
@@ -380,282 +1015,6 @@ Register a new format, see `3DreamEngine/meshFormats/*` for examples
 
 _________________
 
-### `Dream:getLoaderThreadUsage()`
-Returns statistics of the loader threads
-#### Returns
-(number, number, number)  todo, in progress, awaiting upload to GPU
-
-
-_________________
-
-### `Dream:update()`
-Updates active resource tasks (mesh loading, texture loading, ...)
-
-_________________
-
-### `Dream:clearLoadedTextures()`
-Clear all loaded textures, releasing VRAM but forcing a reload when used
-
-_________________
-
-### `Dream:clearLoadedCanvases()`
-`deprecated`  
-
-
-_________________
-
-### `Dream:getImagePath(path)`
-Get image path if present
-#### Arguments
-`path` (string)  Slash separated path without extension to image
-
-#### Returns
-(string) 
-
-
-_________________
-
-### `Dream:getImagePaths()`
-Returns a dictionary, mapping every image without extension to its best file with extension
-#### Returns
-(<string, string>) 
-
-
-_________________
-
-### `Dream:getImage(path, force)`
-Get a texture, load it threaded if enabled and therefore may return nil first
-#### Arguments
-`path` (any) 
-
-`force` (any) 
-
-
-_________________
-
-### `Dream:combineTextures(metallic, roughness, AO)`
-Lazily combine 3 textures to use only one texture
-#### Arguments
-`metallic` (string)  path
-
-`roughness` (string)  path
-
-`AO` (string)  path
-
-
-_________________
-
-### `Dream:loadLibrary(path, args, prefix)`
-Loads and adds that object as a library, see https://3dreamengine.github.io/3DreamEngine/docu/introduction
-#### Arguments
-`path` (any) 
-
-`args` (any) 
-
-`prefix` (any) 
-
-
-_________________
-
-### `Dream:registerObject(object, name)`
-Register object in the object library. Objects loaded with the `LINK` tag are then replaced with the entry from the library
-#### Arguments
-`object` ([Object](https://3dreamengine.github.io/3DreamEngine/docu/classes/object)) 
-
-`name` (string) 
-
-
-_________________
-
-### `Dream:loadScene(path, args)`
-Loads an scene, see https://3dreamengine.github.io/3DreamEngine/docu/introduction
-#### Arguments
-`path` (any) 
-
-`args` (any) 
-
-
-_________________
-
-### `Dream:loadObject(path, args)`
-Load an object
-#### Arguments
-`path` (string)  Path to object without extension
-
-`args` (table) 
-
-
-_________________
-
-### `Dream:resize(w, h)`
-Reload canvases
-#### Arguments
-`w` (number) 
-
-`h` (number) 
-
-
-_________________
-
-### `Dream:init(w, h)`
-Applies settings and load canvases
-#### Arguments
-`w` (number) 
-
-`h` (number) 
-
-
-_________________
-
-### `Dream:prepare()`
-Clears the current scene
-
-_________________
-
-### `Dream:draw(object, x, y, z, sx, sy, sz)`
-draw
-#### Arguments
-`object` ([Object](https://3dreamengine.github.io/3DreamEngine/docu/classes/object)) 
-
-`x` (number) 
-
-`y` (number) 
-
-`z` (number) 
-
-`sx` (number) 
-
-`sy` (number) 
-
-`sz` (number) 
-
-
-_________________
-
-### `Dream:draw(object)`
-draw
-#### Arguments
-`object` ([Object](https://3dreamengine.github.io/3DreamEngine/docu/classes/object)) 
-
-
-_________________
-
-### `Dream:addLight(light)`
-Add a light
-#### Arguments
-`light` ([Light](https://3dreamengine.github.io/3DreamEngine/docu/classes/light)) 
-
-
-_________________
-
-### `Dream:addNewLight(typ, position, color, brightness)`
-Add a new simple light
-#### Arguments
-`typ` (string) 
-
-`position` (Vec3) 
-
-`color` (Vec3) 
-
-`brightness` (number) 
-
-
-_________________
-
-### `Dream:drawParticleBatch(batch)`
-Will render this batch
-#### Arguments
-`batch` ([ParticleBatch](https://3dreamengine.github.io/3DreamEngine/docu/classes/particlebatch)) 
-
-
-_________________
-
-### `Dream:drawParticle(particle, quad, x, y, z)`
-Draw a single particle
-#### Arguments
-`particle` ([Particle](https://3dreamengine.github.io/3DreamEngine/docu/classes/particle)) 
-
-`quad` (Quad) 
-
-`x` (number) 
-
-`y` (number) 
-
-`z` (number) 
-
-
-_________________
-
-### `Dream:newShader()`
-
-#### Returns
-([Shader](https://3dreamengine.github.io/3DreamEngine/docu/classes/shader)) 
-
-
-_________________
-
-### `Dream:newShadow()`
-
-#### Returns
-([Shadow](https://3dreamengine.github.io/3DreamEngine/docu/classes/shadow)) 
-
-
-_________________
-
-### `Dream:newLight(typ, position, color, brightness)`
-Creates new light source
-#### Arguments
-`typ` (string)  "point" or "sun"
-
-`position` (Vec3) 
-
-`color` (number[]) 
-
-`brightness` (number) 
-
-#### Returns
-([Light](https://3dreamengine.github.io/3DreamEngine/docu/classes/light)) 
-
-
-_________________
-
-### `Dream:newReflection()`
-
-#### Returns
-([Reflection](https://3dreamengine.github.io/3DreamEngine/docu/classes/reflection)) 
-
-
-_________________
-
-### `Dream:newCanvases()`
-Creates a new set of canvas outputs
-#### Returns
-([Canvases](https://3dreamengine.github.io/3DreamEngine/docu/classes/canvases)) 
-
-
-_________________
-
-### `Dream:newCollisionMesh(mesh, shapeMode)`
-A new collision mesh, containing only relevant data for a collider
-#### Arguments
-`mesh` ([CollisionMesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/collisionmesh)) 
-
-`shapeMode` (string) 
-
-
-_________________
-
-### `Dream:newAnimation(frameTable)`
-Creates a new, empty animation from a dictionary of joint names and animation frames
-#### Arguments
-`frameTable` (<string, [AnimationFrame](https://3dreamengine.github.io/3DreamEngine/docu/classes/animationframe)[]>) 
-
-#### Returns
-([Animation](https://3dreamengine.github.io/3DreamEngine/docu/classes/animation)) 
-
-
-_________________
-
 ### `Dream:newShader(path)`
 
 #### Arguments
@@ -678,401 +1037,6 @@ _________________
 Gets a shader from the library
 #### Arguments
 `name` (string) 
-
-
-_________________
-
-### `Dream:newInstancedMesh(mesh)`
-
-#### Arguments
-`mesh` ([Mesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/mesh))  The source mesh to create instances from
-
-#### Returns
-([InstancedMesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/instancedmesh)) 
-
-
-_________________
-
-### `Dream:newMaterial(name)`
-Creates an empty material
-#### Arguments
-`name` (string) 
-
-#### Returns
-([Material](https://3dreamengine.github.io/3DreamEngine/docu/classes/material)) 
-
-
-_________________
-
-### `Dream:lookForTextures(directory, filter)`
-Looks for and assigns textures in a specific directory using an optional filter
-#### Arguments
-`directory` (string) 
-
-`filter` (string) 
-
-
-_________________
-
-### `Dream:newDynamicBuffer()`
-A dynamic buffer is a slower, more dynamic lua array implementation
-#### Returns
-([Buffer](https://3dreamengine.github.io/3DreamEngine/docu/classes/buffer)) 
-
-
-_________________
-
-### `Dream:newRaytraceMesh(mesh)`
-
-#### Arguments
-`mesh` ([RaytraceMesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/raytracemesh)) 
-
-
-_________________
-
-### `Dream:newParticle(texture, emissionTexture, distortionTexture)`
-`deprecated`  
-Returns a particle instance used to draw a particle
-#### Arguments
-`texture` (Drawable) 
-
-`emissionTexture` (Drawable) 
-
-`distortionTexture` (Drawable) 
-
-#### Returns
-([Particle](https://3dreamengine.github.io/3DreamEngine/docu/classes/particle)) 
-
-
-_________________
-
-### `Dream:newBoundingSphere(center, size)`
-Creates a new bounding sphere
-#### Arguments
-`center` (Vec3)  optional
-
-`size` (number)  optional
-
-
-_________________
-
-### `Dream:newSkeleton(root)`
-New skeleton from a hierarchical bone structure
-#### Arguments
-`root` ([Bone](https://3dreamengine.github.io/3DreamEngine/docu/classes/bone)) 
-
-#### Returns
-([Skeleton](https://3dreamengine.github.io/3DreamEngine/docu/classes/skeleton)) 
-
-
-_________________
-
-### `Dream:lookAt(eye, at, up)`
-Returns the look-at transformation matrix
-#### Arguments
-`eye` (Vec3) 
-
-`at` (Vec3) 
-
-`up` (Vec3)  default vec3(0.0, 1.0, 0.0)
-
-
-_________________
-
-### `Dream:HSVtoRGB(h, s, v)`
-
-#### Arguments
-`h` (any) 
-
-`s` (any) 
-
-`v` (any) 
-
-
-_________________
-
-### `Dream:RGBtoHSV(r, g, b)`
-
-#### Arguments
-`r` (any) 
-
-`g` (any) 
-
-`b` (any) 
-
-
-_________________
-
-### `Dream:pointToPixel(point, camera, canvases)`
-Convert a 3D point to 2D screen coordinates
-#### Arguments
-`point` (Vec3) 
-
-`camera` ([Camera](https://3dreamengine.github.io/3DreamEngine/docu/classes/camera)) 
-
-`canvases` ([Canvases](https://3dreamengine.github.io/3DreamEngine/docu/classes/canvases)) 
-
-
-_________________
-
-### `Dream:pixelToPoint(point, camera, canvases)`
-Convert 3D screen coordinates to 3D point, if the depth is unknown pass 1
-#### Arguments
-`point` (Vec3) 
-
-`camera` ([Camera](https://3dreamengine.github.io/3DreamEngine/docu/classes/camera)) 
-
-`canvases` ([Canvases](https://3dreamengine.github.io/3DreamEngine/docu/classes/canvases)) 
-
-
-_________________
-
-### `Dream:getBarycentric(x, y, x1, y1, x2, y2, x3, y3)`
-
-#### Arguments
-`x` (any) 
-
-`y` (any) 
-
-`x1` (any) 
-
-`y1` (any) 
-
-`x2` (any) 
-
-`y2` (any) 
-
-`x3` (any) 
-
-`y3` (any) 
-
-
-_________________
-
-### `Dream:getBarycentricClamped(x, y, x1, y1, x2, y2, x3, y3)`
-
-#### Arguments
-`x` (any) 
-
-`y` (any) 
-
-`x1` (any) 
-
-`y1` (any) 
-
-`x2` (any) 
-
-`y2` (any) 
-
-`x3` (any) 
-
-`y3` (any) 
-
-
-_________________
-
-### `Dream:blurCanvas(canvas, strength, iterations, mask)`
-Two-pass Gaussian blur
-#### Arguments
-`canvas` (Canvas) 
-
-`strength` (number) 
-
-`iterations` (number) 
-
-`mask` (table)  optional
-
-
-_________________
-
-### `Dream:blurCubeMap(cube, layers, strength, mask, blurFirst)`
-Blur a cubemap close to realtime
-#### Arguments
-`cube` (Canvas) 
-
-`layers` (number) 
-
-`strength` (number) 
-
-`mask` (table)  optional
-
-`blurFirst` (boolean) already blur the first layer, as usually used for ambient lighting maps
-
-
-_________________
-
-### `Dream:takeScreenshot()`
-Takes a threaded screenshot and saves it into the screenshot directory in the saves directories
-
-_________________
-
-### `Dream:take3DScreenshot(pos, resolution, path)`
-Takes a 3D screenshot and saves it as a custom CIMG cubemap image with pre blurred reflection mipmaps, may be used for static reflection globes
-#### Arguments
-`pos` (Vec3) 
-
-`resolution` (number) 
-
-`path` (string) 
-
-
-_________________
-
-### `Dream:HDRItoCubemap(hdri, resolution)`
-Converts a 2:1 HDRI to a 1:6 flattened cubemap
-#### Arguments
-`hdri` (Drawable) 
-
-`resolution` (number) 
-
-#### Returns
-(Canvas) 
-
-
-_________________
-
-### `Dream:newPosition(position, size, value)`
-
-#### Arguments
-`position` (Vec3) 
-
-`size` (number) 
-
-`value` (string) 
-
-#### Returns
-([Position](https://3dreamengine.github.io/3DreamEngine/docu/classes/position)) 
-
-
-_________________
-
-### `Dream:newMeshFormat(vertexFormat)`
-Creates a new mesh format
-#### Arguments
-`vertexFormat` (table)  A vertex format as specified in https://love2d.org/wiki/love.graphics.newMesh
-
-#### Returns
-([MeshFormat](https://3dreamengine.github.io/3DreamEngine/docu/classes/meshformat)) 
-
-
-_________________
-
-### `Dream:newBufferFromArray(array)`
-Converts given float array into a buffer
-#### Arguments
-`array` (number[]) 
-
-#### Returns
-([Buffer](https://3dreamengine.github.io/3DreamEngine/docu/classes/buffer)) 
-
-
-_________________
-
-### `Dream:newBufferLike(buffer)`
-New empty buffer with the same memory layout as the existing buffer
-#### Arguments
-`buffer` ([Buffer](https://3dreamengine.github.io/3DreamEngine/docu/classes/buffer)) 
-
-#### Returns
-([Buffer](https://3dreamengine.github.io/3DreamEngine/docu/classes/buffer)) 
-
-
-_________________
-
-### `Dream:bufferFromString(type, dataType, str)`
-New Buffer from string
-#### Arguments
-`type` (string)  "vec2", "vec3", "vec4", or "mat4"
-
-`dataType` (string)  C type, e.g. "float"
-
-`str` (string) 
-
-#### Returns
-([Buffer](https://3dreamengine.github.io/3DreamEngine/docu/classes/buffer)) 
-
-
-_________________
-
-### `Dream:newBuffer(type, dataType, length)`
-New compact data buffer
-#### Arguments
-`type` (string)  "vec2", "vec3", "vec4", or "mat4"
-
-`dataType` (string)  C type, e.g. "float"
-
-`length` (number) 
-
-#### Returns
-([Buffer](https://3dreamengine.github.io/3DreamEngine/docu/classes/buffer)) 
-
-
-_________________
-
-### `Dream:newMeshBuilder(material)`
-Creates a new mesh builder
-#### Arguments
-`material` ([Material](https://3dreamengine.github.io/3DreamEngine/docu/classes/material)) 
-
-#### Returns
-([MeshBuilder](https://3dreamengine.github.io/3DreamEngine/docu/classes/meshbuilder)) 
-
-
-_________________
-
-### `Dream:newCamera(transform, transformProj, position, normal)`
-Creates a new camera
-#### Arguments
-`transform` (Mat4) 
-
-`transformProj` (Mat4) 
-
-`position` (Vec3) 
-
-`normal` (Vec3) 
-
-#### Returns
-([Camera](https://3dreamengine.github.io/3DreamEngine/docu/classes/camera)) 
-
-
-_________________
-
-### `Dream:present(camera, canvases, lite)`
-Render or present the scene, depending on the canvas settings
-#### Arguments
-`camera` ([Camera](https://3dreamengine.github.io/3DreamEngine/docu/classes/camera))  defaults to internal camera `dream.camera`
-
-`canvases` ([Canvases](https://3dreamengine.github.io/3DreamEngine/docu/classes/canvases))  defaults to internal canvases `dream.canvases`
-
-`lite` (boolean)  when lite is enabled, no side tasks like shadow or reflection generations are executed
-
-
-_________________
-
-### `Dream:newLinkedObject()`
-`deprecated`  
-
-#### Returns
-([Object](https://3dreamengine.github.io/3DreamEngine/docu/classes/object)) 
-
-
-_________________
-
-### `Dream:newObject()`
-Create an empty object
-#### Returns
-([Object](https://3dreamengine.github.io/3DreamEngine/docu/classes/object)) 
-
-
-_________________
-
-### `Dream:newMesh(material)`
-Creates a new empty mesh
-#### Arguments
-`material` ([Material](https://3dreamengine.github.io/3DreamEngine/docu/classes/material)) 
-
-#### Returns
-([Mesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/mesh)) 
 
 
 _________________

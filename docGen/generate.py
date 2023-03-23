@@ -97,9 +97,9 @@ def get_constructors(classes, c):
     constructors = []
     for m in classes["Dream"].methods:
         if (
-                m.name == "new" + get_name(c.name)
-                or m.name in special_constructors
-                and special_constructors[m.name] == c.name
+            m.name == "new" + get_name(c.name)
+            or m.name in special_constructors
+            and special_constructors[m.name] == c.name
         ):
             constructors.append(m)
     return constructors
@@ -146,6 +146,8 @@ def main():
     # Parse doc annotations
     models = FilesProcessor(12, DocOptions()).run(files)
 
+    models = sorted(models, key=lambda x: x.file_path)
+
     classes = defaultdict(lambda: LuaClass())
 
     # Merge classes as they may be spread across files
@@ -177,7 +179,7 @@ def main():
     until_index = old_index.find("##", index + 10)
     old_index = "\n".join(
         [
-            old_index[:index - 1],
+            old_index[: index - 1],
             "## Documentation",
             get_link("Dream"),
             "\n",

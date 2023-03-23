@@ -3,6 +3,14 @@ Extends Clonable, Transformable, HasShaders
 
 
 ## Constructors
+### `Object:newObject()`
+Create an empty object
+#### Returns
+([Object](https://3dreamengine.github.io/3DreamEngine/docu/classes/object)) 
+
+
+_________________
+
 ### `Object:loadLibrary(path, args, prefix)`
 Loads and adds that object as a library, see https://3dreamengine.github.io/3DreamEngine/docu/introduction
 #### Arguments
@@ -21,14 +29,6 @@ Load an object
 `path` (string)  Path to object without extension
 
 `args` (table) 
-
-
-_________________
-
-### `Object:newObject()`
-Create an empty object
-#### Returns
-([Object](https://3dreamengine.github.io/3DreamEngine/docu/classes/object)) 
 
 
 _________________
