@@ -47,12 +47,10 @@ local transformations = {
 }
 
 function job:execute(light)
-	assert(not light.shadow.static or not light.shadow.dynamic, "Shadow can not be both static and dynamic")
-	
 	--create new canvases if necessary
 	if not light.shadow.canvas then
 		light.shadow.canvas = love.graphics.newCanvas(light.shadow.resolution, light.shadow.resolution,
-				{ format = light.shadow.dynamic and "rg16f" or "r16f",
+				{ format = "r16f",
 				  readable = true,
 				  msaa = 0,
 				  type = "cube",
@@ -79,26 +77,15 @@ function job:execute(light)
 		
 		local shadowCam = lib:newCamera(t[1], lib.cubeMapProjection, light.position, lib.lookNormals[face])
 		
-		if light.shadow.dynamic then
-			if light.shadow.rendered then
-				--dynamic part
-				lib:renderShadows(shadowCam, { { light.shadow.canvas, face = face } }, light.blacklist, true, nil, false)
-			else
-				--both parts
-				lib:renderShadows(shadowCam, { { light.shadow.canvas, face = face } }, light.blacklist, false, nil, light.shadow.smooth)
-				lib:renderShadows(shadowCam, { { light.shadow.canvas, face = face } }, light.blacklist, true, nil, false)
-				light.shouldSmooth = light.shadow.smooth
+		--static shadow
+		if not light.shadow.rendered or not light.shadow.static then
+			local dynamic
+			if light.shadow.static then
+				dynamic = false
 			end
-		else
-			--static shadow
-			if not light.shadow.rendered or not light.shadow.static then
-				local pass = nil
-				if light.shadow.static then
-					pass = false
-				end
-				lib:renderShadows(shadowCam, { { light.shadow.canvas, face = face } }, light.blacklist, pass, nil, light.shadow.smooth)
-				light.shouldSmooth = light.shadow.smooth
-			end
+			
+			lib:renderShadows(shadowCam, { { light.shadow.canvas, face = face } }, light.blacklist, dynamic)
+			light.shouldSmooth = light.shadow.smooth
 		end
 	end
 	

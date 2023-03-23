@@ -3,7 +3,7 @@ local job = { }
 ---@type Dream
 local lib = _3DreamEngine
 
-local lazyMapping = {1, 2, 1, 2, 1, 3}
+local lazyMapping = { 1, 2, 1, 2, 1, 3 }
 
 function job:init()
 	self.stencils = { }
@@ -11,7 +11,7 @@ end
 
 function job:queue()
 	--shadows
-	for d,s in ipairs(lib.lighting) do
+	for d, s in ipairs(lib.lighting) do
 		if s.shadow and s.active and s.shadow.typ == "sun" then
 			lib:addOperation("sunShadow", s)
 		end
@@ -19,8 +19,6 @@ function job:queue()
 end
 
 function job:execute(light)
-	assert(not light.shadow.static or not light.shadow.dynamic, "Shadow can not be both static and dynamic")
-	
 	--create new canvases if necessary
 	if not light.shadow.canvases then
 		light.shadow.canvases = { }
@@ -34,7 +32,7 @@ function job:execute(light)
 	light.lastCascade = light.lastCascade % #lazyMapping + 1
 	
 	for cascade = light.shadow.lazy and lazyMapping[light.lastCascade] or 1, light.shadow.lazy and lazyMapping[light.lastCascade] or 3 do
-		local stepSize = light.shadow.refreshStepSize * 2.3 ^ (cascade-1)
+		local stepSize = light.shadow.refreshStepSize * 2.3 ^ (cascade - 1)
 		
 		local shadowCam = light.shadow.cams[cascade]
 		if not shadowCam or (position - shadowCam.position):lengthSquared() > stepSize or (normal - shadowCam.normal):lengthSquared() > 0 then
@@ -46,7 +44,7 @@ function job:execute(light)
 				shadowCam.sun = true
 			end
 			
-			local r = light.shadow.cascadeDistance / 2 * (light.shadow.cascadeFactor ^ (cascade-1))
+			local r = light.shadow.cascadeDistance / 2 * (light.shadow.cascadeFactor ^ (cascade - 1))
 			local n = 1.0
 			local f = 100
 			
@@ -64,53 +62,39 @@ function job:execute(light)
 			
 			local b = shadowCam.transform
 			shadowCam.transformProj = lib.mat4({
-				a1 * b[1],   a1 * b[2],    a1 * b[3],    a1 * b[4],
-				a6 * b[5],   a6 * b[6],    a6 * b[7],    a6 * b[8],
-				a11 * b[9],  a11 * b[10],  a11 * b[11],  a11 * b[12] + a12,
-				0.0,         0.0,          0.0,          1.0,
+				a1 * b[1], a1 * b[2], a1 * b[3], a1 * b[4],
+				a6 * b[5], a6 * b[6], a6 * b[7], a6 * b[8],
+				a11 * b[9], a11 * b[10], a11 * b[11], a11 * b[12] + a12,
+				0.0, 0.0, 0.0, 1.0,
 			})
 			
 			--generate canvas
 			if not light.shadow.canvases[cascade] then
 				light.shadow.canvases[cascade] = love.graphics.newCanvas(light.shadow.resolution, light.shadow.resolution,
-					{format = light.shadow.dynamic and "rg16f" or "r16f",
-					readable = true,
-					msaa = 0,
-					type = "2d"})
+						{ format = "r16f",
+						  readable = true,
+						  msaa = 0,
+						  type = "2d" })
 			end
 		end
 		
-		local canvases = {light.shadow.canvases[cascade]}
+		local canvases = { light.shadow.canvases[cascade] }
 		
-		--render
-		local smooth = false
-		if light.shadow.dynamic then
-			if shadowCam.rendered then
-				--dynamic part
-				lib:renderShadows(shadowCam, canvases, light.blacklist, true, cascade > 1, false)
-			else
-				--both parts
-				lib:renderShadows(shadowCam, canvases, light.blacklist, false, cascade > 1, light.shadow.smooth)
-				lib:renderShadows(shadowCam, canvases, light.blacklist, true, cascade > 1, false)
-				smooth = light.shadow.smooth
+		--static shadow
+		if not shadowCam.rendered or not light.shadow.static then
+			local dynamic
+			if light.shadow.static then
+				dynamic = false
 			end
-		else
-			--static shadow
-			if not shadowCam.rendered or not light.shadow.static then
-				local pass = nil
-				if light.shadow.static  then
-					pass = false
-				end
-				lib:renderShadows(shadowCam, canvases, light.blacklist, pass, cascade > 1, light.shadow.smooth)
-				smooth = light.shadow.smooth
+			
+			lib:renderShadows(shadowCam, canvases, light.blacklist, dynamic, cascade > 1)
+			
+			--smooth lighting
+			if light.shadow.smooth then
+				local blurStrength = 30.0 * light.size / light.shadow.cascadeFactor ^ (cascade - 1)
+				local iterations = math.ceil(blurStrength)
+				lib:blurCanvas(light.shadow.canvases[cascade], blurStrength / iterations, iterations, { true, false, false, false })
 			end
-		end
-		
-		--smooth lighting
-		if smooth then
-			local blurStrength = 30.0 * light.size / light.shadow.cascadeFactor ^ (cascade-1)
-			local iterations = math.ceil(blurStrength)
-			lib:blurCanvas(light.shadow.canvases[cascade], blurStrength / iterations, iterations, {true, false, false, false})
 		end
 		
 		shadowCam.rendered = true

@@ -16,7 +16,6 @@ function lib:newShadow(typ, resolution)
 		
 		static = false,
 		smooth = false,
-		dynamic = true,
 		lazy = false,
 	}, self.meta.shadow)
 end
@@ -74,27 +73,14 @@ function class:getResolution()
 	return self.resolution
 end
 
----Static lights wont capture moving objects, no effect when dynamic mode active
+---Static lights wont capture moving objects
 ---@param static boolean
 function class:setStatic(static)
 	self.static = static
-	if static then
-		self.dynamic = false
-	end
 	self:clear()
 end
 function class:isStatic()
 	return self.static
-end
-
----Dynamic mode only re-renders dynamic objects and is much faster than a full render, but slower than fully static
----@param dynamic boolean
-function class:setDynamic(dynamic)
-	self.dynamic = dynamic
-	self:clear()
-end
-function class:isDynamic()
-	return self.dynamic
 end
 
 ---Smoothing is slow and is therefore only available for static shadows

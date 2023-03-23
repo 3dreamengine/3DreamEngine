@@ -48,7 +48,7 @@ function lib:getLightOverview(cam)
 	local types = { }
 	for _, light in ipairs(self.lighting) do
 		local typ = light.typ .. "_" .. (light.shadow and (
-				"shadow" .. (light.shadow.smooth and "_smooth" or "") .. (light.shadow.dynamic and "_dynamic" or "")
+				"shadow" .. (light.shadow.smooth and "_smooth" or "")
 		) or "simple")
 		light.light_typ = typ
 		
