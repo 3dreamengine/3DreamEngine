@@ -146,14 +146,14 @@ function class:addMesh(mesh, transform, reflection, scale)
 		end
 	end
 	
-	--todo cache
-	local pos = getPosition(mesh, transform)
-	local size = mesh.boundingSphere.size * (scale or transform and transform:getLossySize() or 1)
-	
 	--wrong alpha
 	if (self.alpha and true) ~= (mesh.material.alpha and true) then
 		return
 	end
+	
+	--todo cache
+	local pos = getPosition(mesh, transform)
+	local size = mesh.boundingSphere.size * (scale or transform and transform:getLossySize() or 1)
 	
 	--too small for this shadow type
 	--todo still meh, especially because the size is known here theoretically
