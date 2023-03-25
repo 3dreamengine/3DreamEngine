@@ -8,19 +8,27 @@ local ffi = require("ffi")
 ---@param material DreamMaterial
 ---@return DreamMesh
 function lib:newMesh(material)
-	local mesh = {
-		name = "unnamed",
-		material = material,
-		boundingSphere = self:newBoundingSphere(),
-		
-		meshDrawMode = "triangles",
-		mesh = false,
-		
-		skeleton = false,
-		
-		renderVisibility = true,
-		shadowVisibility = true,
-	}
+	---@type DreamMesh
+	local mesh = { }
+	
+	mesh.name = "unnamed"
+	mesh.material = material
+	mesh.boundingSphere = self:newBoundingSphere()
+	
+	---@type MeshDrawMode
+	mesh.meshDrawMode = "triangles"
+	
+	---@type DreamMesh
+	mesh.mesh = false
+	
+	---@type DreamSkeleton
+	mesh.skeleton = false
+	
+	---@type boolean @ visible in render pass
+	mesh.renderVisibility = true
+	
+	---@type boolean @ visible in shadow pass
+	mesh.shadowVisibility = true
 	
 	return setmetatable(mesh, self.meta.mesh)
 end
@@ -28,14 +36,6 @@ end
 ---@alias MeshDrawMode "fan"|"strip"|"triangles"|"points"
 
 ---@class DreamMesh : DreamClonable, DreamHasShaders, DreamIsNamed
----@field public name string
----@field public meshFormat DreamMeshFormat
----@field public boundingSphere DreamBoundingSphere
----@field public meshDrawMode MeshDrawMode
----@field public mesh DreamMesh
----@field public skeleton DreamSkeleton
----@field public renderVisibility boolean @ visible in render pass
----@field public shadowVisibility boolean @ visible in shadow pass
 local class = {
 	links = { "clonable", "hasShaders", "named", "mesh" },
 }
@@ -227,7 +227,7 @@ function class:getMesh(name)
 			return mesh.mesh
 		else
 			--load
-			local newMesh = love.graphics.newMesh(mesh.vertexFormat, mesh.vertexCount, "triangles", "static")
+			local newMesh = love.graphics.newMesh(mesh.vertexFormat, mesh.vertexCount, self.meshDrawMode, "static")
 			
 			if mesh.vertexMap then
 				newMesh:setVertexMap(mesh.vertexMap, "uint32")
@@ -478,6 +478,18 @@ function class:separate()
 	end
 	
 	return meshes
+end
+
+---Sets the current meshDrawMode, rarely makes sense to set manually
+---@param meshDrawMode MeshDrawMode
+function class:setMeshDrawMode(meshDrawMode)
+	self.meshDrawMode = meshDrawMode
+end
+
+---Gets the current meshDrawMode
+---@return MeshDrawMode
+function class:getMeshDrawMode()
+	return self.meshDrawMode
 end
 
 ---Gets or creates an dynamic, typeless buffer

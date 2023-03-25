@@ -131,7 +131,6 @@ end
 function class:addTriangle()
 	local vertexPointer, indexPointer, vertexOffset = self:addVertices(3, 3)
 	
-	--todo omit the whole index buffer if a triangle builder is used
 	indexPointer[0] = vertexOffset
 	indexPointer[1] = vertexOffset + 1
 	indexPointer[2] = vertexOffset + 2
@@ -143,7 +142,6 @@ end
 function class:addQuad()
 	local vertexPointer, indexPointer, vertexOffset = self:addVertices(4, 6)
 	
-	--todo omit the whole index buffer if a triangle builder is used
 	indexPointer[0] = vertexOffset
 	indexPointer[1] = vertexOffset + 1
 	indexPointer[2] = vertexOffset + 2
@@ -192,7 +190,7 @@ function class:resizeVertex(size)
 	end
 	
 	--new mesh
-	self.mesh = love.graphics.newMesh(self.meshFormat.vertexFormat, self.byteData, "triangles", "static")
+	self.mesh = love.graphics.newMesh(self.meshFormat.vertexFormat, self.byteData, self:getMeshDrawMode(), "static")
 end
 
 function class:resizeIndices(size)
