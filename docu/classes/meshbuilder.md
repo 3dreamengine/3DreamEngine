@@ -15,6 +15,11 @@ Creates a new mesh builder
 _________________
 
 ## Methods
+### `MeshBuilder:clear()`
+
+
+_________________
+
 ### `MeshBuilder:updateBoundingSphere()`
 
 
@@ -27,6 +32,26 @@ Adds a mesh with given transform to the builder
 
 `transform` (Mat4) 
 
+
+_________________
+
+### `MeshBuilder:addVertices(vertexCount, vertexMapLength)`
+Returns the pointer to vertices, pointer to vertex map and the index offset. Make sure to fill all requested vertices and build the vertex map accordingly.
+#### Arguments
+`vertexCount` (number) 
+
+`vertexMapLength` (number) 
+
+
+_________________
+
+### `MeshBuilder:addTriangle()`
+Allocates an triangle and returns the pointer to the first vertex
+
+_________________
+
+### `MeshBuilder:addQuad()`
+Allocates an quad and returns the pointer to the first vertex
 
 _________________
 
@@ -120,19 +145,6 @@ _________________
 _________________
 
 ### `Mesh:getShadowVisibility()`
-
-
-_________________
-
-### `Mesh:setFarShadowVisibility(visibility)`
-
-#### Arguments
-`visibility` (boolean) 
-
-
-_________________
-
-### `Mesh:getFarShadowVisibility()`
 
 
 _________________

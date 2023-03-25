@@ -496,7 +496,7 @@ _________________
 ### `Dream:draw(object, x, y, z, sx, sy, sz)`
 draw
 #### Arguments
-`object` ([Object](https://3dreamengine.github.io/3DreamEngine/docu/classes/object)) 
+`object` ([Object](https://3dreamengine.github.io/3DreamEngine/docu/classes/object), [Mesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/mesh)) 
 
 `x` (number) 
 
@@ -516,7 +516,7 @@ _________________
 ### `Dream:draw(object)`
 draw
 #### Arguments
-`object` ([Object](https://3dreamengine.github.io/3DreamEngine/docu/classes/object)) 
+`object` ([Object](https://3dreamengine.github.io/3DreamEngine/docu/classes/object), [Mesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/mesh)) 
 
 
 _________________

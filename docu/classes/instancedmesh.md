@@ -106,19 +106,6 @@ _________________
 
 _________________
 
-### `Mesh:setFarShadowVisibility(visibility)`
-
-#### Arguments
-`visibility` (boolean) 
-
-
-_________________
-
-### `Mesh:getFarShadowVisibility()`
-
-
-_________________
-
 ### `Mesh:setSkeleton(skeleton)`
 
 #### Arguments

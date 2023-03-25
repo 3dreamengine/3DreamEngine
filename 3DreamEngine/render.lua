@@ -15,13 +15,13 @@ lib.stats = {
 }
 
 ---@private
-function lib:buildScene(shadowPass, dynamic, alpha, cam, blacklist, frustumCheck, noSmallObjects, canvases, light, isSun)
+function lib:buildScene(shadowPass, dynamic, alpha, cam, blacklist, frustumCheck, canvases, light, isSun)
 	self.delton:start("scene")
 	
 	--use a scene here
-	local scene = self:newScene(shadowPass, dynamic, alpha, cam, blacklist, frustumCheck, noSmallObjects, canvases, light, isSun)
+	local scene = self:newScene(shadowPass, dynamic, alpha, cam, blacklist, frustumCheck, canvases, light, isSun)
 	
-	for _, pair in pairs(self.renderTasks) do
+	for _, pair in ipairs(self.renderTasks) do
 		if pair[1].isMesh then
 			scene:addMesh(pair[1], pair[2])
 		elseif pair[2] then
@@ -125,7 +125,7 @@ function lib:render(canvases, cam, dynamic)
 		local sessionID = math.random()
 		
 		--setup final scene
-		local scene = self:buildScene(false, dynamic, pass == 2, cam, nil, frustumCheck, false, canvases, light)
+		local scene = self:buildScene(false, dynamic, pass == 2, cam, nil, frustumCheck, canvases, light)
 		
 		--only first pass writes depth
 		love.graphics.setDepthMode("less", pass == 1)
@@ -398,7 +398,7 @@ end
 
 ---Only renders a depth variant
 ---@private
-function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects, smoothShadows)
+function lib:renderShadows(cam, canvas, blacklist, dynamic)
 	self.delton:start("renderShadows")
 	
 	--update required acceleration data
@@ -408,7 +408,7 @@ function lib:renderShadows(cam, canvas, blacklist, dynamic, noSmallObjects, smoo
 	end
 	
 	--get scene
-	local scene = self:buildScene(true, dynamic, false, cam, blacklist, frustumCheck, noSmallObjects, { }, nil, cam.sun)
+	local scene = self:buildScene(true, dynamic, false, cam, blacklist, frustumCheck, { }, nil, cam.sun)
 	
 	--current state
 	local shader

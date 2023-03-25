@@ -73,14 +73,6 @@ function class:getShadowVisibility()
 	return self.shadowVisibility
 end
 
----@param visibility boolean
-function class:setFarShadowVisibility(visibility)
-	self.farShadowVisibility = visibility
-end
-function class:getFarShadowVisibility()
-	return self.farShadowVisibility
-end
-
 ---@param skeleton DreamSkeleton
 function class:setSkeleton(skeleton)
 	self.skeleton = skeleton
@@ -507,7 +499,6 @@ function class:encode(meshCache, dataStrings)
 		
 		["renderVisibility"] = self.renderVisibility,
 		["shadowVisibility"] = self.shadowVisibility,
-		["farShadowVisibility"] = self.farShadowVisibility,
 	}
 	
 	--save the material id if its registered or the entire material

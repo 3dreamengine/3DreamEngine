@@ -3,7 +3,7 @@ local lib = _3DreamEngine
 
 ---@return DreamScene
 ---@private
-function lib:newScene(shadowPass, dynamic, alpha, cam, blacklist, frustumCheck, noSmallObjects, canvases, light, isSun)
+function lib:newScene(shadowPass, dynamic, alpha, cam, blacklist, frustumCheck, canvases, light, isSun)
 	local m = setmetatable({ }, self.meta.scene)
 	
 	m.tasks = { }
@@ -14,7 +14,6 @@ function lib:newScene(shadowPass, dynamic, alpha, cam, blacklist, frustumCheck, 
 	m.cam = cam
 	m.blacklist = blacklist or { }
 	m.frustumCheck = frustumCheck
-	m.noSmallObjects = noSmallObjects
 	m.canvases = canvases
 	m.light = light
 	m.isSun = isSun
@@ -155,11 +154,13 @@ function class:addMesh(mesh, transform, reflection, scale)
 	local pos = getPosition(mesh, transform)
 	local size = mesh.boundingSphere.size * (scale or transform and transform:getLossySize() or 1)
 	
-	--too small for this shadow type
-	--todo still meh, especially because the size is known here theoretically
-	if self.noSmallObjects and mesh.farShadowVisibility == false then
+	--too small to be worth rendering
+	--todo
+	--[[
+	if self.cam:getMinObjectSize() < size / dist then
 		return
 	end
+	--]]
 	
 	--not visible from current perspective
 	mesh.rID = mesh.rID or math.random()
