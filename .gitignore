@@ -1,19 +1,13 @@
 /examples/first person game/scene.blend
 /examples/first person game/*.blend1
 /debugEnabled
-/examples/blocks
 /default
 /todo.txt
 /examples/shadowTest
 /examples/camera
 /examples/HolyPoly
+/examples/Voxel
 /examples/archer
-/examples/game
-/3DreamEngine/nodes
-/ShaderEditor
-/TextureTool
-/imgui.dll
-/lfs.dll
 /extensions/weather
 /.idea/
 *.blend
