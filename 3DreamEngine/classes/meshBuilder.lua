@@ -11,9 +11,6 @@ function lib:newMeshBuilder(material)
 	local mesh = lib:newMesh(material)
 	setmetatable(mesh, self.meta.meshBuilder)
 	
-	--min level of integrity before defragmentation starts
-	mesh.minIntegrity = 0.9
-	
 	--maximum size of the buffers
 	mesh.vertexCapacity = 1
 	mesh.indexCapacity = 1
@@ -37,17 +34,6 @@ function class:clear()
 	--last used index in the buffers
 	self.vertexIndex = 0
 	self.indexIndex = 0
-	
-	--maximum used index of buffers
-	self.vertexTotal = 0
-	self.indexTotal = 0
-	
-	--use chunks to keep track of used areas
-	--todo add flag or separate class disabling removes, which would increase performance
-	self.lastChunkId = 0
-	self.chunks = { }
-	self.vertexCache = lib:cache()
-	self.indexCache = lib:cache()
 end
 
 function class:updateBoundingSphere()
@@ -72,34 +58,10 @@ function class:addMesh(mesh, transform)
 	local vertexCount = mesh.vertices:getSize()
 	local vertexMapLength = mesh.faces:getSize() * 3
 	
-	--defragment
-	if self:getVertexIntegrity() < self.minIntegrity or self:getIndexIntegrity() < self.minIntegrity then
-		self:defragment()
-	end
-	
-	--resize
-	while self.vertexIndex + vertexCount > self.vertexCapacity do
-		self:resizeVertex()
-	end
-	while self.indexIndex + vertexMapLength > self.indexCapacity do
-		self:resizeIndices()
-	end
-	
-	--try to use cache
-	local vertexIndex = self.vertexCache:pop(vertexCount)
-	if not vertexIndex then
-		vertexIndex = self.vertexIndex
-		self.vertexIndex = self.vertexIndex + vertexCount
-	end
-	
-	local indexIndex = self.indexCache:pop(vertexMapLength)
-	if not indexIndex then
-		indexIndex = self.indexIndex
-		self.indexIndex = self.indexIndex + vertexMapLength
-	end
+	local vertices, indices, vertexIndex = self:addVertices(vertexCount, vertexMapLength)
 	
 	--place vertices
-	ffi.copy(self.vertices + vertexIndex, mesh.verticesAccessor, ffi.sizeof(self.vertexIdentifier) * vertexCount)
+	ffi.copy(vertices, mesh.verticesAccessor, ffi.sizeof(self.vertexIdentifier) * vertexCount)
 	
 	--transform vertices
 	for i = vertexIndex, vertexCount - 1 + vertexIndex do
@@ -133,22 +95,8 @@ function class:addMesh(mesh, transform)
 	
 	--place indices
 	for i = 0, vertexMapLength - 1 do
-		self.indices[i + indexIndex] = mesh.indicesAccessor[i] + vertexIndex
+		indices[i] = mesh.indicesAccessor[i] + vertexIndex
 	end
-	
-	--remember the chunk
-	self.lastChunkId = self.lastChunkId + 1
-	self.chunks[self.lastChunkId] = {
-		vertexIndex, vertexCount,
-		indexIndex, vertexMapLength
-	}
-	
-	--advance
-	self.vertexTotal = self.vertexTotal + vertexCount
-	self.indexTotal = self.indexTotal + vertexMapLength
-	
-	--mark dirty to make sure the mesh gets updated
-	self.dirty = true
 	
 	return self.lastChunkId
 end
@@ -157,12 +105,6 @@ end
 ---@param vertexCount number
 ---@param vertexMapLength number
 function class:addVertices(vertexCount, vertexMapLength)
-	--defragment
-	--todo copy pasta
-	if self:getVertexIntegrity() < self.minIntegrity or self:getIndexIntegrity() < self.minIntegrity then
-		self:defragment()
-	end
-	
 	--resize
 	while self.vertexIndex + vertexCount > self.vertexCapacity do
 		self:resizeVertex()
@@ -172,29 +114,11 @@ function class:addVertices(vertexCount, vertexMapLength)
 	end
 	
 	--try to use cache
-	--todo copy pasta
-	local vertexIndex = self.vertexCache:pop(vertexCount)
-	if not vertexIndex then
-		vertexIndex = self.vertexIndex
-		self.vertexIndex = self.vertexIndex + vertexCount
-	end
+	local vertexIndex = self.vertexIndex
+	self.vertexIndex = self.vertexIndex + vertexCount
 	
-	local indexIndex = self.indexCache:pop(vertexMapLength)
-	if not indexIndex then
-		indexIndex = self.indexIndex
-		self.indexIndex = self.indexIndex + vertexMapLength
-	end
-	
-	--remember the chunk
-	self.lastChunkId = self.lastChunkId + 1
-	self.chunks[self.lastChunkId] = {
-		vertexIndex, vertexCount,
-		indexIndex, vertexMapLength
-	}
-	
-	--advance
-	self.vertexTotal = self.vertexTotal + vertexCount
-	self.indexTotal = self.indexTotal + vertexMapLength
+	local indexIndex = self.indexIndex
+	self.indexIndex = self.indexIndex + vertexMapLength
 	
 	--mark dirty to make sure the mesh gets updated
 	--technically not dirty at this point but its expected to fill immediately after requesting space
@@ -230,27 +154,6 @@ function class:addQuad()
 	return vertexPointer
 end
 
----remove a chunk previously added
----@param id number
-function class:remove(id)
-	local chunk = self.chunks[id]
-	assert(chunk, "Chunk does not exist")
-	self.chunks[id] = nil
-	
-	--clear indices
-	for i = chunk[3], chunk[3] + chunk[4] - 1 do
-		self.indices[i] = 0
-	end
-	
-	self.vertexTotal = self.vertexTotal - chunk[2]
-	self.indexTotal = self.indexTotal - chunk[4]
-	
-	self.vertexCache:push(chunk[2], chunk[1])
-	self.indexCache:push(chunk[4], chunk[3])
-	
-	self.dirty = true
-end
-
 function class:getMesh(name)
 	name = name or "mesh"
 	
@@ -270,54 +173,6 @@ function class:getMesh(name)
 	end
 	
 	return lib.classes.mesh.getMesh(self, name)
-end
-
----Returns the fraction of data in use
-function class:getVertexIntegrity()
-	return self.vertexTotal / self.vertexIndex
-end
-
----Returns the fraction of data in use for the index buffer
-function class:getIndexIntegrity()
-	return self.indexTotal / self.indexIndex
-end
-
----Defragment mesh now, shifting all data to the very left and updating the chunk pointers
-function class:defragment()
-	local oldByteData = self.byteData
-	local oldVertices = self.vertices
-	local oldVertexMapByteData = self.vertexMapByteData
-	local oldIndices = self.indices
-	
-	--create
-	self.byteData = love.data.newByteData(ffi.sizeof(self.vertexIdentifier) * self.vertexCapacity)
-	self.vertices = ffi.cast(self.vertexIdentifier .. "*", self.byteData:getFFIPointer())
-	self.vertexMapByteData = love.data.newByteData(ffi.sizeof("uint32_t") * self.indexCapacity)
-	self.indices = ffi.cast("uint32_t*", self.vertexMapByteData:getFFIPointer())
-	
-	--copy old part
-	self.vertexIndex = 0
-	self.indexIndex = 0
-	if oldByteData and oldVertexMapByteData then
-		for id, chunk in pairs(self.chunks) do
-			ffi.copy(self.vertices + self.vertexIndex, oldVertices + chunk[1], ffi.sizeof(self.vertexIdentifier) * chunk[2])
-			
-			--move indices
-			for i = 0, chunk[4] - 1 do
-				self.indices[self.indexIndex + i] = oldIndices[i + chunk[3]] - chunk[1] + self.vertexIndex
-			end
-			
-			self.chunks[id] = { self.vertexIndex, chunk[2], self.indexIndex, chunk[4] }
-			self.vertexIndex = self.vertexIndex + chunk[2]
-			self.indexIndex = self.indexIndex + chunk[4]
-		end
-	end
-	
-	self.vertexTotal = self.vertexIndex
-	self.indexTotal = self.indexIndex
-	
-	self.vertexCache = lib:cache()
-	self.indexCache = lib:cache()
 end
 
 function class:resizeVertex(size)
