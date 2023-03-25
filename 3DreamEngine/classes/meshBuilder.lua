@@ -9,33 +9,22 @@ local ffi = require("ffi")
 function lib:newMeshBuilder(material)
 	assert(material, "Required material")
 	local mesh = lib:newMesh(material)
+	setmetatable(mesh, self.meta.meshBuilder)
 	
 	--min level of integrity before defragmentation starts
 	mesh.minIntegrity = 0.9
-	
-	--last used index in the buffers
-	mesh.vertexIndex = 0
-	mesh.indexIndex = 0
 	
 	--maximum size of the buffers
 	mesh.vertexCapacity = 1
 	mesh.indexCapacity = 1
 	
-	--maximum used index of buffers
-	mesh.vertexTotal = 0
-	mesh.indexTotal = 0
-	
-	--use chunks to keep track of used areas
-	--todo add flag or separate class disabling removes, which would increase performance
-	mesh.lastChunkId = 0
-	mesh.chunks = { }
-	mesh.vertexCache = lib:cache()
-	mesh.indexCache = lib:cache()
+	--clear pointers
+	mesh:clear()
 	
 	mesh.meshFormat = mesh:getMeshFormat()
 	mesh.vertexIdentifier = mesh.meshFormat:getCStruct()
 	
-	return setmetatable(mesh, self.meta.meshBuilder)
+	return mesh
 end
 
 ---Mesh builder are buffers populated with primitives or objects on the CPU, then rendered altogether. They outperform individual draw calls and can be multi threaded and/or cached.
@@ -43,6 +32,23 @@ end
 local class = {
 	links = { "mesh", "meshBuilder" },
 }
+
+function class:clear()
+	--last used index in the buffers
+	self.vertexIndex = 0
+	self.indexIndex = 0
+	
+	--maximum used index of buffers
+	self.vertexTotal = 0
+	self.indexTotal = 0
+	
+	--use chunks to keep track of used areas
+	--todo add flag or separate class disabling removes, which would increase performance
+	self.lastChunkId = 0
+	self.chunks = { }
+	self.vertexCache = lib:cache()
+	self.indexCache = lib:cache()
+end
 
 function class:updateBoundingSphere()
 	--nop, mesh builders are too dynamic and performance orientated to use bounding spheres for now
@@ -147,6 +153,83 @@ function class:addMesh(mesh, transform)
 	return self.lastChunkId
 end
 
+---Returns the pointer to vertices, pointer to vertex map and the index offset. Make sure to fill all requested vertices and build the vertex map accordingly.
+---@param vertexCount number
+---@param vertexMapLength number
+function class:addVertices(vertexCount, vertexMapLength)
+	--defragment
+	--todo copy pasta
+	if self:getVertexIntegrity() < self.minIntegrity or self:getIndexIntegrity() < self.minIntegrity then
+		self:defragment()
+	end
+	
+	--resize
+	while self.vertexIndex + vertexCount > self.vertexCapacity do
+		self:resizeVertex()
+	end
+	while self.indexIndex + vertexMapLength > self.indexCapacity do
+		self:resizeIndices()
+	end
+	
+	--try to use cache
+	--todo copy pasta
+	local vertexIndex = self.vertexCache:pop(vertexCount)
+	if not vertexIndex then
+		vertexIndex = self.vertexIndex
+		self.vertexIndex = self.vertexIndex + vertexCount
+	end
+	
+	local indexIndex = self.indexCache:pop(vertexMapLength)
+	if not indexIndex then
+		indexIndex = self.indexIndex
+		self.indexIndex = self.indexIndex + vertexMapLength
+	end
+	
+	--remember the chunk
+	self.lastChunkId = self.lastChunkId + 1
+	self.chunks[self.lastChunkId] = {
+		vertexIndex, vertexCount,
+		indexIndex, vertexMapLength
+	}
+	
+	--advance
+	self.vertexTotal = self.vertexTotal + vertexCount
+	self.indexTotal = self.indexTotal + vertexMapLength
+	
+	--mark dirty to make sure the mesh gets updated
+	--technically not dirty at this point but its expected to fill immediately after requesting space
+	self.dirty = true
+	
+	return self.vertices + vertexIndex, self.indices + indexIndex, vertexIndex
+end
+
+---Allocates an triangle and returns the pointer to the first vertex
+function class:addTriangle()
+	local vertexPointer, indexPointer, vertexOffset = self:addVertices(3, 3)
+	
+	--todo omit the whole index buffer if a triangle builder is used
+	indexPointer[0] = vertexOffset
+	indexPointer[1] = vertexOffset + 1
+	indexPointer[2] = vertexOffset + 2
+	
+	return vertexPointer
+end
+
+---Allocates an quad and returns the pointer to the first vertex
+function class:addQuad()
+	local vertexPointer, indexPointer, vertexOffset = self:addVertices(4, 6)
+	
+	--todo omit the whole index buffer if a triangle builder is used
+	indexPointer[0] = vertexOffset
+	indexPointer[1] = vertexOffset + 1
+	indexPointer[2] = vertexOffset + 2
+	indexPointer[3] = vertexOffset
+	indexPointer[4] = vertexOffset + 2
+	indexPointer[5] = vertexOffset + 3
+	
+	return vertexPointer
+end
+
 ---remove a chunk previously added
 ---@param id number
 function class:remove(id)
@@ -238,7 +321,7 @@ function class:defragment()
 end
 
 function class:resizeVertex(size)
-	local oldSize =  self.vertexCapacity
+	local oldSize = self.vertexCapacity
 	self.vertexCapacity = size or (self.vertexCapacity * 2)
 	
 	local oldByteData = self.byteData
@@ -258,7 +341,7 @@ function class:resizeVertex(size)
 end
 
 function class:resizeIndices(size)
-	local oldSize =  self.indexCapacity
+	local oldSize = self.indexCapacity
 	self.indexCapacity = size or (self.indexCapacity * 2)
 	
 	local oldVertexMapByteData = self.vertexMapByteData
@@ -270,7 +353,7 @@ function class:resizeIndices(size)
 	
 	--copy old part
 	if oldVertexMapByteData then
-		ffi.copy(self.indices, oldIndices, ffi.sizeof("uint32_t") *  math.min(oldSize, self.indexCapacity))
+		ffi.copy(self.indices, oldIndices, ffi.sizeof("uint32_t") * math.min(oldSize, self.indexCapacity))
 	end
 end
 
