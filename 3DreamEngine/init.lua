@@ -259,8 +259,8 @@ function lib:prepare()
 	
 	--reset stats
 	self.stats.vertices = 0
-	self.stats.shadersInUse = 0
-	self.stats.materialsUsed = 0
+	self.stats.shaderSwitches = 0
+	self.stats.materialSwitches = 0
 	self.stats.draws = 0
 end
 

@@ -1,9 +1,20 @@
 ---@type Dream
 local lib = _3DreamEngine
 
+---newScene
+---@param shadowPass boolean
+---@param dynamic boolean
+---@param alpha boolean
+---@param cam DreamCamera
+---@param blacklist Rasterizer
+---@param frustumCheck boolean
+---@param canvases DreamCanvases
+---@param light Rasterizer
+---@param isSun boolean
 ---@return DreamScene
 ---@private
 function lib:newScene(shadowPass, dynamic, alpha, cam, blacklist, frustumCheck, canvases, light, isSun)
+	---@type DreamScene
 	local m = setmetatable({ }, self.meta.scene)
 	
 	m.tasks = { }
@@ -59,10 +70,16 @@ function class:preload()
 	--todo
 end
 
+---Adds an object to the scene
+---@param object DreamObject
 function class:add(object)
 	self:addObject(object, false, false)
 end
 
+---Adds an object to the scene
+---@param object DreamObject
+---@param parentTransform DreamMat4
+---@param dynamic boolean
 function class:addObject(object, parentTransform, dynamic)
 	if self.blacklist[object] then
 		return
@@ -124,7 +141,7 @@ function class:addObject(object, parentTransform, dynamic)
 	end
 end
 
----addMesh
+---Add a mesh to the scene
 ---@param mesh DreamMesh
 ---@param transform DreamMat4
 ---@param reflection DreamReflection @ optional
@@ -152,7 +169,6 @@ function class:addMesh(mesh, transform, reflection, scale)
 	
 	--todo cache
 	local pos = getPosition(mesh, transform)
-	local size = mesh.boundingSphere.size * (scale or transform and transform:getLossySize() or 1)
 	
 	--too small to be worth rendering
 	--todo
@@ -163,9 +179,12 @@ function class:addMesh(mesh, transform, reflection, scale)
 	--]]
 	
 	--not visible from current perspective
-	mesh.rID = mesh.rID or math.random()
-	if self.frustumCheck and size > 0 and not self.cam:inFrustum(pos, size, mesh.rID) then
-		return false
+	if self.frustumCheck and mesh.boundingSphere.size > 0 then
+		local size = mesh.boundingSphere.size * (scale or transform and transform:getLossySize() or 1)
+		mesh.rID = mesh.rID or math.random()
+		if not self.cam:inFrustum(pos, size, mesh.rID) then
+			return false
+		end
 	end
 	
 	--todo here custom reflections (closest globe or default) and lights can be used

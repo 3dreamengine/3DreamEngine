@@ -9,8 +9,9 @@ local vec3 = lib.vec3
 --rendering stats
 lib.stats = {
 	vertices = 0,
-	shadersInUse = 0,
-	materialsUsed = 0,
+	shaderSwitches = 0,
+	materialSwitches = 0,
+	reflectionSwitches = 0,
 	draws = 0,
 }
 
@@ -83,6 +84,9 @@ local function checkAndSendCached(shaderObject, name, value)
 end
 
 ---Render the scene onto a canvas set using a specific view camera
+---@param canvases DreamCanvases
+---@param cam DreamCamera
+---@param dynamic boolean
 ---@private
 function lib:render(canvases, cam, dynamic)
 	self.delton:start("prepare")
@@ -153,124 +157,126 @@ function lib:render(canvases, cam, dynamic)
 		self.delton:start("render")
 		for task in scene do
 			local mesh = task:getMesh()
-			local nextShaderObject = task:getShader()
-			
-			--set active shader
-			if shaderObject ~= nextShaderObject then
-				lastMaterial = false
-				lastReflection = false
+			local objectMesh = mesh:getMesh()
+			if objectMesh then
+				local nextShaderObject = task:getShader()
 				
-				shaderObject = nextShaderObject
-				shader = shaderObject.shader
-				if shaderObject.sessionID ~= sessionID then
-					shaderObject.session = { }
-					shaderObject.cache = shaderObject.cache or { }
-				end
-				love.graphics.setShader(shader)
-				
-				if not shaderObject.session.init then
-					shaderObject.session.init = true
+				--set active shader
+				if shaderObject ~= nextShaderObject then
+					lastMaterial = false
+					lastReflection = false
 					
-					--light setup
-					self:sendLightUniforms(light, shaderObject)
+					shaderObject = nextShaderObject
+					shader = shaderObject.shader
+					if shaderObject.sessionID ~= sessionID then
+						shaderObject.session = { }
+						shaderObject.cache = shaderObject.cache or { }
+					end
+					love.graphics.setShader(shader)
+					
+					if not shaderObject.session.init then
+						shaderObject.session.init = true
+						
+						--light setup
+						self:sendLightUniforms(light, shaderObject)
+						
+						--shader
+						shaderObject.pixelShader:perShader(shaderObject)
+						shaderObject.vertexShader:perShader(shaderObject)
+						shaderObject.worldShader:perShader(shaderObject)
+						
+						--fog
+						if hasUniform(shaderObject, "fog_density") then
+							sendFogData(shader)
+						end
+						
+						--framebuffer
+						if hasUniform(shaderObject, "depthTexture") then
+							shader:send("depthTexture", canvases.depth)
+						end
+						
+						checkAndSendCached(shaderObject, "exposure", self.exposure)
+						
+						--camera
+						shader:send("transformProj", cam.transformProj)
+						checkAndSendCached(shaderObject, "viewPos", cam.viewPosition)
+						
+						checkAndSendCached(shaderObject, "ambient", self.sun_ambient)
+					end
+					
+					self.stats.shaderSwitches = self.stats.shaderSwitches + 1
+				end
+				
+				--set active material
+				local material = mesh.material
+				if lastMaterial ~= material then
+					lastMaterial = material
+					
+					--alpha
+					checkAndSendCached(shaderObject, "dither", material.dither and 1 or 0)
+					
+					checkAndSendCached(shaderObject, "translucency", material.translucency)
 					
 					--shader
-					shaderObject.pixelShader:perShader(shaderObject)
-					shaderObject.vertexShader:perShader(shaderObject)
-					shaderObject.worldShader:perShader(shaderObject)
+					shaderObject.pixelShader:perMaterial(shaderObject, material)
+					shaderObject.vertexShader:perMaterial(shaderObject, material)
+					shaderObject.worldShader:perMaterial(shaderObject, material)
 					
-					--fog
-					if hasUniform(shaderObject, "fog_density") then
-						sendFogData(shader)
-					end
+					--culling
+					love.graphics.setMeshCullMode(material.cullMode)
 					
-					--framebuffer
-					if hasUniform(shaderObject, "depthTexture") then
-						shader:send("depthTexture", canvases.depth)
-					end
-					
-					checkAndSendCached(shaderObject, "exposure", self.exposure)
-					
-					--camera
-					shader:send("transformProj", cam.transformProj)
-					checkAndSendCached(shaderObject, "viewPos", cam.viewPosition)
-					
-					checkAndSendCached(shaderObject, "ambient", self.sun_ambient)
+					self.stats.materialSwitches = self.stats.materialSwitches + 1
 				end
 				
-				self.stats.shadersInUse = self.stats.shadersInUse + 1
-			end
-			
-			--set active material
-			local material = mesh.material
-			if lastMaterial ~= material then
-				lastMaterial = material
-				
-				--alpha
-				checkAndSendCached(shaderObject, "dither", material.dither and 1 or 0)
-				
-				checkAndSendCached(shaderObject, "translucency", material.translucency)
-				
-				--shader
-				shaderObject.pixelShader:perMaterial(shaderObject, material)
-				shaderObject.vertexShader:perMaterial(shaderObject, material)
-				shaderObject.worldShader:perMaterial(shaderObject, material)
-				
-				--culling
-				love.graphics.setMeshCullMode(material.cullMode)
-				
-				self.stats.materialsUsed = self.stats.materialsUsed + 1
-			end
-			
-			--reflection
-			if shaderObject.reflection then
-				local ref = task:getReflection()
-				local tex = type(ref) == "table" and (ref.image or ref.canvas) or (self.defaultReflection and self.defaultReflectionCanvas) or self.textures.skyFallback
-				if lastReflection ~= tex then
-					if type(ref) == "table" and ref.canvas then
-						self.reflections[ref] = ref.position or task:getPosition()
-					end
-					
-					lastReflection = tex
-					
-					shader:send("backgroundTexture", tex)
-					shader:send("reflectionsLevels", (ref and ref.levels or self.reflectionsLevels) - 1)
-					
-					--box for local cubemaps
-					if ref and ref.first then
-						shader:send("reflectionsBoxed", true)
-						shader:send("reflectionsCenter", ref.center)
-						shader:send("reflectionsFirst", ref.first)
-						shader:send("reflectionsSecond", ref.second)
-					else
-						shader:send("reflectionsBoxed", false)
+				--reflection
+				if shaderObject.reflection then
+					local ref = task:getReflection()
+					local tex = type(ref) == "table" and (ref.image or ref.canvas) or (self.defaultReflection and self.defaultReflectionCanvas) or self.textures.skyFallback
+					if lastReflection ~= tex then
+						if type(ref) == "table" and ref.canvas then
+							self.reflections[ref] = ref.position or task:getPosition()
+						end
+						
+						lastReflection = tex
+						
+						shader:send("backgroundTexture", tex)
+						shader:send("reflectionsLevels", (ref and ref.levels or self.reflectionsLevels) - 1)
+						
+						--box for local cubemaps
+						if ref and ref.first then
+							shader:send("reflectionsBoxed", true)
+							shader:send("reflectionsCenter", ref.center)
+							shader:send("reflectionsFirst", ref.first)
+							shader:send("reflectionsSecond", ref.second)
+						else
+							shader:send("reflectionsBoxed", false)
+						end
+						
+						self.stats.reflectionSwitches = self.stats.reflectionSwitches + 1
 					end
 				end
-			end
-			
-			--object transformation
-			shader:send("transform", task:getTransform())
-			
-			--per task
-			shaderObject.pixelShader:perTask(shaderObject, task)
-			shaderObject.vertexShader:perTask(shaderObject, task)
-			shaderObject.worldShader:perTask(shaderObject, task)
-			
-			--render
-			local objectMesh = mesh:getMesh()
-			local instanceMesh = mesh:getMesh("instanceMesh")
-			if instanceMesh then
-				objectMesh:attachAttribute("InstanceRotation0", instanceMesh, "perinstance")
-				objectMesh:attachAttribute("InstanceRotation1", instanceMesh, "perinstance")
-				objectMesh:attachAttribute("InstanceRotation2", instanceMesh, "perinstance")
-				objectMesh:attachAttribute("InstancePosition", instanceMesh, "perinstance")
-				love.graphics.drawInstanced(objectMesh, mesh:getInstancesCount())
-			elseif objectMesh then
-				love.graphics.draw(objectMesh)
-			end
-			
-			--stats
-			if objectMesh then
+				
+				--object transformation
+				shader:send("transform", task:getTransform())
+				
+				--per task
+				shaderObject.pixelShader:perTask(shaderObject, task)
+				shaderObject.vertexShader:perTask(shaderObject, task)
+				shaderObject.worldShader:perTask(shaderObject, task)
+				
+				--render
+				local instanceMesh = mesh:getMesh("instanceMesh")
+				if instanceMesh then
+					objectMesh:attachAttribute("InstanceRotation0", instanceMesh, "perinstance")
+					objectMesh:attachAttribute("InstanceRotation1", instanceMesh, "perinstance")
+					objectMesh:attachAttribute("InstanceRotation2", instanceMesh, "perinstance")
+					objectMesh:attachAttribute("InstancePosition", instanceMesh, "perinstance")
+					love.graphics.drawInstanced(objectMesh, mesh:getInstancesCount())
+				else
+					love.graphics.draw(objectMesh)
+				end
+				
+				--stats
 				self.stats.draws = self.stats.draws + 1
 				mesh.meshVertexCount = mesh.meshVertexCount or objectMesh:getVertexCount()
 				self.stats.vertices = self.stats.vertices + mesh.meshVertexCount
