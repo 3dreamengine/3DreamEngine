@@ -225,6 +225,22 @@ Separates by loose parts and returns a list of new meshes
 
 _________________
 
+### `Mesh:setMeshDrawMode(meshDrawMode)`
+Sets the current meshDrawMode, rarely makes sense to set manually
+#### Arguments
+`meshDrawMode` (MeshDrawMode) 
+
+
+_________________
+
+### `Mesh:getMeshDrawMode()`
+Gets the current meshDrawMode
+#### Returns
+(MeshDrawMode) 
+
+
+_________________
+
 ### `Mesh:getOrCreateBuffer(name)`
 Gets or creates an dynamic, typeless buffer
 #### Arguments

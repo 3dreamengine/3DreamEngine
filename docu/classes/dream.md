@@ -213,6 +213,17 @@ Creates a new mesh format
 
 _________________
 
+### `Dream:newMutableMeshBuilder(material)`
+Creates a new mutable mesh builder
+#### Arguments
+`material` ([Material](https://3dreamengine.github.io/3DreamEngine/docu/classes/material)) 
+
+#### Returns
+([MutableMeshBuilder](https://3dreamengine.github.io/3DreamEngine/docu/classes/mutablemeshbuilder)) 
+
+
+_________________
+
 ### `Dream:newLinkedObject()`
 `deprecated`  
 

@@ -14,23 +14,6 @@ Creates a new empty mesh
 
 _________________
 
-## Fields
-`name` (string) 
-
-`meshFormat` ([MeshFormat](https://3dreamengine.github.io/3DreamEngine/docu/classes/meshformat)) 
-
-`boundingSphere` ([BoundingSphere](https://3dreamengine.github.io/3DreamEngine/docu/classes/boundingsphere)) 
-
-`meshDrawMode` (MeshDrawMode) 
-
-`mesh` ([Mesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/mesh)) 
-
-`skeleton` ([Skeleton](https://3dreamengine.github.io/3DreamEngine/docu/classes/skeleton)) 
-
-`renderVisibility` (boolean)  visible in render pass
-
-`shadowVisibility` (boolean)  visible in shadow pass
-
 ## Methods
 ### `Mesh:setMaterial(material)`
 Sets the meshes material
@@ -194,6 +177,22 @@ _________________
 Separates by loose parts and returns a list of new meshes
 #### Returns
 ([Mesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/mesh)[]) 
+
+
+_________________
+
+### `Mesh:setMeshDrawMode(meshDrawMode)`
+Sets the current meshDrawMode, rarely makes sense to set manually
+#### Arguments
+`meshDrawMode` (MeshDrawMode) 
+
+
+_________________
+
+### `Mesh:getMeshDrawMode()`
+Gets the current meshDrawMode
+#### Returns
+(MeshDrawMode) 
 
 
 _________________

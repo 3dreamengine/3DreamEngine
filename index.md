@@ -37,6 +37,7 @@ Most functions are annotated using EmmyLua doc.
 * [Mesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/mesh)  
 * [MeshBuilder](https://3dreamengine.github.io/3DreamEngine/docu/classes/meshbuilder)  
 * [MeshFormat](https://3dreamengine.github.io/3DreamEngine/docu/classes/meshformat)  
+* [MutableMeshBuilder](https://3dreamengine.github.io/3DreamEngine/docu/classes/mutablemeshbuilder)  
 * [Object](https://3dreamengine.github.io/3DreamEngine/docu/classes/object)  
 * [Particle](https://3dreamengine.github.io/3DreamEngine/docu/classes/particle)  
 * [Pose](https://3dreamengine.github.io/3DreamEngine/docu/classes/pose)  

@@ -1,20 +1,58 @@
-# MeshBuilder
-Extends [Mesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/mesh)
+# MutableMeshBuilder
+Extends [MeshBuilder](https://3dreamengine.github.io/3DreamEngine/docu/classes/meshbuilder)
 
-Mesh builder are buffers populated with primitives or objects on the CPU, then rendered altogether. They outperform individual draw calls and can be multi threaded and/or cached.
+A mutable mesh builder stored references to added objects and can remove them
 ## Constructors
-### `MeshBuilder:newMeshBuilder(material)`
-Creates a new mesh builder
+### `MutableMeshBuilder:newMutableMeshBuilder(material)`
+Creates a new mutable mesh builder
 #### Arguments
 `material` ([Material](https://3dreamengine.github.io/3DreamEngine/docu/classes/material)) 
 
 #### Returns
-([MeshBuilder](https://3dreamengine.github.io/3DreamEngine/docu/classes/meshbuilder)) 
+([MutableMeshBuilder](https://3dreamengine.github.io/3DreamEngine/docu/classes/mutablemeshbuilder)) 
 
 
 _________________
 
 ## Methods
+### `MutableMeshBuilder:clear()`
+
+
+_________________
+
+### `MutableMeshBuilder:addVertices(vertexCount, vertexMapLength)`
+Returns the pointer to vertices, pointer to vertex map and the index offset. Make sure to fill all requested vertices and build the vertex map accordingly.
+#### Arguments
+`vertexCount` (number) 
+
+`vertexMapLength` (number) 
+
+
+_________________
+
+### `MutableMeshBuilder:remove(id)`
+remove a chunk previously added
+#### Arguments
+`id` (number) 
+
+
+_________________
+
+### `MutableMeshBuilder:getVertexIntegrity()`
+Returns the fraction of data in use
+
+_________________
+
+### `MutableMeshBuilder:getIndexIntegrity()`
+Returns the fraction of data in use for the index buffer
+
+_________________
+
+### `MutableMeshBuilder:defragment()`
+Defragment mesh now, shifting all data to the very left and updating the chunk pointers
+
+_________________
+
 ### `MeshBuilder:clear()`
 
 
