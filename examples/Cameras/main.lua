@@ -101,8 +101,8 @@ function love.draw()
 	--stats
 	love.graphics.setColor(0.1, 0.1, 0.1)
 	love.graphics.print(love.timer.getFPS() .. " FPS" ..
-			"\ndifferent shaders: " .. dream.stats.shadersInUse ..
-			"\ndifferent materials: " .. dream.stats.materialsUsed ..
+			"\ndifferent shaders: " .. dream.stats.shaderSwitches ..
+			"\ndifferent materials: " .. dream.stats.materialSwitches ..
 			"\ndraws: " .. dream.stats.draws, 15, 500)
 end
 
