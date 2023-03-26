@@ -9,10 +9,6 @@ particle uses internally a particle builder
 Similar, a particles batch is just an instanceBuilder with custom material and shader
 No overhead since fast drawMesh(mesh, transform) can be used too
 
-# Draw task
-
-Sometimes the whole object is unnecessary, if you just want to draw a mesh at a certain position
-
 # Fix 3DO
 
 Each class is serializable, also expand that to vectors (e.g. save __class = "vec3")
@@ -38,7 +34,6 @@ The current light disk approach performs barely acceptable, but can be further e
 
 # Buffer builder
 
-* Add addVertex, addFace
 * Make a particle batch as a subclass of instanced builder
 * Make an experimental particle batch as a subclass of mesh builder to compare performance, especially in static mode
 * Add a text buffer, which basically extends a mesh builder by adding a custom material and 
