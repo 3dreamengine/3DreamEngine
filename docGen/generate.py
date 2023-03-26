@@ -21,6 +21,36 @@ blacklist = {
     "DreamIsNamed",
 }
 
+lookup = {
+    "Animation": "Animations",
+    "AnimationFrame": "Animations",
+    "Bone": "Animations",
+    "Pose": "Animations",
+    "Skeleton": "Animations",
+    #
+    "Mesh": "Meshes",
+    "InstancedMesh": "Meshes",
+    "MeshBuilder": "Meshes",
+    "MutableMeshBuilder": "Meshes",
+    #
+    "CollisionMesh": "Extensions",
+    "RaytraceMesh": "Extensions",
+}
+
+groups = [
+    "Objects",
+    "Meshes",
+    "Animations",
+    "Extensions",
+]
+
+group_descriptions = {
+    "Objects": "General classes.",
+    "Meshes": "Different drawable meshes.",
+    "Animations": "Classes required to animated skeletons.",
+    "Extensions": "Classes intended to be used by certain extensions.",
+}
+
 special_constructors = {
     "loadObject": "DreamObject",
     "loadLibrary": "DreamObject",
@@ -176,15 +206,26 @@ def main():
     with open("../index.md", "r") as f:
         old_index = f.read()
 
+    lines = []
+    for group in groups:
+        lines.append("### " + group)
+        lines.append(group_descriptions[group])
+        for c in sorted(clean_classes):
+            if (lookup[get_name(c)] if get_name(c) in lookup else "Objects") == group:
+                lines.append("* " + get_link(c))
+        lines.append("")
+
     index = old_index.find("## Documentation")
-    until_index = old_index.find("##", index + 10)
+    until_index = old_index.find("\n## Extensions", index + 10)
     old_index = "\n".join(
         [
             old_index[: index - 1],
             "## Documentation",
             get_link("Dream"),
             "\n",
-            "* " + "  \n* ".join([get_link(c) for c in sorted(clean_classes)]),
+        ]
+        + lines
+        + [
             "",
             old_index[until_index:],
         ]

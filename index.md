@@ -23,30 +23,43 @@ Most functions are annotated using EmmyLua doc.
 [Dream](https://3dreamengine.github.io/3DreamEngine/docu/classes/dream)
 
 
-* [Animation](https://3dreamengine.github.io/3DreamEngine/docu/classes/animation)  
-* [AnimationFrame](https://3dreamengine.github.io/3DreamEngine/docu/classes/animationframe)  
-* [Bone](https://3dreamengine.github.io/3DreamEngine/docu/classes/bone)  
-* [BoundingSphere](https://3dreamengine.github.io/3DreamEngine/docu/classes/boundingsphere)  
-* [Buffer](https://3dreamengine.github.io/3DreamEngine/docu/classes/buffer)  
-* [Camera](https://3dreamengine.github.io/3DreamEngine/docu/classes/camera)  
-* [Canvases](https://3dreamengine.github.io/3DreamEngine/docu/classes/canvases)  
-* [CollisionMesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/collisionmesh)  
-* [InstancedMesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/instancedmesh)  
-* [Light](https://3dreamengine.github.io/3DreamEngine/docu/classes/light)  
-* [Material](https://3dreamengine.github.io/3DreamEngine/docu/classes/material)  
-* [Mesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/mesh)  
-* [MeshBuilder](https://3dreamengine.github.io/3DreamEngine/docu/classes/meshbuilder)  
-* [MeshFormat](https://3dreamengine.github.io/3DreamEngine/docu/classes/meshformat)  
-* [MutableMeshBuilder](https://3dreamengine.github.io/3DreamEngine/docu/classes/mutablemeshbuilder)  
-* [Object](https://3dreamengine.github.io/3DreamEngine/docu/classes/object)  
-* [Particle](https://3dreamengine.github.io/3DreamEngine/docu/classes/particle)  
-* [Pose](https://3dreamengine.github.io/3DreamEngine/docu/classes/pose)  
-* [Position](https://3dreamengine.github.io/3DreamEngine/docu/classes/position)  
-* [RaytraceMesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/raytracemesh)  
-* [Reflection](https://3dreamengine.github.io/3DreamEngine/docu/classes/reflection)  
-* [Shader](https://3dreamengine.github.io/3DreamEngine/docu/classes/shader)  
-* [Shadow](https://3dreamengine.github.io/3DreamEngine/docu/classes/shadow)  
+### Objects
+General classes.
+* [BoundingSphere](https://3dreamengine.github.io/3DreamEngine/docu/classes/boundingsphere)
+* [Buffer](https://3dreamengine.github.io/3DreamEngine/docu/classes/buffer)
+* [Camera](https://3dreamengine.github.io/3DreamEngine/docu/classes/camera)
+* [Canvases](https://3dreamengine.github.io/3DreamEngine/docu/classes/canvases)
+* [Light](https://3dreamengine.github.io/3DreamEngine/docu/classes/light)
+* [Material](https://3dreamengine.github.io/3DreamEngine/docu/classes/material)
+* [MeshFormat](https://3dreamengine.github.io/3DreamEngine/docu/classes/meshformat)
+* [Object](https://3dreamengine.github.io/3DreamEngine/docu/classes/object)
+* [Particle](https://3dreamengine.github.io/3DreamEngine/docu/classes/particle)
+* [Position](https://3dreamengine.github.io/3DreamEngine/docu/classes/position)
+* [Reflection](https://3dreamengine.github.io/3DreamEngine/docu/classes/reflection)
+* [Shader](https://3dreamengine.github.io/3DreamEngine/docu/classes/shader)
+* [Shadow](https://3dreamengine.github.io/3DreamEngine/docu/classes/shadow)
+
+### Meshes
+Different drawable meshes.
+* [InstancedMesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/instancedmesh)
+* [Mesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/mesh)
+* [MeshBuilder](https://3dreamengine.github.io/3DreamEngine/docu/classes/meshbuilder)
+* [MutableMeshBuilder](https://3dreamengine.github.io/3DreamEngine/docu/classes/mutablemeshbuilder)
+
+### Animations
+Classes required to animated skeletons.
+* [Animation](https://3dreamengine.github.io/3DreamEngine/docu/classes/animation)
+* [AnimationFrame](https://3dreamengine.github.io/3DreamEngine/docu/classes/animationframe)
+* [Bone](https://3dreamengine.github.io/3DreamEngine/docu/classes/bone)
+* [Pose](https://3dreamengine.github.io/3DreamEngine/docu/classes/pose)
 * [Skeleton](https://3dreamengine.github.io/3DreamEngine/docu/classes/skeleton)
+
+### Extensions
+Classes intended to be used by certain extensions.
+* [CollisionMesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/collisionmesh)
+* [RaytraceMesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/raytracemesh)
+
+
 
 ## Extensions
 
