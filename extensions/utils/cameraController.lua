@@ -9,9 +9,9 @@ local c = {
 	ry = 0,
 }
 
-function c:update(dt)
+function c:update(dt, speed)
 	local d = love.keyboard.isDown
-	local speed = 10 * dt
+	speed = (speed or 10) * dt
 	
 	--move
 	self.x = self.x + self.vx * dt
@@ -20,20 +20,20 @@ function c:update(dt)
 	
 	--accelerate
 	if d("w") then
-		self.vx = self.vx + math.cos(self.ry-math.pi/2) * speed
-		self.vz = self.vz + math.sin(self.ry-math.pi/2) * speed
+		self.vx = self.vx + math.cos(self.ry - math.pi / 2) * speed
+		self.vz = self.vz + math.sin(self.ry - math.pi / 2) * speed
 	end
 	if d("s") then
-		self.vx = self.vx + math.cos(self.ry+math.pi-math.pi/2) * speed
-		self.vz = self.vz + math.sin(self.ry+math.pi-math.pi/2) * speed
+		self.vx = self.vx + math.cos(self.ry + math.pi - math.pi / 2) * speed
+		self.vz = self.vz + math.sin(self.ry + math.pi - math.pi / 2) * speed
 	end
 	if d("a") then
-		self.vx = self.vx + math.cos(self.ry-math.pi/2-math.pi/2) * speed
-		self.vz = self.vz + math.sin(self.ry-math.pi/2-math.pi/2) * speed
+		self.vx = self.vx + math.cos(self.ry - math.pi / 2 - math.pi / 2) * speed
+		self.vz = self.vz + math.sin(self.ry - math.pi / 2 - math.pi / 2) * speed
 	end
 	if d("d") then
-		self.vx = self.vx + math.cos(self.ry+math.pi/2-math.pi/2) * speed
-		self.vz = self.vz + math.sin(self.ry+math.pi/2-math.pi/2) * speed
+		self.vx = self.vx + math.cos(self.ry + math.pi / 2 - math.pi / 2) * speed
+		self.vz = self.vz + math.sin(self.ry + math.pi / 2 - math.pi / 2) * speed
 	end
 	if d("space") then
 		self.vy = self.vy + speed
@@ -71,7 +71,7 @@ function c:mousemoved(x, y)
 	local speedH = 0.005
 	local speedV = 0.005
 	self.ry = self.ry + x * speedH
-	self.rx = math.max(-math.pi/2 + 0.01, math.min(math.pi/2 - 0.01, self.rx - y * speedV))
+	self.rx = math.max(-math.pi / 2 + 0.01, math.min(math.pi / 2 - 0.01, self.rx - y * speedV))
 end
 
 return c
