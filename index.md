@@ -13,7 +13,7 @@ Most functions are annotated using EmmyLua doc.
 - [Skeletons](https://3dreamengine.github.io/3DreamEngine/docu/skeletons)
   Skeletal Animations
 
-- [Shaders](https://3dreamengine.github.io/3DreamEngine/docu/particles)
+- [Shaders](https://3dreamengine.github.io/3DreamEngine/docu/shaders)
   More advanced shader modifications, from wind shader to skeletal animations
 
 - [Performance](https://3dreamengine.github.io/3DreamEngine/docu/performance)

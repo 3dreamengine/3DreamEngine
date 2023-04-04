@@ -15,11 +15,13 @@ Creates an empty material
 _________________
 
 ## Methods
-### `Material:setAlpha(alpha)`
+### `Material:setSolid()`
+Makes material solid
 
-#### Arguments
-`alpha` (any) 
+_________________
 
+### `Material:setAlpha()`
+Materials with set alpha are rendered on the alpha pass, which is slower but fully supports transparency and blending
 
 _________________
 
@@ -28,11 +30,8 @@ _________________
 
 _________________
 
-### `Material:setDiscard(discard)`
-
-#### Arguments
-`discard` (any) 
-
+### `Material:setDiscard()`
+Enabled discard only renders when alpha is over a threshold, faster than alpha since on the main pass but slower than solid
 
 _________________
 
@@ -41,11 +40,8 @@ _________________
 
 _________________
 
-### `Material:setDither(dither)`
-
-#### Arguments
-`dither` (any) 
-
+### `Material:setDither()`
+Dither internally uses discarding and simulates alpha by dithering, may be used for fading objects
 
 _________________
 

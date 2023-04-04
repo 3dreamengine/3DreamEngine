@@ -27,25 +27,35 @@ local class = {
 	links = { "clonable", "hasShaders", "named", "material" },
 }
 
---todo merge alpha, solid and discard
-function class:setAlpha(alpha)
-	self.alpha = alpha
+---Makes material solid
+function class:setSolid()
+	self.alpha = false
+	self.discard = false
+	self.dither = false
+end
+
+---Materials with set alpha are rendered on the alpha pass, which is slower but fully supports transparency and blending
+function class:setAlpha()
+	self:setSolid()
+	self.alpha = true
 end
 function class:getAlpha()
 	return self.alpha
 end
 
---todo merge alpha, solid and discard
-function class:setDiscard(discard)
-	self.discard = discard
+---Enabled discard only renders when alpha is over a threshold, faster than alpha since on the main pass but slower than solid
+function class:setDiscard()
+	self:setSolid()
+	self.discard = true
 end
 function class:getDiscard()
 	return self.discard
 end
 
---todo merge alpha, solid and discard
-function class:setDither(dither)
-	self.dither = dither
+---Dither internally uses discarding and simulates alpha by dithering, may be used for fading objects
+function class:setDither()
+	self:setSolid()
+	self.dither = true
 end
 function class:getDither()
 	return self.dither

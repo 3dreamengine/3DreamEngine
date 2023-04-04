@@ -58,6 +58,14 @@ The material description file is a lua file returning a table defining the value
 
 Check out the `examples/Tavern/materials/` demo for an example.
 
+### Alpha
+
+By default materials are solid, and the alpha channel is ignored. To render alpha three approaches are available:
+
+* `material:setAlpha()` to render on the alpha pass. This is slower, but allows transparency, blending and refractions.
+* `material:setDiscard()` to discard pixels after a threshold in alpha. Slower than solid, faster than alpha as it's rendered on the main pass and makes use of the depth buffer. It will result in hard edges and is the more common method.
+* `material:setDither()` to simulate alpha using discarding on a dither pattern. Intended for fading, solid objects.
+
 # Objects
 
 An object is a container for all kind of data, including other objects. It may store your scene graph, a character, animations, collision data, basically everything.
