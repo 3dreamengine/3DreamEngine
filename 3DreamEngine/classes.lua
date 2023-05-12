@@ -24,12 +24,25 @@ local function link(chain)
 	return { __index = m, __tostring = m.tostring }
 end
 
+local function gatherLinks(class, links)
+	if class.links then
+		for _, meta in pairs(class.links) do
+			if meta ~= class.class then
+				gatherLinks(lib.classes[meta], links)
+			end
+		end
+	end
+	table.insert(links, class.class)
+end
+
 --final meta tables
 lib.meta = { }
 for name, class in pairs(lib.classes) do
 	class.link = { }
 	if class.links then
-		lib.meta[name] = link(class.links)
+		local links = { }
+		gatherLinks(class, links)
+		lib.meta[name] = link(links)
 		for _, meta in pairs(class.links) do
 			class.link[meta] = true
 		end

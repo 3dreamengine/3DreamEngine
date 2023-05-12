@@ -4,6 +4,7 @@ local lib = _3DreamEngine
 ---@class DreamHasShaders
 local class = { }
 
+---@param shader DreamShader
 function class:setPixelShader(shader)
 	if self.class == "object" then
 		for _, s in pairs(self.objects) do
@@ -24,6 +25,7 @@ function class:setPixelShader(shader)
 	end
 end
 
+---@param shader DreamShader
 function class:setVertexShader(shader)
 	if self.class == "object" then
 		for _, s in pairs(self.objects) do
@@ -44,6 +46,7 @@ function class:setVertexShader(shader)
 	end
 end
 
+---@param shader DreamShader
 function class:setWorldShader(shader)
 	if self.class == "object" then
 		for _, s in pairs(self.objects) do

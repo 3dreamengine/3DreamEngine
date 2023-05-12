@@ -172,8 +172,7 @@ function class:updateBoundingSphere()
 	self.boundingSphere = lib:newBoundingSphere(center, size)
 end
 
---clean most primary buffers
---todo buffers are now classes and can be cleaned up more efficiently
+--Clean most primary buffers
 function class:cleanup()
 	for i, v in pairs(self) do
 		if type(v) == "table" and v.link and v.link.buffer then

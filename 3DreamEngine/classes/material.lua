@@ -43,6 +43,7 @@ function class:getAlpha()
 	return self.alpha
 end
 
+--todo it is called cutout
 ---Enabled discard only renders when alpha is over a threshold, faster than alpha since on the main pass but slower than solid
 function class:setDiscard()
 	self:setSolid()
@@ -93,6 +94,7 @@ function class:throwsShadow(shadow)
 	self.shadow = shadow
 end
 
+--todo doc
 function class:setColor(r, g, b, a)
 	self.color = { r or 1.0, g or 1.0, b or 1.0, a or 1.0 }
 end

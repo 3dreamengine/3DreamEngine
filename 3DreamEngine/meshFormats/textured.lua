@@ -34,14 +34,14 @@ function f:create(mesh)
 		v.VertexTexCoordX = texCoord.x
 		v.VertexTexCoordY = texCoord.y
 		
-		v.VertexNormalX = normal.x * 127 + 127
-		v.VertexNormalY = normal.y * 127 + 127
-		v.VertexNormalZ = normal.z * 127 + 127
+		v.VertexNormalX = normal.x * 127.5 + 127.5
+		v.VertexNormalY = normal.y * 127.5 + 127.5
+		v.VertexNormalZ = normal.z * 127.5 + 127.5
 		v.VertexNormalW = 0
 		
-		v.VertexTangentX = tangent.x * 127 + 127
-		v.VertexTangentY = tangent.y * 127 + 127
-		v.VertexTangentZ = tangent.z * 127 + 127
+		v.VertexTangentX = tangent.x * 127.5 + 127.5
+		v.VertexTangentY = tangent.y * 127.5 + 127.5
+		v.VertexTangentZ = tangent.z * 127.5 + 127.5
 		v.VertexTangentW = 0
 	end
 	

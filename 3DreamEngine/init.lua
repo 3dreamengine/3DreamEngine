@@ -55,6 +55,7 @@ lib.json = require(lib.root .. "/libs/json")
 lib.inspect = require(lib.root .. "/libs/inspect")
 lib.base64 = require(lib.root .. "/libs/base64")
 lib.cache = require(lib.root .. "/libs/cache")
+lib.packer = require(lib.root .. "/libs/packer")
 
 table.unpack = table.unpack or unpack
 
@@ -150,6 +151,7 @@ lib.meshFormats = { }
 lib:registerMeshFormat(require(lib.root .. "/meshFormats/textured"), "textured")
 lib:registerMeshFormat(require(lib.root .. "/meshFormats/simple"), "simple")
 lib:registerMeshFormat(require(lib.root .. "/meshFormats/material"), "material")
+lib:registerMeshFormat(require(lib.root .. "/meshFormats/font"), "font")
 
 --some functions require temporary canvases
 lib.canvasCache = { }
@@ -276,7 +278,9 @@ end
 function lib:draw(object, x, y, z, sx, sy, sz)
 	--prepare transform matrix
 	local transform
-	if x then
+	if type(x) == "table" then
+		transform = x
+	elseif x then
 		--simple transform with arguments, ignores object transformation matrix
 		transform = self.mat4({
 			sx or 1, 0, 0, x,

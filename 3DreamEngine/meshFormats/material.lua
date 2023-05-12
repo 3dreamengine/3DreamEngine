@@ -29,9 +29,9 @@ function f:create(mesh)
 		
 		v.VertexMaterial = texCoord.x
 		
-		v.VertexNormalX = normal.x * 127 + 127
-		v.VertexNormalY = normal.y * 127 + 127
-		v.VertexNormalZ = normal.z * 127 + 127
+		v.VertexNormalX = normal.x * 127.5 + 127.5
+		v.VertexNormalY = normal.y * 127.5 + 127.5
+		v.VertexNormalZ = normal.z * 127.5 + 127.5
 		v.VertexNormalW = 0
 	end
 	

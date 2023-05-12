@@ -24,7 +24,7 @@ function lib:buildScene(shadowPass, dynamic, alpha, cam, blacklist, frustumCheck
 	
 	for _, pair in ipairs(self.renderTasks) do
 		if pair[1].isMesh then
-			scene:addMesh(pair[1], pair[2])
+			scene:addMesh(pair[1], pair[2], lib.defaultReflection)
 		elseif pair[2] then
 			scene:addObject(pair[1], pair[2], true)
 		else

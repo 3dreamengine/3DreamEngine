@@ -3,6 +3,8 @@
 functions.lua - contains library relevant functions
 --]]
 
+local ffi = require("ffi")
+
 ---@type Dream
 local lib = _3DreamEngine
 local vec3, vec4 = lib.vec3, lib.vec4

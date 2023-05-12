@@ -78,18 +78,18 @@ function class:addMesh(mesh, transform)
 			local nx = v.VertexNormalX / 127 - 1.0
 			local ny = v.VertexNormalY / 127 - 1.0
 			local nz = v.VertexNormalZ / 127 - 1.0
-			v.VertexNormalX = (transform[1] * nx + transform[2] * ny + transform[3] * nz) * 127 + 127
-			v.VertexNormalY = (transform[5] * nx + transform[6] * ny + transform[7] * nz) * 127 + 127
-			v.VertexNormalZ = (transform[9] * nx + transform[10] * ny + transform[11] * nz) * 127 + 127
+			v.VertexNormalX = (transform[1] * nx + transform[2] * ny + transform[3] * nz) * 127.5 + 127.5
+			v.VertexNormalY = (transform[5] * nx + transform[6] * ny + transform[7] * nz) * 127.5 + 127.5
+			v.VertexNormalZ = (transform[9] * nx + transform[10] * ny + transform[11] * nz) * 127.5 + 127.5
 		end
 		
 		if self.meshFormat.attributes["VertexTangent"] then
 			local tx = v.VertexTangentX / 127 - 1.0
 			local ty = v.VertexTangentY / 127 - 1.0
 			local tz = v.VertexTangentZ / 127 - 1.0
-			v.VertexTangentX = (transform[1] * tx + transform[2] * ty + transform[3] * tz) * 127 + 127
-			v.VertexTangentY = (transform[5] * tx + transform[6] * ty + transform[7] * tz) * 127 + 127
-			v.VertexTangentZ = (transform[9] * tx + transform[10] * ty + transform[11] * tz) * 127 + 127
+			v.VertexTangentX = (transform[1] * tx + transform[2] * ty + transform[3] * tz) * 127.5 + 127.5
+			v.VertexTangentY = (transform[5] * tx + transform[6] * ty + transform[7] * tz) * 127.5 + 127.5
+			v.VertexTangentZ = (transform[9] * tx + transform[10] * ty + transform[11] * tz) * 127.5 + 127.5
 		end
 	end
 	
