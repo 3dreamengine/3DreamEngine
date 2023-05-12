@@ -29,6 +29,8 @@ local methods = {
 local metatable = {
 	__index = methods
 }
+
+---@type DreamMat3
 local matrix = { }
 
 local matrixMeta = {

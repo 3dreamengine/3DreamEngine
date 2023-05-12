@@ -2,6 +2,7 @@
 Helpful optimized operations
 --]]
 return function(matrix)
+	---@type DreamMat4
 	local methods = getmetatable(matrix.getIdentity()).__index
 	
 	function methods:translate(x, y, z)
@@ -175,5 +176,13 @@ return function(matrix)
 				(self[2] ^ 2 + self[6] ^ 2 + self[10] ^ 2),
 				(self[3] ^ 2 + self[7] ^ 2 + self[11] ^ 2)
 		))
+	end
+	
+	function methods:getTranslation()
+		return matrix.vec3({
+			self[4],
+			self[8],
+			self[12],
+		})
 	end
 end
