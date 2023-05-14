@@ -252,7 +252,7 @@ function methods:transpose()
 	local c = matrix({
 		self[1], self[5], self[9], self[13],
 		self[2], self[6], self[10], self[14],
-		self[3], self[6], self[11], self[15],
+		self[3], self[7], self[11], self[15],
 		self[4], self[8], self[12], self[16],
 	})
 	return c
