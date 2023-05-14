@@ -112,7 +112,7 @@ end
 
 lib.shaders = { }
 
---return and load shader if necessary
+---Return and load shader if necessary
 ---@private
 function lib:getBasicShader(s)
 	if not lib.shaders[s] then
@@ -243,7 +243,7 @@ function lib:getRenderShader(mesh, reflection, globalIdentifier, alpha, canvases
 	
 	--construct full ID
 	local shaderID = string.char(
-			(reflection and 1 or 0) + (mesh.instanceMesh and 2 or 0) + (mat.discard and 4 or 0) + (mat.dither and 8 or 0) + (mat.translucency > 0 and 16 or 0),
+			(reflection and 1 or 0) + (mesh.instanceMesh and 2 or 0) + (mesh.spriteInstanceMesh and 4 or 0) + (mat.discard and 8 or 0) + (mat.dither and 16 or 0) + (mat.translucency > 0 and 32 or 0),
 			pixelShader.id % 256, math.floor(pixelShader.id / 256),
 			vertexShader.id % 256, math.floor(vertexShader.id / 256),
 			worldShader.id % 256, math.floor(worldShader.id / 256),
@@ -280,6 +280,11 @@ function lib:getRenderShader(mesh, reflection, globalIdentifier, alpha, canvases
 		--if instancing is used
 		if mesh.instanceMesh then
 			table.insert(defines, "#define INSTANCING")
+		end
+		
+		--if sprite instancing is used
+		if mesh.spriteInstanceMesh then
+			table.insert(defines, "#define SPRITE_INSTANCING")
 		end
 		
 		--discard
@@ -392,100 +397,7 @@ function lib:getRenderShader(mesh, reflection, globalIdentifier, alpha, canvases
 end
 
 ---@private
-function lib:getParticlesShaderID(pass, canvases, emissive, distortion, single)
-	local id = 0
-	if emissive then
-		id = id + 2 ^ 0
-	end
-	if distortion and pass == 2 then
-		id = id + 2 ^ 1
-	end
-	if self.fog_enabled and canvases.mode ~= "normal" then
-		id = id + 2 ^ 2
-	end
-	if self.gamma then
-		id = id + 2 ^ 3
-	end
-	if canvases.refractions and pass == 2 then
-		id = id + 2 ^ 5
-	end
-	if pass == 1 and canvases.mode ~= "direct" then
-		id = id + 2 ^ 6
-	end
-	if single then
-		id = id + 2 ^ 7
-	end
-	return string.char(id)
-end
-
----@private
-function lib:getParticlesShader(pass, canvases, light, emissive, distortion, single)
-	local ID = light.ID .. self:getParticlesShaderID(pass, canvases, emissive, distortion, single)
-	
-	if not self.particlesShader[ID] then
-		local defines = { }
-		if emissive then
-			table.insert(defines, "#define EMISSION_TEXTURE")
-		end
-		if distortion and pass == 2 then
-			table.insert(defines, "#define DISTORTION_TEXTURE")
-		end
-		if self.fog_enabled and canvases.mode ~= "normal" then
-			table.insert(defines, "#define FOG_ENABLED")
-		end
-		if self.gamma then
-			table.insert(defines, "#define GAMMA_CORRECTION")
-		end
-		if canvases.refractions and pass == 2 then
-			table.insert(defines, "#define REFRACTIONS_ENABLED")
-		end
-		if pass == 1 and canvases.mode ~= "direct" then
-			table.insert(defines, "#define DEPTH_ENABLED")
-		end
-		if single then
-			table.insert(defines, "#define SINGLE")
-		end
-		
-		--helpful functions
-		table.insert(defines, codes.functions)
-		
-		local info = {
-			uniforms = { }
-		}
-		
-		--construct shader
-		local code = codes.particle
-		
-		--setting specific defines
-		code = code:gsub("#import defines", table.concat(defines, "\n\n"))
-		
-		--fog engine
-		if self.fog_enabled and canvases.mode ~= "normal" then
-			code = code:gsub("#import fog", codes.fog)
-		end
-		
-		--construct forward lighting system
-		if light.lights and #light.lights > 0 then
-			local def, p = self:getLightComponents(light, true)
-			
-			code = code:gsub("#import lightingSystemInit", def)
-			code = code:gsub("#import lightingSystem", p)
-		end
-		
-		--remove unused imports and remove tabs
-		code = code:gsub("#import", "//#import")
-		code = code:gsub("	", "")
-		
-		--compile
-		info.shader = love.graphics.newShader(code)
-		self.particlesShader[ID] = info
-	end
-	
-	return self.particlesShader[ID]
-end
-
----@private
-function lib:getLightComponents(lightOverview, basic)
+function lib:getLightComponents(lightOverview)
 	local lcInit = { }
 	local lc = { }
 	
@@ -494,12 +406,7 @@ function lib:getLightComponents(lightOverview, basic)
 		local id = "light " .. typ
 		assert(self.lightShaders[typ], "Light of type '" .. typ .. "' does not exist!")
 		insertHeader(lcInit, id, self.lightShaders[typ]:constructDefinesGlobal(self))
-		
-		if basic then
-			insertHeader(lc, id, self.lightShaders[typ]:constructPixelBasicGlobal(self))
-		else
-			insertHeader(lc, id, self.lightShaders[typ]:constructPixelGlobal(self))
-		end
+		insertHeader(lc, id, self.lightShaders[typ]:constructPixelGlobal(self))
 	end
 	
 	--defines and code
@@ -511,12 +418,7 @@ function lib:getLightComponents(lightOverview, basic)
 		
 		insertHeader(lcInit, id, self.lightShaders[light.light_typ]:constructDefines(id))
 		
-		local px
-		if basic then
-			px = self.lightShaders[light.light_typ]:constructPixelBasic(id)
-		else
-			px = self.lightShaders[light.light_typ]:constructPixel(id)
-		end
+		local px = self.lightShaders[light.light_typ]:constructPixel(id)
 		if px then
 			insertHeader(lc, id, "{\n" .. px .. "\n}")
 		end

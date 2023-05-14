@@ -54,7 +54,6 @@ local function getScreenMaterial(texture)
 	mat:setEmissionTexture(texture)
 	mat:setMetallic(1.0)
 	mat:setRoughness(0.75)
-	mat:setEmission(1.0, 1.0, 1.0)
 	return mat
 end
 

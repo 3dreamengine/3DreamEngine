@@ -5,7 +5,7 @@ local vec3 = dream.vec3
 local raytrace = require("extensions/raytrace")
 
 love.window.setTitle("PBR Tavern")
-love.window.setVSync(false)
+love.window.setVSync(true)
 love.mouse.setRelativeMode(true)
 
 --settings
@@ -46,11 +46,13 @@ for y = 1, 5 do
 end
 
 --create new particle batch
-local particleBatch = dream:newParticleBatch(texture_candle)
+local particleBatch = dream:newParticleBatch(texture_candle, texture_candle)
 particleBatch:setVertical(0.75)
 
 local particleBatchDust = dream:newParticleBatch(love.graphics.newImage(projectDir .. "dust.png"))
 particleBatchDust:setSorting(false)
+particleBatchDust:getMaterial():setRoughness(1)
+particleBatchDust:getMaterial():setTranslucency(1)
 
 --setup light sources
 local lights = { }
@@ -107,7 +109,8 @@ function love.draw()
 		local x = noise(i, 1 + c) * 100 % 10.5 - 5.25
 		local y = noise(i, 2 + c) * 100 % 4.5 - 0.25
 		local z = noise(i, 3 + c) * 100 % 10.5 - 5.25
-		particleBatchDust:add(x, y, z, 0, (i % 10 + 10) * 0.002)
+		
+		particleBatchDust:add(x, y, z, i, (i % 10 + 10) * 0.002)
 	end
 	
 	--make the particles black so it only emits light
@@ -142,8 +145,8 @@ function love.draw()
 	dream:draw(tavern)
 	
 	--draw the particles
-	dream:drawParticleBatch(particleBatch)
-	dream:drawParticleBatch(particleBatchDust)
+	dream:draw(particleBatch)
+	dream:draw(particleBatchDust)
 	
 	--render
 	dream:present()

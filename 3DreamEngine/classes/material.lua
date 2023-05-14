@@ -5,20 +5,22 @@ local lib = _3DreamEngine
 ---@param name string
 ---@return DreamMaterial
 function lib:newMaterial(name)
-	return setmetatable({
-		color = { 0.5, 0.5, 0.5, 1.0 },
-		emission = { 0.0, 0.0, 0.0 },
-		roughness = 1,
-		metallic = 1,
-		alpha = false,
-		discard = false,
-		alphaCutoff = 0.5, --todo
-		name = name or "Unnamed",
-		ior = 1.0,
-		translucency = 0.0,
-		library = false,
-		cullMode = "back",
-	}, self.meta.material)
+	---@type DreamMaterial
+	local m = setmetatable({ }, self.meta.material)
+	m.color = { 0.5, 0.5, 0.5, 1.0 }
+	m.emission = { 0.0, 0.0, 0.0 }
+	m.emissionFactor = { 1.0, 1.0, 1.0 }
+	m.roughness = 1
+	m.metallic = 1
+	m.alpha = false
+	m.discard = false
+	m.alphaCutoff = 0.5 --todo
+	m.name = name or "Unnamed"
+	m.ior = 1.0
+	m.translucency = 0.0
+	m.library = false
+	m.cullMode = "back"
+	return m
 end
 
 ---A material holds textures, render settings, shader information and similar and is assigned to a mesh.
@@ -94,7 +96,7 @@ function class:throwsShadow(shadow)
 	self.shadow = shadow
 end
 
---todo doc
+--todo doc and getter
 function class:setColor(r, g, b, a)
 	self.color = { r or 1.0, g or 1.0, b or 1.0, a or 1.0 }
 end
@@ -103,6 +105,9 @@ function class:setAlbedoTexture(tex)
 end
 function class:setEmission(r, g, b)
 	self.emission = { r or 0.0, g or r or 0.0, b or r or 0.0 }
+end
+function class:setEmissionFactor(r, g, b)
+	self.emissionFactor = { r or 1.0, g or r or 1.0, b or r or 1.0 }
 end
 function class:setEmissionTexture(tex)
 	self.emissionTexture = tex

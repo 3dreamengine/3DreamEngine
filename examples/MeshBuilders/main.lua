@@ -1,5 +1,5 @@
 --window title
-love.window.setTitle("Mesh Builder, Particles, and and Text")
+love.window.setTitle("Mesh Builder, Particles, and Text")
 
 --disable vsync to properly measure FPS
 love.window.setVSync(false)
@@ -28,17 +28,6 @@ local text = dream:newTextMeshBuilder(glyphAtlas)
 text:print("Simple text")
 
 text:printf("This text should be perfectly centered", 200, "originCenter")
-
---[[
-print(dream.inspect({
-	glyphAtlas.font:getWrap({ { 1, 2, 3 }, "Carl" }, 50)
-}))
-
-print(dream.inspect({
-	glyphAtlas:getWrap({ { color = { 1, 2, 3 }, string = "Carl" } }, 50)
-}))
---]]
-
 
 --make a sun
 local sun = dream:newLight("sun")
@@ -77,7 +66,7 @@ function love.draw()
 	t = t:rotateY(math.cos(love.timer.getTime()) * 0.5)
 	t = t:scale(0.01)
 	dream:draw(text, t)
-	t = dream.mat4.getTranslate(2, 0, 0)  * t
+	t = dream.mat4.getTranslate(2, 0, 0) * t
 	dream:draw(animatedText, t)
 	
 	dream:present()

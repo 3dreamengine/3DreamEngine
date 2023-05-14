@@ -17,19 +17,9 @@ function sh:constructPixelGlobal(dream)
 
 end
 
-function sh:constructPixelBasicGlobal(dream)
-
-end
-
 function sh:constructPixel(ID)
 	return ([[
 		light += getLight(sun_simple_color_#ID#, viewVec, sun_simple_vec_#ID#, normal, albedo, roughness, metallic);
-	]]):gsub("#ID#", ID)
-end
-
-function sh:constructPixelBasic(ID)
-	return ([[
-		light += sun_simple_color_#ID#;
 	]]):gsub("#ID#", ID)
 end
 

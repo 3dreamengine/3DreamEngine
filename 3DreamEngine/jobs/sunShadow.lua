@@ -87,7 +87,7 @@ function job:execute(light)
 				dynamic = false
 			end
 			
-			lib:renderShadows(shadowCam, canvases, light.blacklist, dynamic, cascade > 1)
+			lib:render(shadowCam, canvases, dynamic, true, light.blacklist)
 			
 			--smooth lighting
 			if light.shadow.smooth then

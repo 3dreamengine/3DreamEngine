@@ -5,9 +5,13 @@ local vec3, mat3 = lib.vec3, lib.mat3
 ---@param mesh DreamMesh @ The source mesh to create instances from
 ---@return DreamInstancedMesh
 function lib:newInstancedMesh(mesh)
+	mesh = setmetatable(mesh, self.meta.instancedMesh)
+	
 	mesh.instancesCount = 0
 	
-	return setmetatable(mesh, self.meta.instancedMesh)
+	mesh:resize(16)
+	
+	return mesh
 end
 
 ---Uses a mesh to create instances from it. Especially helpful when rendering many small instances
@@ -18,6 +22,22 @@ local class = {
 
 function class:getInstancesCount()
 	return self.instancesCount
+end
+
+function class:getMesh(name)
+	name = name or "mesh"
+	
+	local mesh = lib.classes.mesh.getMesh(self, name)
+	
+	if name == "mesh" then
+		mesh:attachAttribute("InstanceRotation0", self.instanceMesh, "perinstance")
+		mesh:attachAttribute("InstanceRotation1", self.instanceMesh, "perinstance")
+		mesh:attachAttribute("InstanceRotation2", self.instanceMesh, "perinstance")
+		mesh:attachAttribute("InstancePosition", self.instanceMesh, "perinstance")
+		return mesh, instanceMesh:getVertexCount()
+	end
+	
+	return mesh
 end
 
 ---Resize the instanced mesh, preserving previous entries
@@ -51,8 +71,9 @@ function class:addInstance(transform, index)
 	if not index then
 		self.instancesCount = self.instancesCount + 1
 		index = self.instancesCount
-		--todo just increase size?
-		assert(index <= self.instanceMesh:getVertexCount(), "Instance mesh too small!")
+		if index > self.instanceMesh:getVertexCount() then
+			self:resize(self.instanceMesh:getVertexCount() * 2)
+		end
 	end
 	
 	local instance = {

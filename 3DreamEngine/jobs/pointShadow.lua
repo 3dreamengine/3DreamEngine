@@ -84,7 +84,7 @@ function job:execute(light)
 				dynamic = false
 			end
 			
-			lib:renderShadows(shadowCam, { { light.shadow.canvas, face = face } }, light.blacklist, dynamic)
+			lib:render(shadowCam, { { light.shadow.canvas, face = face } }, dynamic, true, light.blacklist)
 			light.shouldSmooth = light.shadow.smooth
 		end
 	end

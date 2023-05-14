@@ -79,10 +79,6 @@ function sh:constructPixelGlobal(dream)
 
 end
 
-function sh:constructPixelBasicGlobal(dream)
-
-end
-
 function sh:constructPixel(ID)
 	return ([[
 	float bias = mix(1.0, 0.01, dot(normal, ss_vec_#ID#)) / 512.0;
@@ -93,15 +89,6 @@ function sh:constructPixel(ID)
 		
 		light += getLight(lightColor, viewVec, ss_vec_#ID#, normal, albedo, roughness, metallic);
 	}
-	]]):gsub("#ID#", ID)
-end
-
-function sh:constructPixelBasic(ID)
-	return ([[
-	float bias = 1.0 / 512.0;
-	float shadow = ]] .. self.func .. [[(vertexPos, ss_pos_#ID#, ss_proj1_#ID#, ss_proj2_#ID#, ss_proj3_#ID#, ss_tex1_#ID#, ss_tex2_#ID#, ss_tex3_#ID#, ss_factor_#ID#, ss_distance_#ID#, ss_fade_#ID#, bias);
-	
-	light += ss_color_#ID# * shadow;
 	]]):gsub("#ID#", ID)
 end
 

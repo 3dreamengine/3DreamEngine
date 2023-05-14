@@ -37,9 +37,9 @@ function job:execute(reflection, pos)
 	local canvas = reflection.canvas
 	reflection.canvas = nil
 
-	local dynamics = nil
+	local dynamic
 	if reflection.static then
-		dynamics = false
+		dynamic = false
 	end
 	
 	--render
@@ -48,7 +48,7 @@ function job:execute(reflection, pos)
 		local cam = lib:newCamera(transformations[face], lib.cubeMapProjection, pos, lib.lookNormals[face])
 		love.graphics.setCanvas({{canvas, face = face}, depth = true})
 		love.graphics.clear()
-		lib:renderFull(cam, lib.reflectionCanvases, dynamics)
+		lib:renderFull(cam, lib.reflectionCanvases, dynamic)
 	end
 	
 	reflection.rendered = true

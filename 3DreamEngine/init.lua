@@ -87,7 +87,6 @@ require(lib.root .. "/renderGodrays")
 require(lib.root .. "/renderSky")
 require(lib.root .. "/jobs")
 require(lib.root .. "/particleSystem")
-require(lib.root .. "/particles")
 
 --file loader
 lib.loader = { }
@@ -252,9 +251,6 @@ function lib:prepare()
 	self.lighting = { }
 	self.renderTasks = { }
 	
-	self.particleBatches = { {}, {} }
-	self.particles = { {}, {} }
-	
 	--keep track of reflections
 	self.lastReflections = self.reflections or { }
 	self.reflections = { }
@@ -307,42 +303,6 @@ end
 ---@param brightness number
 function lib:addNewLight(typ, position, color, brightness)
 	self:addLight(self:newLight(typ, position, color, brightness))
-end
-
----Will render this batch
----@param batch DreamParticleBatch
-function lib:drawParticleBatch(batch)
-	local ID = (batch.emissionTexture and 2 or 1) + (batch.distortionTexture and 2 or 0)
-	local bt = self.particleBatches[batch.alpha and 2 or 1]
-	bt[ID] = bt[ID] or { }
-	bt[ID][batch] = true
-end
-
----Draw a single particle
----@param particle DreamParticle
----@param quad Quad
----@param x number
----@param y number
----@param z number
-function lib:drawParticle(particle, quad, x, y, z, ...)
-	assert(particle.class == "particle", "create a particle object and pass it here")
-	particle = particle:clone()
-	
-	if type(quad) == "userdata" then
-		particle.quad = quad
-		particle.position = { x or 0, y or 0, z or 0 }
-		particle.transform = { ... }
-	else
-		particle.quad = nil
-		particle.position = { quad or 0, x or 0, y or 0 }
-		particle.transform = { z, ... }
-	end
-	particle.color = { love.graphics.getColor() }
-	
-	local p = self.particles[particle.alpha and 2 or 1]
-	local id = particle:getID()
-	p[id] = p[id] or { }
-	table.insert(p[id], particle)
 end
 
 return lib

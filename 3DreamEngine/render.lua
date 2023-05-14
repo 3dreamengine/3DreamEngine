@@ -84,29 +84,14 @@ local function checkAndSendCached(shaderObject, name, value)
 end
 
 ---Render the scene onto a canvas set using a specific view camera
----@param canvases DreamCanvases
 ---@param cam DreamCamera
+---@param canvases DreamCanvases
 ---@param dynamic boolean
+---@param isShadow boolean
+---@param blacklist table<string, boolean>
 ---@private
-function lib:render(canvases, cam, dynamic)
+function lib:render(cam, canvases, dynamic, isShadow, blacklist)
 	self.delton:start("prepare")
-	
-	--and set canvases
-	love.graphics.push("all")
-	if canvases.mode ~= "direct" then
-		love.graphics.reset()
-	end
-	
-	--clear depth
-	if canvases.mode ~= "direct" then
-		love.graphics.setCanvas({ canvases.color, canvases.depth, depthstencil = canvases.depthBuffer })
-		
-		love.graphics.setDepthMode()
-		love.graphics.clear(false, false, true)
-	end
-	
-	--render sky
-	self:renderSky(cam.transformProjOrigin, cam:getInvertedTransform(), (cam.near + cam.far) / 2)
 	
 	--update required acceleration data
 	local frustumCheck = self.frustumCheck and not cam.noFrustumCheck
@@ -114,8 +99,33 @@ function lib:render(canvases, cam, dynamic)
 		cam:updateFrustumPlanes()
 	end
 	
-	--get light setup
-	local light = self:getLightOverview(cam)
+	local light
+	
+	if isShadow then
+		love.graphics.push("all")
+		love.graphics.reset()
+		love.graphics.setMeshCullMode("none")
+		love.graphics.setDepthMode("less", true)
+		love.graphics.setBlendMode("darken", "premultiplied")
+		love.graphics.setCanvas(canvases)
+		love.graphics.clear(255, 255, 255, 255)
+	else
+		--and set canvases
+		love.graphics.push("all")
+		if canvases.mode ~= "direct" then
+			love.graphics.reset()
+			love.graphics.setCanvas({ canvases.color, canvases.depth, depthstencil = canvases.depthBuffer })
+			
+			love.graphics.setDepthMode()
+			love.graphics.clear(false, false, true)
+		end
+		
+		--render sky
+		self:renderSky(cam.transformProjOrigin, cam:getInvertedTransform(), (cam.near + cam.far) / 2)
+		
+		--get light setup
+		light = self:getLightOverview(cam)
+	end
 	
 	self.delton:stop()
 	
@@ -129,27 +139,32 @@ function lib:render(canvases, cam, dynamic)
 		local sessionID = math.random()
 		
 		--setup final scene
-		local scene = self:buildScene(false, dynamic, pass == 2, cam, nil, frustumCheck, canvases, light)
-		
-		--only first pass writes depth
-		love.graphics.setDepthMode("less", pass == 1)
-		
-		--set correct blend mode
-		if canvases.refractions and pass == 2 then
-			love.graphics.setBlendMode("alpha", "premultiplied")
+		local scene
+		if isShadow then
+			scene = self:buildScene(true, dynamic, false, cam, blacklist, frustumCheck, { }, nil, cam.sun)
 		else
-			love.graphics.setBlendMode("alpha", "alphamultiply")
-		end
-		
-		--set alpha pass canvases
-		if canvases.mode ~= "direct" and pass == 2 then
-			if canvases.refractions then
-				--refractions only
-				love.graphics.setCanvas({ canvases.colorAlpha, canvases.distortion, depthstencil = canvases.depthBuffer })
-				love.graphics.clear(true, false, false)
+			scene = self:buildScene(false, dynamic, pass == 2, cam, nil, frustumCheck, canvases, light)
+			
+			--only first pass writes depth
+			love.graphics.setDepthMode("less", pass == 1)
+			
+			--set correct blend mode
+			if canvases.refractions and pass == 2 then
+				love.graphics.setBlendMode("alpha", "premultiplied")
 			else
-				--disable depth
-				love.graphics.setCanvas({ canvases.color, depthstencil = canvases.depthBuffer })
+				love.graphics.setBlendMode("alpha", "alphamultiply")
+			end
+			
+			--set alpha pass canvases
+			if canvases.mode ~= "direct" and pass == 2 then
+				if canvases.refractions then
+					--refractions only
+					love.graphics.setCanvas({ canvases.colorAlpha, canvases.distortion, depthstencil = canvases.depthBuffer })
+					love.graphics.clear(true, false, false)
+				else
+					--disable depth
+					love.graphics.setCanvas({ canvases.color, depthstencil = canvases.depthBuffer })
+				end
 			end
 		end
 		
@@ -157,7 +172,7 @@ function lib:render(canvases, cam, dynamic)
 		self.delton:start("render")
 		for task in scene do
 			local mesh = task:getMesh()
-			local objectMesh = mesh:getMesh()
+			local objectMesh, instanceCount = mesh:getMesh()
 			if objectMesh then
 				local nextShaderObject = task:getShader()
 				
@@ -177,31 +192,34 @@ function lib:render(canvases, cam, dynamic)
 					if not shaderObject.session.init then
 						shaderObject.session.init = true
 						
-						--light setup
-						self:sendLightUniforms(light, shaderObject)
+						if not isShadow then
+							--light setup
+							self:sendLightUniforms(light, shaderObject)
+							
+							--fog
+							if hasUniform(shaderObject, "fog_density") then
+								sendFogData(shader)
+							end
+							
+							--framebuffer
+							if hasUniform(shaderObject, "depthTexture") then
+								shader:send("depthTexture", canvases.depth)
+							end
+							
+							checkAndSendCached(shaderObject, "exposure", self.exposure)
+							checkAndSendCached(shaderObject, "ambient", self.sun_ambient)
+						end
+						
+						--camera
+						shader:send("transformProj", cam.transformProj)
+						if hasUniform(shaderObject, "viewPos") then
+							checkAndSendCached(shaderObject, "viewPos", cam.viewPosition)
+						end
 						
 						--shader
 						shaderObject.pixelShader:perShader(shaderObject)
 						shaderObject.vertexShader:perShader(shaderObject)
 						shaderObject.worldShader:perShader(shaderObject)
-						
-						--fog
-						if hasUniform(shaderObject, "fog_density") then
-							sendFogData(shader)
-						end
-						
-						--framebuffer
-						if hasUniform(shaderObject, "depthTexture") then
-							shader:send("depthTexture", canvases.depth)
-						end
-						
-						checkAndSendCached(shaderObject, "exposure", self.exposure)
-						
-						--camera
-						shader:send("transformProj", cam.transformProj)
-						checkAndSendCached(shaderObject, "viewPos", cam.viewPosition)
-						
-						checkAndSendCached(shaderObject, "ambient", self.sun_ambient)
 					end
 					
 					self.stats.shaderSwitches = self.stats.shaderSwitches + 1
@@ -212,24 +230,30 @@ function lib:render(canvases, cam, dynamic)
 				if lastMaterial ~= material then
 					lastMaterial = material
 					
-					--alpha
-					checkAndSendCached(shaderObject, "dither", material.dither and 1 or 0)
-					
-					checkAndSendCached(shaderObject, "translucency", material.translucency)
-					
-					--shader
-					shaderObject.pixelShader:perMaterial(shaderObject, material)
-					shaderObject.vertexShader:perMaterial(shaderObject, material)
-					shaderObject.worldShader:perMaterial(shaderObject, material)
-					
-					--culling
-					love.graphics.setMeshCullMode(material.cullMode)
+					if isShadow then
+						if hasUniform(shaderObject, "alphaTexture") then
+							shaderObject.shader:send("alphaTexture", self:getImage(material.albedoTexture) or self.textures.default)
+						end
+					else
+						--alpha
+						checkAndSendCached(shaderObject, "dither", material.dither and 1 or 0)
+						
+						checkAndSendCached(shaderObject, "translucency", material.translucency)
+						
+						--shader
+						shaderObject.pixelShader:perMaterial(shaderObject, material)
+						shaderObject.vertexShader:perMaterial(shaderObject, material)
+						shaderObject.worldShader:perMaterial(shaderObject, material)
+						
+						--culling
+						love.graphics.setMeshCullMode(material.cullMode)
+					end
 					
 					self.stats.materialSwitches = self.stats.materialSwitches + 1
 				end
 				
 				--reflection
-				if shaderObject.reflection then
+				if not isShadow and shaderObject.reflection then
 					local ref = task:getReflection()
 					local tex = type(ref) == "table" and (ref.image or ref.canvas) or (self.defaultReflection and self.defaultReflectionCanvas) or self.textures.skyFallback
 					if lastReflection ~= tex then
@@ -259,19 +283,26 @@ function lib:render(canvases, cam, dynamic)
 				--object transformation
 				shader:send("transform", task:getTransform())
 				
+				--sprite instancing specific
+				if hasUniform(shaderObject, "up") then
+					local v = mesh.vertical or 0
+					local right = vec3(cam.transform[1], cam.transform[5] * (1 - mesh.vertical), cam.transform[9]):normalize()
+					local up = vec3(cam.transform[2], cam.transform[6], cam.transform[10]):normalize()
+					up = (up * (1 - v) + vec3(0, v, 0)):normalize()
+					
+					shader:send("up", up)
+					shader:send("right", right)
+					shader:send("front", right:cross(up):normalize())
+				end
+				
 				--per task
 				shaderObject.pixelShader:perTask(shaderObject, task)
 				shaderObject.vertexShader:perTask(shaderObject, task)
 				shaderObject.worldShader:perTask(shaderObject, task)
 				
 				--render
-				local instanceMesh = mesh:getMesh("instanceMesh")
-				if instanceMesh then
-					objectMesh:attachAttribute("InstanceRotation0", instanceMesh, "perinstance")
-					objectMesh:attachAttribute("InstanceRotation1", instanceMesh, "perinstance")
-					objectMesh:attachAttribute("InstanceRotation2", instanceMesh, "perinstance")
-					objectMesh:attachAttribute("InstancePosition", instanceMesh, "perinstance")
-					love.graphics.drawInstanced(objectMesh, mesh:getInstancesCount())
+				if instanceCount then
+					love.graphics.drawInstanced(objectMesh, instanceCount)
 				else
 					love.graphics.draw(objectMesh)
 				end
@@ -283,226 +314,21 @@ function lib:render(canvases, cam, dynamic)
 			end
 		end
 		self.delton:stop()
-		
-		
-		--particles on the alpha pass
-		if dynamic ~= false then
-			love.graphics.setColor(1.0, 1.0, 1.0)
-			self.delton:start("particles")
-			for ID, batches in pairs(self.particleBatches[pass]) do
-				local emissive = ID == 2 or ID == 4
-				local distortion = ID == 3 or ID == 4
-				
-				--batches
-				local shaderObject = lib:getParticlesShader(pass, canvases, light, emissive, distortion)
-				local shader = shaderObject.shader
-				shaderObject.cache = shaderObject.cache or { }
-				love.graphics.setShader(shader)
-				
-				shader:send("transformProj", cam.transformProj)
-				if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", cam.viewPosition) end
-				checkAndSendCached(shaderObject, "exposure", self.exposure)
-				checkAndSendCached(shaderObject, "ambient", self.sun_ambient)
-				
-				--light
-				self:sendLightUniforms(light, shaderObject)
-				
-				--fog
-				if hasUniform(shaderObject, "fog_density") then
-					sendFogData(shader)
-				end
-				
-				--render particle batches
-				for batch, _ in pairs(batches) do
-					local v = 1.0 - batch.vertical
-					local right = vec3(cam.transform[1], cam.transform[5] * v, cam.transform[9]):normalize()
-					local up = vec3(cam.transform[2] * v, cam.transform[6], cam.transform[10] * v):normalize()
-					shader:send("up", up)
-					shader:send("right", right)
-					
-					--emission texture
-					if hasUniform(shaderObject, "emissionTexture") then
-						shader:send("emissionTexture", batch.emissionTexture)
-					end
-					
-					--distortion texture
-					if hasUniform(shaderObject, "distortionTexture") then
-						shader:send("distortionTexture", batch.distortionTexture)
-					end
-					
-					batch:present(cam.position)
-				end
-			end
-			
-			--single particles on the alpha pass
-			for ID, p in pairs(self.particles[pass]) do
-				local emissive = ID == 2 or ID == 4
-				local distortion = ID == 3 or ID == 4
-				
-				local shaderObject = lib:getParticlesShader(pass, canvases, light, emissive, distortion, true)
-				local shader = shaderObject.shader
-				shaderObject.cache = shaderObject.cache or { }
-				love.graphics.setShader(shader)
-				
-				shader:send("transformProj", cam.transformProj)
-				if hasUniform(shaderObject, "viewPos") then shader:send("viewPos", cam.viewPosition) end
-				checkAndSendCached(shaderObject, "exposure", self.exposure)
-				checkAndSendCached(shaderObject, "ambient", self.sun_ambient)
-				
-				--light if using forward lighting
-				self:sendLightUniforms(light, shaderObject)
-				
-				--fog
-				if hasUniform(shaderObject, "fog_density") then
-					sendFogData(shader)
-				end
-				
-				--render particles
-				for _, s in ipairs(p) do
-					local v = 1 - s.vertical
-					local right = vec3(cam.transform[1], cam.transform[5] * v, cam.transform[9]):normalize()
-					local up = vec3(cam.transform[2] * v, cam.transform[6], cam.transform[10] * v):normalize()
-					
-					shader:send("up", up)
-					shader:send("right", right)
-					
-					--position, size and emission multiplier
-					shader:send("InstanceCenter", s.position)
-					shader:send("InstanceEmission", s.emission)
-					
-					--emission texture
-					if hasUniform(shaderObject, "emissionTexture") then
-						shader:send("emissionTexture", s.emissionTexture)
-					end
-					
-					--emission texture
-					if hasUniform(shaderObject, "distortionTexture") then
-						shader:send("distortionTexture", s.distortionTexture)
-						shader:send("InstanceDistortion", s.distortion)
-					end
-					
-					--draw
-					love.graphics.setColor(s.color)
-					if s.quad then
-						love.graphics.draw(s.texture, s.quad, 0, 0, s.transform[1], s.transform[2], s.transform[3], s.transform[4], s.transform[5])
-					else
-						love.graphics.draw(s.texture, 0, 0, s.transform[1], s.transform[2], s.transform[3], s.transform[4], s.transform[5])
-					end
-				end
-			end
-			self.delton:stop()
-		end
 	end
 	
 	--godrays
-	if dynamic ~= false and self.godrays_enabled and canvases.depth then
-		self:renderGodrays(light, canvases, cam)
-	end
-	
-	love.graphics.pop()
-end
-
----Only renders a depth variant
----@private
-function lib:renderShadows(cam, canvas, blacklist, dynamic)
-	self.delton:start("renderShadows")
-	
-	--update required acceleration data
-	local frustumCheck = self.frustumCheck and not cam.noFrustumCheck
-	if frustumCheck then
-		cam:updateFrustumPlanes()
-	end
-	
-	--get scene
-	local scene = self:buildScene(true, dynamic, false, cam, blacklist, frustumCheck, { }, nil, cam.sun)
-	
-	--current state
-	local shader
-	local shaderObject
-	local lastMaterial
-	
-	love.graphics.push("all")
-	love.graphics.reset()
-	love.graphics.setMeshCullMode("none")
-	love.graphics.setDepthMode("less", true)
-	love.graphics.setBlendMode("darken", "premultiplied")
-	love.graphics.setCanvas(canvas)
-	
-	--second pass for dynamics
-	if dynamic then
-		love.graphics.setColorMask(false, true, false, false)
-	elseif dynamic == false then
-		love.graphics.setColorMask(true, false, false, false)
-	end
-	love.graphics.clear(255, 255, 255, 255)
-	
-	--start rendering
-	for task in scene do
-		local mesh = task:getMesh()
-		local nextShaderObject = task:getShader()
-		
-		--set active shader
-		if shaderObject ~= nextShaderObject then
-			lastMaterial = false
-			
-			shaderObject = nextShaderObject
-			shader = shaderObject.shader
-			shaderObject.session = { }
-			
-			love.graphics.setShader(shader)
-			
-			--camera
-			shader:send("transformProj", cam.transformProj)
-			if hasUniform(shaderObject, "viewPos") then
-				shader:send("viewPos", cam.viewPosition)
-			end
-			
-			shaderObject.pixelShader:perShader(shaderObject)
-			shaderObject.vertexShader:perShader(shaderObject)
-			shaderObject.worldShader:perShader(shaderObject)
-		end
-		
-		--set active material
-		local material = mesh.material
-		if lastMaterial ~= material then
-			lastMaterial = material
-			
-			if hasUniform(shaderObject, "alphaTexture") then
-				shaderObject.shader:send("alphaTexture", self:getImage(material.albedoTexture) or self.textures.default)
-			end
-		end
-		
-		--object transformation
-		shader:send("transform", task:getTransform())
-		
-		--shader
-		shaderObject.pixelShader:perTask(shaderObject, task)
-		shaderObject.vertexShader:perTask(shaderObject, task)
-		shaderObject.worldShader:perTask(shaderObject, task)
-		
-		--render
-		local objectMesh = mesh:getMesh()
-		local instanceMesh = mesh:getMesh("instanceMesh")
-		if instanceMesh then
-			objectMesh:attachAttribute("InstanceRotation0", instanceMesh, "perinstance")
-			objectMesh:attachAttribute("InstanceRotation1", instanceMesh, "perinstance")
-			objectMesh:attachAttribute("InstanceRotation2", instanceMesh, "perinstance")
-			objectMesh:attachAttribute("InstancePosition", instanceMesh, "perinstance")
-			love.graphics.drawInstanced(objectMesh, instanceMesh:getVertexCount())
-		elseif objectMesh then
-			love.graphics.draw(objectMesh)
+	if not isShadow then
+		if dynamic ~= false and self.godrays_enabled and canvases.depth then
+			self:renderGodrays(light, canvases, cam)
 		end
 	end
 	
 	love.graphics.pop()
-	self.delton:stop()
-	
-	return scene
 end
 
 ---Full render, including bloom, fxaa and exposure
 ---@private
-function lib:renderFull(cam, canvases)
+function lib:renderFull(cam, canvases, dynamic)
 	love.graphics.push("all")
 	if canvases.mode ~= "direct" then
 		love.graphics.reset()
@@ -510,7 +336,7 @@ function lib:renderFull(cam, canvases)
 	
 	--render
 	self.delton:start("render")
-	self:render(canvases, cam)
+	self:render(cam, canvases, dynamic)
 	self.delton:stop()
 	
 	--direct rendering has no post effects

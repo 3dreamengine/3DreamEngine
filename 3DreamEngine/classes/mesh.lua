@@ -47,6 +47,8 @@ class.isMesh = true
 function class:setMaterial(material)
 	self.material = material
 end
+
+---@return DreamMaterial
 function class:getMaterial()
 	return self.material
 end
@@ -385,12 +387,12 @@ end
 
 ---Makes this mesh render-able
 function class:create()
-	assert(self.faces, "Face array is required")
+	assert(self.meshDrawMode ~= "triangles" or self.faces, "Face array is required")
 	
 	--create mesh
 	local meshFormat = self:getMeshFormat()
 	local byteData = meshFormat:create(self)
-	self.mesh = love.graphics.newMesh(meshFormat.vertexFormat, byteData, "triangles", "static")
+	self.mesh = love.graphics.newMesh(meshFormat.vertexFormat, byteData, self.meshDrawMode, "static")
 	
 	--vertex map
 	self.mesh:setVertexMap(self:createVertexMap(), "uint32")

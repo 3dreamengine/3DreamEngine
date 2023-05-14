@@ -37,6 +37,7 @@ function sh:buildDefines(mat, shadow)
 		
 		#ifdef EMISSION_TEXTURE
 		uniform Image emissionTexture;
+		uniform vec3 emissionFactor;
 		#endif
 		uniform vec3 emissionColor;
 		
@@ -64,7 +65,7 @@ function sh:buildPixel(mat)
 	
 	//emission
 #ifdef EMISSION_TEXTURE
-	emission = gammaCorrectedTexel(emissionTexture, VaryingTexCoord.xy).rgb * emissionColor;
+	emission = gammaCorrectedTexel(emissionTexture, VaryingTexCoord.xy).rgb * emissionFactor;
 #else
 	emission = albedoColor.rgb * emissionColor;
 #endif
@@ -106,7 +107,12 @@ function sh:perMaterial(shaderObject, material)
 		shader:send("emissionTexture", dream:getImage(material.emissionTexture) or tex.default)
 	end
 	
-	shader:send("emissionColor", material.emission)
+	if shader:hasUniform("emissionColor") then
+		shader:send("emissionColor", material.emission)
+	end
+	if shader:hasUniform("emissionFactor") then
+		shader:send("emissionFactor", material.emissionFactor)
+	end
 end
 
 function sh:perTask(shaderObject, task)
