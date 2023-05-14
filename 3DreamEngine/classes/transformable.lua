@@ -164,14 +164,13 @@ function class:lookTowards(direction, up)
 	local yaxis = xaxis:cross(zaxis)
 	
 	local rotate = mat4({
-		xaxis.x, xaxis.y, xaxis.z, 0.0,
-		yaxis.x, yaxis.y, yaxis.z, 0.0,
-		-zaxis.x, -zaxis.y, -zaxis.z, 0.0,
+		xaxis.x, yaxis.x, -zaxis.x, 0.0,
+		xaxis.y, yaxis.y, -zaxis.y, 0.0,
+		xaxis.z, yaxis.z, -zaxis.z, 0.0,
 		0, 0, 0, 1
 	})
 	
-	--todo someone with better math skills should take a look at this mess
-	self.transform = self:getTransform() * rotate:invert()
+	self.transform = self:getTransform() * rotate
 	
 	self:setDirty()
 	return self
