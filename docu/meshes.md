@@ -12,7 +12,7 @@ mesh:getMaterial()
 
 ## Mesh
 
-See [Mesh](https://3dreamengine.github.io/3DreamEngine/docu/mesh)
+See [Mesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/mesh)
 
 The parent class of all following classes is the plain mesh. It is usually used within the object loaders.
 
@@ -53,7 +53,7 @@ mesh:cleanup()
 
 # MeshBuilder
 
-See [MeshBuilder](https://3dreamengine.github.io/3DreamEngine/docu/meshBuilder)
+See [MeshBuilder](https://3dreamengine.github.io/3DreamEngine/docu/classes/meshbuilder), [MeshFormat](https://3dreamengine.github.io/3DreamEngine/docu/classes/meshformat)
 
 Building Meshes the manual way is quite tedious and slow, so lets use the preferred mesh builder, which wraps a lot of stuff.
 
@@ -80,7 +80,7 @@ local pointer = meshBuilder:addQuad()
 pointer[0].VertexPositionX = 7
 
 
---If a quad or triangle is still to high level, request a raw memory segment
+--If a quad or triangle is still too high level, request a raw memory segment
 --VertexOffset points to your first vertex and is required to be used in setting the index buffer accordingly
 --Refer to the example linked for an implementation
 local vertexPointer, indexPointer, vertexOffset = meshBuilder:addVertices(4, 6)
@@ -88,7 +88,7 @@ local vertexPointer, indexPointer, vertexOffset = meshBuilder:addVertices(4, 6)
 
 ## MutableMeshBuilder
 
-See [MutableMeshBuilder](https://3dreamengine.github.io/3DreamEngine/docu/mutableMeshBuilder)
+See [MutableMeshBuilder](https://3dreamengine.github.io/3DreamEngine/docu/classes/mutablemeshbuilder)
 
 Sometimes one would like to modify a buffer without rebuilding it completely.
 
@@ -110,9 +110,7 @@ The mutable mesh builders have a higher memory overhead and will perform defragm
 
 # TextMeshBuilder
 
-See [TextMeshBuilder](https://3dreamengine.github.io/3DreamEngine/docu/textMeshBuilder)
-
-See [GlyphAtlas](https://3dreamengine.github.io/3DreamEngine/docu/glyphAtlas)
+See [TextMeshBuilder](https://3dreamengine.github.io/3DreamEngine/docu/classes/textmeshbuilder), [GlyphAtlas](https://3dreamengine.github.io/3DreamEngine/docu/classes/glyphatlas)
 
 A special variant of mesh builders is used for text.
 
@@ -129,7 +127,7 @@ text:printf("This text should be perfectly centered", 400, "originCenter")
 
 # InstancedMesh
 
-See [InstancedMesh](https://3dreamengine.github.io/3DreamEngine/docu/instancedMesh)
+See [InstancedMesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/instancedmesh)
 
 Another approach are instances, where the same (usually small mesh) is placed at multiple locations.
 It tends to be faster than a mesh builder and requires less memory, but is restricted to a single template mesh.
@@ -146,7 +144,7 @@ instancedMesh:addInstance(dream.mat4.getTranslate(1, 2, 3), 1)
 
 # Sprite
 
-See [Sprite](https://3dreamengine.github.io/3DreamEngine/docu/sprite)
+See [Sprite](https://3dreamengine.github.io/3DreamEngine/docu/classes/sprite)
 
 A sprite is used to draw a single quad.
 
@@ -159,9 +157,9 @@ dream:draw(sprite, sprite:getSpriteTransform(x, y, z, rot, sx, sy))
 
 # SpriteBatch
 
-See [SpriteBatch](https://3dreamengine.github.io/3DreamEngine/docu/spriteBatch)
+See [SpriteBatch](https://3dreamengine.github.io/3DreamEngine/docu/classes/spritebatch)
 
-If you have multiple sprites you may want to use a spritebatch. Sprites are rendered always camera-normal aligned (not camera facing, there is a small deviation). The math is done on the GPU, thus much faster than manually transforming and setting vertices. Spritebatches also has a bit smaller memory usage.
+If you have multiple sprites you may want to use a spritebatch. Sprites are rendered always camera-normal aligned (not camera facing, there is a small deviation). The math is done on the GPU, thus much faster than manually transforming and setting vertices. Spritebatches also have a bit smaller memory usage.
 
 ```lua
 local spriteBatch = dream:newSpriteBatch(texture)
