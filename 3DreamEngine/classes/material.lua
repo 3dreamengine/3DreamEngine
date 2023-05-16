@@ -7,7 +7,7 @@ local lib = _3DreamEngine
 function lib:newMaterial(name)
 	---@type DreamMaterial
 	local m = setmetatable({ }, self.meta.material)
-	m.color = { 0.5, 0.5, 0.5, 1.0 }
+	m.color = { 1.0, 1.0, 1.0, 1.0 }
 	m.emission = { 0.0, 0.0, 0.0 }
 	m.emissionFactor = { 1.0, 1.0, 1.0 }
 	m.roughness = 1
