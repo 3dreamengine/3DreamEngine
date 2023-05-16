@@ -41,7 +41,6 @@ function lib:loadMaterialLibrary(path, prefix)
 				self.materialLibrary[mat.name] = mat
 			elseif love.filesystem.getInfo(p .. "/material.lua") then
 				--material using the recommended directory-format
-				--todo what, move to case 1
 				local mat = self:newMaterial(prefix .. s)
 				mat:loadFromFile(p .. "/material.lua")
 				mat.library = true

@@ -223,8 +223,6 @@ function lib:init(w, h)
 	
 	self.canvasCache = { }
 	
-	self:clearLoadedCanvases()
-	
 	--reset shader
 	self:loadShaders()
 	

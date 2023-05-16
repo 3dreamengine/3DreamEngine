@@ -180,9 +180,6 @@ function class:preload(force)
 		end
 	end
 	
-	--preload shader
-	--todo
-	
 	self.preloaded = true
 end
 

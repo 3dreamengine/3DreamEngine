@@ -66,10 +66,6 @@ local class = {
 	links = { "scene" },
 }
 
-function class:preload()
-	--todo
-end
-
 ---Adds an object to the scene
 ---@param object DreamObject
 function class:add(object)

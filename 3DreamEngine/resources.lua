@@ -80,16 +80,6 @@ function lib:clearLoadedTextures()
 	self.texturesLoaded = { }
 end
 
---todo related to smooth loading and thus being removed
----@deprecated
-function lib:clearLoadedCanvases()
-	for d, s in pairs(self.texturesLoaded) do
-		if type(s) == "userdata" and s:typeOf("Canvas") then
-			self.texturesLoaded[d] = nil
-		end
-	end
-end
-
 ---Get image path if present
 ---@param path string @ Slash separated path without extension to image
 ---@return string

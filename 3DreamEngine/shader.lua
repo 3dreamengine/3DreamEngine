@@ -41,23 +41,6 @@ if _DEBUGMODE and love.graphics then
 	end
 end
 
---todo move
-local lastShaderID = 0
-function lib:newShader(path)
-	local shader = require(path)
-	
-	shader.path = path
-	
-	shader.id = lastShaderID
-	lastShaderID = lastShaderID + 1
-	
-	if shader.init then
-		shader:init(self)
-	end
-	
-	return shader
-end
-
 lib.shaderRegister = { }
 
 ---Register a shader to the shader registry, materials files can then reference them
