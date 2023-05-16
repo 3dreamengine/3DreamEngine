@@ -7,8 +7,8 @@ Most functions are annotated using EmmyLua doc.
 - [Introduction](https://3dreamengine.github.io/3DreamEngine/docu/introduction)
   Main components and design choices of the engine. You should read that.
 
-- [Particles](https://3dreamengine.github.io/3DreamEngine/docu/particles)
-  The 3D-version of loves spritebatches, designed to draw 2D Images with high performance
+- [Meshes](https://3dreamengine.github.io/3DreamEngine/docu/meshes)
+  A list of all meshes, and their use cases. Those include particles, sprites, text and instancing.
 
 - [Skeletons](https://3dreamengine.github.io/3DreamEngine/docu/skeletons)
   Skeletal Animations
