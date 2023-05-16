@@ -46,10 +46,10 @@ for y = 1, 5 do
 end
 
 --create new particle batch
-local particleBatch = dream:newParticleBatch(texture_candle, texture_candle)
-particleBatch:setVertical(0.75)
+local spriteBatch = dream:newSpriteBatch(texture_candle, texture_candle)
+spriteBatch:setVertical(0.75)
 
-local particleBatchDust = dream:newParticleBatch(love.graphics.newImage(projectDir .. "dust.png"))
+local particleBatchDust = dream:newSpriteBatch(love.graphics.newImage(projectDir .. "dust.png"))
 particleBatchDust:setSorting(false)
 particleBatchDust:getMaterial():setRoughness(1)
 
@@ -99,7 +99,7 @@ function love.draw()
 	dream:prepare()
 	
 	--torches
-	particleBatch:clear()
+	spriteBatch:clear()
 	
 	--dusty atmosphere
 	particleBatchDust:clear()
@@ -124,7 +124,7 @@ function love.draw()
 			dream:addLight(lights[d])
 		elseif l:getValue() == "candle" then
 			local power = (0.5 + 0.2 * noise(flicker, l.r)) * l:getSize() * 4
-			particleBatch:addQuad(quads[math.ceil(l.r + love.timer.getTime() * 24) % 25 + 1], l.position.x, l.position.y + 0.02, l.position.z, 0, power, nil, 2.0)
+			spriteBatch:addQuad(quads[math.ceil(l.r + love.timer.getTime() * 24) % 25 + 1], l.position.x, l.position.y + 0.02, l.position.z, 0, power, nil, 2.0)
 		elseif l:getValue() == "fire" then
 			local power = (0.5 + 0.2 * noise(flicker, l.r)) * l:getSize() * 2000.0
 			lights[d]:setBrightness(power)
@@ -134,7 +134,7 @@ function love.draw()
 			
 			for i = -3, 3 do
 				local flamePower = (0.5 + 0.15 * noise(flicker, l.r + i)) * l:getSize() / (1 + 0.1 * math.abs(i)) * 4
-				particleBatch:addQuad(quads[math.ceil(i * 17 + l.r + love.timer.getTime() * 24) % 25 + 1], l.position.x + i * 0.1, l.position.y - 0.15, l.position.z - 0.1 - math.abs(i) * 0.025, 0, flamePower, nil, 4.0)
+				spriteBatch:addQuad(quads[math.ceil(i * 17 + l.r + love.timer.getTime() * 24) % 25 + 1], l.position.x + i * 0.1, l.position.y - 0.15, l.position.z - 0.1 - math.abs(i) * 0.025, 0, flamePower, nil, 4.0)
 			end
 		end
 	end
@@ -144,7 +144,7 @@ function love.draw()
 	dream:draw(tavern)
 	
 	--draw the particles
-	dream:draw(particleBatch)
+	dream:draw(spriteBatch)
 	dream:draw(particleBatchDust)
 	
 	--render

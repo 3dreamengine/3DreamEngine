@@ -34,7 +34,7 @@ local particles = { }
 local lastParticleID = 0
 
 --create new particle batch
-local particleBatch = dream:newParticleBatch(texture_candle)
+local particleBatch = dream:newSpriteBatch(texture_candle)
 particleBatch:setVertical(0.75)
 
 --a helper class

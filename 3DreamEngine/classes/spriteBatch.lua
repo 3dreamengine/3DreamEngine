@@ -5,7 +5,7 @@ local lib = _3DreamEngine
 ---@param texture Texture @ optional
 ---@param emissionTexture Texture @ optional
 ---@param normalTexture Texture @ optional
-function lib:newParticleBatch(texture, emissionTexture, normalTexture)
+function lib:newSpriteBatch(texture, emissionTexture, normalTexture)
 	---@type DreamSpriteBatch
 	local sb = setmetatable(lib.classes.sprite.getQuadMesh(1, 1, 0, 0, 1, 1), self.meta.spriteBatch)
 	
