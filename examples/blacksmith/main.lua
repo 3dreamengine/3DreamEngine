@@ -18,7 +18,7 @@ dream:init()
 dream:loadMaterialLibrary(projectDir .. "materials")
 
 local scene = dream:loadObject(projectDir .. "scene")
-local torch = dream:loadObject(projectDir .. "torch")
+local torchObject = dream:loadObject(projectDir .. "torch")
 
 --particle texture
 local texture_candle = love.graphics.newImage(projectDir .. "materials/candle.png")
@@ -26,7 +26,7 @@ local factor = texture_candle:getHeight() / texture_candle:getWidth()
 local quads = { }
 for y = 1, 5 do
 	for x = 1, 5 do
-		table.insert(quads, love.graphics.newQuad(x-1, (y-1)*factor, 1, factor, 5, 5*factor))
+		table.insert(quads, love.graphics.newQuad(x - 1, (y - 1) * factor, 1, factor, 5, 5 * factor))
 	end
 end
 
@@ -50,9 +50,9 @@ for i = 1, 3 do
 end
 
 local torches = {
-	torch:instance():translate(0, 0, -1.9):scale(0.075):rotateY(-math.pi/2),
-	torch:instance():translate(1.25, 0, 1.9):scale(0.075):rotateY(math.pi/2),
-	torch:instance():translate(-1.25, 0, 1.9):scale(0.075):rotateY(math.pi/2),
+	torchObject:instance():translate(0, 0, -1.9):scale(0.075):rotateY(-math.pi / 2),
+	torchObject:instance():translate(1.25, 0, 1.9):scale(0.075):rotateY(math.pi / 2),
+	torchObject:instance():translate(-1.25, 0, 1.9):scale(0.075):rotateY(math.pi / 2),
 }
 
 local hideTooltips = false
@@ -64,17 +64,17 @@ function love.draw()
 	dream:prepare()
 	
 	--torches, lights and particles
-	for d,s in ipairs({
-		{0, 0.3, -1.85},
-		{1.25, 0.3, 1.85},
-		{-1.25, 0.3, 1.85},
+	for d, s in ipairs({
+		{ 0, 0.3, -1.85 },
+		{ 1.25, 0.3, 1.85 },
+		{ -1.25, 0.3, 1.85 },
 	}) do
 		lights[d]:setPosition(s[1], s[2], s[3])
-		lights[d]:setBrightness(8.0 + 4.0 * love.math.noise(love.timer.getTime()*2))
+		lights[d]:setBrightness(8.0 + 4.0 * love.math.noise(love.timer.getTime() * 2))
 		dream:addLight(lights[d])
 		
-		if math.random() < love.timer.getDelta()*8.0 then
-			particles[lastParticleID] = {s[1] + (math.random()-0.5)*0.1, s[2] + (math.random()-0.5)*0.1, s[3] + (math.random()-0.5)*0.1, math.random()+1.0}
+		if math.random() < love.timer.getDelta() * 8.0 then
+			particles[lastParticleID] = { s[1] + (math.random() - 0.5) * 0.1, s[2] + (math.random() - 0.5) * 0.1, s[3] + (math.random() - 0.5) * 0.1, math.random() + 1.0 }
 			lastParticleID = lastParticleID + 1
 		end
 	end
@@ -82,20 +82,20 @@ function love.draw()
 	--particles
 	particleBatch:clear()
 	love.graphics.setColor(0, 0, 0, 1)
-	for d,s in pairs(particles) do
-		particleBatch:addQuad(quads[math.ceil(d + s[4]*25) % 25 + 1], s[1], s[2], s[3], 0, s[4]*0.075, nil, 2.0)
+	for d, s in pairs(particles) do
+		particleBatch:addQuad(quads[math.ceil(d + s[4] * 25) % 25 + 1], s[1], s[2], s[3], 0, s[4] * 0.075, nil, 2.0)
 	end
 	love.graphics.setColor(1, 1, 1)
 	
 	dream:draw(scene)
 	
-	dream:drawParticleBatch(particleBatch)
+	dream:draw(particleBatch)
 	
 	--torches
 	for _, torch in ipairs(torches) do
 		dream:draw(torch)
 	end
-
+	
 	dream:present()
 	
 	if not hideTooltips then
@@ -110,8 +110,8 @@ end
 
 function love.update(dt)
 	--particles
-	for d,s in pairs(particles) do
-		s[2] = s[2] + dt*0.25
+	for d, s in pairs(particles) do
+		s[2] = s[2] + dt * 0.25
 		s[4] = s[4] - dt
 		if s[4] < 0 then
 			particles[d] = nil
@@ -129,7 +129,7 @@ function love.keypressed(key)
 	if key == "f2" then
 		dream:takeScreenshot()
 	end
-
+	
 	--fullscreen
 	if key == "f11" then
 		love.window.setFullscreen(not love.window.getFullscreen())
@@ -146,7 +146,7 @@ function love.keypressed(key)
 	end
 	
 	if key == "b" then
-		for d,s in pairs(lights) do
+		for _, s in pairs(lights) do
 			s.shadow:setSmooth(not s.shadow:isSmooth())
 		end
 	end

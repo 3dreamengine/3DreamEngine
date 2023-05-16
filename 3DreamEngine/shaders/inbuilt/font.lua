@@ -15,10 +15,10 @@ function sh:buildDefines(mat, shadow)
 		#ifdef PIXEL
 		uniform Image albedoTexture;
 		uniform vec2 albedoTextureSize;
-		//todo
 		uniform vec4 albedoColor;
 		uniform vec2 materialColor;
 		uniform vec3 emissionColor;
+		uniform vec3 emissionFactor;
 		#endif
 	
 		varying vec3 VaryingMaterial;
@@ -33,14 +33,14 @@ end
 function sh:buildPixel(mat)
 	return [[
 	//color
-	vec4 c = gammaCorrectedTexel(albedoTexture, VaryingTexCoord.xy * albedoTextureSize) * VaryingColor;
+	vec4 c = gammaCorrectedTexel(albedoTexture, VaryingTexCoord.xy * albedoTextureSize) * albedoColor * VaryingColor;
 	albedo = c.rgb;
 	alpha = c.a;
 	
 	//material
 	roughness = VaryingMaterial.x;
 	metallic = VaryingMaterial.y;
-	emission = VaryingColor.rgb * VaryingMaterial.z; //todo why
+	emission = c.rgb * VaryingMaterial.z * emissionFactor + emissionColor;
 	]]
 end
 
@@ -60,8 +60,10 @@ function sh:perMaterial(shaderObject, material)
 	local t = dream:getImage(material.albedoTexture) or dream.textures.default
 	shader:send("albedoTexture", t)
 	shader:send("albedoTextureSize", { 1 / t:getWidth(), 1 / t:getHeight() })
+	shader:send("albedoColor", material.color)
 	
-	--todo readd albedo, material and emission. Also find a way to fix emission on materials supporting per vertex emissions. For font and simple
+	shader:send("emissionColor", material.emission)
+	shader:send("emissionFactor", material.emissionFactor)
 end
 
 function sh:perTask(shaderObject, task)

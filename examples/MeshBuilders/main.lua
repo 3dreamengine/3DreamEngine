@@ -50,6 +50,7 @@ text:printf("This text should be perfectly centered", 400, "originCenter")
 
 --a second text builder which we use for animations. Don't create a new builder each frame, reuse and clear instead whenever possible.
 local animatedText = dream:newTextMeshBuilder(glyphAtlas)
+animatedText:getMaterial():setEmissionFactor(5, 5, 5)
 
 --a helper to showcase more advanced strings
 local function populateAnimatedText()
@@ -57,7 +58,7 @@ local function populateAnimatedText()
 	animatedText:printf({
 		{
 			--a simple string segment
-			string = "Look, a ",
+			string = "Look, a "
 		},
 		{
 			--and a bit more advanced string segment with a material
@@ -72,7 +73,7 @@ local function populateAnimatedText()
 			emission = 1.0,
 		},
 		{
-			string = "!",
+			string = "!"
 		},
 	}, 400, "originCenter")
 end

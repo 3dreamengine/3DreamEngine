@@ -22,6 +22,8 @@ dream:setFogHeight(0.0, 2.5)
 --load materials
 dream:loadMaterialLibrary(projectDir .. "materials")
 
+dream:setAutoExposure(true)
+
 --initialize engine
 dream:init()
 

@@ -8,7 +8,6 @@ local vec3 = lib.vec3
 ---@return DreamTextMeshBuilder
 function lib:newTextMeshBuilder(glyphAtlas)
 	local material = lib:newMaterial("font")
-	material:setColor(1, 1, 1, 1)
 	material:setPixelShader("font")
 	material:setCullMode("none")
 	material:setAlpha()
