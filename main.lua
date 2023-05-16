@@ -23,7 +23,8 @@ local descriptions = {
 	["knight"] = "MagicaVoxel demo.",
 	["Lamborghini"] = "PBR rendered Lamborghini with emission texture.",
 	["manyMonkeys"] = "Demo on how to use instancing, object merging or buffer builders to achieve higher performance.",
-	["monkey"] = "Good old Suzanne. Simpliest usage example.",
+	["MeshBuilders"] = "Different mesh builders, text objects, spritebatches and more.",
+	["monkey"] = "Good old Suzanne. Simplest usage example.",
 	["Physics"] = "A showcase of the Box2D physics wrapper.",
 	["Tavern"] = "PBR rendered Tavern with fully soft shadowed static light sources, particles, and raytracing. Toggle different features to see real time differences.",
 }

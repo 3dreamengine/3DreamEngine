@@ -32,17 +32,21 @@ local quad = love.graphics.newQuad(0, 0, 1, 960 / 400, 5, 5 * 960 / 400)
 
 -- FONT AND TEXT
 
---create a new glyph atlas using LÖVEs default font and size 32
-local glyphAtlas = dream:newGlyphAtlas(nil, 32)
+--create a new glyph atlas using LÖVEs default font and size 64
+local glyphAtlas = dream:newGlyphAtlas(nil, 64)
 
 --create a text builder, which internally uses the glyph atlas
 local text = dream:newTextMeshBuilder(glyphAtlas)
 
+--as with every mesh, the text material can be modified
+text:getMaterial():setRoughness(0.1)
+text:getMaterial():setMetallic(1)
+
 --simple, left align, single line text with optional transformation
-text:print("Simple text", dream.mat4.getTranslate(-90, 40, 0))
+text:print("Simple text", dream.mat4.getTranslate(-180, 80, 0))
 
 --formatted, aligned (here we use originCenter, which uses the origin X as center), line wrapped text
-text:printf("This text should be perfectly centered", 200, "originCenter")
+text:printf("This text should be perfectly centered", 400, "originCenter")
 
 --a second text builder which we use for animations. Don't create a new builder each frame, reuse and clear instead whenever possible.
 local animatedText = dream:newTextMeshBuilder(glyphAtlas)
@@ -70,7 +74,7 @@ local function populateAnimatedText()
 		{
 			string = "!",
 		},
-	}, 200, "originCenter")
+	}, 400, "originCenter")
 end
 
 
@@ -86,7 +90,22 @@ sprite:getMaterial():setDiscard()
 -- SPRITE BATCH
 
 --similar to individual sprites we can use a spriteBatch to draw several in one go. Much faster, and generally recommended whenever possible.
+--the sprites always face the camera
 local spriteBatch = dream:newSpriteBatch(texture, texture)
+
+
+-- MESH BUILDER
+
+--more flexible are mesh builders
+local meshBuilder = dream:newMeshBuilder(sprite.material)
+
+
+-- INSTANCED MESH
+
+--less flexible than mesh builders but a bit more efficient
+--unlike the sprite batch sprites do not automatically face the camera
+local instancedMesh = dream:newInstancedMesh(sprite)
+
 
 function love.draw()
 	dream:prepare()
@@ -102,8 +121,9 @@ function love.draw()
 	populateAnimatedText()
 	local transform = dream.mat4.getIdentity()
 	transform = transform:translate(-1, 1, -2.25)
+	transform = transform:rotateX(-0.1)
 	transform = transform:rotateY(math.cos(love.timer.getTime()) * 0.5)
-	transform = transform:scale(0.01)
+	transform = transform:scale(0.005)
 	dream:draw(text, transform)
 	transform = dream.mat4.getTranslate(2, 0, 0) * transform
 	dream:draw(animatedText, transform)
@@ -124,6 +144,57 @@ function love.draw()
 	spriteBatch:addQuad(quad, 1.1, 0, -1, math.cos(t * 3.5) * 0.25, 0.1)
 	spriteBatch:addQuad(quad, 1.2, 0, -1, math.cos(t * 3.4) * 0.25, 0.1)
 	dream:draw(spriteBatch)
+	
+	
+	-- MESH BUILDER
+	-- the same for mesh builders
+	meshBuilder:clear()
+	meshBuilder:addMesh(sprite, sprite:getSpriteTransform(0.5, 0, -1, math.cos(t * 3.6) * 0.25, 0.1))
+	meshBuilder:addMesh(sprite, sprite:getSpriteTransform(0.6, 0, -1, math.cos(t * 3.5) * 0.25, 0.1))
+	meshBuilder:addMesh(sprite, sprite:getSpriteTransform(0.7, 0, -1, math.cos(t * 3.4) * 0.25, 0.1))
+	dream:draw(meshBuilder)
+	
+	--instead of adding whole meshes you can add individual vertices
+	--we could use the addQuad() helper, which allocates 4 vertices and pre-sets 2 triangles automatically, but to showcase faces let's use the full version
+	--on screen, it will be the small flame atlas in the center
+	--this is just an example, the mesh builder is slower, has a higher memory footprint and less convenient for just sprites
+	local vertices, indices, vertexOffset = meshBuilder:addVertices(4, 6)
+	
+	--two triangles
+	indices[0] = vertexOffset
+	indices[1] = vertexOffset + 1
+	indices[2] = vertexOffset + 2
+	indices[3] = vertexOffset
+	indices[4] = vertexOffset + 2
+	indices[5] = vertexOffset + 3
+	
+	--quad with size 1
+	vertices[0].VertexPositionX = 0	vertices[0].VertexPositionY = 0	vertices[0].VertexPositionZ = -5
+	vertices[1].VertexPositionX = 1	vertices[1].VertexPositionY = 0	vertices[1].VertexPositionZ = -5
+	vertices[2].VertexPositionX = 1	vertices[2].VertexPositionY = 1	vertices[2].VertexPositionZ = -5
+	vertices[3].VertexPositionY = 0	vertices[3].VertexPositionY = 1	vertices[3].VertexPositionZ = -5
+	
+	--full UV
+	vertices[0].VertexTexCoordX = 0	vertices[0].VertexTexCoordY = 1
+	vertices[1].VertexTexCoordX = 1	vertices[1].VertexTexCoordY = 1
+	vertices[2].VertexTexCoordX = 1	vertices[2].VertexTexCoordY = 0
+	vertices[3].VertexTexCoordX = 0	vertices[3].VertexTexCoordY = 0
+	
+	--point to viewer
+	vertices[0].VertexNormalZ = 1
+	vertices[1].VertexNormalZ = 1
+	vertices[2].VertexNormalZ = 1
+	vertices[3].VertexNormalZ = 1
+	
+	
+	-- INSTANCED MESH
+	
+	--we reuse the transform getter of sprites here to let the sprites face the camera
+	instancedMesh:clear()
+	instancedMesh:addInstance(dream.classes.sprite:getSpriteTransform(-0.1, 0, -1, math.cos(t * 3.6) * 0.25, 0.1))
+	instancedMesh:addInstance(dream.classes.sprite:getSpriteTransform(-0.2, 0, -1, math.cos(t * 3.5) * 0.25, 0.1))
+	instancedMesh:addInstance(dream.classes.sprite:getSpriteTransform(-0.3, 0, -1, math.cos(t * 3.4) * 0.25, 0.1))
+	dream:draw(instancedMesh)
 	
 	dream:present()
 end

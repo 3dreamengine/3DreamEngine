@@ -1,10 +1,18 @@
 # Meshes
 
+This page comes with a dedicated example, showcasing following concepts in action:
+[/examples/MeshBuilders/main.lua](https://github.com/3dreamengine/3DreamEngine/blob/master/examples/MeshBuilders/main.lua)
+
 A mesh is a drawable object with a shape and material. It's usually encapsulated into an object to have an position. Meshes can be shared across multiple objects.
+
+````lua
+--Access and modify a meshes material
+mesh:getMaterial()
+````
 
 ## Mesh
 
-See [Mesh](https://3dreamengine.github.io/3DreamEngine/docu/skeletons)
+See [Mesh](https://3dreamengine.github.io/3DreamEngine/docu/mesh)
 
 The parent class of all following classes is the plain mesh. It is usually used within the object loaders.
 
@@ -45,51 +53,120 @@ mesh:cleanup()
 
 # MeshBuilder
 
+See [MeshBuilder](https://3dreamengine.github.io/3DreamEngine/docu/meshBuilder)
+
 Building Meshes the manual way is quite tedious and slow, so lets use the preferred mesh builder, which wraps a lot of stuff.
 
 ```lua
 --Create a material, we use the simple pixel shader, which uses a simple, colored but non textures meshFormat.
+--The vertex members are defined in the mesh format.
 local material = dream:newMaterial()
 material:setPixelShader("simple")
 
-local meshBuilder = dream:newMeshBuilder(material, "triangles")
+--Create the mesh builder. Whenever possible, reuse an old one and use clear.
+local meshBuilder = dream:newMeshBuilder(material)
 
-local pointer = chunk.mesh:addQuad()
-for i = 1, 4 do
-    local v = pointer[i - 1]
-    v.VertexPositionX = x + vertices[faces[direction][i]][1]
-    v.VertexPositionY = y + vertices[faces[direction][i]][2]
-    v.VertexPositionZ = z + vertices[faces[direction][i]][3]
-    v.VertexNormalX = normal[1] * 127.5 + 127.5
-    v.VertexNormalY = normal[2] * 127.5 + 127.5
-    v.VertexNormalZ = normal[3] * 127.5 + 127.5
-    v.VertexMaterialX = 127
-    v.VertexMaterialY = 0
-    v.VertexMaterialZ = 0
-    v.VertexColorX = self.red
-    v.VertexColorY = self.green
-    v.VertexColorZ = self.blue
-    v.VertexColorW = 255
-end
+
+--The simplest way to populate a buffer is by adding entire meshes at given transformations
+--Those meshes need to share the same mesh format, and should share the same material
+meshBuilder:addMesh(someMesh, dream.mat4.getTranslate(1, 2, 3))
+
+
+--Requests a quad
+local pointer = meshBuilder:addQuad()
+
+--Set the X position of the first vertex
+--All data for the specified mesh format should be set and is 0 otherwise (tangent data is auto generated if not provided)
+pointer[0].VertexPositionX = 7
+
+
+--If a quad or triangle is still to high level, request a raw memory segment
+--VertexOffset points to your first vertex and is required to be used in setting the index buffer accordingly
+--Refer to the example linked for an implementation
+local vertexPointer, indexPointer, vertexOffset = meshBuilder:addVertices(4, 6)
 ```
 
-# ParticleMesh
+## MutableMeshBuilder
+
+See [MutableMeshBuilder](https://3dreamengine.github.io/3DreamEngine/docu/mutableMeshBuilder)
+
+Sometimes one would like to modify a buffer without rebuilding it completely.
 
 ```lua
+--Create a mutable version
+local meshBuilder = dream:newMutableMeshBuilder(material)
 
+--Add as previously
+meshBuilder:addMesh(someMesh, dream.mat4.getTranslate(1, 2, 3))
+
+--But store the id to find that memory segment again
+local id = meshBuilder:getLastChunkId()
+
+--And remove
+meshBuilder:remove(id)
 ```
 
-# FontMesh
+The mutable mesh builders have a higher memory overhead and will perform defragmentation from time to time.
+
+# TextMeshBuilder
+
+See [TextMeshBuilder](https://3dreamengine.github.io/3DreamEngine/docu/textMeshBuilder)
+
+See [GlyphAtlas](https://3dreamengine.github.io/3DreamEngine/docu/glyphAtlas)
+
+A special variant of mesh builders is used for text.
 
 ```lua
+--Create a new glyph atlas using LÖVEs default font and size 64
+local glyphAtlas = dream:newGlyphAtlas(nil, 64)
 
+--Create a text builder, which internally uses the glyph atlas
+local text = dream:newTextMeshBuilder(glyphAtlas)
+
+--Formatted, aligned (here we use originCenter, which uses the origin X as center), line wrapped text
+text:printf("This text should be perfectly centered", 400, "originCenter")
 ```
 
 # InstancedMesh
+
+See [InstancedMesh](https://3dreamengine.github.io/3DreamEngine/docu/instancedMesh)
 
 Another approach are instances, where the same (usually small mesh) is placed at multiple locations.
 It tends to be faster than a mesh builder and requires less memory, but is restricted to a single template mesh.
 
 ```lua
+local instancedMesh = dream:newInstancedMesh(templateMesh)
 
+--Appends a new instance
+instancedMesh:addInstance(dream.mat4.getTranslate(1, 2, 3))
+
+--Replace an existing instance
+instancedMesh:addInstance(dream.mat4.getTranslate(1, 2, 3), 1)
+```
+
+# Sprite
+
+See [Sprite](https://3dreamengine.github.io/3DreamEngine/docu/sprite)
+
+A sprite is used to draw a single quad.
+
+```lua
+local sprite = dream:newSprite(texture)
+
+--Draw it somewhere facing the camera
+dream:draw(sprite, sprite:getSpriteTransform(x, y, z, rot, sx, sy))
+```
+
+# SpriteBatch
+
+See [SpriteBatch](https://3dreamengine.github.io/3DreamEngine/docu/spriteBatch)
+
+If you have multiple sprites you may want to use a spritebatch. Sprites are rendered always camera-normal aligned (not camera facing, there is a small deviation). The math is done on the GPU, thus much faster than manually transforming and setting vertices. Spritebatches also has a bit smaller memory usage.
+
+```lua
+local spriteBatch = dream:newSpriteBatch(texture)
+spriteBatch:add(x, y, z, rot, sx, sy)
+spriteBatch:addQuad(quad, x, y, z, rot, sx, sy)
+spriteBatch:set(index, x, y, z, rot, sx, sy)
+spriteBatch:setQuad(index, quad, x, y, z, rot, sx, sy)
 ```

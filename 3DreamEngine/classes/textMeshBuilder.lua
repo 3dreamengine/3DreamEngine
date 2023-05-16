@@ -8,6 +8,7 @@ local vec3 = lib.vec3
 ---@return DreamTextMeshBuilder
 function lib:newTextMeshBuilder(glyphAtlas)
 	local material = lib:newMaterial("font")
+	material:setColor(1, 1, 1, 1)
 	material:setPixelShader("font")
 	material:setCullMode("none")
 	material:setAlpha()
@@ -69,7 +70,7 @@ function class:createVertices(lineWidths, lines, wrapLimit, align, transform)
 	
 	for lineNr, codepoints in ipairs(lines) do
 		---@type DreamCodepointMaterial
-		local currentMaterial = self.glyphAtlas.defaultTextMaterial
+		local currentMaterial = { }
 		local materialIndex = 0
 		local prevGlyph = string.char(0)
 		
@@ -127,14 +128,15 @@ function class:createVertices(lineWidths, lines, wrapLimit, align, transform)
 					v.VertexNormalY = normal.y * 127.5 + 127.5
 					v.VertexNormalZ = normal.z * 127.5 + 127.5
 					
-					v.VertexMaterialX = currentMaterial.roughness * 255
-					v.VertexMaterialY = currentMaterial.metallic * 255
-					v.VertexMaterialZ = currentMaterial.emission * 255
+					v.VertexMaterialX = (currentMaterial.roughness or self.material.roughness) * 255
+					v.VertexMaterialY = (currentMaterial.metallic or self.material.metallic) * 255
+					v.VertexMaterialZ = (currentMaterial.emission or self.material.emission[1]) * 255
 					
-					v.VertexColorX = currentMaterial.color[1] * 255
-					v.VertexColorY = currentMaterial.color[2] * 255
-					v.VertexColorZ = currentMaterial.color[3] * 255
-					v.VertexColorW = currentMaterial.color[4] * 255
+					local color = currentMaterial.color or self.material.color
+					v.VertexColorX = color[1] * 255
+					v.VertexColorY = color[2] * 255
+					v.VertexColorZ = color[3] * 255
+					v.VertexColorW = color[4] * 255
 				end
 			end
 			

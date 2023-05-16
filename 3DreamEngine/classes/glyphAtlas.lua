@@ -199,7 +199,7 @@ end
 ---A more human readable representation of materialized text, built from text segments
 ---@class DreamMaterializedText
 ---@type DreamMaterializedText
-class.defaultTextMaterial = {
+local _ = {
 	string = "",
 	color = { 1, 1, 1, 1 },
 	roughness = 0.5,
@@ -222,10 +222,10 @@ function class:getWrap(text, wrapLimit)
 		---@class DreamCodepointMaterial
 		---@type DreamCodepointMaterial
 		local m = {
-			color = v.color or class.defaultTextMaterial.color,
-			roughness = v.roughness or class.defaultTextMaterial.roughness,
-			metallic = v.metallic or class.defaultTextMaterial.metallic,
-			emission = v.emission or class.defaultTextMaterial.emission
+			color = v.color,
+			roughness = v.roughness,
+			metallic = v.metallic,
+			emission = v.emission
 		}
 		
 		---@class DreamIndexedCodepointMaterial

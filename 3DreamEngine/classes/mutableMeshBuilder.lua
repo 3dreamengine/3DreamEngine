@@ -106,13 +106,21 @@ function class:remove(id)
 end
 
 ---Returns the fraction of data in use
+---@return number
 function class:getVertexIntegrity()
 	return self.vertexTotal / self.vertexIndex
 end
 
 ---Returns the fraction of data in use for the index buffer
+---@return number
 function class:getIndexIntegrity()
 	return self.indexTotal / self.indexIndex
+end
+
+---The last added chunk id is required if you want to remove added content later on
+---@return number
+function class:getLastChunkId()
+	return self.lastChunkId
 end
 
 ---Defragment mesh now, shifting all data to the very left and updating the chunk pointers

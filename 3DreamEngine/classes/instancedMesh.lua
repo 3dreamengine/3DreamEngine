@@ -5,7 +5,7 @@ local vec3, mat3 = lib.vec3, lib.mat3
 ---@param mesh DreamMesh @ The source mesh to create instances from
 ---@return DreamInstancedMesh
 function lib:newInstancedMesh(mesh)
-	mesh = setmetatable(mesh, self.meta.instancedMesh)
+	mesh = setmetatable(mesh:clone(), self.meta.instancedMesh)
 	
 	mesh.instancesCount = 0
 	
@@ -34,10 +34,15 @@ function class:getMesh(name)
 		mesh:attachAttribute("InstanceRotation1", self.instanceMesh, "perinstance")
 		mesh:attachAttribute("InstanceRotation2", self.instanceMesh, "perinstance")
 		mesh:attachAttribute("InstancePosition", self.instanceMesh, "perinstance")
-		return mesh, instanceMesh:getVertexCount()
+		return mesh, self.instancesCount
 	end
 	
 	return mesh
+end
+
+---Clear all instances
+function class:clear()
+	self.instancesCount = 0
 end
 
 ---Resize the instanced mesh, preserving previous entries
