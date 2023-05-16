@@ -20,6 +20,17 @@ if lib.root:sub(-4) == "init" then
 	lib.root = lib.root:sub(1, -6)
 end
 
+--supported canvas formats
+lib.canvasFormats = love.graphics and love.graphics.getCanvasFormats() or { }
+
+--mobile mode sets lower graphics settings by default
+lib.IS_MOBILE = false
+
+if love.system.getOS() == "Android" or not lib.canvasFormats["rgba16f"] or not lib.canvasFormats["rg16f"] then
+	print("System not fully supported, HDR and post effects disabled by default.")
+	lib.IS_MOBILE = true
+end
+
 --load libraries
 ---@type DreamMat2
 lib.mat2 = require(lib.root .. "/libs/luaMatrices/mat2")
@@ -94,9 +105,6 @@ for _, s in pairs(love.filesystem.getDirectoryItems(lib.root .. "/loader")) do
 	lib.loader[s:sub(1, #s - 4)] = require(lib.root .. "/loader/" .. s:sub(1, #s - 4))
 end
 
---supported canvas formats
-lib.canvasFormats = love.graphics and love.graphics.getCanvasFormats() or { }
-
 --default material library
 lib.materialLibrary = { }
 lib.objectLibrary = { }
@@ -129,7 +137,7 @@ lib:setAutoExposure(false)
 --canvas set settings
 lib.canvases = lib:newCanvases()
 lib.canvases:setRefractions(true)
-lib.canvases:setMode("normal")
+lib.canvases:setMode(lib.IS_MOBILE and "direct" or "normal")
 
 lib.reflectionCanvases = lib:newCanvases()
 lib.reflectionCanvases:setMode("direct")

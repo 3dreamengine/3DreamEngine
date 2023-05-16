@@ -41,12 +41,13 @@ particleBatch:setVertical(0.75)
 local cameraController = require("extensions/utils/cameraController")
 
 --create three light sources and assign shadows
+---@type DreamLight[]
 local lights = { }
 for i = 1, 3 do
 	lights[i] = dream:newLight("point", vec3(0, 0, 0), vec3(1.0, 0.75, 0.5))
-	lights[i]:addNewShadow()
-	lights[i].shadow:setStatic(true)
-	lights[i].shadow:setSmooth(true)
+	local shadow = lights[i]:addNewShadow()
+	shadow:setStatic(true)
+	shadow:setSmooth(true)
 end
 
 local torches = {
@@ -147,7 +148,9 @@ function love.keypressed(key)
 	
 	if key == "b" then
 		for _, s in pairs(lights) do
-			s.shadow:setSmooth(not s.shadow:isSmooth())
+			if s.shadow then
+				s.shadow:setSmooth(not s.shadow:isSmooth())
+			end
 		end
 	end
 	

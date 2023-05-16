@@ -56,6 +56,11 @@ function lib:setAutoExposure(target, speed)
 	if target == true then
 		self:setAutoExposure(0.3, 1.0)
 	elseif target then
+		if not self.canvasFormats["r16f"] then
+			print("Auto exposure required r16f support.")
+			self:setAutoExposure()
+		end
+		
 		self.autoExposure_enabled = true
 		self.autoExposure_targetBrightness = target
 		self.autoExposure_adaptionSpeed = speed

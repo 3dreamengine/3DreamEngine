@@ -18,8 +18,7 @@ dream:init()
 
 --sun object
 local sun = dream:newLight("sun")
-sun:addNewShadow()
-sun:getShadow():setLazy(true)
+sun:addNewShadow():setLazy(true)
 sky:setSunOffset(0.5, 0.0)
 sky:setDaytime(sun, 0.4)
 

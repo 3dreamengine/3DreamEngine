@@ -72,9 +72,10 @@ function love.load()
 end
 
 function love.draw()
+	local x, y = 50, 50
 	for d, s in ipairs(examples) do
 		--button
-		local hover = button(s, 50, 50 + (d - 1) * 35, 200, 30)
+		local hover = button(s, x, y, 200, 30)
 		
 		--description
 		if hover and descriptions[s] then
@@ -91,6 +92,12 @@ function love.draw()
 			love.keypressed = nil
 			require("examples/" .. s .. "/main")
 			return
+		end
+		
+		y = y + 35
+		if y > love.graphics.getHeight() - 80 then
+			y = 50
+			x = x + 220
 		end
 	end
 	

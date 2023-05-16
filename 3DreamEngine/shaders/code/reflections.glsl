@@ -1,3 +1,4 @@
+#ifdef PIXEL
 uniform samplerCube backgroundTexture;
 uniform float reflectionsLevels;
 
@@ -19,3 +20,4 @@ vec3 reflection(vec3 ref, float roughness) {
 	}
 	return gammaCorrectedTexel(backgroundTexture, r * vec3(1.0, 1.0, -1.0), roughness * reflectionsLevels).rgb;
 }
+#endif

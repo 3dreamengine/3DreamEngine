@@ -111,14 +111,20 @@ end
 ---@param shadow DreamShadow
 function class:addShadow(shadow)
 	assert(shadow and shadow.typ, "Provided shadow object does not seem to be a shadow.")
-	self.shadow = shadow
-	self.shadow:refresh()
+	if lib.canvasFormats["r16f"] then
+		self.shadow = shadow
+		self.shadow:refresh()
+	else
+		print("Attempt to use a shadow without r16f support, shadow is ignored.")
+	end
 end
 
 ---Creates a new shadow with given resolution
 ---@param resolution number
 function class:addNewShadow(resolution)
-	self.shadow = lib:newShadow(self.typ, resolution)
+	local shadow = lib:newShadow(self.typ, resolution)
+	self:addShadow(shadow)
+	return shadow
 end
 
 ---@return DreamShadow

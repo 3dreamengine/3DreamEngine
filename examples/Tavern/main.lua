@@ -61,19 +61,19 @@ for d, l in pairs(tavern.positions) do
 	l.r = math.random()
 	if l:getValue() == "light" then
 		lights[d] = dream:newLight("point", l:getPosition() + vec3(0, 0.1, 0), vec3(1.0, 0.75, 0.3))
-		lights[d]:addNewShadow()
-		lights[d].shadow:setStatic(true)
-		lights[d].shadow:setSmooth(true)
-		lights[d].shadow:setRefreshStepSize(1000)
-		lights[d].shadow:setLazy(true)
+		local shadow = lights[d]:addNewShadow()
+		shadow:setStatic(true)
+		shadow:setSmooth(true)
+		shadow:setRefreshStepSize(1000)
+		shadow:setLazy(true)
 		lights[d]:setAttenuation(3) --unrealistic but looks better
 	elseif l:getValue() == "fire" then
 		lights[d] = dream:newLight("point", l:getPosition() + vec3(0, 0.1, 0), vec3(1.0, 0.75, 0.2))
-		lights[d]:addNewShadow()
-		lights[d].shadow:setStatic(true)
-		lights[d].shadow:setSmooth(true)
-		lights[d].shadow:setRefreshStepSize(1000)
-		lights[d].shadow:setLazy(true)
+		local shadow = lights[d]:addNewShadow()
+		shadow:setStatic(true)
+		shadow:setSmooth(true)
+		shadow:setRefreshStepSize(1000)
+		shadow:setLazy(true)
 		lights[d]:setAttenuation(3) --unrealistic but looks better
 		lights[d]:setSize(0.1)
 	end

@@ -1,3 +1,4 @@
+#ifdef PIXEL
 uniform float fog_density;
 uniform float fog_scatter;
 uniform vec3 fog_color;
@@ -10,26 +11,26 @@ vec4 getFog(float depth, vec3 viewVec, vec3 viewPos) {
 	if (fog_max > fog_min) {
 		vec3 vec = viewVec * depth;
 		vec3 stepVec = vec / vec.y;
-		
+
 		//ray
 		vec3 pos_near = viewPos;
 		vec3 pos_far = viewPos + vec;
-		
+
 		//find entry/exit heights
 		float height_near = clamp(pos_near.y, fog_min, fog_max);
 		float height_far = clamp(pos_far.y, fog_min, fog_max);
-		
+
 		//find points
 		pos_near += stepVec * (height_near - pos_near.y);
 		pos_far += stepVec * (height_far - pos_far.y);
-		
+
 		//get average density
 		float heightDiff = fog_max - fog_min;
 		float nearDensity = 1.0 - (height_near - fog_min) / heightDiff;
 		float farDensity = 1.0 - (height_far - fog_min) / heightDiff;
 		depth = distance(pos_far, pos_near) * (farDensity + nearDensity) * 0.5;
 	}
-	
+
 	//finish fog
 	float fog = 1.0 - exp(-depth * fog_density);
 	if (fog_scatter > 0.0) {
@@ -40,3 +41,4 @@ vec4 getFog(float depth, vec3 viewVec, vec3 viewPos) {
 		return vec4(fog_color, fog);
 	}
 }
+#endif

@@ -12,7 +12,7 @@ function sh:constructDefinesGlobal(dream)
 		vec3 n = normalize(-lightVec * vec3(1.0, 1.0, -1.0));
 		
 		//fetch
-		float r = texture(tex, n).x;
+		float r = texture(tex, n).x * 8.0;
 		return r + bias > depth ? 1.0 : 0.0;
 	}
 	]]
