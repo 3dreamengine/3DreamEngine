@@ -3,7 +3,6 @@ varying vec3 vertexPos;
 varying vec3 cloudsVec;
 
 uniform vec3 sunColor;
-uniform vec3 ambientColor;
 uniform vec3 sunVec;
 uniform float sunStrength;
 
