@@ -116,6 +116,7 @@ function class:resize(size)
 	end
 end
 
+---@private
 function class:getMesh(name)
 	name = name or "mesh"
 	

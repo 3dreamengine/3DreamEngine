@@ -1,7 +1,12 @@
 # Shadow
 
 ## Constructors
-### `Shadow:newShadow()`
+### `Shadow:newShadow(typ, resolution)`
+Creates a new shadow
+#### Arguments
+`typ` (string)  "sun" or "point"
+
+`resolution` (number) 
 
 #### Returns
 ([Shadow](https://3dreamengine.github.io/3DreamEngine/docu/classes/shadow)) 
@@ -20,6 +25,9 @@ _________________
 
 ### `Shadow:getRefreshStepSize()`
 
+#### Returns
+(number) 
+
 
 _________________
 
@@ -33,6 +41,9 @@ _________________
 
 ### `Shadow:getCascadeDistance()`
 
+#### Returns
+(number) 
+
 
 _________________
 
@@ -45,6 +56,9 @@ The cascade factor defines the factor at which each cascade is larger than the o
 _________________
 
 ### `Shadow:getCascadeFactor()`
+
+#### Returns
+(number) 
 
 
 _________________
@@ -69,6 +83,9 @@ _________________
 
 ### `Shadow:getResolution()`
 
+#### Returns
+(number) 
+
 
 _________________
 
@@ -81,6 +98,9 @@ Static lights wont capture moving objects
 _________________
 
 ### `Shadow:isStatic()`
+
+#### Returns
+(boolean) 
 
 
 _________________
@@ -95,6 +115,9 @@ _________________
 
 ### `Shadow:isSmooth()`
 
+#### Returns
+(boolean) 
+
 
 _________________
 
@@ -107,6 +130,9 @@ Lazy rendering spreads the load on several frames at the cost of visible artifac
 _________________
 
 ### `Shadow:isLazy()`
+
+#### Returns
+(boolean) 
 
 
 _________________

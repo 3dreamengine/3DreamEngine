@@ -3,8 +3,6 @@
 functions.lua - contains library relevant functions
 --]]
 
-local ffi = require("ffi")
-
 ---@type Dream
 local lib = _3DreamEngine
 local vec3, vec4 = lib.vec3, lib.vec4
@@ -42,6 +40,10 @@ function lib:getCubemapFaceTransforms(pos)
 	}
 end
 
+---HSV to RGB
+---@param h number
+---@param s number
+---@param v number
 function lib:HSVtoRGB(h, s, v)
 	local i = math.floor(h * 6)
 	local f = h * 6 - i
@@ -64,6 +66,10 @@ function lib:HSVtoRGB(h, s, v)
 	end
 end
 
+---RGB to HSV
+---@param r number
+---@param g number
+---@param b number
 function lib:RGBtoHSV(r, g, b)
 	local h, s, v
 	local min = math.min(r, g, b)
@@ -156,6 +162,15 @@ function lib:getFrustumPlanes(m)
 	return planes
 end
 
+---Gets the barycentric coordinates of a point given the three vertices of a triangle
+---@param x number
+---@param y number
+---@param x1 number
+---@param y1 number
+---@param x2 number
+---@param y2 number
+---@param x3 number
+---@param y3 number
 function lib:getBarycentric(x, y, x1, y1, x2, y2, x3, y3)
 	local det = (y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3)
 	local w1 = ((y2 - y3) * (x - x3) + (x3 - x2) * (y - y3)) / det
@@ -166,6 +181,7 @@ end
 
 --4 times slower but performs correct clamping to the edge
 --code translated and adapted from www.geometrictools.com
+---@private
 function lib:getBarycentricClamped(x, y, x1, y1, x2, y2, x3, y3)
 	local diffX = x1 - x
 	local diffY = y1 - y

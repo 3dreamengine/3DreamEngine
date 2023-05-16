@@ -30,8 +30,8 @@ local class = {
 	links = { "mesh", "meshBuilder" },
 }
 
+---Resets the buffer
 function class:clear()
-	--last used index in the buffers
 	self.vertexIndex = 0
 	self.indexIndex = 0
 end
@@ -152,6 +152,7 @@ function class:addQuad()
 	return vertexPointer
 end
 
+---@private
 function class:getMesh(name)
 	name = name or "mesh"
 	
@@ -173,6 +174,7 @@ function class:getMesh(name)
 	return lib.classes.mesh.getMesh(self, name)
 end
 
+---@private
 function class:resizeVertex(size)
 	local oldSize = self.vertexCapacity
 	self.vertexCapacity = size or (self.vertexCapacity * 2)
@@ -193,6 +195,7 @@ function class:resizeVertex(size)
 	self.mesh = love.graphics.newMesh(self.meshFormat.vertexFormat, self.byteData, self:getMeshDrawMode(), "static")
 end
 
+---@private
 function class:resizeIndices(size)
 	local oldSize = self.indexCapacity
 	self.indexCapacity = size or (self.indexCapacity * 2)

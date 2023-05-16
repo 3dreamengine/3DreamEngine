@@ -1,6 +1,11 @@
 ---@type Dream
 local lib = _3DreamEngine
 
+---Creates a new frame in an animation
+---@param time number
+---@param position DreamVec3
+---@param rotation DreamQuat
+---@param scale number
 function lib:newAnimationFrame(time, position, rotation, scale)
 	local f = {
 		time = time,

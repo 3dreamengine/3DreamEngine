@@ -1,69 +1,81 @@
-# InstancedMesh
-Extends [Mesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/mesh)
+# TextMeshBuilder
+Extends [MeshBuilder](https://3dreamengine.github.io/3DreamEngine/docu/classes/meshbuilder)
 
-Uses a mesh to create instances from it. Especially helpful when rendering many small instances
+todo
 ## Constructors
-### `InstancedMesh:newInstancedMesh(mesh)`
-
+### `TextMeshBuilder:newTextMeshBuilder(glyphAtlas)`
+Creates a text mesh builder
 #### Arguments
-`mesh` ([Mesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/mesh))  The source mesh to create instances from
+`glyphAtlas` ([GlyphAtlas](https://3dreamengine.github.io/3DreamEngine/docu/classes/glyphatlas)) 
 
 #### Returns
-([InstancedMesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/instancedmesh)) 
+([TextMeshBuilder](https://3dreamengine.github.io/3DreamEngine/docu/classes/textmeshbuilder)) 
 
 
 _________________
 
 ## Methods
-### `InstancedMesh:getInstancesCount()`
-Returns the current amount of instances
-#### Returns
-(number) 
-
-
-_________________
-
-### `InstancedMesh:clear()`
-Clear all instances
-
-_________________
-
-### `InstancedMesh:resize(count)`
-Resize the instanced mesh, preserving previous entries
+### `TextMeshBuilder:print(text, transform)`
+Print a simple, single line text
 #### Arguments
-`count` (number) 
+`text` (string) 
+
+`transform` (Mat4) 
 
 
 _________________
 
-### `InstancedMesh:addInstance(transform, index)`
-Add another instance
+### `TextMeshBuilder:printf(text, wrapLimit, align, transform)`
+Print a formatted text
 #### Arguments
-`transform` (Mat4)  a mat3x4 matrix, instances do not support shearing, e.g. the last row
+`text` (MaterializedText, string) 
 
-`index` (number)  Optional index, else it will append
+`wrapLimit` (number) 
+
+`align` (string) 
+
+`transform` (Mat4) 
 
 
 _________________
 
-### `InstancedMesh:setInstances(instances)`
-Place instances from an array of mat3x4 transformations, represented as a flat array (mat3 rotation, vec3 position, basically a transposed DreamMat4 with missing last row)
+### `MeshBuilder:clear()`
+Resets the buffer
+
+_________________
+
+### `MeshBuilder:updateBoundingSphere()`
+
+
+_________________
+
+### `MeshBuilder:addMesh(mesh, transform)`
+Adds a mesh with given transform to the builder
 #### Arguments
-`instances` (number[]) [][]
+`mesh` ([Mesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/mesh)) 
+
+`transform` (Mat4) 
 
 
 _________________
 
-### `InstancedMesh:updateBoundingSphere()`
-Updates the bounding sphere from scratch, called internally when needed
-
-_________________
-
-### `InstancedMesh:extendBoundingSphere(instance)`
-Extend the bounding sphere by another instance, called internally
+### `MeshBuilder:addVertices(vertexCount, vertexMapLength)`
+Returns the pointer to vertices, pointer to vertex map and the index offset. Make sure to fill all requested vertices and build the vertex map accordingly.
 #### Arguments
-`instance` (Mat4) 
+`vertexCount` (number) 
 
+`vertexMapLength` (number) 
+
+
+_________________
+
+### `MeshBuilder:addTriangle()`
+Allocates an triangle and returns the pointer to the first vertex
+
+_________________
+
+### `MeshBuilder:addQuad()`
+Allocates an quad and returns the pointer to the first vertex
 
 _________________
 

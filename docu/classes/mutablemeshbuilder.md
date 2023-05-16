@@ -40,11 +40,25 @@ _________________
 
 ### `MutableMeshBuilder:getVertexIntegrity()`
 Returns the fraction of data in use
+#### Returns
+(number) 
+
 
 _________________
 
 ### `MutableMeshBuilder:getIndexIntegrity()`
 Returns the fraction of data in use for the index buffer
+#### Returns
+(number) 
+
+
+_________________
+
+### `MutableMeshBuilder:getLastChunkId()`
+The last added chunk id is required if you want to remove added content later on
+#### Returns
+(number) 
+
 
 _________________
 
@@ -54,7 +68,7 @@ Defragment mesh now, shifting all data to the very left and updating the chunk p
 _________________
 
 ### `MeshBuilder:clear()`
-
+Resets the buffer
 
 _________________
 
@@ -93,30 +107,6 @@ Allocates an quad and returns the pointer to the first vertex
 
 _________________
 
-### `MeshBuilder:getMesh(name)`
-
-#### Arguments
-`name` (any) 
-
-
-_________________
-
-### `MeshBuilder:resizeVertex(size)`
-
-#### Arguments
-`size` (any) 
-
-
-_________________
-
-### `MeshBuilder:resizeIndices(size)`
-
-#### Arguments
-`size` (any) 
-
-
-_________________
-
 ### `Mesh:setMaterial(material)`
 Sets the meshes material
 #### Arguments
@@ -126,6 +116,9 @@ Sets the meshes material
 _________________
 
 ### `Mesh:getMaterial()`
+
+#### Returns
+([Material](https://3dreamengine.github.io/3DreamEngine/docu/classes/material)) 
 
 
 _________________
@@ -307,14 +300,6 @@ Gets or creates an dynamic, typeless buffer
 
 _________________
 
-### `Mesh:decode(meshData)`
-
-#### Arguments
-`meshData` (any) 
-
-
-_________________
-
 ### `Clonable:clone()`
 Slow and deep clone
 
@@ -328,7 +313,7 @@ _________________
 ### `HasShaders:setPixelShader(shader)`
 
 #### Arguments
-`shader` (any) 
+`shader` ([Shader](https://3dreamengine.github.io/3DreamEngine/docu/classes/shader)) 
 
 
 _________________
@@ -336,7 +321,7 @@ _________________
 ### `HasShaders:setVertexShader(shader)`
 
 #### Arguments
-`shader` (any) 
+`shader` ([Shader](https://3dreamengine.github.io/3DreamEngine/docu/classes/shader)) 
 
 
 _________________
@@ -344,7 +329,7 @@ _________________
 ### `HasShaders:setWorldShader(shader)`
 
 #### Arguments
-`shader` (any) 
+`shader` ([Shader](https://3dreamengine.github.io/3DreamEngine/docu/classes/shader)) 
 
 
 _________________

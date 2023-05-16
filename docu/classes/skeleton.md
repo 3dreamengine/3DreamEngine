@@ -16,7 +16,7 @@ _________________
 ### `Skeleton:applyPose(pose)`
 Apply the pose to the skeleton
 #### Arguments
-`pose` (any) 
+`pose` ([Pose](https://3dreamengine.github.io/3DreamEngine/docu/classes/pose)) 
 
 
 _________________

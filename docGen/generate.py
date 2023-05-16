@@ -19,6 +19,12 @@ blacklist = {
     "DreamScene",
     "DreamTask",
     "DreamIsNamed",
+    "",
+    "DreamMaterializedText",
+    "DreamCodepointMaterial",
+    "DreamIndexedCodepointMaterial",
+    "DreamMaterializedCodepoints",
+    "DreamGlyph",
 }
 
 lookup = {
@@ -32,6 +38,9 @@ lookup = {
     "InstancedMesh": "Meshes",
     "MeshBuilder": "Meshes",
     "MutableMeshBuilder": "Meshes",
+    "Sprite": "Meshes",
+    "SpriteBatch": "Meshes",
+    "TextMeshBuilder": "Meshes",
     #
     "CollisionMesh": "Extensions",
     "RaytraceMesh": "Extensions",

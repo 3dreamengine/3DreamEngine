@@ -49,6 +49,8 @@ end
 function class:setFov(fov)
 	self.fov = fov
 end
+
+---@return number
 function class:getFov()
 	return self.fov
 end
@@ -58,6 +60,8 @@ end
 function class:setNear(near)
 	self.near = near
 end
+
+---@return number
 function class:getNear()
 	return self.near
 end
@@ -67,6 +71,8 @@ end
 function class:setFar(far)
 	self.far = far
 end
+
+---@return number
 function class:getFar()
 	return self.far
 end
@@ -76,6 +82,8 @@ end
 function class:setSize(size)
 	self.size = size
 end
+
+---@return number
 function class:getSize()
 	return self.size
 end
@@ -85,6 +93,8 @@ end
 function class:setOrthographic(orthographic)
 	self.orthographic = orthographic
 end
+
+---@return boolean
 function class:isOrthographic()
 	return self.orthographic
 end

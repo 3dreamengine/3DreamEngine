@@ -29,11 +29,11 @@ General classes.
 * [Buffer](https://3dreamengine.github.io/3DreamEngine/docu/classes/buffer)
 * [Camera](https://3dreamengine.github.io/3DreamEngine/docu/classes/camera)
 * [Canvases](https://3dreamengine.github.io/3DreamEngine/docu/classes/canvases)
+* [GlyphAtlas](https://3dreamengine.github.io/3DreamEngine/docu/classes/glyphatlas)
 * [Light](https://3dreamengine.github.io/3DreamEngine/docu/classes/light)
 * [Material](https://3dreamengine.github.io/3DreamEngine/docu/classes/material)
 * [MeshFormat](https://3dreamengine.github.io/3DreamEngine/docu/classes/meshformat)
 * [Object](https://3dreamengine.github.io/3DreamEngine/docu/classes/object)
-* [Particle](https://3dreamengine.github.io/3DreamEngine/docu/classes/particle)
 * [Position](https://3dreamengine.github.io/3DreamEngine/docu/classes/position)
 * [Reflection](https://3dreamengine.github.io/3DreamEngine/docu/classes/reflection)
 * [Shader](https://3dreamengine.github.io/3DreamEngine/docu/classes/shader)
@@ -45,6 +45,9 @@ Different drawable meshes.
 * [Mesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/mesh)
 * [MeshBuilder](https://3dreamengine.github.io/3DreamEngine/docu/classes/meshbuilder)
 * [MutableMeshBuilder](https://3dreamengine.github.io/3DreamEngine/docu/classes/mutablemeshbuilder)
+* [Sprite](https://3dreamengine.github.io/3DreamEngine/docu/classes/sprite)
+* [SpriteBatch](https://3dreamengine.github.io/3DreamEngine/docu/classes/spritebatch)
+* [TextMeshBuilder](https://3dreamengine.github.io/3DreamEngine/docu/classes/textmeshbuilder)
 
 ### Animations
 Classes required to animated skeletons.

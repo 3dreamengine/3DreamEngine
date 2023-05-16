@@ -1,8 +1,10 @@
 ---@type Dream
 local lib = _3DreamEngine
 
----@return DreamShader
 local lastShaderID = 0
+
+---@param path string
+---@return DreamShader
 function lib:newShader(path)
 	local shader = setmetatable(require(path), self.meta.shader)
 	

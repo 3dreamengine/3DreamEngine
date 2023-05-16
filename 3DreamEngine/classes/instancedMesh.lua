@@ -20,10 +20,13 @@ local class = {
 	links = { "mesh", "instancedMesh" },
 }
 
+---Returns the current amount of instances
+---@return number
 function class:getInstancesCount()
 	return self.instancesCount
 end
 
+---@private
 function class:getMesh(name)
 	name = name or "mesh"
 	

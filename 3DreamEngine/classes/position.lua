@@ -27,26 +27,32 @@ function class:tostring()
 	return string.format("%s with value %s (%.3f size) at %s", self.name, self.value, self.size, self.position)
 end
 
+---@param position DreamVec3
 function class:setPosition(position)
 	self.position = position
 end
 
+---@return DreamVec3
 function class:getPosition()
 	return self.position
 end
 
+---@param value string
 function class:setValue(value)
 	self.value = value
 end
 
+---@return string @ the value passed with the tag while loading
 function class:getValue()
 	return self.value
 end
 
+---@param size number
 function class:setSize(size)
 	self.size = size
 end
 
+---@return number
 function class:getSize()
 	return self.size
 end

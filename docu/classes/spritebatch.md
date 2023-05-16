@@ -1,20 +1,162 @@
-# InstancedMesh
-Extends [Mesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/mesh)
+# SpriteBatch
+Extends [InstancedMesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/instancedmesh)
 
-Uses a mesh to create instances from it. Especially helpful when rendering many small instances
+A spritebatch allows for easy, performant, z sorted and camera facing sprites
 ## Constructors
-### `InstancedMesh:newInstancedMesh(mesh)`
-
+### `SpriteBatch:newSpriteBatch(texture, emissionTexture, normalTexture)`
+Creates a new sprite batch
 #### Arguments
-`mesh` ([Mesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/mesh))  The source mesh to create instances from
+`texture` (Texture)  optional
 
-#### Returns
-([InstancedMesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/instancedmesh)) 
+`emissionTexture` (Texture)  optional
+
+`normalTexture` (Texture)  optional
 
 
 _________________
 
 ## Methods
+### `SpriteBatch:clear()`
+Clear the batch
+
+_________________
+
+### `SpriteBatch:add(x, y, z, rot, sx, sy, emission)`
+Add a new sprite to this batch, uses current color state
+#### Arguments
+`x` (number) 
+
+`y` (number) 
+
+`z` (number) 
+
+`rot` (number)  rotation at the Z axis, 0 by default
+
+`sx` (number)  horizontal scale, default 1
+
+`sy` (number)  vertical scale, or sx
+
+`emission` (number)  optional emission factor, requires set emission texture
+
+
+_________________
+
+### `SpriteBatch:addQuad(quad, x, y, z, rot, sx, sy, emission)`
+Add a new sprite with given quad to this batch, uses current color state
+#### Arguments
+`quad` (Quad) 
+
+`x` (number) 
+
+`y` (number) 
+
+`z` (number) 
+
+`rot` (number)  rotation at the Z axis, 0 by default
+
+`sx` (number)  horizontal scale, default 1
+
+`sy` (number)  vertical scale, or sx
+
+`emission` (number)  optional emission factor, requires set emission texture
+
+
+_________________
+
+### `SpriteBatch:set(index, x, y, z, rot, sx, sy, emission)`
+Sets an existing sprite
+#### Arguments
+`index` (any) 
+
+`x` (any) 
+
+`y` (any) 
+
+`z` (any) 
+
+`rot` (any) 
+
+`sx` (any) 
+
+`sy` (any) 
+
+`emission` (any) 
+
+
+_________________
+
+### `SpriteBatch:setQuad(index, quad, x, y, z, rot, sx, sy, emission)`
+Sets an existing sprite
+#### Arguments
+`index` (any) 
+
+`quad` (any) 
+
+`x` (any) 
+
+`y` (any) 
+
+`z` (any) 
+
+`rot` (any) 
+
+`sx` (any) 
+
+`sy` (any) 
+
+`emission` (any) 
+
+
+_________________
+
+### `SpriteBatch:resize(size)`
+Resizes the spritebatch, usually called automatically
+#### Arguments
+`size` (number) 
+
+
+_________________
+
+### `SpriteBatch:setAlpha(enabled)`
+A helper function to set whether alpha mode (true) or cutout (false) should be used. The later one will disable sorting as it is not required.
+#### Arguments
+`enabled` (boolean) 
+
+
+_________________
+
+### `SpriteBatch:setSorting(sorting)`
+Sorting only makes sense when alpha mode is enabled, and the texture is not single colored
+#### Arguments
+`sorting` (boolean) 
+
+
+_________________
+
+### `SpriteBatch:getSorting()`
+
+#### Returns
+(boolean) 
+
+
+_________________
+
+### `SpriteBatch:setVertical(vertical)`
+A verticalness of 1 draws the sprites aligned to the Y coordinate, a value of 0 fully faces the camera
+#### Arguments
+`vertical` (number) 
+
+
+_________________
+
+### `SpriteBatch:getVertical()`
+Gets the verticalness
+#### Returns
+(number) 
+
+
+_________________
+
 ### `InstancedMesh:getInstancesCount()`
 Returns the current amount of instances
 #### Returns

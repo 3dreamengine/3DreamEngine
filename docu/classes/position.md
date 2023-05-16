@@ -22,12 +22,15 @@ _________________
 ### `Position:setPosition(position)`
 
 #### Arguments
-`position` (any) 
+`position` (Vec3) 
 
 
 _________________
 
 ### `Position:getPosition()`
+
+#### Returns
+(Vec3) 
 
 
 _________________
@@ -35,12 +38,15 @@ _________________
 ### `Position:setValue(value)`
 
 #### Arguments
-`value` (any) 
+`value` (string) 
 
 
 _________________
 
 ### `Position:getValue()`
+
+#### Returns
+(string)  the value passed with the tag while loading
 
 
 _________________
@@ -48,12 +54,15 @@ _________________
 ### `Position:setSize(size)`
 
 #### Arguments
-`size` (any) 
+`size` (number) 
 
 
 _________________
 
 ### `Position:getSize()`
+
+#### Returns
+(number) 
 
 
 _________________

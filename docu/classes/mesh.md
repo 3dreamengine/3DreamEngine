@@ -25,6 +25,9 @@ _________________
 
 ### `Mesh:getMaterial()`
 
+#### Returns
+([Material](https://3dreamengine.github.io/3DreamEngine/docu/classes/material)) 
+
 
 _________________
 
@@ -205,14 +208,6 @@ Gets or creates an dynamic, typeless buffer
 
 _________________
 
-### `Mesh:decode(meshData)`
-
-#### Arguments
-`meshData` (any) 
-
-
-_________________
-
 ### `Clonable:clone()`
 Slow and deep clone
 
@@ -226,7 +221,7 @@ _________________
 ### `HasShaders:setPixelShader(shader)`
 
 #### Arguments
-`shader` (any) 
+`shader` ([Shader](https://3dreamengine.github.io/3DreamEngine/docu/classes/shader)) 
 
 
 _________________
@@ -234,7 +229,7 @@ _________________
 ### `HasShaders:setVertexShader(shader)`
 
 #### Arguments
-`shader` (any) 
+`shader` ([Shader](https://3dreamengine.github.io/3DreamEngine/docu/classes/shader)) 
 
 
 _________________
@@ -242,7 +237,7 @@ _________________
 ### `HasShaders:setWorldShader(shader)`
 
 #### Arguments
-`shader` (any) 
+`shader` ([Shader](https://3dreamengine.github.io/3DreamEngine/docu/classes/shader)) 
 
 
 _________________

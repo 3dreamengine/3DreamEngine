@@ -13,25 +13,28 @@ Creates a new, empty animation from a dictionary of joint names and animation fr
 _________________
 
 ### `Dream:newAnimationFrame(time, position, rotation, scale)`
-
+Creates a new frame in an animation
 #### Arguments
-`time` (any) 
+`time` (number) 
 
-`position` (any) 
+`position` (Vec3) 
 
-`rotation` (any) 
+`rotation` (Quat) 
 
-`scale` (any) 
+`scale` (number) 
 
 
 _________________
 
 ### `Dream:newBone(id, transform)`
-
+Creates a new bone with given initial transform
 #### Arguments
-`id` (any) 
+`id` (string) 
 
-`transform` (any) 
+`transform` (Mat4) 
+
+#### Returns
+([Bone](https://3dreamengine.github.io/3DreamEngine/docu/classes/bone)) 
 
 
 _________________
@@ -141,6 +144,17 @@ A dynamic buffer is a slower, more dynamic lua array implementation
 
 _________________
 
+### `Dream:newGlyphAtlas(margin)`
+Creates new glyph atlas
+#### Arguments
+`margin` (number)  Size of margin around each character. You need at least 2^mipmapping levels of margin for no bleeding artifacts.
+
+#### Returns
+([GlyphAtlas](https://3dreamengine.github.io/3DreamEngine/docu/classes/glyphatlas)) 
+
+
+_________________
+
 ### `Dream:newInstancedMesh(mesh)`
 
 #### Arguments
@@ -241,22 +255,6 @@ Create an empty object
 
 _________________
 
-### `Dream:newParticle(texture, emissionTexture, distortionTexture)`
-`deprecated`  
-Returns a particle instance used to draw a particle
-#### Arguments
-`texture` (Drawable) 
-
-`emissionTexture` (Drawable) 
-
-`distortionTexture` (Drawable) 
-
-#### Returns
-([Particle](https://3dreamengine.github.io/3DreamEngine/docu/classes/particle)) 
-
-
-_________________
-
 ### `Dream:newPosition(position, size, value)`
 
 #### Arguments
@@ -288,7 +286,10 @@ _________________
 
 _________________
 
-### `Dream:newShader()`
+### `Dream:newShader(path)`
+
+#### Arguments
+`path` (string) 
 
 #### Returns
 ([Shader](https://3dreamengine.github.io/3DreamEngine/docu/classes/shader)) 
@@ -296,7 +297,12 @@ _________________
 
 _________________
 
-### `Dream:newShadow()`
+### `Dream:newShadow(typ, resolution)`
+Creates a new shadow
+#### Arguments
+`typ` (string)  "sun" or "point"
+
+`resolution` (number) 
 
 #### Returns
 ([Shadow](https://3dreamengine.github.io/3DreamEngine/docu/classes/shadow)) 
@@ -315,6 +321,43 @@ New skeleton from a hierarchical bone structure
 
 _________________
 
+### `Dream:newSprite(texture, emissionTexture, normalTexture, quad)`
+Creates a new sprite, that is, a textured quad mesh
+#### Arguments
+`texture` (Texture)  optional
+
+`emissionTexture` (Texture)  optional
+
+`normalTexture` (Texture)  optional
+
+`quad` (Quad)  optional
+
+
+_________________
+
+### `Dream:newSpriteBatch(texture, emissionTexture, normalTexture)`
+Creates a new sprite batch
+#### Arguments
+`texture` (Texture)  optional
+
+`emissionTexture` (Texture)  optional
+
+`normalTexture` (Texture)  optional
+
+
+_________________
+
+### `Dream:newTextMeshBuilder(glyphAtlas)`
+Creates a text mesh builder
+#### Arguments
+`glyphAtlas` ([GlyphAtlas](https://3dreamengine.github.io/3DreamEngine/docu/classes/glyphatlas)) 
+
+#### Returns
+([TextMeshBuilder](https://3dreamengine.github.io/3DreamEngine/docu/classes/textmeshbuilder)) 
+
+
+_________________
+
 ### `Dream:lookAt(eye, at, up)`
 Returns the look-at transformation matrix
 #### Arguments
@@ -328,25 +371,25 @@ Returns the look-at transformation matrix
 _________________
 
 ### `Dream:HSVtoRGB(h, s, v)`
-
+HSV to RGB
 #### Arguments
-`h` (any) 
+`h` (number) 
 
-`s` (any) 
+`s` (number) 
 
-`v` (any) 
+`v` (number) 
 
 
 _________________
 
 ### `Dream:RGBtoHSV(r, g, b)`
-
+RGB to HSV
 #### Arguments
-`r` (any) 
+`r` (number) 
 
-`g` (any) 
+`g` (number) 
 
-`b` (any) 
+`b` (number) 
 
 
 _________________
@@ -376,45 +419,23 @@ Convert 3D screen coordinates to 3D point, if the depth is unknown pass 1
 _________________
 
 ### `Dream:getBarycentric(x, y, x1, y1, x2, y2, x3, y3)`
-
+Gets the barycentric coordinates of a point given the three vertices of a triangle
 #### Arguments
-`x` (any) 
+`x` (number) 
 
-`y` (any) 
+`y` (number) 
 
-`x1` (any) 
+`x1` (number) 
 
-`y1` (any) 
+`y1` (number) 
 
-`x2` (any) 
+`x2` (number) 
 
-`y2` (any) 
+`y2` (number) 
 
-`x3` (any) 
+`x3` (number) 
 
-`y3` (any) 
-
-
-_________________
-
-### `Dream:getBarycentricClamped(x, y, x1, y1, x2, y2, x3, y3)`
-
-#### Arguments
-`x` (any) 
-
-`y` (any) 
-
-`x1` (any) 
-
-`y1` (any) 
-
-`x2` (any) 
-
-`y2` (any) 
-
-`x3` (any) 
-
-`y3` (any) 
+`y3` (number) 
 
 
 _________________
@@ -554,30 +575,6 @@ Add a new simple light
 
 _________________
 
-### `Dream:drawParticleBatch(batch)`
-Will render this batch
-#### Arguments
-`batch` ([ParticleBatch](https://3dreamengine.github.io/3DreamEngine/docu/classes/particlebatch)) 
-
-
-_________________
-
-### `Dream:drawParticle(particle, quad, x, y, z)`
-Draw a single particle
-#### Arguments
-`particle` ([Particle](https://3dreamengine.github.io/3DreamEngine/docu/classes/particle)) 
-
-`quad` (Quad) 
-
-`x` (number) 
-
-`y` (number) 
-
-`z` (number) 
-
-
-_________________
-
 ### `Dream:loadLibrary(path, args, prefix)`
 Loads and adds that object as a library, see https://3dreamengine.github.io/3DreamEngine/docu/introduction
 #### Arguments
@@ -640,18 +637,6 @@ Looks for mat files or directories with an albedo texture
 
 _________________
 
-### `Dream:newParticleBatch(texture, emissionTexture, distortionTexture)`
-
-#### Arguments
-`texture` (any) 
-
-`emissionTexture` (any) 
-
-`distortionTexture` (any) 
-
-
-_________________
-
 ### `Dream:present(camera, canvases, lite)`
 Render or present the scene, depending on the canvas settings
 #### Arguments
@@ -679,12 +664,6 @@ _________________
 
 ### `Dream:clearLoadedTextures()`
 Clear all loaded textures, releasing VRAM but forcing a reload when used
-
-_________________
-
-### `Dream:clearLoadedCanvases()`
-`deprecated`  
-
 
 _________________
 
@@ -1046,14 +1025,6 @@ Register a new format, see `3DreamEngine/meshFormats/*` for examples
 `format` ([MeshFormat](https://3dreamengine.github.io/3DreamEngine/docu/classes/meshformat)) 
 
 `name` (string) 
-
-
-_________________
-
-### `Dream:newShader(path)`
-
-#### Arguments
-`path` (any) 
 
 
 _________________

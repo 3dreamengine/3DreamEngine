@@ -1,6 +1,10 @@
 ---@type Dream
 local lib = _3DreamEngine
 
+---Creates a new bone with given initial transform
+---@param id string
+---@param transform DreamMat4
+---@return DreamBone
 function lib:newBone(id, transform)
 	local b = {
 		id = id,

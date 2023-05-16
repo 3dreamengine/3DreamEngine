@@ -586,6 +586,7 @@ function class:encode(meshCache, dataStrings)
 	return data
 end
 
+---@private
 function class:decode(meshData)
 	setmetatable(self.boundingSphere, lib.meta.boundingSphere)
 	self.boundingSphere:decode()

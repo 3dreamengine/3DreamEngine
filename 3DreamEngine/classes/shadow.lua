@@ -1,6 +1,9 @@
 ---@type Dream
 local lib = _3DreamEngine
 
+---Creates a new shadow
+---@param typ string @ "sun" or "point"
+---@param resolution number
 ---@return DreamShadow
 function lib:newShadow(typ, resolution)
 	return setmetatable({
@@ -30,6 +33,8 @@ local class = {
 function class:setRefreshStepSize(refreshStepSize)
 	self.refreshStepSize = refreshStepSize
 end
+
+---@return number
 function class:getRefreshStepSize()
 	return self.refreshStepSize
 end
@@ -39,6 +44,8 @@ end
 function class:setCascadeDistance(cascadeDistance)
 	self.cascadeDistance = cascadeDistance
 end
+
+---@return number
 function class:getCascadeDistance()
 	return self.cascadeDistance
 end
@@ -48,6 +55,8 @@ end
 function class:setCascadeFactor(cascadeFactor)
 	self.cascadeFactor = cascadeFactor
 end
+
+---@return number
 function class:getCascadeFactor()
 	return self.cascadeFactor
 end
@@ -69,6 +78,8 @@ function class:setResolution(resolution)
 	self.resolution = resolution
 	self:clear()
 end
+
+---@return number
 function class:getResolution()
 	return self.resolution
 end
@@ -79,6 +90,8 @@ function class:setStatic(static)
 	self.static = static
 	self:clear()
 end
+
+---@return boolean
 function class:isStatic()
 	return self.static
 end
@@ -89,6 +102,8 @@ function class:setSmooth(smooth)
 	self.smooth = smooth
 	self:clear()
 end
+
+---@return boolean
 function class:isSmooth()
 	return self.smooth
 end
@@ -98,6 +113,8 @@ end
 function class:setLazy(lazy)
 	self.lazy = lazy
 end
+
+---@return boolean
 function class:isLazy()
 	return self.lazy
 end

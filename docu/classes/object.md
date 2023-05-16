@@ -210,171 +210,217 @@ Creates an fast instance
 _________________
 
 ### `Transformable:resetTransform()`
+Resets the transform to the identify matrix
+#### Returns
+(Transformable) 
 
 
 _________________
 
-### `Transformable:setTransform(t)`
+### `Transformable:setTransform(transform)`
 
 #### Arguments
-`t` (any) 
+`transform` (Mat4) 
+
+#### Returns
+(Transformable) 
 
 
 _________________
 
 ### `Transformable:getTransform()`
+Gets the current, local transformation matrix
+#### Returns
+(Mat4) 
 
 
 _________________
 
 ### `Transformable:translate(x, y, z)`
-
+Translate in local coordinates
 #### Arguments
-`x` (any) 
+`x` (number) 
 
-`y` (any) 
+`y` (number) 
 
-`z` (any) 
+`z` (number) 
+
+#### Returns
+(Transformable) 
 
 
 _________________
 
 ### `Transformable:scale(x, y, z)`
-
+Scale in local coordinates
 #### Arguments
-`x` (any) 
+`x` (number) 
 
-`y` (any) 
+`y` (number) 
 
-`z` (any) 
+`z` (number) 
+
+#### Returns
+(Transformable) 
 
 
 _________________
 
 ### `Transformable:rotateX(rx)`
-
+Euler rotation around the X axis in local coordinates
 #### Arguments
-`rx` (any) 
+`rx` (number) 
+
+#### Returns
+(Transformable) 
 
 
 _________________
 
 ### `Transformable:rotateY(ry)`
-
+Euler rotation around the Y axis in local coordinates
 #### Arguments
-`ry` (any) 
+`ry` (number) 
+
+#### Returns
+(Transformable) 
 
 
 _________________
 
 ### `Transformable:rotateZ(rz)`
-
+Euler rotation around the Z axis in local coordinates
 #### Arguments
-`rz` (any) 
+`rz` (number) 
+
+#### Returns
+(Transformable) 
 
 
 _________________
 
 ### `Transformable:translateWorld(x, y, z)`
-
+Translate in world coordinates
 #### Arguments
-`x` (any) 
+`x` (number) 
 
-`y` (any) 
+`y` (number) 
 
-`z` (any) 
+`z` (number) 
+
+#### Returns
+(Transformable) 
 
 
 _________________
 
 ### `Transformable:scaleWorld(x, y, z)`
-
+Scale in world coordinates
 #### Arguments
-`x` (any) 
+`x` (number) 
 
-`y` (any) 
+`y` (number) 
 
-`z` (any) 
+`z` (number) 
+
+#### Returns
+(Transformable) 
 
 
 _________________
 
 ### `Transformable:rotateXWorld(rx)`
-
+Euler rotation around the X axis in world coordinates
 #### Arguments
-`rx` (any) 
+`rx` (number) 
+
+#### Returns
+(Transformable) 
 
 
 _________________
 
 ### `Transformable:rotateYWorld(ry)`
-
+Euler rotation around the Y axis in world coordinates
 #### Arguments
-`ry` (any) 
+`ry` (number) 
+
+#### Returns
+(Transformable) 
 
 
 _________________
 
 ### `Transformable:rotateZWorld(rz)`
-
+Euler rotation around the Z axis in world coordinates
 #### Arguments
-`rz` (any) 
+`rz` (number) 
+
+#### Returns
+(Transformable) 
 
 
 _________________
 
 ### `Transformable:getPosition()`
+Gets the current world position
+#### Returns
+(Vec3) 
 
 
 _________________
 
-### `Transformable:lookAt(position, up)`
-
-#### Arguments
-`position` (any) 
-
-`up` (any) 
+### `Transformable:lookAt()`
+Makes the object look at the target position with given up vector
+#### Returns
+(Transformable) 
 
 
 _________________
 
 ### `Transformable:setDirty()`
-
+Marks as modified
 
 _________________
 
 ### `Transformable:getGlobalTransform()`
-getGlobalTransform
+Gets the last global transform. Needs to be rendered once, and if rendered multiple times, the result is undefined
 #### Returns
-(Mat4)  returns the last global transform. Needs to be rendered once, and if rendered multiple times, the result is undefined
+(Mat4) 
 
 
 _________________
 
 ### `Transformable:lookTowards(direction, up)`
-
+Look towards the global direction and upwards vector
 #### Arguments
-`direction` (any) 
+`direction` (Vec3) 
 
-`up` (any) 
+`up` (Vec3) 
 
 
 _________________
 
 ### `Transformable:getInvertedTransform()`
+Returns the cached inverse of the local transformation
+#### Returns
+(Mat4) 
 
 
 _________________
 
 ### `Transformable:setDynamic(dynamic)`
-
+Dynamic objects are excluded from static shadows and reflections. Applying a transforms sets this flag automatically.
 #### Arguments
-`dynamic` (any) 
+`dynamic` (boolean) 
 
 
 _________________
 
 ### `Transformable:isDynamic()`
+Returns weather this object is excluded from statis shadows and reflections
+#### Returns
+(boolean) 
 
 
 _________________
@@ -382,7 +428,7 @@ _________________
 ### `HasShaders:setPixelShader(shader)`
 
 #### Arguments
-`shader` (any) 
+`shader` ([Shader](https://3dreamengine.github.io/3DreamEngine/docu/classes/shader)) 
 
 
 _________________
@@ -390,7 +436,7 @@ _________________
 ### `HasShaders:setVertexShader(shader)`
 
 #### Arguments
-`shader` (any) 
+`shader` ([Shader](https://3dreamengine.github.io/3DreamEngine/docu/classes/shader)) 
 
 
 _________________
@@ -398,7 +444,7 @@ _________________
 ### `HasShaders:setWorldShader(shader)`
 
 #### Arguments
-`shader` (any) 
+`shader` ([Shader](https://3dreamengine.github.io/3DreamEngine/docu/classes/shader)) 
 
 
 _________________

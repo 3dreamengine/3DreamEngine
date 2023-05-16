@@ -4,15 +4,15 @@ Extends Clonable
 
 ## Constructors
 ### `AnimationFrame:newAnimationFrame(time, position, rotation, scale)`
-
+Creates a new frame in an animation
 #### Arguments
-`time` (any) 
+`time` (number) 
 
-`position` (any) 
+`position` (Vec3) 
 
-`rotation` (any) 
+`rotation` (Quat) 
 
-`scale` (any) 
+`scale` (number) 
 
 
 _________________

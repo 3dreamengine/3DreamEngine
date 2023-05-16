@@ -16,7 +16,7 @@ _________________
 
 ## Methods
 ### `Material:setSolid()`
-Makes material solid
+Makes the material solid
 
 _________________
 
@@ -25,17 +25,23 @@ Materials with set alpha are rendered on the alpha pass, which is slower but ful
 
 _________________
 
-### `Material:getAlpha()`
+### `Material:isAlpha()`
+
+#### Returns
+(boolean) 
 
 
 _________________
 
-### `Material:setDiscard()`
-Enabled discard only renders when alpha is over a threshold, faster than alpha since on the main pass but slower than solid
+### `Material:setCutout()`
+Enabled cutout only renders when alpha is over a threshold, faster than alpha since on the main pass but slower than solid
 
 _________________
 
-### `Material:getDiscard()`
+### `Material:isCutout()`
+
+#### Returns
+(boolean) 
 
 
 _________________
@@ -45,7 +51,10 @@ Dither internally uses discarding and simulates alpha by dithering, may be used 
 
 _________________
 
-### `Material:getDither()`
+### `Material:isDither()`
+
+#### Returns
+(boolean) 
 
 
 _________________
@@ -59,6 +68,9 @@ Sets the culling mode
 _________________
 
 ### `Material:getCullMode()`
+
+#### Returns
+(CullMode) 
 
 
 _________________
@@ -88,133 +100,143 @@ Similar to shadowVisibility on meshes, this allows materials to only be visible 
 _________________
 
 ### `Material:setColor(r, g, b, a)`
-
+Sets the base color, multiplicative to the texture if present
 #### Arguments
-`r` (any) 
+`r` (number) 
 
-`g` (any) 
+`g` (number) 
 
-`b` (any) 
+`b` (number) 
 
-`a` (any) 
+`a` (number) 
 
 
 _________________
 
 ### `Material:setAlbedoTexture(tex)`
-
+Sets the albedo texture
 #### Arguments
-`tex` (any) 
+`tex` (Texture) 
 
 
 _________________
 
 ### `Material:setEmission(r, g, b)`
-
+Sets the emission color. If an emission texture is used, the emission color is additive. If no texture is present, emission color is multiplicative.
 #### Arguments
-`r` (any) 
+`r` (number) 
 
-`g` (any) 
+`g` (number) 
 
-`b` (any) 
+`b` (number) 
+
+
+_________________
+
+### `Material:setEmissionFactor(r, g, b)`
+Sets the emission factor. If the material has a emission texture, it is multiplied by this factor.
+#### Arguments
+`r` (number) 
+
+`g` (number) 
+
+`b` (number) 
 
 
 _________________
 
 ### `Material:setEmissionTexture(tex)`
-
+Sets the emission texture
 #### Arguments
-`tex` (any) 
+`tex` (Texture) 
 
 
 _________________
 
 ### `Material:setAoTexture(tex)`
-
+Sets the ambient occlusion texture
 #### Arguments
-`tex` (any) 
+`tex` (Texture) 
 
 
 _________________
 
 ### `Material:setNormalTexture(tex)`
-
+Sets the normal map texture
 #### Arguments
-`tex` (any) 
+`tex` (Texture) 
 
 
 _________________
 
 ### `Material:setRoughness(r)`
-
+Sets the base roughness, multiplicative to the texture if present
 #### Arguments
-`r` (any) 
+`r` (number) 
 
 
 _________________
 
 ### `Material:setMetallic(m)`
-
+Sets the base metallic value, multiplicative to the texture if present
 #### Arguments
-`m` (any) 
+`m` (number) 
 
 
 _________________
 
 ### `Material:setRoughnessTexture(tex)`
-
+Sets the roughness texture
 #### Arguments
-`tex` (any) 
+`tex` (Texture) 
 
 
 _________________
 
 ### `Material:setMetallicTexture(tex)`
-
+Sets the metallic texture
 #### Arguments
-`tex` (any) 
+`tex` (Texture) 
 
 
 _________________
 
 ### `Material:setMaterialTexture(tex)`
-
+Sets the combined roughness-metallic-ao texture
 #### Arguments
-`tex` (any) 
-
-
-_________________
-
-### `Material:getMaterialTexture(tex)`
-
-#### Arguments
-`tex` (any) 
+`tex` (Texture) 
 
 
 _________________
 
 ### `Material:setAlphaCutoff(alphaCutoff)`
-
+The alpha cutoff decides at which alpha value the cutout mode will jump into action. A value of 1 makes the object fully transparent.
 #### Arguments
-`alphaCutoff` (any) 
+`alphaCutoff` (number) 
 
 
 _________________
 
 ### `Material:getAlphaCutoff()`
 
+#### Returns
+(number) 
+
 
 _________________
 
-### `Material:setCullMode(cullMode)`
-
+### `Material:setParticle(particle)`
+Setting the material in particle mode removes some normal math in the lighting functions, which looks better on 2D sprites and very small objects
 #### Arguments
-`cullMode` (any) 
+`particle` (boolean) 
 
 
 _________________
 
-### `Material:getCullMode()`
+### `Material:isParticle()`
+Checks if this material is rendered as a particle
+#### Returns
+(boolean) 
 
 
 _________________
@@ -258,7 +280,7 @@ _________________
 ### `HasShaders:setPixelShader(shader)`
 
 #### Arguments
-`shader` (any) 
+`shader` ([Shader](https://3dreamengine.github.io/3DreamEngine/docu/classes/shader)) 
 
 
 _________________
@@ -266,7 +288,7 @@ _________________
 ### `HasShaders:setVertexShader(shader)`
 
 #### Arguments
-`shader` (any) 
+`shader` ([Shader](https://3dreamengine.github.io/3DreamEngine/docu/classes/shader)) 
 
 
 _________________
@@ -274,7 +296,7 @@ _________________
 ### `HasShaders:setWorldShader(shader)`
 
 #### Arguments
-`shader` (any) 
+`shader` ([Shader](https://3dreamengine.github.io/3DreamEngine/docu/classes/shader)) 
 
 
 _________________

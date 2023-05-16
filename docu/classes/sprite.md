@@ -1,68 +1,39 @@
-# InstancedMesh
+# Sprite
 Extends [Mesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/mesh)
 
-Uses a mesh to create instances from it. Especially helpful when rendering many small instances
+A sprite represents a simple, textured quad
 ## Constructors
-### `InstancedMesh:newInstancedMesh(mesh)`
-
+### `Sprite:newSprite(texture, emissionTexture, normalTexture, quad)`
+Creates a new sprite, that is, a textured quad mesh
 #### Arguments
-`mesh` ([Mesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/mesh))  The source mesh to create instances from
+`texture` (Texture)  optional
 
-#### Returns
-([InstancedMesh](https://3dreamengine.github.io/3DreamEngine/docu/classes/instancedmesh)) 
+`emissionTexture` (Texture)  optional
+
+`normalTexture` (Texture)  optional
+
+`quad` (Quad)  optional
 
 
 _________________
 
 ## Methods
-### `InstancedMesh:getInstancesCount()`
-Returns the current amount of instances
-#### Returns
-(number) 
-
-
-_________________
-
-### `InstancedMesh:clear()`
-Clear all instances
-
-_________________
-
-### `InstancedMesh:resize(count)`
-Resize the instanced mesh, preserving previous entries
+### `Sprite:getSpriteTransform(x, y, z, rotation, sx, sy, camera)`
+Returns a transform to place the quad camera facing at given position with given scale and rotation
 #### Arguments
-`count` (number) 
+`x` (number) 
 
+`y` (number) 
 
-_________________
+`z` (number) 
 
-### `InstancedMesh:addInstance(transform, index)`
-Add another instance
-#### Arguments
-`transform` (Mat4)  a mat3x4 matrix, instances do not support shearing, e.g. the last row
+`rotation` (number)  rotation at the Z axis, default 0
 
-`index` (number)  Optional index, else it will append
+`sx` (number)  default 1
 
+`sy` (number)  default sx
 
-_________________
-
-### `InstancedMesh:setInstances(instances)`
-Place instances from an array of mat3x4 transformations, represented as a flat array (mat3 rotation, vec3 position, basically a transposed DreamMat4 with missing last row)
-#### Arguments
-`instances` (number[]) [][]
-
-
-_________________
-
-### `InstancedMesh:updateBoundingSphere()`
-Updates the bounding sphere from scratch, called internally when needed
-
-_________________
-
-### `InstancedMesh:extendBoundingSphere(instance)`
-Extend the bounding sphere by another instance, called internally
-#### Arguments
-`instance` (Mat4) 
+`camera` ([Camera](https://3dreamengine.github.io/3DreamEngine/docu/classes/camera))  defaults to the default camera
 
 
 _________________

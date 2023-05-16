@@ -4,11 +4,14 @@ Extends Clonable, IsNamed
 
 ## Constructors
 ### `Bone:newBone(id, transform)`
-
+Creates a new bone with given initial transform
 #### Arguments
-`id` (any) 
+`id` (string) 
 
-`transform` (any) 
+`transform` (Mat4) 
+
+#### Returns
+([Bone](https://3dreamengine.github.io/3DreamEngine/docu/classes/bone)) 
 
 
 _________________

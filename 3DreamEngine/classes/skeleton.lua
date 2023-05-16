@@ -40,6 +40,7 @@ function class:applyPoseToBone(bone, pose, parentTransform)
 end
 
 ---Apply the pose to the skeleton
+---@param pose DreamPose
 function class:applyPose(pose)
 	self.transforms = { }
 	self:applyPoseToBone(self.root, pose, false)
