@@ -15,6 +15,7 @@ varying float depth;               //depth
 varying float varyingEmissionFactor; //unlike additive emission this factor
 
 uniform float translucency;
+uniform float alphaCutOff;
 
 //shader specific defines
 #import defines
@@ -65,7 +66,7 @@ void effect() {
 #endif
 
 #ifdef CUTOUT
-	if (alpha < 0.5) {
+	if (alpha < alphaCutOff) {
 		discard;
 	}
 #endif

@@ -15,7 +15,7 @@ function lib:newMaterial(name)
 	m.alpha = false
 	m.cutout = false
 	m.particle = false
-	m.alphaCutoff = 0.5 --todo
+	m.alphaCutoff = 0.5
 	m.name = name or "Unnamed"
 	m.ior = 1.0
 	m.translucency = 0.0
@@ -30,7 +30,7 @@ local class = {
 	links = { "clonable", "hasShaders", "named", "material" },
 }
 
----Makes material solid
+---Makes the material solid
 function class:setSolid()
 	self.alpha = false
 	self.cutout = false
@@ -42,7 +42,9 @@ function class:setAlpha()
 	self:setSolid()
 	self.alpha = true
 end
-function class:getAlpha()
+
+---@return boolean
+function class:isAlpha()
 	return self.alpha
 end
 
@@ -51,7 +53,9 @@ function class:setCutout()
 	self:setSolid()
 	self.cutout = true
 end
-function class:getCutout()
+
+---@return boolean
+function class:isCutout()
 	return self.cutout
 end
 
@@ -60,7 +64,9 @@ function class:setDither()
 	self:setSolid()
 	self.dither = true
 end
-function class:getDither()
+
+---@return boolean
+function class:isDither()
 	return self.dither
 end
 
@@ -71,6 +77,8 @@ end
 function class:setCullMode(cullMode)
 	self.cullMode = cullMode
 end
+
+---@return CullMode
 function class:getCullMode()
 	return self.cullMode
 end
@@ -96,61 +104,94 @@ function class:throwsShadow(shadow)
 	self.shadow = shadow
 end
 
---todo doc and getter
+---Sets the base color, multiplicative to the texture if present
+---@param r number
+---@param g number
+---@param b number
+---@param a number
 function class:setColor(r, g, b, a)
 	self.color = { r or 1.0, g or 1.0, b or 1.0, a or 1.0 }
 end
+
+---Sets the albedo texture
+---@param tex Texture
 function class:setAlbedoTexture(tex)
 	self.albedoTexture = tex
 end
+
+---Sets the emission color. If an emission texture is used, the emission color is additive. If no texture is present, emission color is multiplicative.
+---@param r number
+---@param g number
+---@param b number
 function class:setEmission(r, g, b)
 	self.emission = { r or 0.0, g or r or 0.0, b or r or 0.0 }
 end
+
+---Sets the emission factor. If the material has a emission texture, it is multiplied by this factor.
+---@param r number
+---@param g number
+---@param b number
 function class:setEmissionFactor(r, g, b)
 	self.emissionFactor = { r or 1.0, g or r or 1.0, b or r or 1.0 }
 end
+
+---Sets the emission texture
+---@param tex Texture
 function class:setEmissionTexture(tex)
 	self.emissionTexture = tex
 end
+
+---Sets the ambient occlusion texture
+---@param tex Texture
 function class:setAoTexture(tex)
 	self.ambientOcclusionTexture = tex
 end
+
+---Sets the normal map texture
+---@param tex Texture
 function class:setNormalTexture(tex)
 	self.normalTexture = tex
 end
 
+---Sets the base roughness, multiplicative to the texture if present
+---@param r number
 function class:setRoughness(r)
 	self.roughness = r
 end
+
+---Sets the base metallic value, multiplicative to the texture if present
+---@param m number
 function class:setMetallic(m)
 	self.metallic = m
 end
+
+---Sets the roughness texture
+---@param tex Texture
 function class:setRoughnessTexture(tex)
 	self.roughnessTexture = tex
 end
+
+---Sets the metallic texture
+---@param tex Texture
 function class:setMetallicTexture(tex)
 	self.metallicTexture = tex
 end
 
+---Sets the combined roughness-metallic-ao texture
+---@param tex Texture
 function class:setMaterialTexture(tex)
 	self.materialTexture = tex
 end
-function class:getMaterialTexture(tex)
-	self.materialTexture = tex
-end
 
+---The alpha cutoff decides at which alpha value the cutout mode will jump into action. A value of 1 makes the object fully transparent.
+---@param alphaCutoff number
 function class:setAlphaCutoff(alphaCutoff)
 	self.alphaCutoff = alphaCutoff
 end
+
+---@return number
 function class:getAlphaCutoff()
 	return self.alphaCutoff
-end
-
-function class:setCullMode(cullMode)
-	self.cullMode = cullMode
-end
-function class:getCullMode()
-	return self.cullMode
 end
 
 ---Setting the material in particle mode removes some normal math in the lighting functions, which looks better on 2D sprites and very small objects
