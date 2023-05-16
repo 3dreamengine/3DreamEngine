@@ -84,9 +84,6 @@ end
 --create a new sprite mesh using the candle texture for both albedo (we need the alpha!) and emission (since it primarily glows)
 local sprite = dream:newSprite(texture, texture, false, quad)
 
---as every mesh, we can modify the material. E.g., since we do not really have transparency, switch to cutout mode instead.
-sprite:getMaterial():setCutout()
-
 
 -- SPRITE BATCH
 

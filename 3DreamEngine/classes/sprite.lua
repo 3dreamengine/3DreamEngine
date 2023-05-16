@@ -6,6 +6,7 @@ local lib = _3DreamEngine
 ---@param emissionTexture Texture @ optional
 ---@param normalTexture Texture @ optional
 ---@param quad Quad @ optional
+---@return DreamSprite
 function lib:newSprite(texture, emissionTexture, normalTexture, quad)
 	local u1, v1, u2, v2, ratio
 	if quad then

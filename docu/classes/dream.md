@@ -332,6 +332,9 @@ Creates a new sprite, that is, a textured quad mesh
 
 `quad` (Quad)  optional
 
+#### Returns
+([Sprite](https://3dreamengine.github.io/3DreamEngine/docu/classes/sprite)) 
+
 
 _________________
 

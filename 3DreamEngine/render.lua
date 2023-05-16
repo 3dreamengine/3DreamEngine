@@ -170,7 +170,10 @@ function lib:render(cam, canvases, dynamic, isShadow, blacklist)
 		
 		--start rendering
 		self.delton:start("render")
-		for task in scene do
+		for t in scene do
+			---@type DreamTask
+			local task = t
+			
 			local mesh = task:getMesh()
 			local objectMesh, instanceCount = mesh:getMesh()
 			if objectMesh then
@@ -231,7 +234,7 @@ function lib:render(cam, canvases, dynamic, isShadow, blacklist)
 					lastMaterial = material
 					
 					--alpha
-					checkAndSendCached(shaderObject, "alphaCutOff", material.alphaCutOff)
+					checkAndSendCached(shaderObject, "alphaCutoff", material.alphaCutoff)
 					
 					if isShadow then
 						if hasUniform(shaderObject, "alphaTexture") then
