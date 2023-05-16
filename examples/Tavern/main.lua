@@ -52,7 +52,6 @@ particleBatch:setVertical(0.75)
 local particleBatchDust = dream:newParticleBatch(love.graphics.newImage(projectDir .. "dust.png"))
 particleBatchDust:setSorting(false)
 particleBatchDust:getMaterial():setRoughness(1)
-particleBatchDust:getMaterial():setTranslucency(1)
 
 --setup light sources
 local lights = { }

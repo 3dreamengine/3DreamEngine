@@ -14,6 +14,7 @@ function lib:newParticleBatch(texture, emissionTexture, normalTexture)
 	sb.material:setNormalTexture(normalTexture)
 	sb.material:setAlpha()
 	sb.material:setCullMode("none")
+	sb.material:setParticle(true)
 	
 	sb.sort = true
 	sb.vertical = 0.0

@@ -25,6 +25,7 @@ function lib:newSprite(texture, emissionTexture, normalTexture, quad)
 	mesh.material:setNormalTexture(normalTexture)
 	mesh.material:setAlpha()
 	mesh.material:setCullMode("none")
+	mesh.material:setParticle(true)
 	
 	return mesh
 end

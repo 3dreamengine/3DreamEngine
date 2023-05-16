@@ -14,6 +14,7 @@ function lib:newMaterial(name)
 	m.metallic = 1
 	m.alpha = false
 	m.discard = false
+	m.particle = false
 	m.alphaCutoff = 0.5 --todo
 	m.name = name or "Unnamed"
 	m.ior = 1.0
@@ -153,6 +154,18 @@ function class:getCullMode()
 	return self.cullMode
 end
 
+---Setting the material in particle mode removes some normal math in the lighting functions, which looks better on 2D sprites and very small objects
+---@param particle boolean
+function class:setParticle(particle)
+	self.particle = particle
+end
+
+---Checks if this material is rendered as a particle
+---@return boolean
+function class:isParticle()
+	return self.particle
+end
+
 ---Load textures and similar
 ---@param force boolean @ Bypass threaded loading and immediately load things
 function class:preload(force)
@@ -239,9 +252,6 @@ function class:lookForTextures(directory, filter)
 			self:setMaterialTexture(lib:combineTextures(self["metallicTexture"], self["roughnessTexture"], self["aoTex"]))
 		end
 	end
-	
-	--convert shader id to actual shader object
-	--todo has nothing to do with name
 end
 
 return class

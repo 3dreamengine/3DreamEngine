@@ -232,6 +232,15 @@ function lib:getGlobalSettingsIdentifier(alpha, canvases, shadowPass, sun)
 	return settings
 end
 
+---Constructs and returns a shader for given requirements
+---@param mesh DreamMesh
+---@param reflection DreamReflection
+---@param globalIdentifier string
+---@param alpha boolean
+---@param canvases DreamCanvases
+---@param light table
+---@param shadowPass boolean
+---@param isSun boolean
 ---@private
 function lib:getRenderShader(mesh, reflection, globalIdentifier, alpha, canvases, light, shadowPass, isSun)
 	local mat = mesh.material
@@ -243,7 +252,7 @@ function lib:getRenderShader(mesh, reflection, globalIdentifier, alpha, canvases
 	
 	--construct full ID
 	local shaderID = string.char(
-			(reflection and 1 or 0) + (mesh.instanceMesh and 2 or 0) + (mesh.spriteInstanceMesh and 4 or 0) + (mat.discard and 8 or 0) + (mat.dither and 16 or 0) + (mat.translucency > 0 and 32 or 0),
+			(reflection and 1 or 0) + (mesh.instanceMesh and 2 or 0) + (mesh.spriteInstanceMesh and 4 or 0) + (mat.discard and 8 or 0) + (mat.dither and 16 or 0) + (mat.translucency > 0 and 32 or 0) + (mat.particle and 64 or 0),
 			pixelShader.id % 256, math.floor(pixelShader.id / 256),
 			vertexShader.id % 256, math.floor(vertexShader.id / 256),
 			worldShader.id % 256, math.floor(worldShader.id / 256),
@@ -300,6 +309,11 @@ function lib:getRenderShader(mesh, reflection, globalIdentifier, alpha, canvases
 		--translucency
 		if mat.translucency > 0 then
 			table.insert(defines, "#define TRANSLUCENCY")
+		end
+		
+		--particle
+		if mat.particle then
+			table.insert(defines, "#define IS_PARTICLE")
 		end
 		
 		--collect additional defines
