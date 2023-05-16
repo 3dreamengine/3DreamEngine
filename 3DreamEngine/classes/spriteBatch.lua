@@ -147,14 +147,14 @@ function class:getMesh(name)
 	return mesh
 end
 
----A helper function to set whether alpha mode (true) or discard (false) should be used. The later one will disable sorting as it is not required.
+---A helper function to set whether alpha mode (true) or cutout (false) should be used. The later one will disable sorting as it is not required.
 ---@param enabled boolean
 function class:setAlpha(enabled)
 	if enabled then
 		self.material:setAlpha()
 		self.sort = true
 	else
-		self.material:setDiscard()
+		self.material:setCutout()
 		self.sort = false
 	end
 end

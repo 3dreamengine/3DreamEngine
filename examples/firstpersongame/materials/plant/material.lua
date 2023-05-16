@@ -1,5 +1,5 @@
 return {
-	discard = true,
+	cutout = true,
 	shadow = false,
 	color = {0.1, 0.6, 0.2, 1.0},
 	roughness = 0.4,

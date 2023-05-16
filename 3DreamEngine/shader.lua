@@ -235,7 +235,7 @@ function lib:getRenderShader(mesh, reflection, globalIdentifier, alpha, canvases
 	
 	--construct full ID
 	local shaderID = string.char(
-			(reflection and 1 or 0) + (mesh.instanceMesh and 2 or 0) + (mesh.spriteInstanceMesh and 4 or 0) + (mat.discard and 8 or 0) + (mat.dither and 16 or 0) + (mat.translucency > 0 and 32 or 0) + (mat.particle and 64 or 0),
+			(reflection and 1 or 0) + (mesh.instanceMesh and 2 or 0) + (mesh.spriteInstanceMesh and 4 or 0) + (mat.cutout and 8 or 0) + (mat.dither and 16 or 0) + (mat.translucency > 0 and 32 or 0) + (mat.particle and 64 or 0),
 			pixelShader.id % 256, math.floor(pixelShader.id / 256),
 			vertexShader.id % 256, math.floor(vertexShader.id / 256),
 			worldShader.id % 256, math.floor(worldShader.id / 256),
@@ -279,9 +279,9 @@ function lib:getRenderShader(mesh, reflection, globalIdentifier, alpha, canvases
 			table.insert(defines, "#define SPRITE_INSTANCING")
 		end
 		
-		--discard
-		if mat.discard then
-			table.insert(defines, "#define DISCARD")
+		--cutout
+		if mat.cutout then
+			table.insert(defines, "#define CUTOUT")
 		end
 		
 		--dither

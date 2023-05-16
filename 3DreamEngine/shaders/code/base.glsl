@@ -64,7 +64,7 @@ void effect() {
 	emission *= varyingEmissionFactor;
 #endif
 
-#ifdef DISCARD
+#ifdef CUTOUT
 	if (alpha < 0.5) {
 		discard;
 	}

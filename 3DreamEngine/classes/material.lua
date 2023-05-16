@@ -13,7 +13,7 @@ function lib:newMaterial(name)
 	m.roughness = 1
 	m.metallic = 1
 	m.alpha = false
-	m.discard = false
+	m.cutout = false
 	m.particle = false
 	m.alphaCutoff = 0.5 --todo
 	m.name = name or "Unnamed"
@@ -33,7 +33,7 @@ local class = {
 ---Makes material solid
 function class:setSolid()
 	self.alpha = false
-	self.discard = false
+	self.cutout = false
 	self.dither = false
 end
 
@@ -46,14 +46,13 @@ function class:getAlpha()
 	return self.alpha
 end
 
---todo it is called cutout
----Enabled discard only renders when alpha is over a threshold, faster than alpha since on the main pass but slower than solid
-function class:setDiscard()
+---Enabled cutout only renders when alpha is over a threshold, faster than alpha since on the main pass but slower than solid
+function class:setCutout()
 	self:setSolid()
-	self.discard = true
+	self.cutout = true
 end
-function class:getDiscard()
-	return self.discard
+function class:getCutout()
+	return self.cutout
 end
 
 ---Dither internally uses discarding and simulates alpha by dithering, may be used for fading objects
