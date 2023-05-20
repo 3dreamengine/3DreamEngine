@@ -4,10 +4,6 @@ local sh = { }
 
 sh.type = "world"
 
-function sh:getId(mat, shadow)
-	return 0
-end
-
 function sh:buildDefines(mat, shadow)
 	if shadow then
 		return ""

@@ -34,17 +34,17 @@ function sh:initMesh(mesh)
 	mesh:getMesh():attachAttribute("VertexTexCoord2", mesh:getMesh("uv2Mesh"))
 end
 
-function sh:buildDefines(mat, shadow)
+function sh:buildFlags(mat, shadow)
 	return [[
 		]] .. (mat.normalTexture and "#define NORMAL_TEXTURE\n" or "") .. [[
 		]] .. (mat.normalTexture and "#define TANGENT\n" or "") .. [[
 		
 		]] .. (mat.emissionTexture and "#define EMISSION_TEXTURE\n" or "") .. [[
-		]] .. (mat.materialTexture and "#define MATERIAL_TEXTURE\n" or "") .. [[
-		
-		]] .. ((not shadow and (mat.cutout and not mat.dither) or shadow and mat.cutout) and "#define CUTOUT\n" or "") .. [[
-		]] .. ((not shadow and mat.dither) and "#define DITHER\n" or "") .. [[
-		
+		]] .. (mat.materialTexture and "#define MATERIAL_TEXTURE\n" or "")
+end
+
+function sh:buildDefines(mat, shadow)
+	return [[
 		#ifdef PIXEL
 		uniform Image blendTexture;
 		uniform float multiTextureBlendScale;
@@ -165,10 +165,6 @@ function sh:buildVertex(mat)
 	]]
 end
 
-function sh:perShader(shaderObject)
-
-end
-
 function sh:perMaterial(shaderObject, material)
 	local shader = shaderObject.shader
 	
@@ -204,10 +200,6 @@ function sh:perMaterial(shaderObject, material)
 	
 	shader:send("emissionColor1", material.emission)
 	shader:send("emissionColor2", material2.emission)
-end
-
-function sh:perTask(shaderObject, task)
-
 end
 
 return sh

@@ -6,10 +6,6 @@ sh.type = "pixel"
 
 sh.meshFormat = "font"
 
-function sh:getId(mat, shadow)
-	return 0
-end
-
 function sh:buildDefines(mat, shadow)
 	return [[
 		#ifdef PIXEL
@@ -50,10 +46,6 @@ function sh:buildVertex(mat)
 	]]
 end
 
-function sh:perShader(shaderObject)
-
-end
-
 function sh:perMaterial(shaderObject, material)
 	local shader = shaderObject.shader
 	
@@ -64,10 +56,6 @@ function sh:perMaterial(shaderObject, material)
 	
 	shader:send("emissionColor", material.emission)
 	shader:send("emissionFactor", material.emissionFactor)
-end
-
-function sh:perTask(shaderObject, task)
-
 end
 
 return sh

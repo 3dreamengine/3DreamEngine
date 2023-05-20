@@ -4,10 +4,6 @@ sh.type = "pixel"
 
 sh.meshFormat = "simple"
 
-function sh:getId(mat, shadow)
-	return 0
-end
-
 function sh:buildDefines(mat, shadow)
 	return [[
 		varying vec3 VaryingMaterial;
@@ -36,18 +32,6 @@ function sh:buildVertex(mat)
 	return [[
 	VaryingMaterial = VertexMaterial.xyz;
 	]]
-end
-
-function sh:perShader(shaderObject)
-
-end
-
-function sh:perMaterial(shaderObject, material)
-	
-end
-
-function sh:perTask(shaderObject, task)
-	
 end
 
 return sh

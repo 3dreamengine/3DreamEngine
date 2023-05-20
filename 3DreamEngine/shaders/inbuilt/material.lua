@@ -7,10 +7,6 @@ sh.type = "pixel"
 
 sh.meshFormat = "material"
 
-function sh:getId(mat, shadow)
-	return 0
-end
-
 function sh:buildDefines(mat, shadow)
 	return [[
 		varying vec3 VaryingMaterial;
@@ -46,17 +42,9 @@ function sh:buildVertex(mat)
 	]]
 end
 
-function sh:perShader(shaderObject)
-
-end
-
 function sh:perMaterial(shaderObject, material)
 	local shader = shaderObject.shader
 	shader:send("lookupTexture", lib:getImage(material.lookupTexture) or lib.textures.default)
-end
-
-function sh:perTask(shaderObject, task)
-
 end
 
 return sh

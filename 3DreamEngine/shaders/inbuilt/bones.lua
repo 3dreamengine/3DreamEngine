@@ -4,10 +4,6 @@ sh.type = "vertex"
 
 sh.maxJoints = 64
 
-function sh:getId(mat, shadow)
-	return 0
-end
-
 local meshFormat = {
 	{ "VertexJoint", "float", 4 },
 	{ "VertexWeight", "float", 4 }
@@ -65,14 +61,6 @@ function sh:buildVertex(mat)
 	
 	normalTransform = normalTransform * mat3(boneTransform);
 	]]
-end
-
-function sh:perShader(shaderObject)
-
-end
-
-function sh:perMaterial(shaderObject, material)
-
 end
 
 local ID = _3DreamEngine.mat4.getIdentity()

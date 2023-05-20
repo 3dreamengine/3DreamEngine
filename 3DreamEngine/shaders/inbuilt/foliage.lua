@@ -13,10 +13,6 @@ function sh:init()
 	self.fadeWidth = 3     -- the blending margin
 end
 
-function sh:getId(mat, shadow)
-	return 0
-end
-
 function sh:buildDefines(mat)
 	return [[
 #ifdef PIXEL

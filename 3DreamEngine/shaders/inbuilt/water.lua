@@ -10,8 +10,19 @@ function sh:getId(mat, shadow)
 	if shadow then
 		return 0
 	else
-		return (mat.normalTexture and 1 or 0) * 2^1 + (mat.emissionTexture and 1 or 0) * 2^2
+		return (mat.normalTexture and 1 or 0) * 2 ^ 1 + (mat.emissionTexture and 1 or 0) * 2 ^ 2
 	end
+end
+
+function sh:buildFlags(mat, shadow)
+	return [[
+		#define TANGENT
+		
+		]] .. (mat.normalTexture and "#define NORMAL_TEXTURE\n" or "") .. [[
+		]] .. (mat.normalTexture and "#define TANGENT\n" or "") .. [[
+		
+		]] .. (mat.emissionTexture and "#define EMISSION_TEXTURE\n" or "") .. [[
+		]] .. (mat.materialTexture and "#define MATERIAL_TEXTURE\n" or "")
 end
 
 function sh:buildDefines(mat, shadow)
@@ -19,14 +30,6 @@ function sh:buildDefines(mat, shadow)
 	assert(mat.normalTexture, "water shader requires a normal texture for wave movement")
 	
 	return [[
-		]] .. (mat.normalTexture and "#define NORMAL_TEXTURE\n" or "") .. [[
-		]] .. (mat.normalTexture and "#define TANGENT\n" or "") .. [[
-		
-		]] .. (mat.emissionTexture and "#define EMISSION_TEXTURE\n" or "") .. [[
-		]] .. (mat.materialTexture and "#define MATERIAL_TEXTURE\n" or "") .. [[
-		
-		#define TANGENT
-		
 		//#ifdef PIXEL
 		uniform Image albedoTexture;
 		uniform vec4 albedoColor;
@@ -126,10 +129,6 @@ function sh:buildPixel(mat)
 	]]
 end
 
-function sh:buildVertex(mat)
-	return ""
-end
-
 function sh:perShader(shaderObject)
 	local shader = shaderObject.shader
 	shader:send("time", love.timer.getTime())
@@ -146,7 +145,7 @@ function sh:perMaterial(shaderObject, material)
 	if shader:hasUniform("materialTexture") then
 		shader:send("materialTexture", dream:getImage(material.materialTexture) or tex.default)
 	end
-	shader:send("materialColor", {material.metallic, material.roughness})
+	shader:send("materialColor", { material.metallic, material.roughness })
 	
 	shader:send("normalTexture", dream:getImage(material.normalTexture) or tex.defaultNormal)
 	
@@ -166,15 +165,11 @@ function sh:perMaterial(shaderObject, material)
 	shader:send("foamScale", material.foamScale or (1 / 8))
 	shader:send("foamSpeed", material.foamSpeed or 0.1)
 	
-	shader:send("liquidAlbedo", material.liquidAlbedo or {0.5, 0.75, 1.0})
+	shader:send("liquidAlbedo", material.liquidAlbedo or { 0.5, 0.75, 1.0 })
 	shader:send("liquidAlpha", material.liquidAlpha or 0.2)
-	shader:send("liquidEmission", material.liquidEmission or {0.0, 0.0, 0.0})
+	shader:send("liquidEmission", material.liquidEmission or { 0.0, 0.0, 0.0 })
 	shader:send("liquidRoughness", material.liquidRoughness or 0.0)
 	shader:send("liquidMetallic", material.liquidMetallic or 1.0)
-end
-
-function sh:perTask(shaderObject, task)
-
 end
 
 return sh

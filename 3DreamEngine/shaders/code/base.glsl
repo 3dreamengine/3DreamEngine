@@ -1,5 +1,8 @@
 #pragma language glsl3
 
+//flags
+#import flags
+
 //camera uniforms
 uniform highp mat4 transformProj;   //projective transformation
 uniform highp mat4 transform;       //model transformation
@@ -8,8 +11,12 @@ uniform highp vec3 viewPos;         //camera position
 //varyings
 varying highp vec3 vertexPos;      //vertex position for pixel shader
 varying highp vec3 varyingNormal;  //vertex normal for pixel shader
+
+#ifdef TANGENT
 varying highp vec3 varyingTangent; //vertex tangent for pixel shader
 varying highp vec3 varyingBitangent; //vertex bi tangent for pixel shader
+#endif
+
 varying float depth;               //depth
 
 varying float varyingEmissionFactor; //unlike additive emission this factor
@@ -17,12 +24,12 @@ varying float varyingEmissionFactor; //unlike additive emission this factor
 uniform float translucency;
 uniform float alphaCutoff;
 
-//shader specific defines
-#import defines
-
 #ifdef DEPTH_AVAILABLE
 uniform Image depthTexture;
 #endif
+
+//shader specific functions
+#import defines
 
 
 
@@ -39,8 +46,10 @@ void effect() {
 
 	//surface
 	vec3 normal = normalize(varyingNormal);
+#ifdef TANGENT
 	vec3 tangent = normalize(varyingTangent);
 	vec3 bitangent = normalize(varyingBitangent);
+#endif
 
 	//material
 	vec3 albedo = vec3(0.5);

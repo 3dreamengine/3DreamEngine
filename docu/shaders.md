@@ -45,6 +45,14 @@ function sh:initMesh(mesh)
 	--initMesh is called when the mesh is fully loaded
 end
 
+function sh:buildFlags(material)
+	return [[
+		// any additional flags or crucial defines which should be executed before everything else
+		// for example, the tangent flag to enable access to the normal-to-world matrix should be here
+		#define TANGENT
+	]]
+end
+
 function sh:buildDefines(material)
 	return [[
 		// any additional externs, attributes, defines or functions you need

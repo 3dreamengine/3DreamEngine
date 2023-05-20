@@ -127,7 +127,7 @@ lib:setResourceLoader(true)
 lib:setMipmaps(true)
 
 --sky
-lib:setDefaultReflection(false)
+lib:setDefaultReflection("sky")
 lib:setSky({ 0.5, 0.5, 0.5 })
 lib:setSkyReflectionFormat(256, "rgba16f", false)
 

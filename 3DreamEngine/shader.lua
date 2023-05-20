@@ -264,6 +264,7 @@ function lib:getRenderShader(mesh, reflection, globalIdentifier, alpha, canvases
 		self.mainShaders[shaderID] = info
 		
 		--additional code
+		local flags = { }
 		local defines = { }
 		local pixel = { }
 		local pixelMaterial = { }
@@ -271,60 +272,60 @@ function lib:getRenderShader(mesh, reflection, globalIdentifier, alpha, canvases
 		
 		--if instancing is used
 		if mesh.instanceMesh then
-			table.insert(defines, "#define INSTANCING")
+			table.insert(flags, "#define INSTANCING")
 		end
 		
 		--if sprite instancing is used
 		if mesh.spriteInstanceMesh then
-			table.insert(defines, "#define SPRITE_INSTANCING")
+			table.insert(flags, "#define SPRITE_INSTANCING")
 		end
 		
 		--cutout
 		if mat.cutout then
-			table.insert(defines, "#define CUTOUT")
+			table.insert(flags, "#define CUTOUT")
 		end
 		
 		--dither
 		if mat.dither then
-			table.insert(defines, "#define DITHER")
+			table.insert(flags, "#define DITHER")
 		end
 		
 		--translucency
 		if mat.translucency > 0 then
-			table.insert(defines, "#define TRANSLUCENCY")
+			table.insert(flags, "#define TRANSLUCENCY")
 		end
 		
 		--particle
 		if mat.particle then
-			table.insert(defines, "#define IS_PARTICLE")
+			table.insert(flags, "#define IS_PARTICLE")
 		end
 		
 		--collect additional defines
 		if shadowPass then
-			table.insert(defines, "#define IS_SHADOW")
+			table.insert(flags, "#define IS_SHADOW")
 			if isSun then
-				table.insert(defines, "#define IS_SUN")
+				table.insert(flags, "#define IS_SUN")
 			end
 		else
 			--settings
 			if alpha then
 				if canvases.refractions then
-					table.insert(defines, "#define REFRACTIONS_ENABLED")
+					table.insert(flags, "#define REFRACTIONS_ENABLED")
 				end
-				table.insert(defines, "#define ALPHA_PASS")
+				table.insert(flags, "#define ALPHA_PASS")
 			else
-				table.insert(defines, "#define DEPTH_ENABLED")
+				table.insert(flags, "#define DEPTH_ENABLED")
 			end
 			
 			--canvas settings
 			if canvases.mode ~= "direct" then
-				table.insert(defines, "#define DEPTH_AVAILABLE")
+				table.insert(flags, "#define DEPTH_AVAILABLE")
 			end
 			if self.gamma then
-				table.insert(defines, "#define GAMMA_CORRECTION")
+				table.insert(flags, "#define GAMMA_CORRECTION")
 			end
 			if self.fog_enabled and canvases.mode ~= "normal" then
-				table.insert(defines, "#define FOG_ENABLED")
+				table.insert(flags, "#define FOG_ENABLED")
 			end
 		end
 		
@@ -361,22 +362,26 @@ function lib:getRenderShader(mesh, reflection, globalIdentifier, alpha, canvases
 		end
 		
 		--material shader
+		insertHeader(flags, "pixel shader", info.pixelShader:buildFlags(mat, shadowPass))
 		insertHeader(defines, "pixel shader", info.pixelShader:buildDefines(mat, shadowPass))
-		insertHeader(defines, "vertex shader", info.vertexShader:buildDefines(mat, shadowPass))
-		
-		insertHeader(pixelMaterial, "pixel shader", info.pixelShader:buildPixel(mat, shadowPass))
-		insertHeader(pixelMaterial, "vertex shader", info.vertexShader:buildPixel(mat, shadowPass))
-		
-		insertHeader(vertex, "vertex shader", info.vertexShader:buildVertex(mat, shadowPass))
 		insertHeader(vertex, "pixel shader", info.pixelShader:buildVertex(mat, shadowPass))
+		insertHeader(pixelMaterial, "pixel shader", info.pixelShader:buildPixel(mat, shadowPass))
+		
+		--vertex shader
+		insertHeader(flags, "vertex shader", info.vertexShader:buildFlags(mat, shadowPass))
+		insertHeader(defines, "vertex shader", info.vertexShader:buildDefines(mat, shadowPass))
+		insertHeader(vertex, "vertex shader", info.vertexShader:buildVertex(mat, shadowPass))
+		insertHeader(pixelMaterial, "vertex shader", info.vertexShader:buildPixel(mat, shadowPass))
 		
 		--world
 		insertHeader(defines, "world shader", info.worldShader:buildDefines(mat, shadowPass))
 		insertHeader(pixel, "world shader", info.worldShader:buildPixel(mat, shadowPass))
 		insertHeader(vertex, "world shader", info.worldShader:buildVertex(mat, shadowPass))
+		insertHeader(flags, "world shader", info.worldShader:buildFlags(mat, shadowPass))
 		
 		--build code
 		local code = codes.base
+		code = code:gsub("#import flags", table.concat(flags, "\n\n"))
 		code = code:gsub("#import defines", table.concat(defines, "\n\n"))
 		code = code:gsub("#import pixelMaterial", table.concat(pixelMaterial, "\n"))
 		code = code:gsub("#import pixel", table.concat(pixel, "\n"))

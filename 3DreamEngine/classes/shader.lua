@@ -13,9 +13,7 @@ function lib:newShader(path)
 	shader.id = lastShaderID
 	lastShaderID = lastShaderID + 1
 	
-	if shader.init then
-		shader:init(self)
-	end
+	shader:init(self)
 	
 	return shader
 end
@@ -24,5 +22,41 @@ end
 local class = {
 	links = { "shader" },
 }
+
+function class:init()
+
+end
+
+function class:getId(mat, shadow)
+	return 0
+end
+
+function class:buildFlags(mat, shadow)
+	return ""
+end
+
+function class:buildDefines(mat, shadow)
+	return ""
+end
+
+function class:buildPixel(mat)
+	return ""
+end
+
+function class:buildVertex(mat)
+	return ""
+end
+
+function class:perShader(shaderObject)
+
+end
+
+function class:perMaterial(shaderObject, material)
+
+end
+
+function class:perTask(shaderObject, task)
+
+end
 
 return class

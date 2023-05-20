@@ -10,10 +10,6 @@ function sh:init()
 	self.scale = 0.25      -- the scale of wind waves
 end
 
-function sh:getId(mat, shadow)
-	return 0
-end
-
 function sh:buildDefines(mat)
 	return [[
 #ifdef VERTEX
@@ -26,10 +22,6 @@ function sh:buildDefines(mat)
 	uniform Image noiseTexture;
 #endif
 	]]
-end
-
-function sh:buildPixel(mat)
-	return ""
 end
 
 function sh:buildVertex(mat)
@@ -54,10 +46,6 @@ function sh:perMaterial(shaderObject, material)
 	shader:send("windShaderHeight", 1 / (material.windShaderHeight or 1.0))
 	shader:send("windShaderTime", (love.timer.getTime() % 10000) * (material.windShaderSpeed or self.speed))
 	shader:send("windShaderGrass", material.windShaderGrass and 1 or 0)
-end
-
-function sh:perTask(shaderObject, task)
-
 end
 
 return sh

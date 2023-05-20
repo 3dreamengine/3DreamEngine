@@ -14,14 +14,17 @@ function sh:getId(mat, shadow)
 	end
 end
 
-function sh:buildDefines(mat, shadow)
+function sh:buildFlags(mat, shadow)
 	return [[
 		]] .. (mat.normalTexture and "#define NORMAL_TEXTURE\n" or "") .. [[
 		]] .. (mat.normalTexture and "#define TANGENT\n" or "") .. [[
 		
 		]] .. (mat.emissionTexture and "#define EMISSION_TEXTURE\n" or "") .. [[
-		]] .. (mat.materialTexture and "#define MATERIAL_TEXTURE\n" or "") .. [[
-		
+		]] .. (mat.materialTexture and "#define MATERIAL_TEXTURE\n" or "")
+end
+
+function sh:buildDefines(mat, shadow)
+	return [[
 		#ifdef PIXEL
 		uniform Image albedoTexture;
 		uniform vec4 albedoColor;
@@ -78,14 +81,6 @@ function sh:buildPixel(mat)
 	]]
 end
 
-function sh:buildVertex(mat)
-	return ""
-end
-
-function sh:perShader(shaderObject)
-
-end
-
 function sh:perMaterial(shaderObject, material)
 	local shader = shaderObject.shader
 	
@@ -112,10 +107,6 @@ function sh:perMaterial(shaderObject, material)
 	if shader:hasUniform("emissionFactor") then
 		shader:send("emissionFactor", material.emissionFactor)
 	end
-end
-
-function sh:perTask(shaderObject, task)
-
 end
 
 return sh
