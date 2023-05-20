@@ -24,7 +24,7 @@ _________________
 ### `Camera:setFov(fov)`
 Set FOV
 #### Arguments
-`fov` (number)  horizontal field of view in degrees
+`fov` (number)  vertical field of view in degrees
 
 
 _________________

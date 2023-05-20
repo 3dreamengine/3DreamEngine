@@ -45,7 +45,7 @@ function class:updateFrustumPlanes()
 end
 
 ---Set FOV
----@param fov number @ horizontal field of view in degrees
+---@param fov number @ vertical field of view in degrees
 function class:setFov(fov)
 	self.fov = fov
 end
