@@ -121,7 +121,7 @@ function lib:render(cam, canvases, dynamic, isShadow, blacklist)
 		end
 		
 		--render sky
-		self:renderSky(cam.transformProjOrigin, cam:getInvertedTransform(), (cam.near + cam.far) / 2)
+		self:renderSky(cam.transformProjOrigin, cam:getInvertedTransform(), (cam.near + cam.far) / 4)
 		
 		--get light setup
 		light = self:getLightOverview(cam)
