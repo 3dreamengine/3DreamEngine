@@ -30,13 +30,15 @@
 
 # Development
 
-Due to rapid changes to 3Dream I am working on a separate beta branch.
+Due to rapid changes to 3Dream I am sometimes working on a separate beta branch.
 
 # Documentation
 
-Undocumented features are subject to change. They will receive proper documentation once finished.
+Undocumented features are subject to change. They will receive a proper documentation once finished.
 
 [Documentation hosted on GitHub](https://3dreamengine.github.io/3DreamEngine/)
+
+[Emmy-love-api](https://github.com/EmmyLua/Emmy-love-api) recommended for proper EmmyLua support.
 
 # How to use?
 
