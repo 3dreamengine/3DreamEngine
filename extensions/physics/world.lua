@@ -18,7 +18,6 @@ function methods:getGravity()
 	return self.gravity
 end
 
----@return World
 function methods:getWorld()
 	return self.world
 end
